@@ -25,6 +25,77 @@ function saveStoredData(key, data) {
   } catch (e) {}
 }
 
+// Zero-dependency IndexedDB storage for massive datasets (17k - 100k+ records)
+const DB_NAME = 'SugarCooperativeERP_DB_v2';
+const DB_VERSION = 1;
+const STORE_NAME = 'shareholders';
+
+function openERPDB() {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !window.indexedDB) {
+      resolve(null);
+      return;
+    }
+    try {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+    } catch (e) {
+      resolve(null);
+    }
+  });
+}
+
+async function saveToIndexedDB(records) {
+  try {
+    const db = await openERPDB();
+    if (!db) return false;
+    return new Promise((resolve) => {
+      const tx = db.transaction([STORE_NAME], 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.clear();
+      for (let i = 0; i < records.length; i++) {
+        store.put(records[i]);
+      }
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+  } catch (err) {
+    return false;
+  }
+}
+
+async function loadFromIndexedDB() {
+  try {
+    const db = await openERPDB();
+    if (!db) return null;
+    return new Promise((resolve) => {
+      const tx = db.transaction([STORE_NAME], 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch (err) {
+    return null;
+  }
+}
+
+async function clearIndexedDB() {
+  try {
+    const db = await openERPDB();
+    if (!db) return;
+    const tx = db.transaction([STORE_NAME], 'readwrite');
+    tx.objectStore(STORE_NAME).clear();
+  } catch (e) {}
+}
+
 // Circles in Indi / Chadchan / Vijayapura Region (Geographic Master)
 export const mockCircles = [
   { circle_id: 'CIR-001', name: 'ಇಂಡಿ (Indi Circle)', description: 'Indi Central Cane Zone', village_count: 8, shareholder_count: 0, total_shares: 0 },
@@ -76,6 +147,36 @@ export const mockVillages = placesList.map((p, idx) => ({
 
 // Real Live Datasets (Initialized as clean empty arrays - zero mock records)
 let mockShareholders = loadStoredData(STORAGE_KEY_SH, []);
+let isDBReady = false;
+let dbInitPromise = null;
+
+export function ensureDBReady() {
+  if (isDBReady) return Promise.resolve(mockShareholders);
+  if (!dbInitPromise) {
+    if (typeof window !== 'undefined' && window.indexedDB) {
+      dbInitPromise = loadFromIndexedDB().then((dbData) => {
+        if (dbData && dbData.length > 0) {
+          mockShareholders = dbData;
+        }
+        isDBReady = true;
+        return mockShareholders;
+      }).catch(() => {
+        isDBReady = true;
+        return mockShareholders;
+      });
+    } else {
+      isDBReady = true;
+      dbInitPromise = Promise.resolve(mockShareholders);
+    }
+  }
+  return dbInitPromise;
+}
+
+// Immediate eager initialization of IndexedDB
+if (typeof window !== 'undefined') {
+  ensureDBReady();
+}
+
 let mockTransactions = loadStoredData(STORAGE_KEY_TX, []);
 let mockSugarAllotments = loadStoredData(STORAGE_KEY_SA, []);
 let mockVarasaTransfers = loadStoredData(STORAGE_KEY_VT, []);
@@ -84,6 +185,13 @@ let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
 
 // Helper API execution with auto backend failover
 async function fetchApi(endpoint, options = {}) {
+  // On static hosts like GitHub Pages, immediately bypass network to eliminate 404 delays
+  const isStaticHost = typeof window !== 'undefined' && (
+    window.location.hostname.includes('github.io') ||
+    window.location.protocol === 'file:'
+  );
+  if (isStaticHost) return null;
+
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
@@ -104,6 +212,7 @@ async function fetchApi(endpoint, options = {}) {
 
 export const ApiService = {
   async getDashboardStats() {
+    await ensureDBReady();
     const apiRes = await fetchApi('/dashboard/stats');
     if (apiRes && apiRes.success) return apiRes;
 
@@ -159,6 +268,7 @@ export const ApiService = {
   },
 
   async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '' }) {
+    await ensureDBReady();
     const apiRes = await fetchApi(`/shareholders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&village_id=${village_id}&circle_id=${circle_id}&status=${status}&book_no=${book_no}`);
     if (apiRes && apiRes.success) return apiRes;
 
@@ -218,6 +328,7 @@ export const ApiService = {
   },
 
   async getShareholderById(id) {
+    await ensureDBReady();
     const apiRes = await fetchApi(`/shareholders/${id}`);
     if (apiRes && apiRes.success) return apiRes;
 
@@ -240,49 +351,156 @@ export const ApiService = {
     };
   },
 
-  async addShareholder(data) {
-    const apiRes = await fetchApi('/shareholders', { method: 'POST', body: JSON.stringify(data) });
-    if (apiRes && apiRes.success) return apiRes;
+  async addShareholdersBulk(records) {
+    await ensureDBReady();
+    if (!Array.isArray(records) || records.length === 0) {
+      return { success: true, count: 0 };
+    }
 
-    const nextId = mockShareholders.length + 1;
+    let maxId = 0;
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const mid = Number(mockShareholders[i]?.id);
+      if (mid > maxId) maxId = mid;
+    }
+    const startId = maxId + 1;
+    const nowStr = new Date().toLocaleDateString('en-GB');
+
+    const newShItems = records.map((data, idx) => {
+      const currentId = startId + idx;
+      const shId = data.shareholder_id || `SH-${String(currentId).padStart(5, '0')}`;
+      const shName = (data.shareholder_name || data.name || `ಷೇರುದಾರ ${currentId}`).normalize('NFC');
+      const shareNo = data.share_no || String(currentId);
+      const bookNo = data.book_no || 'B.No: 1';
+      const receiptNo = data.receipt_no || String(currentId);
+      const receiptAmt = parseFloat(data.receipt_amount) || 2000;
+      const numShares = parseInt(data.number_of_shares) || 1;
+      const totalAmt = parseFloat(data.total_amount) || parseFloat(data.amount) || (numShares * 2000);
+
+      return {
+        id: currentId,
+        shareholder_id: shId,
+        book_no: bookNo,
+        sl_no: data.sl_no || currentId,
+        share_no: shareNo,
+        shareholder_name: shName,
+        name: shName,
+        father_husband_name: data.father_husband_name || '',
+        gender: data.gender || 'M',
+        aadhaar_card_no: data.aadhaar_card_no || '',
+        aadhaar_ref: data.aadhaar_card_no || '',
+        reg_date: data.reg_date || nowStr,
+        registration_date: data.reg_date || nowStr,
+        receipt_no: receiptNo,
+        receipt_amount: receiptAmt,
+        date: data.date || data.reg_date || nowStr,
+        reciept: data.reciept || receiptNo,
+        amount: parseFloat(data.amount) || receiptAmt,
+        total_amount: totalAmt,
+        number_of_shares: numShares,
+        share_value: totalAmt,
+        schedule_cast: (data.schedule_cast || 'ಅ - ವರ್ಗ').normalize('NFC'),
+        address: (data.address || '').normalize('NFC'),
+        nagara: (data.nagara || '').normalize('NFC'),
+        road: (data.road || '').normalize('NFC'),
+        place: (data.place || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
+        village_name: (data.place || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
+        village_id: data.village_id || 'VIL-001',
+        taluk: (data.taluk || 'ಇಂಡಿ').normalize('NFC'),
+        district: (data.district || 'ವಿಜಯಪುರ').normalize('NFC'),
+        pin_code: data.pin_code || '586 117',
+        circle: (data.circle || 'ಇಂಡಿ').normalize('NFC'),
+        circle_name: (data.circle || 'ಇಂಡಿ').normalize('NFC'),
+        circle_id: data.circle_id || 'CIR-001',
+        member_type: (data.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
+        relationship: (data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
+        tharava_date: data.tharava_date || data.reg_date || nowStr,
+        tharava_no: data.tharava_no || `TR-${currentId}/2026`,
+        mobile_no: data.mobile_no || data.mobile || '',
+        mobile: data.mobile_no || data.mobile || '',
+        photo_url: data.photo_url || '',
+        signature_url: data.signature_url || '',
+        thumb_url: data.thumb_url || '',
+        photo_updated: data.photo_updated || 'No',
+        signature_updated: data.signature_updated || 'No',
+        thumb_updated: data.thumb_updated || 'No',
+        nominee_name: (data.nominee_name || '').normalize('NFC'),
+        nominee_aadhaar_no: data.nominee_aadhaar_no || '',
+        nominee_mobile_no: data.nominee_mobile_no || '',
+        nominee_address: (data.nominee_address || '').normalize('NFC'),
+        status: data.status || 'Active',
+        remarks: data.remarks || ''
+      };
+    });
+
+    // Instant in-memory batch prepend
+    mockShareholders = [...newShItems, ...mockShareholders];
+
+    // Asynchronously save to IndexedDB (handles 17k - 100k+ records instantly)
+    saveToIndexedDB(mockShareholders).catch(() => {});
+
+    // Save small sets to localStorage for backwards compatibility
+    if (mockShareholders.length < 2500) {
+      saveStoredData(STORAGE_KEY_SH, mockShareholders);
+    }
+
+    return { success: true, count: newShItems.length };
+  },
+
+  async addShareholder(data) {
+    await ensureDBReady();
+    const isStatic = typeof window !== 'undefined' && (window.location.hostname.includes('github.io') || window.location.protocol === 'file:');
+    if (!isStatic) {
+      try {
+        const apiRes = await fetchApi('/shareholders', { method: 'POST', body: JSON.stringify(data) });
+        if (apiRes && apiRes.success) return apiRes;
+      } catch (e) {}
+    }
+
+    let maxId = 0;
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const mid = Number(mockShareholders[i]?.id);
+      if (mid > maxId) maxId = mid;
+    }
+    const nextId = maxId + 1;
+    const nowStr = new Date().toLocaleDateString('en-GB');
     const newSh = {
       id: nextId,
       shareholder_id: data.shareholder_id || `SH-${String(nextId).padStart(5, '0')}`,
       book_no: data.book_no || 'B.No: 1',
       sl_no: data.sl_no || nextId,
       share_no: data.share_no || String(nextId),
-      shareholder_name: data.shareholder_name || data.name,
-      name: data.shareholder_name || data.name,
+      shareholder_name: (data.shareholder_name || data.name || `ಷೇರುದಾರ ${nextId}`).normalize('NFC'),
+      name: (data.shareholder_name || data.name || `ಷೇರುದಾರ ${nextId}`).normalize('NFC'),
       father_husband_name: data.father_husband_name || '',
       gender: data.gender || 'M',
       aadhaar_card_no: data.aadhaar_card_no || '',
       aadhaar_ref: data.aadhaar_card_no || '',
-      reg_date: data.reg_date || new Date().toLocaleDateString('en-GB'),
-      registration_date: data.reg_date || new Date().toLocaleDateString('en-GB'),
+      reg_date: data.reg_date || nowStr,
+      registration_date: data.reg_date || nowStr,
       receipt_no: data.receipt_no || String(nextId),
       receipt_amount: parseFloat(data.receipt_amount) || 2000,
-      date: data.reg_date || new Date().toLocaleDateString('en-GB'),
-      reciept: data.receipt_no || String(nextId),
-      amount: parseFloat(data.receipt_amount) || 2000,
+      date: data.date || data.reg_date || nowStr,
+      reciept: data.reciept || data.receipt_no || String(nextId),
+      amount: parseFloat(data.amount) || parseFloat(data.receipt_amount) || 2000,
       total_amount: parseFloat(data.total_amount) || (parseFloat(data.number_of_shares) || 1) * 2000,
       number_of_shares: parseInt(data.number_of_shares) || 1,
       share_value: parseFloat(data.total_amount) || (parseFloat(data.number_of_shares) || 1) * 2000,
-      schedule_cast: data.schedule_cast || 'ಅ - ವರ್ಗ',
-      address: data.address || '',
-      nagara: data.nagara || '',
-      road: data.road || '',
-      place: data.place || 'ಬಳ್ಳೊಳ್ಳಿ',
-      village_name: data.place || 'ಬಳ್ಳೊಳ್ಳಿ',
+      schedule_cast: (data.schedule_cast || 'ಅ - ವರ್ಗ').normalize('NFC'),
+      address: (data.address || '').normalize('NFC'),
+      nagara: (data.nagara || '').normalize('NFC'),
+      road: (data.road || '').normalize('NFC'),
+      place: (data.place || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
+      village_name: (data.place || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
       village_id: data.village_id || 'VIL-001',
-      taluk: data.taluk || 'ಇಂಡಿ',
-      district: data.district || 'ವಿಜಯಪುರ',
+      taluk: (data.taluk || 'ಇಂಡಿ').normalize('NFC'),
+      district: (data.district || 'ವಿಜಯಪುರ').normalize('NFC'),
       pin_code: data.pin_code || '586 117',
-      circle: data.circle || 'ಇಂಡಿ',
-      circle_name: data.circle || 'ಇಂಡಿ',
+      circle: (data.circle || 'ಇಂಡಿ').normalize('NFC'),
+      circle_name: (data.circle || 'ಇಂಡಿ').normalize('NFC'),
       circle_id: data.circle_id || 'CIR-001',
-      member_type: data.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
-      relationship: data.relationship || 'ಸ್ವಂತ (Self)',
-      tharava_date: data.tharava_date || data.reg_date || '',
+      member_type: (data.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
+      relationship: (data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
+      tharava_date: data.tharava_date || data.reg_date || nowStr,
       tharava_no: data.tharava_no || `TR-${nextId}/2026`,
       mobile_no: data.mobile_no || data.mobile || '',
       mobile: data.mobile_no || data.mobile || '',
@@ -292,26 +510,32 @@ export const ApiService = {
       photo_updated: data.photo_updated || 'No',
       signature_updated: data.signature_updated || 'No',
       thumb_updated: data.thumb_updated || 'No',
-      nominee_name: data.nominee_name || '',
+      nominee_name: (data.nominee_name || '').normalize('NFC'),
       nominee_aadhaar_no: data.nominee_aadhaar_no || '',
       nominee_mobile_no: data.nominee_mobile_no || '',
-      nominee_address: data.nominee_address || '',
+      nominee_address: (data.nominee_address || '').normalize('NFC'),
       status: data.status || 'Active',
       remarks: data.remarks || ''
     };
 
     mockShareholders.unshift(newSh);
-    saveStoredData(STORAGE_KEY_SH, mockShareholders);
+    saveToIndexedDB(mockShareholders).catch(() => {});
+    if (mockShareholders.length < 2500) {
+      saveStoredData(STORAGE_KEY_SH, mockShareholders);
+    }
     return { success: true, shareholder_id: newSh.shareholder_id };
   },
 
   async clearAllShareholders() {
+    await ensureDBReady();
     mockShareholders = [];
     saveStoredData(STORAGE_KEY_SH, []);
+    await clearIndexedDB();
     return { success: true, message: 'All shareholder records cleared' };
   },
 
   async clearAllData() {
+    await ensureDBReady();
     mockShareholders = [];
     mockTransactions = [];
     mockSugarAllotments = [];
@@ -324,10 +548,12 @@ export const ApiService = {
     saveStoredData(STORAGE_KEY_VT, []);
     saveStoredData(STORAGE_KEY_EMP, []);
     saveStoredData(STORAGE_KEY_LOGS, []);
+    await clearIndexedDB();
     return { success: true, message: 'Database reset successfully' };
   },
 
   async getTransactions({ page = 1, limit = 20, search = '' }) {
+    await ensureDBReady();
     const apiRes = await fetchApi(`/transactions?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
     if (apiRes && apiRes.success) return apiRes;
 
@@ -344,6 +570,7 @@ export const ApiService = {
   },
 
   async addTransaction(data) {
+    await ensureDBReady();
     const apiRes = await fetchApi('/transactions', { method: 'POST', body: JSON.stringify(data) });
     if (apiRes && apiRes.success) return apiRes;
 
@@ -361,6 +588,7 @@ export const ApiService = {
   },
 
   async getSugarAllotments({ page = 1, limit = 20, search = '' }) {
+    await ensureDBReady();
     const apiRes = await fetchApi(`/sugar-allotment?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
     if (apiRes && apiRes.success) return apiRes;
 
@@ -372,6 +600,7 @@ export const ApiService = {
   },
 
   async addSugarAllotment(data) {
+    await ensureDBReady();
     const apiRes = await fetchApi('/sugar-allotment', { method: 'POST', body: JSON.stringify(data) });
     if (apiRes && apiRes.success) return apiRes;
 
@@ -391,6 +620,7 @@ export const ApiService = {
   },
 
   async getVarasaTransfers() {
+    await ensureDBReady();
     const apiRes = await fetchApi('/varasa');
     if (apiRes && apiRes.success) return apiRes;
 
@@ -398,6 +628,7 @@ export const ApiService = {
   },
 
   async addVarasaTransfer(data) {
+    await ensureDBReady();
     const apiRes = await fetchApi('/varasa', { method: 'POST', body: JSON.stringify(data) });
     if (apiRes && apiRes.success) return apiRes;
 
@@ -416,6 +647,7 @@ export const ApiService = {
   },
 
   async updateVarasaStatus(transfer_id, approval_status) {
+    await ensureDBReady();
     const apiRes = await fetchApi(`/varasa/${transfer_id}/status`, { method: 'PUT', body: JSON.stringify({ approval_status }) });
     if (apiRes && apiRes.success) return apiRes;
 
@@ -428,6 +660,7 @@ export const ApiService = {
   },
 
   async getVillages() {
+    await ensureDBReady();
     const apiRes = await fetchApi('/villages');
     if (apiRes && apiRes.success) return apiRes;
 
@@ -443,6 +676,7 @@ export const ApiService = {
   },
 
   async getCircles() {
+    await ensureDBReady();
     const apiRes = await fetchApi('/circles');
     if (apiRes && apiRes.success) return apiRes;
 

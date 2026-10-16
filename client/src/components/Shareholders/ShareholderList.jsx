@@ -273,11 +273,10 @@ export default function ShareholderList() {
   const commitImport = async () => {
     if (previewRecords.length === 0) return;
     setIsImporting(true);
-    for (const r of previewRecords) {
-      await ApiService.addShareholder(r);
-    }
+    const count = previewRecords.length;
+    await ApiService.addShareholdersBulk(previewRecords);
     setIsImporting(false);
-    showToast(`Successfully imported ${previewRecords.length} records into the Live Registry!`);
+    showToast(`Successfully imported ${count.toLocaleString()} records into the Live Registry!`);
     setShowUploadModal(false);
     setPreviewRecords([]);
     fetchShareholders(1);

@@ -267,12 +267,12 @@ export default function DataImportExport() {
   };
 
   const handleCommitImport = async () => {
+    if (previewRecords.length === 0) return;
     setIsProcessing(true);
-    for (const r of previewRecords) {
-      await ApiService.addShareholder(r);
-    }
+    const count = previewRecords.length;
+    await ApiService.addShareholdersBulk(previewRecords);
     setIsProcessing(false);
-    showToast(`Successfully committed ${previewRecords.length} records into the live Shareholders Registry!`);
+    showToast(`Successfully committed ${count.toLocaleString()} records into the live Shareholders Registry!`);
     setPreviewRecords([]);
     setActiveModule('shareholders');
   };
@@ -409,7 +409,7 @@ export default function DataImportExport() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 text-slate-200">
-                {previewRecords.map((r, i) => (
+                {previewRecords.slice(0, 50).map((r, i) => (
                   <tr key={i} className="hover:bg-slate-900/60">
                     <td className="py-2 px-3 font-mono text-sky-400 font-bold">{r.book_no}</td>
                     <td className="py-2 px-3 font-mono">{r.sl_no}</td>
@@ -435,6 +435,11 @@ export default function DataImportExport() {
               </tbody>
             </table>
           </div>
+          {previewRecords.length > 50 && (
+            <p className="text-[11px] text-slate-500 text-right mt-2">
+              Showing preview of first 50 rows out of {previewRecords.length.toLocaleString()} parsed records.
+            </p>
+          )}
         </div>
       )}
     </div>
