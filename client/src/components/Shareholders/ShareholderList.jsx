@@ -3,7 +3,7 @@ import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
-  Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download
+  Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
 import ShareholderForm from './ShareholderForm';
@@ -181,6 +181,13 @@ export default function ShareholderList() {
             className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all"
           >
             <Plus className="w-4 h-4" /> Add Shareholder
+          </button>
+
+          <button
+            onClick={() => setActiveModule('import_export')}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 border border-slate-800 text-slate-200 hover:text-white rounded-xl text-xs font-semibold transition-all shadow-md"
+          >
+            <Upload className="w-4 h-4 text-emerald-400" /> Upload CSV
           </button>
 
           <button
