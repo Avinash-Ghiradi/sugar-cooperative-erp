@@ -219,18 +219,41 @@ export const ApiService = {
     // Village breakdown
     const vCounts = {};
     mockShareholders.forEach(s => {
-      const v = s.place || s.village_name || 'ಇತರೆ (Other)';
+      const v = (s.place || s.village_name || '').trim() || 'ಇತರೆ (Other)';
       vCounts[v] = (vCounts[v] || 0) + 1;
     });
-    const shareholdersByVillage = Object.keys(vCounts).map(v => ({ village_name: v, total: vCounts[v] })).slice(0, 10);
+    const shareholdersByVillage = Object.keys(vCounts)
+      .map(v => ({ village_name: v, total: vCounts[v] }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
 
     // Circle breakdown
     const cCounts = {};
     mockShareholders.forEach(s => {
-      const c = s.circle || s.circle_name || 'ಇತರೆ (Other)';
+      const c = (s.circle || s.circle_name || '').trim() || 'ಇತರೆ (Other)';
       cCounts[c] = (cCounts[c] || 0) + 1;
     });
-    const shareholdersByCircle = Object.keys(cCounts).map(c => ({ circle_name: c, total: cCounts[c] }));
+    const shareholdersByCircle = Object.keys(cCounts)
+      .map(c => ({ circle_name: c, total: cCounts[c] }))
+      .sort((a, b) => b.total - a.total);
+
+    // Dynamic unique collections across actual dataset (e.g. 300+ places)
+    const uniquePlaces = new Set();
+    const uniqueCircles = new Set();
+    const uniqueBooks = new Set();
+
+    mockShareholders.forEach(s => {
+      const p = (s.place || s.village_name || '').trim();
+      if (p) uniquePlaces.add(p.toLowerCase().normalize('NFC'));
+      const c = (s.circle || s.circle_name || '').trim();
+      if (c) uniqueCircles.add(c.toLowerCase().normalize('NFC'));
+      const b = (s.book_no || '').trim();
+      if (b) uniqueBooks.add(b);
+    });
+
+    const calculatedVillages = uniquePlaces.size > 0 ? uniquePlaces.size : mockVillages.length;
+    const calculatedCircles = uniqueCircles.size > 0 ? uniqueCircles.size : mockCircles.length;
+    const calculatedBooks = uniqueBooks.size > 0 ? uniqueBooks.size : 5;
 
     return {
       success: true,
@@ -239,8 +262,9 @@ export const ApiService = {
         activeShareholders: mockShareholders.filter(s => s.status === 'Active').length,
         inactiveShareholders: mockShareholders.filter(s => s.status === 'Inactive').length,
         totalShares: mockShareholders.reduce((acc, s) => acc + (parseInt(s.number_of_shares) || 1), 0),
-        totalVillages: mockVillages.length,
-        totalCircles: mockCircles.length,
+        totalVillages: calculatedVillages,
+        totalCircles: calculatedCircles,
+        totalBooks: calculatedBooks,
         pendingVarasa: mockVarasaTransfers.filter(v => v.approval_status !== 'Completed').length,
         completedVarasa: mockVarasaTransfers.filter(v => v.approval_status === 'Completed').length,
         todayTx: mockTransactions.length,
@@ -300,16 +324,29 @@ export const ApiService = {
       });
     }
     if (village_id) {
-      filtered = filtered.filter(s => s.village_id === village_id || s.place === village_id);
+      const vq = village_id.trim().toLowerCase().normalize('NFC');
+      filtered = filtered.filter(s =>
+        (s.village_id && s.village_id.toLowerCase() === vq) ||
+        (s.place && s.place.trim().toLowerCase().normalize('NFC') === vq) ||
+        (s.village_name && s.village_name.trim().toLowerCase().normalize('NFC') === vq)
+      );
     }
     if (circle_id) {
-      filtered = filtered.filter(s => s.circle_id === circle_id || s.circle === circle_id);
+      const cq = circle_id.trim().toLowerCase().normalize('NFC');
+      filtered = filtered.filter(s =>
+        (s.circle_id && s.circle_id.toLowerCase() === cq) ||
+        (s.circle && s.circle.trim().toLowerCase().normalize('NFC') === cq) ||
+        (s.circle_name && s.circle_name.trim().toLowerCase().normalize('NFC') === cq) ||
+        (s.circle && s.circle.toLowerCase().includes(cq)) ||
+        (cq.includes(s.circle && s.circle.toLowerCase()))
+      );
     }
     if (status) {
       filtered = filtered.filter(s => s.status === status);
     }
     if (book_no) {
-      filtered = filtered.filter(s => s.book_no === book_no);
+      const bq = book_no.trim().toLowerCase();
+      filtered = filtered.filter(s => s.book_no && s.book_no.trim().toLowerCase() === bq);
     }
 
     const total = filtered.length;
@@ -680,14 +717,56 @@ export const ApiService = {
     const apiRes = await fetchApi('/villages');
     if (apiRes && apiRes.success) return apiRes;
 
-    const list = mockVillages.map(v => {
-      const shInVillage = mockShareholders.filter(s => s.village_id === v.village_id || s.place === v.name);
-      return {
-        ...v,
-        shareholder_count: shInVillage.length,
-        total_shares: shInVillage.reduce((acc, s) => acc + (parseInt(s.number_of_shares) || 1), 0)
-      };
+    const placeMap = new Map();
+
+    // Seed with master reference places
+    mockVillages.forEach(v => {
+      const key = v.name.trim().toLowerCase().normalize('NFC');
+      placeMap.set(key, {
+        village_id: v.village_id,
+        name: v.name.trim().normalize('NFC'),
+        taluk: v.taluk || 'ಇಂಡಿ',
+        district: v.district || 'ವಿಜಯಪುರ',
+        circle_name: v.circle_name || 'ಇಂಡಿ',
+        pin_code: v.pin_code || '586 117',
+        shareholder_count: 0,
+        total_shares: 0
+      });
     });
+
+    // Dynamically aggregate all unique places from actual shareholder records (supports 300+ places)
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const s = mockShareholders[i];
+      const rawPlace = (s.place || s.village_name || '').trim();
+      if (!rawPlace) continue;
+      const key = rawPlace.toLowerCase().normalize('NFC');
+      const shares = parseInt(s.number_of_shares) || 1;
+
+      if (placeMap.has(key)) {
+        const item = placeMap.get(key);
+        item.shareholder_count++;
+        item.total_shares += shares;
+        if (s.taluk && (!item.taluk || item.taluk === 'ಇಂಡಿ')) item.taluk = s.taluk.trim();
+        if (s.circle && (!item.circle_name || item.circle_name === 'ಇತರೆ')) item.circle_name = s.circle.trim();
+        if (s.pin_code && !item.pin_code) item.pin_code = s.pin_code.trim();
+      } else {
+        placeMap.set(key, {
+          village_id: s.village_id || `VIL-${String(placeMap.size + 1).padStart(3, '0')}`,
+          name: rawPlace.normalize('NFC'),
+          taluk: (s.taluk || 'ಇಂಡಿ').trim().normalize('NFC'),
+          district: (s.district || 'ವಿಜಯಪುರ').trim().normalize('NFC'),
+          circle_name: (s.circle || s.circle_name || 'ಇತರೆ').trim().normalize('NFC'),
+          pin_code: s.pin_code || '',
+          shareholder_count: 1,
+          total_shares: shares
+        });
+      }
+    }
+
+    const list = Array.from(placeMap.values())
+      .filter(v => v.shareholder_count > 0 || mockShareholders.length === 0)
+      .sort((a, b) => b.shareholder_count - a.shareholder_count || a.name.localeCompare(b.name, 'kn'));
+
     return { success: true, data: list };
   },
 
@@ -696,13 +775,79 @@ export const ApiService = {
     const apiRes = await fetchApi('/circles');
     if (apiRes && apiRes.success) return apiRes;
 
-    const list = mockCircles.map(c => {
-      const shInCircle = mockShareholders.filter(s => s.circle_id === c.circle_id || s.circle === c.name || (s.circle && s.circle.includes(c.name.split(' ')[0])));
-      return {
-        ...c,
-        shareholder_count: shInCircle.length,
-        total_shares: shInCircle.reduce((acc, s) => acc + (parseInt(s.number_of_shares) || 1), 0)
-      };
+    const circleMap = new Map();
+    const circleVillagesMap = new Map();
+
+    // Seed with master reference circles
+    mockCircles.forEach(c => {
+      const key = c.name.trim().toLowerCase().normalize('NFC');
+      circleMap.set(key, {
+        circle_id: c.circle_id,
+        name: c.name.trim().normalize('NFC'),
+        description: c.description || '',
+        village_count: c.village_count || 0,
+        shareholder_count: 0,
+        total_shares: 0
+      });
+    });
+
+    // Dynamically aggregate all unique circles from mockShareholders
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const s = mockShareholders[i];
+      const rawCircle = (s.circle || s.circle_name || '').trim();
+      if (!rawCircle) continue;
+      const key = rawCircle.toLowerCase().normalize('NFC');
+      const shares = parseInt(s.number_of_shares) || 1;
+      const rawPlace = (s.place || s.village_name || '').trim();
+
+      if (!circleVillagesMap.has(key)) {
+        circleVillagesMap.set(key, new Set());
+      }
+      if (rawPlace) circleVillagesMap.get(key).add(rawPlace.toLowerCase());
+
+      if (circleMap.has(key)) {
+        const item = circleMap.get(key);
+        item.shareholder_count++;
+        item.total_shares += shares;
+      } else {
+        circleMap.set(key, {
+          circle_id: s.circle_id || `CIR-${String(circleMap.size + 1).padStart(3, '0')}`,
+          name: rawCircle.normalize('NFC'),
+          description: `${rawCircle} ವಲಯ (Zone)`,
+          village_count: 0,
+          shareholder_count: 1,
+          total_shares: shares
+        });
+      }
+    }
+
+    circleMap.forEach((item, key) => {
+      if (circleVillagesMap.has(key)) {
+        item.village_count = circleVillagesMap.get(key).size;
+      }
+    });
+
+    const list = Array.from(circleMap.values())
+      .filter(c => c.shareholder_count > 0 || mockShareholders.length === 0)
+      .sort((a, b) => b.shareholder_count - a.shareholder_count || a.name.localeCompare(b.name, 'kn'));
+
+    return { success: true, data: list };
+  },
+
+  async getBooks() {
+    await ensureDBReady();
+    const bookSet = new Set();
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const b = (mockShareholders[i].book_no || '').trim();
+      if (b) bookSet.add(b);
+    }
+    if (bookSet.size === 0) {
+      return { success: true, data: ['B.No: 1', 'B.No: 2', 'B.No: 3', 'B.No: 4', 'B.No: 5'] };
+    }
+    const list = Array.from(bookSet).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB || a.localeCompare(b);
     });
     return { success: true, data: list };
   },

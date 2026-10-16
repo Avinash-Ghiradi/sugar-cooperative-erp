@@ -281,6 +281,7 @@ export default function ShareholderList() {
     showToast(`Successfully imported ${count.toLocaleString()} records into the Live Registry!`);
     setShowUploadModal(false);
     setPreviewRecords([]);
+    await loadMasters();
     fetchShareholders(1);
   };
 
@@ -290,6 +291,9 @@ export default function ShareholderList() {
 
     const cRes = await ApiService.getCircles();
     if (cRes && cRes.data) setCircles(cRes.data);
+
+    const bRes = await ApiService.getBooks();
+    if (bRes && bRes.data) setBookList(bRes.data);
   };
 
   const fetchShareholders = async (page = 1) => {
@@ -461,12 +465,15 @@ export default function ShareholderList() {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-emerald-400" /> Shareholder Statutory Ledger (ಷೇರುದಾರರ ನಮೂನೆ ವಹಿ)
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
               38 Columns Official Format
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800/80 text-emerald-300 border border-slate-700 font-mono">
+              Total: {pagination.total.toLocaleString()} Members • {villages.length} Places • {circles.length} Circles • {bookList.length} Books
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -611,7 +618,7 @@ export default function ShareholderList() {
           onChange={(e) => setSelectedBook(e.target.value)}
           className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none transition-all"
         >
-          <option value="">All Books (Book No)</option>
+          <option value="">All Books ({bookList.length})</option>
           {bookList.map(b => (
             <option key={b} value={b}>{b}</option>
           ))}
@@ -625,7 +632,9 @@ export default function ShareholderList() {
         >
           <option value="">All Places ({villages.length})</option>
           {villages.map(v => (
-            <option key={v.village_id} value={v.name}>{v.name} ({v.taluk})</option>
+            <option key={v.village_id || v.name} value={v.name}>
+              {v.name} {v.taluk ? `(${v.taluk})` : ''} ({v.shareholder_count || 0})
+            </option>
           ))}
         </select>
 
@@ -637,7 +646,9 @@ export default function ShareholderList() {
         >
           <option value="">All Circles ({circles.length})</option>
           {circles.map(c => (
-            <option key={c.circle_id} value={c.name}>{c.name}</option>
+            <option key={c.circle_id || c.name} value={c.name}>
+              {c.name} ({c.shareholder_count || 0})
+            </option>
           ))}
         </select>
 
@@ -1114,8 +1125,9 @@ export default function ShareholderList() {
       <ResetConfirmModal
         isOpen={showResetModal}
         onClose={() => setShowResetModal(false)}
-        onResetComplete={() => {
+        onResetComplete={async () => {
           setPreviewRecords([]);
+          await loadMasters();
           fetchShareholders(1);
         }}
       />

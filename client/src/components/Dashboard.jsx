@@ -3,7 +3,7 @@ import { ApiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   Users, UserCheck, UserX, Coins, Building2, MapPin, FileCheck2, Clock,
-  CreditCard, CalendarCheck, Package, Briefcase, Download, Filter, RefreshCw
+  CreditCard, CalendarCheck, Package, Briefcase, Download, Filter, RefreshCw, BookOpen
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid
@@ -47,12 +47,12 @@ export default function Dashboard() {
     { title: 'Active Shareholders', value: stats.activeShareholders.toLocaleString(), icon: UserCheck, color: 'teal', link: 'shareholders' },
     { title: 'Inactive Shareholders', value: stats.inactiveShareholders.toLocaleString(), icon: UserX, color: 'rose', link: 'shareholders' },
     { title: 'Total Shares', value: stats.totalShares.toLocaleString(), icon: Coins, color: 'amber', link: 'shareholders' },
-    { title: 'Total Villages', value: stats.totalVillages.toLocaleString(), icon: Building2, color: 'blue', link: 'villages' },
+    { title: 'Total Villages / Places', value: stats.totalVillages.toLocaleString(), icon: Building2, color: 'blue', link: 'villages' },
     { title: 'Total Circles', value: stats.totalCircles.toLocaleString(), icon: MapPin, color: 'indigo', link: 'circles' },
+    { title: 'Total Books (Ledgers)', value: (stats.totalBooks || 1).toLocaleString(), icon: BookOpen, color: 'sky', link: 'shareholders' },
     { title: 'Pending Varasa', value: stats.pendingVarasa.toLocaleString(), icon: Clock, color: 'amber', link: 'varasa' },
     { title: 'Completed Varasa', value: stats.completedVarasa.toLocaleString(), icon: FileCheck2, color: 'emerald', link: 'varasa' },
     { title: 'Today\'s Transactions', value: stats.todayTx.toLocaleString(), icon: CreditCard, color: 'purple', link: 'transactions' },
-    { title: 'Today\'s Attendance', value: `${stats.todayAttendance} Present`, icon: CalendarCheck, color: 'cyan', link: 'attendance' },
     { title: 'Sugar Allotted (kg)', value: `${stats.totalSugarAlloted.toLocaleString()} kg`, icon: Package, color: 'teal', link: 'sugar_allotment' },
     { title: 'Total Employees', value: stats.totalEmployees.toLocaleString(), icon: Briefcase, color: 'blue', link: 'employees' },
   ];
