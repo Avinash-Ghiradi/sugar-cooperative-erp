@@ -99,8 +99,8 @@ export default function ReportsModule() {
 
           <div className="text-right text-[10px] text-slate-400 font-mono">
             <div>Generated: {new Date().toLocaleString()}</div>
-            <div>Database: 17,250 Shareholders</div>
-            <div>Page 1 of 1</div>
+            <div>Records: {data.length} Listed</div>
+            <div>Status: Statutory Verified</div>
           </div>
         </div>
 
@@ -211,8 +211,8 @@ export default function ReportsModule() {
                         <td className="py-2.5 px-3 font-mono text-emerald-400">{item.village_id}</td>
                         <td className="py-2.5 px-3 font-bold">{item.name}</td>
                         <td className="py-2.5 px-3 text-slate-400">{item.circle_name}</td>
-                        <td className="py-2.5 px-3 text-center font-semibold">{item.shareholder_count || 690}</td>
-                        <td className="py-2.5 px-3 text-center font-bold text-emerald-400">{item.total_shares || 3450}</td>
+                        <td className="py-2.5 px-3 text-center font-semibold">{item.shareholder_count ?? 0}</td>
+                        <td className="py-2.5 px-3 text-center font-bold text-emerald-400">{item.total_shares ?? 0}</td>
                       </>
                     )}
                   </tr>

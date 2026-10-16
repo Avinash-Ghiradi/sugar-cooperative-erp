@@ -52,7 +52,7 @@ export default function SugarAllotmentModule() {
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <PackageCheck className="w-5 h-5 text-emerald-400" /> Sugar Allotment & Distribution
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">Manage annual sugar quotas, vouchers & issue statements for 17,250+ Shareholders</p>
+          <p className="text-xs text-slate-400 mt-0.5">Manage annual sugar quotas, vouchers & issue statements for Shareholders</p>
         </div>
 
         <div className="flex items-center gap-2">

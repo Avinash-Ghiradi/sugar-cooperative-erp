@@ -96,6 +96,10 @@ export default function AttendanceModule() {
       <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
         {loading ? (
           <div className="p-12 text-center text-slate-400">Loading daily attendance register...</div>
+        ) : attendanceList.length === 0 ? (
+          <div className="p-12 text-center text-slate-400">
+            No attendance records registered for {recordType}. Add records to log attendance.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">

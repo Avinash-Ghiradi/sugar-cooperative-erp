@@ -39,8 +39,8 @@ export default function CircleMaster() {
 
             <div className="space-y-1.5 pt-2 border-t border-slate-800/60 text-xs">
               <div className="flex justify-between"><span className="text-slate-400">Villages:</span><span className="font-bold text-slate-100">{c.village_count || 6}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Shareholders:</span><span className="font-bold text-emerald-400">{c.shareholder_count || 2150}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Total Shares:</span><span className="font-bold text-slate-100">{c.total_shares || 10750}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Shareholders:</span><span className="font-bold text-emerald-400">{c.shareholder_count ?? 0}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Total Shares:</span><span className="font-bold text-slate-100">{c.total_shares ?? 0}</span></div>
             </div>
           </div>
         ))}

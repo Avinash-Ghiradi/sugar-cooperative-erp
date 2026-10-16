@@ -65,7 +65,7 @@ export default function Dashboard() {
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             Executive Cooperative Dashboard
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">Real-time stats across 17,250+ Shareholders, Transactions & Sugar Allotments</p>
+          <p className="text-xs text-slate-400 mt-0.5">Real-time stats across Shareholders, Transactions & Sugar Allotments</p>
         </div>
 
         <div className="flex items-center gap-2">

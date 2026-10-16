@@ -19,7 +19,7 @@ export default function Navbar({ onMenuToggle }) {
           <span className="font-semibold text-slate-200">Chhatrapati Sugar Cooperative ERP</span>
           <span>•</span>
           <span className="text-emerald-400 font-medium flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5" /> 17,250 Shareholders Database Indexed
+            <ShieldCheck className="w-3.5 h-3.5" /> Statutory Ledger Online
           </span>
         </div>
       </div>

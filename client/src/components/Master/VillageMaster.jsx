@@ -42,11 +42,11 @@ export default function VillageMaster() {
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 text-xs">
               <div className="bg-slate-900 p-2 rounded-xl text-center">
                 <span className="text-slate-400 text-[10px]">Shareholders</span>
-                <div className="font-bold text-slate-100 mt-0.5">{v.shareholder_count || 690}</div>
+                <div className="font-bold text-slate-100 mt-0.5">{v.shareholder_count ?? 0}</div>
               </div>
               <div className="bg-slate-900 p-2 rounded-xl text-center">
                 <span className="text-slate-400 text-[10px]">Total Shares</span>
-                <div className="font-bold text-emerald-400 mt-0.5">{v.total_shares || 3450}</div>
+                <div className="font-bold text-emerald-400 mt-0.5">{v.total_shares ?? 0}</div>
               </div>
             </div>
           </div>

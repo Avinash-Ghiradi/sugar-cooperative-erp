@@ -8,8 +8,8 @@ import {
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'shareholders', label: 'Shareholders (17k+)', icon: Users },
-  { id: 'import_export', label: 'Upload CSV (ಅಪ್ಲೋಡ್)', icon: Upload },
+  { id: 'shareholders', label: 'Shareholders', icon: Users },
+  { id: 'import_export', label: 'Upload Excel (ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)', icon: FileSpreadsheet },
   { id: 'transactions', label: 'Transactions', icon: CreditCard },
   { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
   { id: 'sugar_allotment', label: 'Sugar Allotment', icon: PackageCheck },

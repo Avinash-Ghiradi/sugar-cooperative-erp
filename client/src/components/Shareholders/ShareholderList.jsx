@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -65,139 +66,184 @@ export default function ShareholderList() {
     return values;
   };
 
-  const handleCsvFileUpload = (file) => {
+  const handleExcelFileUpload = async (file) => {
     if (!file) return;
     setUploadFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const buffer = e.target.result;
+    try {
+      const buffer = await file.arrayBuffer();
+      const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
+      let rawRows = [];
+      if (isExcel) {
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
+      } else {
         const bytes = new Uint8Array(buffer);
         let text = '';
-
-        // Detect Encoding:
-        // 1. UTF-16LE BOM: FF FE (Common Excel Unicode export)
         if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
           text = new TextDecoder('utf-16le').decode(buffer);
-        }
-        // 2. UTF-16BE BOM: FE FF
-        else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+        } else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
           text = new TextDecoder('utf-16be').decode(buffer);
-        }
-        // 3. UTF-8 (handles standard UTF-8 and UTF-8 with BOM EF BB BF)
-        else {
+        } else {
           text = new TextDecoder('utf-8').decode(buffer);
         }
-
-        // Strip any leading BOM characters
         text = text.replace(/^\uFEFF/, '').replace(/^\uFFFE/, '');
-
         const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
-        if (lines.length < 2) {
-          showToast('File is empty or missing data rows', 'error');
-          return;
-        }
-
-        // Auto-detect delimiter (comma, tab, or semicolon)
-        const firstLine = lines[0];
-        let delimiter = ',';
-        if (firstLine.includes('\t') && firstLine.split('\t').length > firstLine.split(',').length) {
-          delimiter = '\t';
-        } else if (firstLine.includes(';') && firstLine.split(';').length > firstLine.split(',').length) {
-          delimiter = ';';
-        }
-
-        const parseLine = (line) => {
-          if (delimiter === '\t') {
-            return line.split('\t').map(s => s.replace(/^"|"$/g, '').trim());
+        if (lines.length > 0) {
+          const firstLine = lines[0];
+          let delimiter = ',';
+          if (firstLine.includes('\t') && firstLine.split('\t').length > firstLine.split(',').length) {
+            delimiter = '\t';
+          } else if (firstLine.includes(';') && firstLine.split(';').length > firstLine.split(',').length) {
+            delimiter = ';';
           }
-          return parseCsvLine(line, delimiter);
-        };
-
-        const records = [];
-        for (let i = 1; i < lines.length; i++) {
-          const v = parseLine(lines[i]);
-          if (v.length === 0 || v.every(item => item === '')) continue;
-          records.push({
-            book_no: v[0] || 'B.No: 1',
-            sl_no: parseInt(v[1]) || i,
-            share_no: v[2] || String(i),
-            shareholder_name: (v[3] || 'ಷೇರುದಾರ').normalize('NFC'),
-            gender: v[4] || 'M',
-            aadhaar_card_no: v[5] || '',
-            reg_date: v[6] || '10/Aug/1982',
-            receipt_no: v[7] || String(i),
-            receipt_amount: parseFloat(v[8]) || 2000,
-            date: v[9] || v[6] || '10/Aug/1982',
-            reciept: v[10] || v[7] || '',
-            amount: parseFloat(v[11]) || 2000,
-            total_amount: parseFloat(v[12]) || 2000,
-            number_of_shares: parseInt(v[13]) || 1,
-            schedule_cast: (v[14] || 'ಅ - ವರ್ಗ').normalize('NFC'),
-            address: (v[15] || '').normalize('NFC'),
-            nagara: (v[16] || '').normalize('NFC'),
-            road: (v[17] || '').normalize('NFC'),
-            place: (v[18] || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
-            taluk: (v[19] || 'ಇಂಡಿ').normalize('NFC'),
-            district: (v[20] || 'ವಿಜಯಪುರ').normalize('NFC'),
-            pin_code: v[21] || '586 117',
-            circle: (v[22] || 'ಇಂಡಿ').normalize('NFC'),
-            member_type: (v[23] || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
-            relationship: (v[24] || 'ಸ್ವಂತ (Self)').normalize('NFC'),
-            tharava_date: v[25] || '10/Aug/1982',
-            tharava_no: v[26] || `TR-${i}/1982`,
-            mobile_no: v[27] || '',
-            photo_url: v[28] || '',
-            signature_url: v[29] || '',
-            thumb_url: v[30] || '',
-            photo_updated: v[31] || 'Yes',
-            signature_updated: v[32] || 'Yes',
-            thumb_updated: v[33] || 'Yes',
-            nominee_name: (v[34] || '').normalize('NFC'),
-            nominee_aadhaar_no: v[35] || '',
-            nominee_mobile_no: v[36] || '',
-            nominee_address: (v[37] || '').normalize('NFC'),
-            validation: 'Valid'
+          rawRows = lines.map(line => {
+            if (delimiter === '\t') return line.split('\t').map(s => s.replace(/^"|"$/g, '').trim());
+            return parseCsvLine(line, delimiter);
           });
         }
-        setPreviewRecords(records);
-        showToast(`Parsed ${records.length} records with full Kannada Unicode support!`);
-      } catch (err) {
-        showToast('Error reading Unicode file: ' + err.message, 'error');
       }
-    };
-    reader.readAsArrayBuffer(file);
+
+      if (!rawRows || rawRows.length < 2) {
+        showToast('File is empty or missing data rows', 'error');
+        return;
+      }
+
+      const headerRow = (rawRows[0] || []).map(h => String(h || '').trim().toLowerCase());
+      const findCol = (keywords, defaultIdx) => {
+        for (const kw of keywords) {
+          const idx = headerRow.findIndex(h => h.includes(kw.toLowerCase()));
+          if (idx !== -1) return idx;
+        }
+        return defaultIdx;
+      };
+
+      const cBook = findCol(['book', 'b.no', 'ಬುಕ್'], 0);
+      const cSl = findCol(['sl', 'serial', 'ಕ್ರಮ'], 1);
+      const cShare = findCol(['share no', 'share_no', 'ಷೇರು ನಂ'], 2);
+      const cName = findCol(['share holder', 'shareholder', 'holder name', 'ಷೇರುದಾರರ ಹೆಸರು', 'ಹೆಸರು'], 3);
+      const cGender = findCol(['gender', 'ಲಿಂಗ', 'sex'], 4);
+      const cAadhaar = findCol(['aadhaar', 'adhar', 'ಆಧಾರ್'], 5);
+      const cRegDate = findCol(['reg. date', 'reg date', 'registration', 'ದಾಖಲಾತಿ'], 6);
+      const cReceiptNo = findCol(['receipt no', 'receipt_no', 'ರಶೀದಿ ನಂ'], 7);
+      const cReceiptAmt = findCol(['receipt amount', 'ರಶೀದಿ ಮೊತ್ತ'], 8);
+      const cDate = findCol(['date', 'ದಿನಾಂಕ'], 9);
+      const cReciept = findCol(['reciept'], 10);
+      const cAmt = findCol(['amount', 'ಮೊತ್ತ'], 11);
+      const cTotalAmt = findCol(['total amount', 'ಒಟ್ಟು ಮೊತ್ತ'], 12);
+      const cShares = findCol(['no. of shares', 'no of shares', 'shares', 'ಷೇರುಗಳ ಸಂಖ್ಯೆ'], 13);
+      const cCast = findCol(['schedule cast', 'caste', 'category', 'ವರ್ಗ'], 14);
+      const cAddr = findCol(['address', 'ವಿಳಾಸ'], 15);
+      const cNagara = findCol(['nagara', 'ನಗರ'], 16);
+      const cRoad = findCol(['road', 'ರಸ್ತೆ'], 17);
+      const cPlace = findCol(['place', 'village', 'ಸ್ಥಳ', 'ಗ್ರಾಮ'], 18);
+      const cTaluk = findCol(['taluk', 'ತಾಲ್ಲೂಕು', 'ತಾಲ್ಲೂಕ'], 19);
+      const cDist = findCol(['district', 'ಜಿಲ್ಲೆ'], 20);
+      const cPin = findCol(['pin code', 'pincode', 'ಪಿನ್'], 21);
+      const cCircle = findCol(['circle', 'ವಲಯ', 'ಸರ್ಕಲ್'], 22);
+      const cMemberType = findCol(['member type', 'member', 'ಸದಸ್ಯ'], 23);
+      const cRel = findCol(['relationship', 'ಸಂಬಂಧ'], 24);
+      const cTharavaDate = findCol(['tharava date', 'ಠರಾವು ದಿನಾಂಕ'], 25);
+      const cTharavaNo = findCol(['tharava no', 'tharava', 'ಠರಾವು ನಂ'], 26);
+      const cMobile = findCol(['mobile', 'phone', 'ಮೊಬೈಲ್'], 27);
+      const cPhotoUrl = findCol(['photo url', 'photo'], 28);
+      const cSignUrl = findCol(['signature url', 'signature'], 29);
+      const cThumbUrl = findCol(['thumb url', 'thumb'], 30);
+      const cPhotoUp = findCol(['photo updated'], 31);
+      const cSignUp = findCol(['signature updated'], 32);
+      const cThumbUp = findCol(['thumb updated'], 33);
+      const cNomName = findCol(['nominee name', 'nominee', 'ವಾರಸುದಾರ'], 34);
+      const cNomAadhaar = findCol(['nominee aadhaar', 'nominee aadhar'], 35);
+      const cNomMob = findCol(['nominee mobile', 'nominee phone'], 36);
+      const cNomAddr = findCol(['nominee address'], 37);
+
+      const records = [];
+      for (let i = 1; i < rawRows.length; i++) {
+        const row = rawRows[i];
+        if (!row || row.length === 0 || row.every(item => String(item || '').trim() === '')) continue;
+
+        const getVal = (colIdx) => {
+          const val = row[colIdx];
+          return val !== undefined && val !== null ? String(val).trim().normalize('NFC') : '';
+        };
+
+        const nameVal = getVal(cName);
+        const shareNoVal = getVal(cShare) || String(i);
+
+        records.push({
+          book_no: getVal(cBook) || 'B.No: 1',
+          sl_no: parseInt(getVal(cSl)) || i,
+          share_no: shareNoVal,
+          shareholder_name: nameVal || `ಷೇರುದಾರ ${i}`,
+          gender: getVal(cGender) || 'M',
+          aadhaar_card_no: getVal(cAadhaar),
+          reg_date: getVal(cRegDate) || '10/Aug/1982',
+          receipt_no: getVal(cReceiptNo) || String(i),
+          receipt_amount: parseFloat(getVal(cReceiptAmt)) || 2000,
+          date: getVal(cDate) || getVal(cRegDate) || '10/Aug/1982',
+          reciept: getVal(cReciept) || getVal(cReceiptNo) || '',
+          amount: parseFloat(getVal(cAmt)) || 2000,
+          total_amount: parseFloat(getVal(cTotalAmt)) || parseFloat(getVal(cAmt)) || 2000,
+          number_of_shares: parseInt(getVal(cShares)) || 1,
+          schedule_cast: getVal(cCast) || 'ಅ - ವರ್ಗ',
+          address: getVal(cAddr),
+          nagara: getVal(cNagara),
+          road: getVal(cRoad),
+          place: getVal(cPlace) || 'ಬಳ್ಳೊಳ್ಳಿ',
+          taluk: getVal(cTaluk) || 'ಇಂಡಿ',
+          district: getVal(cDist) || 'ವಿಜಯಪುರ',
+          pin_code: getVal(cPin) || '586 117',
+          circle: getVal(cCircle) || 'ಇಂಡಿ',
+          member_type: getVal(cMemberType) || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
+          relationship: getVal(cRel) || 'ಸ್ವಂತ (Self)',
+          tharava_date: getVal(cTharavaDate) || '10/Aug/1982',
+          tharava_no: getVal(cTharavaNo) || `TR-${i}/1982`,
+          mobile_no: getVal(cMobile),
+          photo_url: getVal(cPhotoUrl),
+          signature_url: getVal(cSignUrl),
+          thumb_url: getVal(cThumbUrl),
+          photo_updated: getVal(cPhotoUp) || 'Yes',
+          signature_updated: getVal(cSignUp) || 'Yes',
+          thumb_updated: getVal(cThumbUp) || 'Yes',
+          nominee_name: getVal(cNomName),
+          nominee_aadhaar_no: getVal(cNomAadhaar),
+          nominee_mobile_no: getVal(cNomMob),
+          nominee_address: getVal(cNomAddr),
+          validation: 'Valid'
+        });
+      }
+      setPreviewRecords(records);
+      showToast(`Parsed ${records.length} records from Excel with full Kannada Unicode support!`);
+    } catch (err) {
+      showToast('Error reading Excel spreadsheet: ' + err.message, 'error');
+    }
   };
 
   const loadSampleRecords = async () => {
     try {
-      const res = await fetch('./shareholders_details.csv');
+      const res = await fetch('./shareholders_details.xlsx');
       if (res.ok) {
-        const text = await res.text();
-        const fakeBlob = new Blob([text], { type: 'text/csv' });
-        fakeBlob.name = 'shareholders_details.csv';
-        handleCsvFileUpload(fakeBlob);
+        const blob = await res.blob();
+        const fakeFile = new File([blob], 'shareholders_details.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        await handleExcelFileUpload(fakeFile);
         return;
       }
     } catch (err) {}
-    setUploadFileName('shareholders_details.csv');
+    setUploadFileName('shareholders_details.xlsx');
     setPreviewRecords([
-      { book_no: 'B.No: 1', sl_no: 1, share_no: '1', shareholder_name: 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '1', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 2, share_no: '2', shareholder_name: 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '2', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 3, share_no: '3', shareholder_name: 'ಬಾಬುರಾವ ಅಪ್ಪಾರಾವ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '3', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಜೇವೂರ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 4, share_no: '4', shareholder_name: 'ಮಲ್ಲನಗೌಡ ರಾಮಚಂದ್ರ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '4', receipt_amount: 2000, total_amount: 8000, number_of_shares: 4, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 5, share_no: '6', shareholder_name: 'ಡಾ|| ಇಮ್ಮಾನುವೆ ಸಾಸವೇಲ ಕಟವಟೆ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '6', receipt_amount: 25000, total_amount: 29000, number_of_shares: 14, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಚಡಚಣ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 6, share_no: '7', shareholder_name: 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', gender: 'M', reg_date: '15/Aug/1982', receipt_no: '8', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಅಥರ್ಗಾ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' }
+      { book_no: 'B.No: 1', sl_no: 1, share_no: '1', shareholder_name: 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '1', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 2, share_no: '2', shareholder_name: 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '2', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 3, share_no: '3', shareholder_name: 'ಬಾಬುರಾವ ಅಪ್ಪಾರಾವ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '3', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಜೇವೂರ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 4, share_no: '4', shareholder_name: 'ಮಲ್ಲನಗೌಡ ರಾಮಚಂದ್ರ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '4', receipt_amount: 2000, total_amount: 8000, number_of_shares: 4, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 5, share_no: '6', shareholder_name: 'ಡಾ|| ಇಮ್ಮಾನುವೆ ಸಾಸವೇಲ ಕಟವಟೆ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '6', receipt_amount: 25000, total_amount: 29000, number_of_shares: 14, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಚಡಚಣ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', circle: 'ಚಡಚಣ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 6, share_no: '7', shareholder_name: 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', gender: 'M', reg_date: '15/Aug/1982', receipt_no: '8', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಅಥರ್ಗಾ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' }
     ]);
     showToast('Loaded 6 official sample cooperative records (ಕನ್ನಡ ಯುನಿಕೋಡ್)');
   };
 
   const downloadExcelTemplate = () => {
-    let tableHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-    tableHtml += '<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">';
-    tableHtml += '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
-    tableHtml += '<body style="font-family:\'Noto Sans Kannada\', sans-serif;">';
-    tableHtml += '<table border="1"><thead><tr style="background-color:#16a34a; color:#ffffff; font-weight:bold;">';
     const headers = [
       'Book. No', 'Sl. No', 'Share No', 'Share Holder Name', 'Gender', 'Aadhaar Card No',
       'Reg. Date', 'Receipt No', 'Receipt Amount', 'Date', 'Reciept', 'Amount', 'Total Amount',
@@ -206,10 +252,9 @@ export default function ShareholderList() {
       'Mobile No', 'Photo URL', 'Signature URL', 'Thumb URL', 'Photo Updated', 'Signature Updated',
       'Thumb Updated', 'Nominee Name', 'Nominee Aadhaar No', 'Nominee Mobile No', 'Nominee Address'
     ];
-    headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
-    tableHtml += '</tr></thead><tbody>';
 
     const sampleRows = [
+      headers,
       ['B.No: 1', 1, '1', 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', 'M', '4582 9981 1234', '10/Aug/1982', '1', 2000, '10/Aug/1982', '1', 2000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ಗ್ರಾಮ, ಶ್ರೀ ಹನುಮಾನ್ ದೇವಸ್ಥಾನದ ಹತ್ತಿರ', 'ಗ್ರಾಮ ಠಾಣಾ', 'ಮುಖ್ಯ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-01/1982', '9845012341', '', '', '', 'Yes', 'Yes', 'Yes', 'ಕಾಮಣ್ಣ ಬೀರಪ್ಪ ಸಗಾಯಿ', '4582 9981 5566', '9845012342', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
       ['B.No: 1', 2, '2', 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', 'M', '7890 1234 5678', '10/Aug/1982', '2', 1000, '10/Aug/1982', '2', 1000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ಅಗಸಿ ಹತ್ತಿರ, ಇಂಡಿ ರಸ್ತೆ', 'ಬ್ರಾಹ್ಮಣ ಗಲ್ಲಿ', 'ದೇವಸ್ಥಾನ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-02/1982', '9845012343', '', '', '', 'Yes', 'Yes', 'Yes', 'ವೆಂಕಟೇಶ ರಮೇಶ ಪುರಾಣಿಕ', '7890 1234 9900', '9845012344', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
       ['B.No: 1', 3, '3', 'ಬಾಬುರಾವ ಅಪ್ಪಾರಾವ ಪಾಟೀಲ', 'M', '3456 7890 1234', '10/Aug/1982', '3', 1000, '10/Aug/1982', '3', 1000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಜೇವೂರ ಗ್ರಾಮ, ಮುಖ್ಯ ಚೌಕ್', 'ಪಾಟೀಲ ಗಲ್ಲಿ', 'ಬಸ್ ನಿಲ್ದಾಣ ರಸ್ತೆ', 'ಜೇವೂರ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 112', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-03/1982', '9845012345', '', '', '', 'Yes', 'Yes', 'Yes', 'ಅಪ್ಪಾರಾವ ಬಾಬುರಾವ ಪಾಟೀಲ', '3456 7890 9988', '9845012346', 'ಜೇವೂರ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
@@ -218,22 +263,11 @@ export default function ShareholderList() {
       ['B.No: 1', 6, '7', 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', 'M', '2345 6789 0123', '15/Aug/1982', '8', 2000, '15/Aug/1982', '8', 2000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಅಥರ್ಗಾ ರಸ್ತೆ, ರೈತ ಸಂಪರ್ಕ ಕೇಂದ್ರ ಹತ್ತಿರ', 'ಕುಂಬಾರ ಗಲ್ಲಿ', 'ಕಾಲೇಜು ರಸ್ತೆ', 'ಅಥರ್ಗಾ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 112', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '15/Aug/1982', 'TR-06/1982', '9845012351', '', '', '', 'Yes', 'Yes', 'Yes', 'ಮಲ್ಲಿಕಾರ್ಜುನ ಕುಂಬಾಳ', '2345 6789 7788', '9845012352', 'ಅಥರ್ಗಾ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ']
     ];
 
-    sampleRows.forEach(row => {
-      tableHtml += '<tr>';
-      row.forEach(val => { tableHtml += `<td>${val}</td>`; });
-      tableHtml += '</tr>';
-    });
-
-    tableHtml += '</tbody></table></body></html>';
-    const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'shareholders_details_template.xls';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast('Downloaded official Excel (.xls) template with Kannada Unicode');
+    const ws = XLSX.utils.aoa_to_sheet(sampleRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Shareholders_Ledger');
+    XLSX.writeFile(wb, 'shareholders_details_template.xlsx');
+    showToast('Downloaded official Excel (.xlsx) template with Kannada Unicode');
   };
 
   const commitImport = async () => {
@@ -435,7 +469,7 @@ export default function ShareholderList() {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            17,250+ Shareholders Registry with Book No, Share No, Aadhaar, Receipt, Place, Taluk, Circle, Tharava & Nominee Details
+            Shareholders Statutory Registry with Book No, Share No, Aadhaar, Receipt, Place, Taluk, Circle, Tharava & Nominee Details
           </p>
         </div>
 
@@ -467,14 +501,14 @@ export default function ShareholderList() {
             <Plus className="w-4 h-4" /> Add Shareholder
           </button>
 
-          {/* Prominent Upload CSV Button */}
+          {/* Prominent Upload Excel Button */}
           <button
             onClick={() => setShowUploadModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-900/50 ring-2 ring-emerald-400/50 hover:scale-[1.02] transition-all cursor-pointer"
-            title="Upload Shareholder CSV (38 Columns)"
+            title="Upload Shareholder Excel (.xlsx / .xls)"
           >
-            <Upload className="w-4 h-4 text-white animate-pulse" />
-            <span>Upload CSV (CSV ಅಪ್ಲೋಡ್)</span>
+            <FileSpreadsheet className="w-4 h-4 text-white animate-pulse" />
+            <span>Upload Excel (ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)</span>
           </button>
 
           <button
@@ -613,11 +647,31 @@ export default function ShareholderList() {
       <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
         {loading ? (
           <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" /> Searching statutory cooperative index across 17,250 records...
+            <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" /> Searching statutory cooperative ledger index...
           </div>
         ) : shareholders.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            No shareholders found matching the search criteria.
+          <div className="p-12 text-center text-slate-400 space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-slate-500 mx-auto flex items-center justify-center">
+              <BookOpen className="w-6 h-6 text-emerald-400/60" />
+            </div>
+            <div>
+              <p className="font-semibold text-slate-200">No shareholder records found</p>
+              <p className="text-xs text-slate-500 mt-1">Upload your official 38-column Excel (.xlsx / .xls) ledger or add new shareholders to begin.</p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => { setEditShareholderData(null); setShowAddForm(true); }}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" /> Add Shareholder (ಹೊಸ ಷೇರುದಾರ)
+              </button>
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Upload Excel Ledger (ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)
+              </button>
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto max-h-[72vh]">
@@ -854,7 +908,7 @@ export default function ShareholderList() {
         />
       )}
 
-      {/* Upload CSV In-Page Modal */}
+      {/* Upload Excel In-Page Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -862,14 +916,14 @@ export default function ShareholderList() {
             <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                  <Upload className="w-5 h-5" />
+                  <FileSpreadsheet className="w-5 h-5" />
                 </div>
                 <div>
                   <h2 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">
-                    Upload Shareholder Details CSV & Excel (ಷೇರುದಾರರ ವಿವರಗಳ CSV / Excel ಅಪ್ಲೋಡ್)
+                    Upload Shareholder Details Excel (ಷೇರುದಾರರ ವಿವರಗಳ ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)
                   </h2>
                   <p className="text-xs text-slate-400">
-                    Full Kannada Unicode Support (ಕನ್ನಡ ಯುನಿಕೋಡ್ 100% ಬೆಂಬಲಿತವಾಗಿದೆ) • All 38 Statutory Cooperative Columns
+                    Accepts Microsoft Excel (.xlsx / .xls) • Full Kannada Unicode Support (ಕನ್ನಡ ಯುನಿಕೋಡ್ 100% ಬೆಂಬಲಿತವಾಗಿದೆ)
                   </p>
                 </div>
               </div>
@@ -889,10 +943,10 @@ export default function ShareholderList() {
                 onDrop={(e) => {
                   e.preventDefault();
                   if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    handleCsvFileUpload(e.dataTransfer.files[0]);
+                    handleExcelFileUpload(e.dataTransfer.files[0]);
                   }
                 }}
-                className="border-2 border-dashed border-slate-700 hover:border-emerald-500 bg-slate-950/60 rounded-2xl p-6 text-center transition-all cursor-pointer group"
+                className="border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 bg-slate-950/60 rounded-2xl p-6 text-center transition-all cursor-pointer group"
                 onClick={() => uploadInputRef.current?.click()}
               >
                 <input
@@ -900,20 +954,20 @@ export default function ShareholderList() {
                   ref={uploadInputRef}
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
-                      handleCsvFileUpload(e.target.files[0]);
+                      handleExcelFileUpload(e.target.files[0]);
                     }
                   }}
-                  accept=".csv,.txt,.tsv,text/csv,text/plain"
+                  accept=".xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                   className="hidden"
                 />
                 <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <Upload className="w-6 h-6" />
+                  <FileSpreadsheet className="w-6 h-6" />
                 </div>
                 <h3 className="text-sm font-semibold text-slate-200">
-                  Click to Browse CSV / Unicode Text file or Drag & Drop here
+                  Click to Browse Excel Spreadsheet (.xlsx, .xls) or Drag & Drop here
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Supports UTF-8, UTF-8 with BOM, and UTF-16LE Unicode (Full Kannada & English characters support)
+                  Supports Microsoft Excel (.xlsx, .xls) with Kannada & English Unicode characters across 38 columns
                 </p>
                 {uploadFileName && (
                   <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-emerald-950/80 border border-emerald-700/60 rounded-lg text-xs font-semibold text-emerald-300">
@@ -935,16 +989,16 @@ export default function ShareholderList() {
                   <button
                     type="button"
                     onClick={downloadExcelTemplate}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-teal-300 rounded-lg font-medium border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium shadow-md shadow-emerald-950 transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Download className="w-3.5 h-3.5 text-teal-400" /> Download Excel Template (.xls)
+                    <Download className="w-3.5 h-3.5" /> Download Excel Template (.xlsx)
                   </button>
                   <a
-                    href="./shareholders_details.csv"
-                    download="shareholders_details.csv"
+                    href="./shareholders_details.xlsx"
+                    download="shareholders_details.xlsx"
                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium border border-slate-700 transition-colors flex items-center gap-1.5"
                   >
-                    <Download className="w-3.5 h-3.5 text-sky-400" /> Download CSV (UTF-8 BOM)
+                    <Download className="w-3.5 h-3.5 text-emerald-400" /> Sample (.xlsx)
                   </a>
                 </div>
 

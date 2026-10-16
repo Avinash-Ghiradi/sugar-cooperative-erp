@@ -35,7 +35,7 @@ function AppContent() {
               CS
             </div>
             <h1 className="text-xl font-bold text-slate-100">Chhatrapati Sugar Cooperative</h1>
-            <p className="text-xs text-slate-400">Shareholder ERP & Administration Portal (17,250+ Database)</p>
+            <p className="text-xs text-slate-400">Shareholder ERP & Administration Portal</p>
           </div>
 
           <form
