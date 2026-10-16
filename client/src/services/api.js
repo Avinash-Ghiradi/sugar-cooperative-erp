@@ -611,21 +611,30 @@ export const ApiService = {
 
     let filtered = mockShareholders;
     if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(s =>
-        (s.shareholder_id && s.shareholder_id.toLowerCase().includes(q)) ||
-        (s.shareholder_name && s.shareholder_name.toLowerCase().includes(q)) ||
-        (s.name && s.name.toLowerCase().includes(q)) ||
-        (s.share_no && s.share_no.toLowerCase().includes(q)) ||
-        (s.share_number && s.share_number.toLowerCase().includes(q)) ||
-        (s.book_no && s.book_no.toLowerCase().includes(q)) ||
-        (s.mobile_no && s.mobile_no.includes(q)) ||
-        (s.mobile && s.mobile.includes(q)) ||
-        (s.aadhaar_card_no && s.aadhaar_card_no.includes(q)) ||
-        (s.place && s.place.toLowerCase().includes(q)) ||
-        (s.village_name && s.village_name.toLowerCase().includes(q)) ||
-        (s.taluk && s.taluk.toLowerCase().includes(q))
-      );
+      const q = search.trim().toLowerCase().normalize('NFC');
+      filtered = filtered.filter(s => {
+        const shName = (s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
+        const shId = (s.shareholder_id || '').toLowerCase();
+        const shNo = (s.share_no || s.share_number || '').toLowerCase();
+        const bNo = (s.book_no || '').toLowerCase();
+        const mob = (s.mobile_no || s.mobile || '');
+        const aadh = (s.aadhaar_card_no || s.aadhaar_ref || '');
+        const plc = (s.place || s.village_name || '').toLowerCase().normalize('NFC');
+        const tlk = (s.taluk || '').toLowerCase().normalize('NFC');
+        const cir = (s.circle || s.circle_name || '').toLowerCase().normalize('NFC');
+        const nom = (s.nominee_name || '').toLowerCase().normalize('NFC');
+
+        return shName.includes(q) ||
+          shId.includes(q) ||
+          shNo.includes(q) ||
+          bNo.includes(q) ||
+          mob.includes(q) ||
+          aadh.includes(q) ||
+          plc.includes(q) ||
+          tlk.includes(q) ||
+          cir.includes(q) ||
+          nom.includes(q);
+      });
     }
     if (village_id) {
       filtered = filtered.filter(s => s.village_id === village_id || s.place === village_id);

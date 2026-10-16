@@ -24,20 +24,46 @@ export default function DataImportExport() {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const text = event.target.result;
+        const buffer = event.target.result;
+        const bytes = new Uint8Array(buffer);
+        let text = '';
+
+        if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+          text = new TextDecoder('utf-16le').decode(buffer);
+        } else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+          text = new TextDecoder('utf-16be').decode(buffer);
+        } else {
+          text = new TextDecoder('utf-8').decode(buffer);
+        }
+
+        text = text.replace(/^\uFEFF/, '').replace(/^\uFFFE/, '');
         const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
         if (lines.length < 2) {
-          showToast('CSV file is empty or missing data rows', 'error');
+          showToast('File is empty or missing data rows', 'error');
           setIsProcessing(false);
           return;
         }
 
-        // Parse header
-        const rawHeaders = parseCsvLine(lines[0]);
+        // Auto-detect delimiter
+        const firstLine = lines[0];
+        let delimiter = ',';
+        if (firstLine.includes('\t') && firstLine.split('\t').length > firstLine.split(',').length) {
+          delimiter = '\t';
+        } else if (firstLine.includes(';') && firstLine.split(';').length > firstLine.split(',').length) {
+          delimiter = ';';
+        }
+
+        const parseLine = (line) => {
+          if (delimiter === '\t') {
+            return line.split('\t').map(s => s.replace(/^"|"$/g, '').trim());
+          }
+          return parseCsvLine(line);
+        };
+
         const records = [];
 
         for (let i = 1; i < lines.length; i++) {
-          const values = parseCsvLine(lines[i]);
+          const values = parseLine(lines[i]);
           if (values.length === 0 || values.every(v => v === '')) continue;
 
           // Map by position or header name
@@ -45,7 +71,7 @@ export default function DataImportExport() {
             book_no: values[0] || 'B.No: 1',
             sl_no: parseInt(values[1]) || i,
             share_no: values[2] || String(i),
-            shareholder_name: values[3] || 'ಷೇರುದಾರ',
+            shareholder_name: (values[3] || 'ಷೇರುದಾರ').normalize('NFC'),
             gender: values[4] || 'M',
             aadhaar_card_no: values[5] || '',
             reg_date: values[6] || '10/Aug/1982',
@@ -56,17 +82,17 @@ export default function DataImportExport() {
             amount: parseFloat(values[11]) || 2000,
             total_amount: parseFloat(values[12]) || 2000,
             number_of_shares: parseInt(values[13]) || 1,
-            schedule_cast: values[14] || 'ಅ - ವರ್ಗ',
-            address: values[15] || '',
-            nagara: values[16] || '',
-            road: values[17] || '',
-            place: values[18] || 'ಬಳ್ಳೊಳ್ಳಿ',
-            taluk: values[19] || 'ಇಂಡಿ',
-            district: values[20] || 'ವಿಜಯಪುರ',
+            schedule_cast: (values[14] || 'ಅ - ವರ್ಗ').normalize('NFC'),
+            address: (values[15] || '').normalize('NFC'),
+            nagara: (values[16] || '').normalize('NFC'),
+            road: (values[17] || '').normalize('NFC'),
+            place: (values[18] || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
+            taluk: (values[19] || 'ಇಂಡಿ').normalize('NFC'),
+            district: (values[20] || 'ವಿಜಯಪುರ').normalize('NFC'),
             pin_code: values[21] || '586 117',
-            circle: values[22] || 'ಇಂಡಿ',
-            member_type: values[23] || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
-            relationship: values[24] || 'ಸ್ವಂತ (Self)',
+            circle: (values[22] || 'ಇಂಡಿ').normalize('NFC'),
+            member_type: (values[23] || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
+            relationship: (values[24] || 'ಸ್ವಂತ (Self)').normalize('NFC'),
             tharava_date: values[25] || '10/Aug/1982',
             tharava_no: values[26] || `TR-${i}/1982`,
             mobile_no: values[27] || '',
@@ -76,23 +102,23 @@ export default function DataImportExport() {
             photo_updated: values[31] || 'Yes',
             signature_updated: values[32] || 'Yes',
             thumb_updated: values[33] || 'Yes',
-            nominee_name: values[34] || '',
+            nominee_name: (values[34] || '').normalize('NFC'),
             nominee_aadhaar_no: values[35] || '',
             nominee_mobile_no: values[36] || '',
-            nominee_address: values[37] || '',
+            nominee_address: (values[37] || '').normalize('NFC'),
             validation: 'Valid'
           };
           records.push(r);
         }
 
         setPreviewRecords(records);
-        showToast(`Successfully parsed ${records.length} shareholder records from ${file.name}`);
+        showToast(`Successfully parsed ${records.length} records with Kannada Unicode!`);
       } catch (err) {
-        showToast('Error parsing CSV file format', 'error');
+        showToast('Error parsing file: ' + err.message, 'error');
       }
       setIsProcessing(false);
     };
-    reader.readAsText(file, 'UTF-8');
+    reader.readAsArrayBuffer(file);
   };
 
   // Helper function to parse CSV lines handling quoted values with commas
@@ -176,13 +202,55 @@ export default function DataImportExport() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              let tableHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+              tableHtml += '<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">';
+              tableHtml += '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
+              tableHtml += '<body style="font-family:\'Noto Sans Kannada\', sans-serif;">';
+              tableHtml += '<table border="1"><thead><tr style="background-color:#16a34a; color:#ffffff; font-weight:bold;">';
+              const headers = [
+                'Book. No', 'Sl. No', 'Share No', 'Share Holder Name', 'Gender', 'Aadhaar Card No',
+                'Reg. Date', 'Receipt No', 'Receipt Amount', 'Date', 'Reciept', 'Amount', 'Total Amount',
+                'No. of Shares', 'Schedule Cast', 'Address', 'Nagara', 'Road', 'Place', 'Taluk', 'District',
+                'Pin Code', 'Circle', 'Member Type', 'Relationship', 'Tharava Date', 'Tharava No',
+                'Mobile No', 'Photo URL', 'Signature URL', 'Thumb URL', 'Photo Updated', 'Signature Updated',
+                'Thumb Updated', 'Nominee Name', 'Nominee Aadhaar No', 'Nominee Mobile No', 'Nominee Address'
+              ];
+              headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
+              tableHtml += '</tr></thead><tbody>';
+              const sampleRows = [
+                ['B.No: 1', 1, '1', 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', 'M', '4582 9981 1234', '10/Aug/1982', '1', 2000, '10/Aug/1982', '1', 2000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ಗ್ರಾಮ, ಶ್ರೀ ಹನುಮಾನ್ ದೇವಸ್ಥಾನದ ಹತ್ತಿರ', 'ಗ್ರಾಮ ಠಾಣಾ', 'ಮುಖ್ಯ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-01/1982', '9845012341', '', '', '', 'Yes', 'Yes', 'Yes', 'ಕಾಮಣ್ಣ ಬೀರಪ್ಪ ಸಗಾಯಿ', '4582 9981 5566', '9845012342', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
+                ['B.No: 1', 2, '2', 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', 'M', '7890 1234 5678', '10/Aug/1982', '2', 1000, '10/Aug/1982', '2', 1000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ಅಗಸಿ ಹತ್ತಿರ, ಇಂಡಿ ರಸ್ತೆ', 'ಬ್ರಾಹ್ಮಣ ಗಲ್ಲಿ', 'ದೇವಸ್ಥಾನ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-02/1982', '9845012343', '', '', '', 'Yes', 'Yes', 'Yes', 'ವೆಂಕಟೇಶ ರಮೇಶ ಪುರಾಣಿಕ', '7890 1234 9900', '9845012344', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ']
+              ];
+              sampleRows.forEach(row => {
+                tableHtml += '<tr>';
+                row.forEach(val => { tableHtml += `<td>${val}</td>`; });
+                tableHtml += '</tr>';
+              });
+              tableHtml += '</tbody></table></body></html>';
+              const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = 'shareholders_details_template.xls';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              showToast('Downloaded Excel (.xls) template with Kannada Unicode');
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 border border-slate-700 text-teal-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4 text-teal-400" /> Excel Template (.xls)
+          </button>
           <a
             href="./shareholders_details.csv"
             download="shareholders_details.csv"
             className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 border border-slate-800 text-slate-200 hover:text-white rounded-xl text-xs font-semibold transition-all"
           >
-            <Download className="w-4 h-4 text-emerald-400" /> Download shareholders_details.csv
+            <Download className="w-4 h-4 text-emerald-400" /> CSV Template (UTF-8 BOM)
           </a>
         </div>
       </div>
@@ -192,7 +260,7 @@ export default function DataImportExport() {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".csv,text/csv"
+        accept=".csv,.txt,.tsv,text/csv,text/plain"
         className="hidden"
       />
 

@@ -71,21 +71,58 @@ export default function ShareholderList() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const text = e.target.result;
+        const buffer = e.target.result;
+        const bytes = new Uint8Array(buffer);
+        let text = '';
+
+        // Detect Encoding:
+        // 1. UTF-16LE BOM: FF FE (Common Excel Unicode export)
+        if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+          text = new TextDecoder('utf-16le').decode(buffer);
+        }
+        // 2. UTF-16BE BOM: FE FF
+        else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+          text = new TextDecoder('utf-16be').decode(buffer);
+        }
+        // 3. UTF-8 (handles standard UTF-8 and UTF-8 with BOM EF BB BF)
+        else {
+          text = new TextDecoder('utf-8').decode(buffer);
+        }
+
+        // Strip any leading BOM characters
+        text = text.replace(/^\uFEFF/, '').replace(/^\uFFFE/, '');
+
         const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
         if (lines.length < 2) {
-          showToast('CSV file is empty or missing data rows', 'error');
+          showToast('File is empty or missing data rows', 'error');
           return;
         }
+
+        // Auto-detect delimiter (comma, tab, or semicolon)
+        const firstLine = lines[0];
+        let delimiter = ',';
+        if (firstLine.includes('\t') && firstLine.split('\t').length > firstLine.split(',').length) {
+          delimiter = '\t';
+        } else if (firstLine.includes(';') && firstLine.split(';').length > firstLine.split(',').length) {
+          delimiter = ';';
+        }
+
+        const parseLine = (line) => {
+          if (delimiter === '\t') {
+            return line.split('\t').map(s => s.replace(/^"|"$/g, '').trim());
+          }
+          return parseCsvLine(line, delimiter);
+        };
+
         const records = [];
         for (let i = 1; i < lines.length; i++) {
-          const v = parseCsvLine(lines[i]);
+          const v = parseLine(lines[i]);
           if (v.length === 0 || v.every(item => item === '')) continue;
           records.push({
             book_no: v[0] || 'B.No: 1',
             sl_no: parseInt(v[1]) || i,
             share_no: v[2] || String(i),
-            shareholder_name: v[3] || 'ಷೇರುದಾರ',
+            shareholder_name: (v[3] || 'ಷೇರುದಾರ').normalize('NFC'),
             gender: v[4] || 'M',
             aadhaar_card_no: v[5] || '',
             reg_date: v[6] || '10/Aug/1982',
@@ -96,17 +133,17 @@ export default function ShareholderList() {
             amount: parseFloat(v[11]) || 2000,
             total_amount: parseFloat(v[12]) || 2000,
             number_of_shares: parseInt(v[13]) || 1,
-            schedule_cast: v[14] || 'ಅ - ವರ್ಗ',
-            address: v[15] || '',
-            nagara: v[16] || '',
-            road: v[17] || '',
-            place: v[18] || 'ಬಳ್ಳೊಳ್ಳಿ',
-            taluk: v[19] || 'ಇಂಡಿ',
-            district: v[20] || 'ವಿಜಯಪುರ',
+            schedule_cast: (v[14] || 'ಅ - ವರ್ಗ').normalize('NFC'),
+            address: (v[15] || '').normalize('NFC'),
+            nagara: (v[16] || '').normalize('NFC'),
+            road: (v[17] || '').normalize('NFC'),
+            place: (v[18] || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
+            taluk: (v[19] || 'ಇಂಡಿ').normalize('NFC'),
+            district: (v[20] || 'ವಿಜಯಪುರ').normalize('NFC'),
             pin_code: v[21] || '586 117',
-            circle: v[22] || 'ಇಂಡಿ',
-            member_type: v[23] || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
-            relationship: v[24] || 'ಸ್ವಂತ (Self)',
+            circle: (v[22] || 'ಇಂಡಿ').normalize('NFC'),
+            member_type: (v[23] || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
+            relationship: (v[24] || 'ಸ್ವಂತ (Self)').normalize('NFC'),
             tharava_date: v[25] || '10/Aug/1982',
             tharava_no: v[26] || `TR-${i}/1982`,
             mobile_no: v[27] || '',
@@ -116,20 +153,20 @@ export default function ShareholderList() {
             photo_updated: v[31] || 'Yes',
             signature_updated: v[32] || 'Yes',
             thumb_updated: v[33] || 'Yes',
-            nominee_name: v[34] || '',
+            nominee_name: (v[34] || '').normalize('NFC'),
             nominee_aadhaar_no: v[35] || '',
             nominee_mobile_no: v[36] || '',
-            nominee_address: v[37] || '',
+            nominee_address: (v[37] || '').normalize('NFC'),
             validation: 'Valid'
           });
         }
         setPreviewRecords(records);
-        showToast(`Parsed ${records.length} records from ${file.name}`);
+        showToast(`Parsed ${records.length} records with full Kannada Unicode support!`);
       } catch (err) {
-        showToast('Error reading CSV file', 'error');
+        showToast('Error reading Unicode file: ' + err.message, 'error');
       }
     };
-    reader.readAsText(file, 'UTF-8');
+    reader.readAsArrayBuffer(file);
   };
 
   const loadSampleRecords = async () => {
@@ -152,7 +189,51 @@ export default function ShareholderList() {
       { book_no: 'B.No: 1', sl_no: 5, share_no: '6', shareholder_name: 'ಡಾ|| ಇಮ್ಮಾನುವೆ ಸಾಸವೇಲ ಕಟವಟೆ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '6', receipt_amount: 25000, total_amount: 29000, number_of_shares: 14, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಚಡಚಣ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
       { book_no: 'B.No: 1', sl_no: 6, share_no: '7', shareholder_name: 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', gender: 'M', reg_date: '15/Aug/1982', receipt_no: '8', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಅಥರ್ಗಾ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' }
     ]);
-    showToast('Loaded 6 official sample cooperative records');
+    showToast('Loaded 6 official sample cooperative records (ಕನ್ನಡ ಯುನಿಕೋಡ್)');
+  };
+
+  const downloadExcelTemplate = () => {
+    let tableHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    tableHtml += '<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">';
+    tableHtml += '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
+    tableHtml += '<body style="font-family:\'Noto Sans Kannada\', sans-serif;">';
+    tableHtml += '<table border="1"><thead><tr style="background-color:#16a34a; color:#ffffff; font-weight:bold;">';
+    const headers = [
+      'Book. No', 'Sl. No', 'Share No', 'Share Holder Name', 'Gender', 'Aadhaar Card No',
+      'Reg. Date', 'Receipt No', 'Receipt Amount', 'Date', 'Reciept', 'Amount', 'Total Amount',
+      'No. of Shares', 'Schedule Cast', 'Address', 'Nagara', 'Road', 'Place', 'Taluk', 'District',
+      'Pin Code', 'Circle', 'Member Type', 'Relationship', 'Tharava Date', 'Tharava No',
+      'Mobile No', 'Photo URL', 'Signature URL', 'Thumb URL', 'Photo Updated', 'Signature Updated',
+      'Thumb Updated', 'Nominee Name', 'Nominee Aadhaar No', 'Nominee Mobile No', 'Nominee Address'
+    ];
+    headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
+    tableHtml += '</tr></thead><tbody>';
+
+    const sampleRows = [
+      ['B.No: 1', 1, '1', 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', 'M', '4582 9981 1234', '10/Aug/1982', '1', 2000, '10/Aug/1982', '1', 2000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ಗ್ರಾಮ, ಶ್ರೀ ಹನುಮಾನ್ ದೇವಸ್ಥಾನದ ಹತ್ತಿರ', 'ಗ್ರಾಮ ಠಾಣಾ', 'ಮುಖ್ಯ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-01/1982', '9845012341', '', '', '', 'Yes', 'Yes', 'Yes', 'ಕಾಮಣ್ಣ ಬೀರಪ್ಪ ಸಗಾಯಿ', '4582 9981 5566', '9845012342', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
+      ['B.No: 1', 2, '2', 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', 'M', '7890 1234 5678', '10/Aug/1982', '2', 1000, '10/Aug/1982', '2', 1000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ಅಗಸಿ ಹತ್ತಿರ, ಇಂಡಿ ರಸ್ತೆ', 'ಬ್ರಾಹ್ಮಣ ಗಲ್ಲಿ', 'ದೇವಸ್ಥಾನ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-02/1982', '9845012343', '', '', '', 'Yes', 'Yes', 'Yes', 'ವೆಂಕಟೇಶ ರಮೇಶ ಪುರಾಣಿಕ', '7890 1234 9900', '9845012344', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
+      ['B.No: 1', 3, '3', 'ಬಾಬುರಾವ ಅಪ್ಪಾರಾವ ಪಾಟೀಲ', 'M', '3456 7890 1234', '10/Aug/1982', '3', 1000, '10/Aug/1982', '3', 1000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಜೇವೂರ ಗ್ರಾಮ, ಮುಖ್ಯ ಚೌಕ್', 'ಪಾಟೀಲ ಗಲ್ಲಿ', 'ಬಸ್ ನಿಲ್ದಾಣ ರಸ್ತೆ', 'ಜೇವೂರ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 112', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-03/1982', '9845012345', '', '', '', 'Yes', 'Yes', 'Yes', 'ಅಪ್ಪಾರಾವ ಬಾಬುರಾವ ಪಾಟೀಲ', '3456 7890 9988', '9845012346', 'ಜೇವೂರ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
+      ['B.No: 1', 4, '4', 'ಮಲ್ಲನಗೌಡ ರಾಮಚಂದ್ರ ಪಾಟೀಲ', 'M', '5678 9012 3456', '10/Aug/1982', '4', 2000, '10/Aug/1982', '4', 2000, 8000, 4, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ತೋಟದ ವಸ್ತಿ, ಕಾಲುವೆ ಹತ್ತಿರ', 'ರೈತ ನಗರ', 'ಹೊಲದ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-04/1982', '9845012347', '', '', '', 'Yes', 'Yes', 'Yes', 'ರಾಮಚಂದ್ರ ಮಲ್ಲನಗೌಡ ಪಾಟೀಲ', '5678 9012 1122', '9845012348', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
+      ['B.No: 1', 5, '6', 'ಡಾ|| ಇಮ್ಮಾನುವೆ ಸಾಸವೇಲ ಕಟವಟೆ', 'M', '9012 3456 7890', '10/Aug/1982', '6', 25000, '10/Aug/1982', '6', 25000, 29000, 14, 'ಅ - ವರ್ಗ', 'ಚಡಚಣ ಮೇನ್ ಬಜಾರ್, ಕ್ಲಿನಿಕ್ ಎದುರು', 'ವೈದ್ಯರ ಓಣಿ', 'ಹಾಸ್ಪಿಟಲ್ ರಸ್ತೆ', 'ಚಡಚಣ', 'ಚಡಚಣ', 'ವಿಜಯಪುರ', '586 205', 'ಚಡಚಣ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-05/1982', '9845012349', '', '', '', 'Yes', 'Yes', 'Yes', 'ಸಾಸವೇಲ ಇಮ್ಮಾನುವೆ ಕಟವಟೆ', '9012 3456 3344', '9845012350', 'ಚಡಚಣ, ತಾ: ಚಡಚಣ, ಜಿ: ವಿಜಯಪುರ'],
+      ['B.No: 1', 6, '7', 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', 'M', '2345 6789 0123', '15/Aug/1982', '8', 2000, '15/Aug/1982', '8', 2000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಅಥರ್ಗಾ ರಸ್ತೆ, ರೈತ ಸಂಪರ್ಕ ಕೇಂದ್ರ ಹತ್ತಿರ', 'ಕುಂಬಾರ ಗಲ್ಲಿ', 'ಕಾಲೇಜು ರಸ್ತೆ', 'ಅಥರ್ಗಾ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 112', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '15/Aug/1982', 'TR-06/1982', '9845012351', '', '', '', 'Yes', 'Yes', 'Yes', 'ಮಲ್ಲಿಕಾರ್ಜುನ ಕುಂಬಾಳ', '2345 6789 7788', '9845012352', 'ಅಥರ್ಗಾ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ']
+    ];
+
+    sampleRows.forEach(row => {
+      tableHtml += '<tr>';
+      row.forEach(val => { tableHtml += `<td>${val}</td>`; });
+      tableHtml += '</tr>';
+    });
+
+    tableHtml += '</tbody></table></body></html>';
+    const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'shareholders_details_template.xls';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Downloaded official Excel (.xls) template with Kannada Unicode');
   };
 
   const commitImport = async () => {
@@ -253,8 +334,9 @@ export default function ShareholderList() {
       `"${s.nominee_address || ''}"`
     ]);
 
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
@@ -262,7 +344,81 @@ export default function ShareholderList() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Exported complete 38-column statutory ledger to CSV');
+    showToast('Exported 38-column statutory ledger to CSV (UTF-8 BOM - ಕನ್ನಡ ಬೆಂಬಲಿತವಾಗಿದೆ)');
+  };
+
+  // Full 38 Columns Excel (.xls) Export with embedded UTF-8 Kannada font
+  const exportFullLedgerExcel = () => {
+    const headers = [
+      'Book. No', 'Sl. No', 'Share No', 'Share Holder Name', 'Gender', 'Aadhaar Card No',
+      'Reg. Date', 'Receipt No', 'Receipt Amount', 'Date', 'Reciept', 'Amount', 'Total Amount',
+      'No. of Shares', 'Schedule Cast', 'Address', 'Nagara', 'Road', 'Place', 'Taluk', 'District',
+      'Pin Code', 'Circle', 'Member Type', 'Relationship', 'Tharava Date', 'Tharava No',
+      'Mobile No', 'Photo URL', 'Signature URL', 'Thumb URL', 'Photo Updated', 'Signature Updated',
+      'Thumb Updated', 'Nominee Name', 'Nominee Aadhaar No', 'Nominee Mobile No', 'Nominee Address'
+    ];
+
+    let tableHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    tableHtml += '<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">';
+    tableHtml += '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Shareholders Ledger</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
+    tableHtml += '<body style="font-family:\'Noto Sans Kannada\', Arial, sans-serif;">';
+    tableHtml += '<table border="1"><thead><tr style="background-color:#16a34a; color:#ffffff; font-weight:bold;">';
+    headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
+    tableHtml += '</tr></thead><tbody>';
+
+    shareholders.forEach(s => {
+      tableHtml += '<tr>';
+      tableHtml += `<td>${s.book_no || 'B.No: 1'}</td>`;
+      tableHtml += `<td>${s.sl_no || s.id}</td>`;
+      tableHtml += `<td>${s.share_no || s.share_number || ''}</td>`;
+      tableHtml += `<td>${s.shareholder_name || s.name || ''}</td>`;
+      tableHtml += `<td>${s.gender || 'M'}</td>`;
+      tableHtml += `<td>${s.aadhaar_card_no || s.aadhaar_ref || ''}</td>`;
+      tableHtml += `<td>${s.reg_date || s.registration_date || ''}</td>`;
+      tableHtml += `<td>${s.receipt_no || ''}</td>`;
+      tableHtml += `<td>${s.receipt_amount || s.amount || 2000}</td>`;
+      tableHtml += `<td>${s.date || s.reg_date || ''}</td>`;
+      tableHtml += `<td>${s.reciept || s.receipt_no || ''}</td>`;
+      tableHtml += `<td>${s.amount || s.receipt_amount || 2000}</td>`;
+      tableHtml += `<td>${s.total_amount || s.share_value || 2000}</td>`;
+      tableHtml += `<td>${s.number_of_shares || 1}</td>`;
+      tableHtml += `<td>${s.schedule_cast || 'ಅ - ವರ್ಗ'}</td>`;
+      tableHtml += `<td>${s.address || ''}</td>`;
+      tableHtml += `<td>${s.nagara || ''}</td>`;
+      tableHtml += `<td>${s.road || ''}</td>`;
+      tableHtml += `<td>${s.place || s.village_name || ''}</td>`;
+      tableHtml += `<td>${s.taluk || 'ಇಂಡಿ'}</td>`;
+      tableHtml += `<td>${s.district || 'ವಿಜಯಪುರ'}</td>`;
+      tableHtml += `<td>${s.pin_code || ''}</td>`;
+      tableHtml += `<td>${s.circle || s.circle_name || ''}</td>`;
+      tableHtml += `<td>${s.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)'}</td>`;
+      tableHtml += `<td>${s.relationship || 'ಸ್ವಂತ (Self)'}</td>`;
+      tableHtml += `<td>${s.tharava_date || ''}</td>`;
+      tableHtml += `<td>${s.tharava_no || ''}</td>`;
+      tableHtml += `<td>${s.mobile_no || s.mobile || ''}</td>`;
+      tableHtml += `<td>${s.photo_url || ''}</td>`;
+      tableHtml += `<td>${s.signature_url || ''}</td>`;
+      tableHtml += `<td>${s.thumb_url || ''}</td>`;
+      tableHtml += `<td>${s.photo_updated || 'No'}</td>`;
+      tableHtml += `<td>${s.signature_updated || 'No'}</td>`;
+      tableHtml += `<td>${s.thumb_updated || 'Yes'}</td>`;
+      tableHtml += `<td>${s.nominee_name || ''}</td>`;
+      tableHtml += `<td>${s.nominee_aadhaar_no || ''}</td>`;
+      tableHtml += `<td>${s.nominee_mobile_no || ''}</td>`;
+      tableHtml += `<td>${s.nominee_address || ''}</td>`;
+      tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table></body></html>';
+
+    const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Cooperative_Shareholder_Ledger_Page_${pagination.page}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Exported complete 38-column statutory ledger to Excel (.xls) with 100% Kannada Unicode!');
   };
 
   return (
@@ -324,8 +480,17 @@ export default function ShareholderList() {
           <button
             onClick={exportFullLedgerCsv}
             className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-medium transition-all"
+            title="Export 38-column CSV with UTF-8 BOM (Kannada Supported)"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export 38-Col CSV
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export CSV (Unicode)
+          </button>
+
+          <button
+            onClick={exportFullLedgerExcel}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-medium transition-all"
+            title="Export Excel (.xls) - Opens directly in Microsoft Excel with 100% Kannada Unicode"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-teal-400" /> Export Excel (.xls)
           </button>
 
           <button
@@ -345,13 +510,13 @@ export default function ShareholderList() {
           </div>
           <div>
             <div className="font-bold text-slate-100 flex items-center gap-2">
-              <span>Bulk Shareholder CSV Import & Upload (38 Statutory Cooperative Columns)</span>
+              <span>Bulk Shareholder Import & Ledger (ಕನ್ನಡ ಯುನಿಕೋಡ್ 100% ಬೆಂಬಲಿತವಾಗಿದೆ)</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-900/80 text-emerald-300 border border-emerald-700/50">
-                Official Format Ready
+                UTF-8 Unicode + Excel
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Upload your complete cooperative shareholder database (Book No, Share No, Name in Kannada/English, Gender, Aadhaar, Receipt, Place, Taluk, Circle, Tharava & Nominee)
+              Upload your complete cooperative shareholder database in CSV or Excel format (Book No, Share No, Name in Kannada/English, Gender, Aadhaar, Receipt, Place, Taluk, Circle, Tharava & Nominee)
             </p>
           </div>
         </div>
@@ -361,14 +526,23 @@ export default function ShareholderList() {
             onClick={() => setShowUploadModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950 hover:scale-[1.02] transition-all cursor-pointer"
           >
-            <Upload className="w-4 h-4" /> Upload CSV File (ಅಪ್ಲೋಡ್)
+            <Upload className="w-4 h-4" /> Upload File (ಅಪ್ಲೋಡ್)
+          </button>
+          <button
+            type="button"
+            onClick={downloadExcelTemplate}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-teal-300 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all shadow-sm cursor-pointer"
+            title="Download Excel Template with 100% Kannada Unicode"
+          >
+            <Download className="w-4 h-4 text-teal-400" /> Excel Template (.xls)
           </button>
           <a
             href="./shareholders_details.csv"
             download="shareholders_details.csv"
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all shadow-sm"
+            title="Download CSV Template with UTF-8 BOM"
           >
-            <Download className="w-4 h-4 text-emerald-400" /> Template CSV
+            <Download className="w-4 h-4 text-emerald-400" /> CSV Template
           </a>
         </div>
       </div>
@@ -692,10 +866,10 @@ export default function ShareholderList() {
                 </div>
                 <div>
                   <h2 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">
-                    Upload Shareholder Details CSV (ಷೇರುದಾರರ ವಿವರಗಳ CSV ಅಪ್ಲೋಡ್)
+                    Upload Shareholder Details CSV & Excel (ಷೇರುದಾರರ ವಿವರಗಳ CSV / Excel ಅಪ್ಲೋಡ್)
                   </h2>
                   <p className="text-xs text-slate-400">
-                    Supports all 38 statutory cooperative columns (B.No, Sl.No, Share No, Name, Gender, Aadhaar, Receipt, Place, Circle, Nominee)
+                    Full Kannada Unicode Support (ಕನ್ನಡ ಯುನಿಕೋಡ್ 100% ಬೆಂಬಲಿತವಾಗಿದೆ) • All 38 Statutory Cooperative Columns
                   </p>
                 </div>
               </div>
@@ -729,17 +903,17 @@ export default function ShareholderList() {
                       handleCsvFileUpload(e.target.files[0]);
                     }
                   }}
-                  accept=".csv,text/csv"
+                  accept=".csv,.txt,.tsv,text/csv,text/plain"
                   className="hidden"
                 />
                 <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <Upload className="w-6 h-6" />
                 </div>
                 <h3 className="text-sm font-semibold text-slate-200">
-                  Click to Browse CSV file or Drag & Drop here
+                  Click to Browse CSV / Unicode Text file or Drag & Drop here
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Upload your .CSV file with UTF-8 encoding (supports Kannada and English characters)
+                  Supports UTF-8, UTF-8 with BOM, and UTF-16LE Unicode (Full Kannada & English characters support)
                 </p>
                 {uploadFileName && (
                   <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-emerald-950/80 border border-emerald-700/60 rounded-lg text-xs font-semibold text-emerald-300">
@@ -750,20 +924,27 @@ export default function ShareholderList() {
 
               {/* Action Buttons Row */}
               <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-950/40 rounded-xl border border-slate-800 text-xs">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={loadSampleRecords}
                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
-                    <BookOpen className="w-3.5 h-3.5 text-emerald-400" /> Load Official Sample Records
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-400" /> Load Sample Records (ಕನ್ನಡ)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadExcelTemplate}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-teal-300 rounded-lg font-medium border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-teal-400" /> Download Excel Template (.xls)
                   </button>
                   <a
                     href="./shareholders_details.csv"
                     download="shareholders_details.csv"
                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium border border-slate-700 transition-colors flex items-center gap-1.5"
                   >
-                    <Download className="w-3.5 h-3.5 text-sky-400" /> Download Template CSV
+                    <Download className="w-3.5 h-3.5 text-sky-400" /> Download CSV (UTF-8 BOM)
                   </a>
                 </div>
 

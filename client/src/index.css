@@ -4,8 +4,19 @@
 
 @layer base {
   body {
-    @apply bg-slate-900 text-slate-100 font-sans min-h-screen;
+    @apply bg-slate-900 text-slate-100 min-h-screen;
+    font-family: 'Inter', 'Noto Sans Kannada', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Tunga', 'Kedage', 'Mallige', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  input, select, textarea, button, table {
+    font-family: 'Inter', 'Noto Sans Kannada', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Tunga', 'Kedage', 'Mallige', sans-serif;
+  }
+}
+
+.font-kannada {
+  font-family: 'Noto Sans Kannada', 'Tunga', 'Kedage', 'Mallige', sans-serif !important;
 }
 
 /* Custom Scrollbars */
