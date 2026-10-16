@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Settings, Save, Building2 } from 'lucide-react';
+import { Settings, Save, Building2, Trash2, ShieldAlert } from 'lucide-react';
+import ResetConfirmModal from '../Common/ResetConfirmModal';
 
 export default function SettingsModule() {
   const { showToast } = useAuth();
+  const [showResetModal, setShowResetModal] = useState(false);
   const [form, setForm] = useState({
     org_name: 'Chhatrapati Sugar Cooperative Society Ltd.',
     org_reg_no: 'CS-SUGAR-1978-8842',
@@ -99,13 +101,47 @@ export default function SettingsModule() {
           <div className="pt-3 border-t border-slate-800 flex justify-end">
             <button
               type="submit"
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-emerald-950 transition-all"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-emerald-950 transition-all cursor-pointer"
             >
               <Save className="w-4 h-4" /> Save Organization Settings
             </button>
           </div>
         </form>
       </div>
+
+      {/* Danger Zone: Factory Reset */}
+      <div className="bg-gradient-to-r from-rose-950/40 via-slate-950 to-slate-900 border border-rose-900/60 rounded-3xl p-6 shadow-xl max-w-2xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-400 shrink-0">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-rose-200 flex items-center gap-2">
+                Danger Zone: Erase Everything & Reset All Data
+              </h2>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                Wipe all records from IndexedDB and local browser storage. Restores database to a factory fresh slate.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowResetModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-950 transition-all cursor-pointer shrink-0"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Erase & Reset</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Reset Confirmation Modal */}
+      <ResetConfirmModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+      />
     </div>
   );
 }

@@ -531,7 +531,14 @@ export const ApiService = {
     mockShareholders = [];
     saveStoredData(STORAGE_KEY_SH, []);
     await clearIndexedDB();
-    return { success: true, message: 'All shareholder records cleared' };
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem(STORAGE_KEY_SH);
+        localStorage.removeItem('sugar_erp_clean_shareholders_v2');
+        localStorage.removeItem('sugar_erp_shareholders');
+      }
+    } catch (e) {}
+    return { success: true, message: 'All shareholder records have been permanently erased.' };
   },
 
   async clearAllData() {
@@ -549,7 +556,16 @@ export const ApiService = {
     saveStoredData(STORAGE_KEY_EMP, []);
     saveStoredData(STORAGE_KEY_LOGS, []);
     await clearIndexedDB();
-    return { success: true, message: 'Database reset successfully' };
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('sugar_erp_') && k !== 'sugar_erp_user') {
+            localStorage.removeItem(k);
+          }
+        });
+      }
+    } catch (e) {}
+    return { success: true, message: 'Entire database wiped and reset to a clean state.' };
   },
 
   async getTransactions({ page = 1, limit = 20, search = '' }) {

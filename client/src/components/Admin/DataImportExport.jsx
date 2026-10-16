@@ -3,14 +3,16 @@ import { useAuth } from '../../context/AuthContext';
 import { ApiService } from '../../services/api';
 import * as XLSX from 'xlsx';
 import {
-  FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, Download, FileCheck, RefreshCw, Check
+  FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, Download, FileCheck, RefreshCw, Check, Trash2, ShieldAlert
 } from 'lucide-react';
+import ResetConfirmModal from '../Common/ResetConfirmModal';
 
 export default function DataImportExport() {
   const { showToast, setActiveModule } = useAuth();
   const [previewRecords, setPreviewRecords] = useState([]);
   const [fileName, setFileName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const fileInputRef = useRef(null);
 
   // Parse actual uploaded Excel (.xlsx, .xls) or CSV file
@@ -305,6 +307,14 @@ export default function DataImportExport() {
           >
             <Download className="w-4 h-4 text-emerald-400" /> Direct Sample (.xlsx)
           </a>
+          <button
+            type="button"
+            onClick={() => setShowResetModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800 text-rose-300 hover:text-white rounded-xl text-xs font-semibold shadow-lg shadow-rose-950/50 transition-all cursor-pointer"
+            title="Erase all records and reset database"
+          >
+            <Trash2 className="w-4 h-4 text-rose-400" /> Erase / Reset All Data
+          </button>
         </div>
       </div>
 
@@ -442,6 +452,41 @@ export default function DataImportExport() {
           )}
         </div>
       )}
+
+      {/* Danger Zone: Erase Everything & Factory Reset */}
+      <div className="bg-gradient-to-r from-rose-950/40 via-slate-950 to-slate-900 border border-rose-900/60 rounded-3xl p-6 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-400 shrink-0">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-rose-200 flex items-center gap-2">
+                Danger Zone: Erase Everything & Reset All Data (ಡೇಟಾಬೇಸ್ ರದ್ದುಪಡಿಸುವಿಕೆ)
+              </h2>
+              <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                Permanently purge all loaded shareholder records (17,000+) from IndexedDB, clear transaction ledgers, sugar quotas, and restore the ERP database to a clean empty state.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowResetModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-950 transition-all cursor-pointer shrink-0"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Erase Everything & Reset All</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Reset Confirmation Modal */}
+      <ResetConfirmModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onResetComplete={() => setPreviewRecords([])}
+      />
     </div>
   );
 }

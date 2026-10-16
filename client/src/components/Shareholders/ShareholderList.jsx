@@ -4,10 +4,11 @@ import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
-  Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload
+  Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
 import ShareholderForm from './ShareholderForm';
+import ResetConfirmModal from '../Common/ResetConfirmModal';
 
 export default function ShareholderList() {
   const { showToast, setActiveModule } = useAuth();
@@ -33,6 +34,7 @@ export default function ShareholderList() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editShareholderData, setEditShareholderData] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [previewRecords, setPreviewRecords] = useState([]);
   const [uploadFileName, setUploadFileName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
@@ -532,6 +534,15 @@ export default function ShareholderList() {
           >
             <Printer className="w-4 h-4 text-sky-400" /> Print
           </button>
+
+          <button
+            onClick={() => setShowResetModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800 text-rose-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
+            title="Erase all shareholder records or factory reset entire database"
+          >
+            <Trash2 className="w-4 h-4 text-rose-400" />
+            <span>Erase / Reset All</span>
+          </button>
         </div>
       </div>
 
@@ -999,6 +1010,14 @@ export default function ShareholderList() {
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-400" /> Sample (.xlsx)
                   </a>
+                  <button
+                    type="button"
+                    onClick={() => setShowResetModal(true)}
+                    className="px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white rounded-lg font-medium border border-rose-800 transition-colors flex items-center gap-1.5 cursor-pointer ml-auto"
+                    title="Erase all existing shareholder records before uploading"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-400" /> Erase Existing Records
+                  </button>
                 </div>
 
                 {previewRecords.length > 0 && (
@@ -1090,6 +1109,16 @@ export default function ShareholderList() {
           </div>
         </div>
       )}
+
+      {/* Reset & Erase Confirmation Modal */}
+      <ResetConfirmModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onResetComplete={() => {
+          setPreviewRecords([]);
+          fetchShareholders(1);
+        }}
+      />
     </div>
   );
 }
