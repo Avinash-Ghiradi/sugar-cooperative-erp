@@ -3,19 +3,21 @@ import { useAuth } from '../../context/AuthContext';
 import { ApiService } from '../../services/api';
 import * as XLSX from 'xlsx';
 import {
-  FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, Download, FileCheck, RefreshCw, Check, Trash2, ShieldAlert
+  FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, Download, FileCheck,
+  RefreshCw, Check, Trash2, ShieldAlert, MapPin, Users, Layers
 } from 'lucide-react';
 import ResetConfirmModal from '../Common/ResetConfirmModal';
 
 export default function DataImportExport() {
   const { showToast, setActiveModule } = useAuth();
+  const [importType, setImportType] = useState('shareholders'); // 'shareholders' (38 cols) or 'circles' (7 cols)
   const [previewRecords, setPreviewRecords] = useState([]);
   const [fileName, setFileName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Parse actual uploaded Excel (.xlsx, .xls) or CSV file
+  // Parse uploaded Excel (.xlsx, .xls) or CSV file
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -82,105 +84,158 @@ export default function DataImportExport() {
         return defaultIdx;
       };
 
-      const cBook = findCol(['book', 'b.no', 'ಬುಕ್'], 0);
-      const cSl = findCol(['sl', 'serial', 'ಕ್ರಮ'], 1);
-      const cShare = findCol(['share no', 'share_no', 'ಷೇರು ನಂ'], 2);
-      const cName = findCol(['share holder', 'shareholder', 'holder name', 'ಷೇರುದಾರರ ಹೆಸರು', 'ಹೆಸರು'], 3);
-      const cGender = findCol(['gender', 'ಲಿಂಗ', 'sex'], 4);
-      const cAadhaar = findCol(['aadhaar', 'adhar', 'ಆಧಾರ್'], 5);
-      const cRegDate = findCol(['reg. date', 'reg date', 'registration', 'ದಾಖಲಾತಿ'], 6);
-      const cReceiptNo = findCol(['receipt no', 'receipt_no', 'ರಶೀದಿ ನಂ'], 7);
-      const cReceiptAmt = findCol(['receipt amount', 'ರಶೀದಿ ಮೊತ್ತ'], 8);
-      const cDate = findCol(['date', 'ದಿನಾಂಕ'], 9);
-      const cReciept = findCol(['reciept'], 10);
-      const cAmt = findCol(['amount', 'ಮೊತ್ತ'], 11);
-      const cTotalAmt = findCol(['total amount', 'ಒಟ್ಟು ಮೊತ್ತ'], 12);
-      const cShares = findCol(['no. of shares', 'no of shares', 'shares', 'ಷೇರುಗಳ ಸಂಖ್ಯೆ'], 13);
-      const cCast = findCol(['schedule cast', 'caste', 'category', 'ವರ್ಗ'], 14);
-      const cAddr = findCol(['address', 'ವಿಳಾಸ'], 15);
-      const cNagara = findCol(['nagara', 'ನಗರ'], 16);
-      const cRoad = findCol(['road', 'ರಸ್ತೆ'], 17);
-      const cPlace = findCol(['place', 'village', 'ಸ್ಥಳ', 'ಗ್ರಾಮ'], 18);
-      const cTaluk = findCol(['taluk', 'ತಾಲ್ಲೂಕು', 'ತಾಲ್ಲೂಕ'], 19);
-      const cDist = findCol(['district', 'ಜಿಲ್ಲೆ'], 20);
-      const cPin = findCol(['pin code', 'pincode', 'ಪಿನ್'], 21);
-      const cCircle = findCol(['circle', 'ವಲಯ', 'ಸರ್ಕಲ್'], 22);
-      const cMemberType = findCol(['member type', 'member', 'ಸದಸ್ಯ'], 23);
-      const cRel = findCol(['relationship', 'ಸಂಬಂಧ'], 24);
-      const cTharavaDate = findCol(['tharava date', 'ಠರಾವು ದಿನಾಂಕ'], 25);
-      const cTharavaNo = findCol(['tharava no', 'tharava', 'ಠರಾವು ನಂ'], 26);
-      const cMobile = findCol(['mobile', 'phone', 'ಮೊಬೈಲ್'], 27);
-      const cPhotoUrl = findCol(['photo url', 'photo'], 28);
-      const cSignUrl = findCol(['signature url', 'signature'], 29);
-      const cThumbUrl = findCol(['thumb url', 'thumb'], 30);
-      const cPhotoUp = findCol(['photo updated'], 31);
-      const cSignUp = findCol(['signature updated'], 32);
-      const cThumbUp = findCol(['thumb updated'], 33);
-      const cNomName = findCol(['nominee name', 'nominee', 'ವಾರಸುದಾರ'], 34);
-      const cNomAadhaar = findCol(['nominee aadhaar', 'nominee aadhar'], 35);
-      const cNomMob = findCol(['nominee mobile', 'nominee phone'], 36);
-      const cNomAddr = findCol(['nominee address'], 37);
+      // Auto-detect if file is Circle Directory (7 columns: Address, Circle Name, Taluk, District, Pincode, Circle In-charge, Contact No)
+      const isCircleFile = headerRow.some(h =>
+        h.includes('circle in-charge') ||
+        h.includes('circle incharge') ||
+        h.includes('contact no') ||
+        (h.includes('circle name') && !headerRow.some(x => x.includes('share') || x.includes('book')))
+      );
 
-      const records = [];
+      const targetType = isCircleFile ? 'circles' : (importType === 'circles' && !headerRow.some(h => h.includes('share')) ? 'circles' : 'shareholders');
+      setImportType(targetType);
 
-      for (let i = 1; i < rawRows.length; i++) {
-        const row = rawRows[i];
-        if (!row || row.length === 0 || row.every(val => String(val || '').trim() === '')) continue;
+      if (targetType === 'circles') {
+        // Parse 7-column Circle & Village Directory
+        const cAddress = findCol(['address', 'place', 'village', 'ವಿಳಾಸ', 'ಸ್ಥಳ', 'ಗ್ರಾಮ'], 0);
+        const cCircle = findCol(['circle name', 'circle_name', 'circle', 'ಸರ್ಕಲ್', 'ವಲಯ'], 1);
+        const cTaluk = findCol(['taluk', 'taluka', 'ತಾಲೂಕು'], 2);
+        const cDistrict = findCol(['district', 'dist', 'ಜಿಲ್ಲೆ'], 3);
+        const cPincode = findCol(['pincode', 'pin code', 'pin', 'ಪಿನ್‌ಕೋಡ್'], 4);
+        const cInCharge = findCol(['circle in-charge', 'circle incharge', 'in-charge', 'incharge', 'ಪ್ರಭಾರಿ'], 5);
+        const cContact = findCol(['contact no', 'contact', 'mobile', 'phone', 'ಸಂಪರ್ಕ'], 6);
 
-        const getVal = (colIdx) => {
-          const val = row[colIdx];
-          return val !== undefined && val !== null ? String(val).trim().normalize('NFC') : '';
-        };
+        const records = [];
+        for (let i = 1; i < rawRows.length; i++) {
+          const row = rawRows[i];
+          if (!row || row.every(cell => String(cell || '').trim() === '')) continue;
 
-        const nameVal = getVal(cName);
-        const shareNoVal = getVal(cShare) || String(i);
+          const getVal = (idx) => {
+            if (idx === -1 || idx >= row.length) return '';
+            return String(row[idx] ?? '').trim().normalize('NFC');
+          };
 
-        const r = {
-          book_no: getVal(cBook) || 'B.No: 1',
-          sl_no: parseInt(getVal(cSl)) || i,
-          share_no: shareNoVal,
-          shareholder_name: nameVal || `ಷೇರುದಾರ ${i}`,
-          gender: getVal(cGender) || 'M',
-          aadhaar_card_no: getVal(cAadhaar),
-          reg_date: getVal(cRegDate) || '10/Aug/1982',
-          receipt_no: getVal(cReceiptNo) || String(i),
-          receipt_amount: parseFloat(getVal(cReceiptAmt)) || 2000,
-          date: getVal(cDate) || getVal(cRegDate) || '10/Aug/1982',
-          reciept: getVal(cReciept) || getVal(cReceiptNo) || '',
-          amount: parseFloat(getVal(cAmt)) || 2000,
-          total_amount: parseFloat(getVal(cTotalAmt)) || parseFloat(getVal(cAmt)) || 2000,
-          number_of_shares: parseInt(getVal(cShares)) || 1,
-          schedule_cast: getVal(cCast) || 'ಅ - ವರ್ಗ',
-          address: getVal(cAddr),
-          nagara: getVal(cNagara),
-          road: getVal(cRoad),
-          place: getVal(cPlace) || 'ಬಳ್ಳೊಳ್ಳಿ',
-          taluk: getVal(cTaluk) || 'ಇಂಡಿ',
-          district: getVal(cDist) || 'ವಿಜಯಪುರ',
-          pin_code: getVal(cPin) || '586 117',
-          circle: getVal(cCircle) || 'ಇಂಡಿ',
-          member_type: getVal(cMemberType) || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
-          relationship: getVal(cRel) || 'ಸ್ವಂತ (Self)',
-          tharava_date: getVal(cTharavaDate) || '10/Aug/1982',
-          tharava_no: getVal(cTharavaNo) || `TR-${i}/1982`,
-          mobile_no: getVal(cMobile),
-          photo_url: getVal(cPhotoUrl),
-          signature_url: getVal(cSignUrl),
-          thumb_url: getVal(cThumbUrl),
-          photo_updated: getVal(cPhotoUp) || 'Yes',
-          signature_updated: getVal(cSignUp) || 'Yes',
-          thumb_updated: getVal(cThumbUp) || 'Yes',
-          nominee_name: getVal(cNomName),
-          nominee_aadhaar_no: getVal(cNomAadhaar),
-          nominee_mobile_no: getVal(cNomMob),
-          nominee_address: getVal(cNomAddr),
-          validation: 'Valid'
-        };
-        records.push(r);
+          const addr = getVal(cAddress);
+          const circle = getVal(cCircle);
+          if (!addr && !circle) continue;
+
+          records.push({
+            address: addr,
+            circle_name: circle || 'ಇತರೆ',
+            taluk: getVal(cTaluk) || 'ಇಂಡಿ',
+            district: getVal(cDistrict) || 'ವಿಜಯಪುರ',
+            pincode: getVal(cPincode) || '',
+            circle_in_charge: getVal(cInCharge) || '',
+            contact_no: getVal(cContact) || '',
+            validation: 'Valid'
+          });
+        }
+
+        setPreviewRecords(records);
+        showToast(`Auto-detected Circle Directory! Parsed ${records.length} circle & village records from Excel.`);
+      } else {
+        // Parse 38-column Shareholder Statutory Ledger
+        const cBook = findCol(['book', 'b.no', 'ಬುಕ್'], 0);
+        const cSl = findCol(['sl', 'serial', 'ಕ್ರಮ'], 1);
+        const cShare = findCol(['share no', 'share_no', 'ಷೇರು ನಂ'], 2);
+        const cName = findCol(['share holder', 'shareholder', 'holder name', 'ಷೇರುದಾರರ ಹೆಸರು', 'ಹೆಸರು'], 3);
+        const cGender = findCol(['gender', 'ಲಿಂಗ', 'sex'], 4);
+        const cAadhaar = findCol(['aadhaar', 'adhar', 'ಆಧಾರ್'], 5);
+        const cRegDate = findCol(['reg. date', 'reg date', 'registration', 'ದಾಖಲಾತಿ'], 6);
+        const cReceiptNo = findCol(['receipt no', 'receipt_no', 'ರಶೀದಿ ನಂ'], 7);
+        const cReceiptAmt = findCol(['receipt amount', 'ರಶೀದಿ ಮೊತ್ತ'], 8);
+        const cDate = findCol(['date', 'ದಿನಾಂಕ'], 9);
+        const cReciept = findCol(['reciept'], 10);
+        const cAmt = findCol(['amount', 'ಮೊತ್ತ'], 11);
+        const cTotalAmt = findCol(['total amount', 'ಒಟ್ಟು ಮೊತ್ತ'], 12);
+        const cShares = findCol(['no. of shares', 'no of shares', 'shares', 'ಷೇರುಗಳ ಸಂಖ್ಯೆ'], 13);
+        const cCast = findCol(['schedule cast', 'caste', 'category', 'ವರ್ಗ'], 14);
+        const cAddr = findCol(['address', 'ವಿಳಾಸ'], 15);
+        const cNagara = findCol(['nagara', 'ನಗರ'], 16);
+        const cRoad = findCol(['road', 'ರಸ್ತೆ'], 17);
+        const cPlace = findCol(['place', 'village', 'ಸ್ಥಳ', 'ಗ್ರಾಮ'], 18);
+        const cTaluk = findCol(['taluk', 'ತಾಲ್ಲೂಕು', 'ತಾಲ್ಲೂಕ'], 19);
+        const cDist = findCol(['district', 'ಜಿಲ್ಲೆ'], 20);
+        const cPin = findCol(['pin code', 'pincode', 'ಪಿನ್'], 21);
+        const cCircle = findCol(['circle', 'ವಲಯ', 'ಸರ್ಕಲ್'], 22);
+        const cMemberType = findCol(['member type', 'member', 'ಸದಸ್ಯ'], 23);
+        const cRel = findCol(['relationship', 'ಸಂಬಂಧ'], 24);
+        const cTharavaDate = findCol(['tharava date', 'ಠರಾವು ದಿನಾಂಕ'], 25);
+        const cTharavaNo = findCol(['tharava no', 'tharava', 'ಠರಾವು ನಂ'], 26);
+        const cMobile = findCol(['mobile', 'phone', 'ಮೊಬೈಲ್'], 27);
+        const cPhotoUrl = findCol(['photo url', 'photo'], 28);
+        const cSignUrl = findCol(['signature url', 'signature'], 29);
+        const cThumbUrl = findCol(['thumb url', 'thumb'], 30);
+        const cPhotoUp = findCol(['photo updated'], 31);
+        const cSignUp = findCol(['signature updated'], 32);
+        const cThumbUp = findCol(['thumb updated'], 33);
+        const cNomName = findCol(['nominee name', 'nominee', 'ವಾರಸ್ದಾರ'], 34);
+        const cNomAadhaar = findCol(['nominee aadhaar'], 35);
+        const cNomMob = findCol(['nominee mobile'], 36);
+        const cNomAddr = findCol(['nominee address'], 37);
+
+        const records = [];
+        for (let i = 1; i < rawRows.length; i++) {
+          const row = rawRows[i];
+          if (!row || row.every(cell => String(cell || '').trim() === '')) continue;
+
+          const getVal = (idx) => {
+            if (idx === -1 || idx >= row.length) return '';
+            return String(row[idx] ?? '').trim().normalize('NFC');
+          };
+
+          const shName = getVal(cName);
+          const shareNo = getVal(cShare) || String(i);
+
+          if (!shName && !shareNo) continue;
+
+          records.push({
+            book_no: getVal(cBook) || 'B.No: 1',
+            sl_no: parseInt(getVal(cSl)) || i,
+            share_no: shareNo,
+            shareholder_name: shName || `ಷೇರುದಾರ ${i}`,
+            name: shName || `ಷೇರುದಾರ ${i}`,
+            gender: (getVal(cGender) || 'M').toUpperCase().startsWith('F') ? 'F' : 'M',
+            aadhaar_card_no: getVal(cAadhaar),
+            reg_date: getVal(cRegDate) || '10/Aug/1982',
+            receipt_no: getVal(cReceiptNo) || String(i),
+            receipt_amount: parseFloat(getVal(cReceiptAmt)) || 2000,
+            date: getVal(cDate) || '10/Aug/1982',
+            reciept: getVal(cReciept) || getVal(cReceiptNo),
+            amount: parseFloat(getVal(cAmt)) || 2000,
+            total_amount: parseFloat(getVal(cTotalAmt)) || parseFloat(getVal(cAmt)) || 2000,
+            number_of_shares: parseInt(getVal(cShares)) || 1,
+            schedule_cast: getVal(cCast) || 'ಅ - ವರ್ಗ',
+            address: getVal(cAddr),
+            nagara: getVal(cNagara),
+            road: getVal(cRoad),
+            place: getVal(cPlace) || 'ಬಳ್ಳೊಳ್ಳಿ',
+            taluk: getVal(cTaluk) || 'ಇಂಡಿ',
+            district: getVal(cDist) || 'ವಿಜಯಪುರ',
+            pin_code: getVal(cPin) || '586 117',
+            circle: getVal(cCircle) || 'ಇಂಡಿ',
+            member_type: getVal(cMemberType) || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
+            relationship: getVal(cRel) || 'ಸ್ವಂತ (Self)',
+            tharava_date: getVal(cTharavaDate) || '10/Aug/1982',
+            tharava_no: getVal(cTharavaNo) || `TR-${i}/1982`,
+            mobile_no: getVal(cMobile),
+            photo_url: getVal(cPhotoUrl),
+            signature_url: getVal(cSignUrl),
+            thumb_url: getVal(cThumbUrl),
+            photo_updated: getVal(cPhotoUp) || 'Yes',
+            signature_updated: getVal(cSignUp) || 'Yes',
+            thumb_updated: getVal(cThumbUp) || 'Yes',
+            nominee_name: getVal(cNomName),
+            nominee_aadhaar_no: getVal(cNomAadhaar),
+            nominee_mobile_no: getVal(cNomMob),
+            nominee_address: getVal(cNomAddr),
+            validation: 'Valid'
+          });
+        }
+
+        setPreviewRecords(records);
+        showToast(`Successfully parsed ${records.length} shareholder records with full Kannada Unicode!`);
       }
-
-      setPreviewRecords(records);
-      showToast(`Successfully parsed ${records.length} records from Excel with Kannada Unicode!`);
     } catch (err) {
       showToast('Error reading Excel spreadsheet: ' + err.message, 'error');
     }
@@ -219,64 +274,118 @@ export default function DataImportExport() {
   };
 
   const loadDefaultSample = async () => {
-    try {
-      const res = await fetch('./shareholders_details.xlsx');
-      if (res.ok) {
-        const blob = await res.blob();
-        const fakeFile = new File([blob], 'shareholders_details.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        processExcelFile(fakeFile);
-        return;
-      }
-    } catch (e) {}
+    if (importType === 'circles') {
+      try {
+        const res = await fetch('./circle_details.xlsx');
+        if (res.ok) {
+          const blob = await res.blob();
+          const fakeFile = new File([blob], 'circle_details.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          processExcelFile(fakeFile);
+          return;
+        }
+      } catch (e) {}
 
-    // Fallback if fetch fails
-    setFileName('shareholders_details.xlsx');
-    setPreviewRecords([
-      { book_no: 'B.No: 1', sl_no: 1, share_no: '1', shareholder_name: 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '1', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 2, share_no: '2', shareholder_name: 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '2', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 3, share_no: '3', shareholder_name: 'ಬಾಬುರಾವ ಅಪ್ಪಾರಾವ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '3', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಜೇವೂರ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 4, share_no: '4', shareholder_name: 'ಮಲ್ಲನಗೌಡ ರಾಮಚಂದ್ರ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '4', receipt_amount: 2000, total_amount: 8000, number_of_shares: 4, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 5, share_no: '6', shareholder_name: 'ಡಾ|| ಇಮ್ಮಾನುವೆ ಸಾಸವೇಲ ಕಟವಟೆ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '6', receipt_amount: 25000, total_amount: 29000, number_of_shares: 14, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಚಡಚಣ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', circle: 'ಚಡಚಣ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 6, share_no: '7', shareholder_name: 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', gender: 'M', reg_date: '15/Aug/1982', receipt_no: '8', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಅಥರ್ಗಾ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' }
-    ]);
-    showToast('Loaded sample 38-column statutory Excel ledger data');
+      setFileName('circle_details.xlsx');
+      setPreviewRecords([
+        { address: 'ಅಗರಖೇಡ', circle_name: 'ಇಂಡಿ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586209', circle_in_charge: 'ಸಂಗಮೇಶ ಕುಂಬಾರ', contact_no: '9845011221', validation: 'Valid' },
+        { address: 'ಅಗಸನಾಳ', circle_name: 'ಧೋಳಖೇಡ ಸರ್ಕಲ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', pincode: '586207', circle_in_charge: 'ರಮೇಶ ಪಾಟೀಲ', contact_no: '9845011222', validation: 'Valid' },
+        { address: 'ಅಂಜುಟಗಿ', circle_name: 'ಇಂಡಿ ಸ್ಟೇಶನ್ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586209', circle_in_charge: 'ಸುರೇಶ ಬಿರಾದಾರ', contact_no: '9845011223', validation: 'Valid' },
+        { address: 'ಅಣಚಿ', circle_name: 'ಧೋಳಖೇಡ ಸರ್ಕಲ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', pincode: '586207', circle_in_charge: 'ರಮೇಶ ಪಾಟೀಲ', contact_no: '9845011222', validation: 'Valid' },
+        { address: 'ಅಥರ್ಗಾ', circle_name: 'ತಾಂಬಾ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586112', circle_in_charge: 'ಬಸವರಾಜ ಹಡಪದ', contact_no: '9845011224', validation: 'Valid' },
+        { address: 'ಅಫಜಲಪೂರ', circle_name: 'Post', taluk: 'III', district: 'ಕಲಬುರಗಿ', pincode: '598999', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225', validation: 'Valid' },
+        { address: 'ಅರಕೇರಿ', circle_name: 'Post', taluk: 'ವಿಜಯಪುರ', district: 'ವಿಜಯಪುರ', pincode: '586104', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225', validation: 'Valid' },
+        { address: 'ಅರ್ಜನಾಳ', circle_name: 'ಧೋಳಖೇಡ ಸರ್ಕಲ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', pincode: '586207', circle_in_charge: 'ರಮೇಶ ಪಾಟೀಲ', contact_no: '9845011222', validation: 'Valid' },
+        { address: 'ಅರ್ಜುಣಗಿ ಕೆ ಡಿ', circle_name: 'ಸಾಲೋಟಗಿ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586217', circle_in_charge: 'ಮಲ್ಲಪ್ಪ ಪೂಜಾರಿ', contact_no: '9845011226', validation: 'Valid' },
+        { address: 'ಅರ್ಜುಣಗಿ ಬಿ ಕೆ', circle_name: 'ಸಾಲೋಟಗಿ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586217', circle_in_charge: 'ಮಲ್ಲಪ್ಪ ಪೂಜಾರಿ', contact_no: '9845011226', validation: 'Valid' },
+        { address: 'ಅಲಹಳ್ಳಿ', circle_name: 'ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ', taluk: 'ಸಿಂದಗಿ', district: 'ವಿಜಯಪುರ', pincode: '586128', circle_in_charge: 'ಸಿದ್ದರಾಮಯ್ಯ ಹಿರೇಮಠ', contact_no: '9845011227', validation: 'Valid' },
+        { address: 'ಅಲಿಯಾಬಾದ', circle_name: 'Post', taluk: 'ವಿಜಯಪುರ', district: 'ವಿಜಯಪುರ', pincode: '586101', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225', validation: 'Valid' },
+        { address: 'ಅಸಂತಾಪೂರ', circle_name: 'Post', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586209', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225', validation: 'Valid' },
+        { address: 'ಅಸ್ತಿ', circle_name: 'Post', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586209', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225', validation: 'Valid' },
+        { address: 'ಅಹೀರಸಂಗ', circle_name: 'ಇಂಡಿ ಸ್ಟೇಶನ್ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586209', circle_in_charge: 'ಸುರೇಶ ಬಿರಾದಾರ', contact_no: '9845011223', validation: 'Valid' },
+        { address: 'ಆಲಗೂರ', circle_name: 'ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ', taluk: 'ಸಿಂದಗಿ', district: 'ವಿಜಯಪುರ', pincode: '586128', circle_in_charge: 'ಸಿದ್ದರಾಮಯ್ಯ ಹಿರೇಮಠ', contact_no: '9845011227', validation: 'Valid' },
+        { address: 'ಆಲಮಟ್ಟಿ', circle_name: 'Post', taluk: 'ನಿಡಗುಂದಿ', district: 'ವಿಜಯಪುರ', pincode: '586201', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225', validation: 'Valid' },
+        { address: 'ಆಲಮೇಲ', circle_name: 'ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ', taluk: 'ಸಿಂದಗಿ', district: 'ವಿಜಯಪುರ', pincode: '586202', circle_in_charge: 'ಸಿದ್ದರಾಮಯ್ಯ ಹಿರೇಮಠ', contact_no: '9845011227', validation: 'Valid' },
+        { address: 'ಅಸಂಗಿಹಾಳ', circle_name: 'ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ', taluk: 'ಸಿಂದಗಿ', district: 'ವಿಜಯಪುರ', pincode: '586128', circle_in_charge: 'ಸಿದ್ದರಾಮಯ್ಯ ಹಿರೇಮಠ', contact_no: '9845011227', validation: 'Valid' }
+      ]);
+      showToast('Loaded 19 official Circle & Village records');
+    } else {
+      try {
+        const res = await fetch('./shareholders_details.xlsx');
+        if (res.ok) {
+          const blob = await res.blob();
+          const fakeFile = new File([blob], 'shareholders_details.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          processExcelFile(fakeFile);
+          return;
+        }
+      } catch (e) {}
+
+      setFileName('shareholders_details.xlsx');
+      setPreviewRecords([
+        { book_no: 'B.No: 1', sl_no: 1, share_no: '1', shareholder_name: 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '1', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
+        { book_no: 'B.No: 1', sl_no: 2, share_no: '2', shareholder_name: 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '2', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
+        { book_no: 'B.No: 1', sl_no: 3, share_no: '3', shareholder_name: 'ಬಾಬುರಾವ ಅಪ್ಪಾರಾವ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '3', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಜೇವೂರ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
+        { book_no: 'B.No: 1', sl_no: 4, share_no: '4', shareholder_name: 'ಮಲ್ಲನಗೌಡ ರಾಮಚಂದ್ರ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '4', receipt_amount: 2000, total_amount: 8000, number_of_shares: 4, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
+        { book_no: 'B.No: 1', sl_no: 5, share_no: '6', shareholder_name: 'ಡಾ|| ಇಮ್ಮಾನುವೆ ಸಾಸವೇಲ ಕಟವಟೆ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '6', receipt_amount: 25000, total_amount: 29000, number_of_shares: 14, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಚಡಚಣ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', circle: 'ಚಡಚಣ', validation: 'Valid' },
+        { book_no: 'B.No: 1', sl_no: 6, share_no: '7', shareholder_name: 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', gender: 'M', reg_date: '15/Aug/1982', receipt_no: '8', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಅಥರ್ಗಾ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' }
+      ]);
+      showToast('Loaded sample 38-column statutory Excel ledger data');
+    }
   };
 
   const handleDownloadTemplateXlsx = () => {
-    const headers = [
-      'Book. No', 'Sl. No', 'Share No', 'Share Holder Name', 'Gender', 'Aadhaar Card No',
-      'Reg. Date', 'Receipt No', 'Receipt Amount', 'Date', 'Reciept', 'Amount', 'Total Amount',
-      'No. of Shares', 'Schedule Cast', 'Address', 'Nagara', 'Road', 'Place', 'Taluk', 'District',
-      'Pin Code', 'Circle', 'Member Type', 'Relationship', 'Tharava Date', 'Tharava No',
-      'Mobile No', 'Photo URL', 'Signature URL', 'Thumb URL', 'Photo Updated', 'Signature Updated',
-      'Thumb Updated', 'Nominee Name', 'Nominee Aadhaar No', 'Nominee Mobile No', 'Nominee Address'
-    ];
-    const sampleRows = [
-      headers,
-      ['B.No: 1', 1, '1', 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', 'M', '4582 9981 1234', '10/Aug/1982', '1', 2000, '10/Aug/1982', '1', 2000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ಗ್ರಾಮ, ಶ್ರೀ ಹನುಮಾನ್ ದೇವಸ್ಥಾನದ ಹತ್ತಿರ', 'ಗ್ರಾಮ ಠಾಣಾ', 'ಮುಖ್ಯ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-01/1982', '9845012341', '', '', '', 'Yes', 'Yes', 'Yes', 'ಕಾಮಣ್ಣ ಬೀರಪ್ಪ ಸಗಾಯಿ', '4582 9981 5566', '9845012342', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
-      ['B.No: 1', 2, '2', 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', 'M', '7890 1234 5678', '10/Aug/1982', '2', 1000, '10/Aug/1982', '2', 1000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ಅಗಸಿ ಹತ್ತಿರ, ಇಂಡಿ ರಸ್ತೆ', 'ಬ್ರಾಹ್ಮಣ ಗಲ್ಲಿ', 'ದೇವಸ್ಥಾನ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-02/1982', '9845012343', '', '', '', 'Yes', 'Yes', 'Yes', 'ವೆಂಕಟೇಶ ರಮೇಶ ಪುರಾಣಿಕ', '7890 1234 9900', '9845012344', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
-      ['B.No: 1', 3, '3', 'ಬಾಬುರಾವ ಅಪ್ಪಾರಾವ ಪಾಟೀಲ', 'M', '3456 7890 1234', '10/Aug/1982', '3', 1000, '10/Aug/1982', '3', 1000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಜೇವೂರ ಗ್ರಾಮ, ಮುಖ್ಯ ಚೌಕ್', 'ಪಾಟೀಲ ಗಲ್ಲಿ', 'ಬಸ್ ನಿಲ್ದಾಣ ರಸ್ತೆ', 'ಜೇವೂರ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 112', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-03/1982', '9845012345', '', '', '', 'Yes', 'Yes', 'Yes', 'ಅಪ್ಪಾರಾವ ಬಾಬುರಾವ ಪಾಟೀಲ', '3456 7890 9988', '9845012346', 'ಜೇವೂರ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
-      ['B.No: 1', 4, '4', 'ಮಲ್ಲನಗೌಡ ರಾಮಚಂದ್ರ ಪಾಟೀಲ', 'M', '5678 9012 3456', '10/Aug/1982', '4', 2000, '10/Aug/1982', '4', 2000, 8000, 4, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ತೋಟದ ವಸ್ತಿ, ಕಾಲುವೆ ಹತ್ತಿರ', 'ರೈತ ನಗರ', 'ಹೊಲದ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-04/1982', '9845012347', '', '', '', 'Yes', 'Yes', 'Yes', 'ರಾಮಚಂದ್ರ ಮಲ್ಲನಗೌಡ ಪಾಟೀಲ', '5678 9012 1122', '9845012348', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ'],
-      ['B.No: 1', 5, '6', 'ಡಾ|| ಇಮ್ಮಾನುವೆ ಸಾಸವೇಲ ಕಟವಟೆ', 'M', '9012 3456 7890', '10/Aug/1982', '6', 25000, '10/Aug/1982', '6', 25000, 29000, 14, 'ಅ - ವರ್ಗ', 'ಚಡಚಣ ಮೇನ್ ಬಜಾರ್, ಕ್ಲಿನಿಕ್ ಎದುರು', 'ವೈದ್ಯರ ಓಣಿ', 'ಹಾಸ್ಪಿಟಲ್ ರಸ್ತೆ', 'ಚಡಚಣ', 'ಚಡಚಣ', 'ವಿಜಯಪುರ', '586 205', 'ಚಡಚಣ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-05/1982', '9845012349', '', '', '', 'Yes', 'Yes', 'Yes', 'ಸಾಸವೇಲ ಇಮ್ಮಾನುವೆ ಕಟವಟೆ', '9012 3456 3344', '9845012350', 'ಚಡಚಣ, ತಾ: ಚಡಚಣ, ಜಿ: ವಿಜಯಪುರ'],
-      ['B.No: 1', 6, '7', 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', 'M', '2345 6789 0123', '15/Aug/1982', '8', 2000, '15/Aug/1982', '8', 2000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಅಥರ್ಗಾ ರಸ್ತೆ, ರೈತ ಸಂಪರ್ಕ ಕೇಂದ್ರ ಹತ್ತಿರ', 'ಕುಂಬಾರ ಗಲ್ಲಿ', 'ಕಾಲೇಜು ರಸ್ತೆ', 'ಅಥರ್ಗಾ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 112', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '15/Aug/1982', 'TR-06/1982', '9845012351', '', '', '', 'Yes', 'Yes', 'Yes', 'ಮಲ್ಲಿಕಾರ್ಜುನ ಕುಂಬಾಳ', '2345 6789 7788', '9845012352', 'ಅಥರ್ಗಾ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ']
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(sampleRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Shareholders_Ledger');
-    XLSX.writeFile(wb, 'shareholders_details_template.xlsx');
-    showToast('Downloaded official 38-column Excel (.xlsx) template with Kannada Unicode');
+    if (importType === 'circles') {
+      const headers = ['Address', 'Circle Name', 'Taluk', 'District', 'Pincode', 'Circle In-charge', 'Contact No'];
+      const sampleRows = [
+        headers,
+        ['ಅಗರಖೇಡ', 'ಇಂಡಿ ಸರ್ಕಲ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586209', 'ಸಂಗಮೇಶ ಕುಂಬಾರ', '9845011221'],
+        ['ಅಗಸನಾಳ', 'ಧೋಳಖೇಡ ಸರ್ಕಲ', 'ಚಡಚಣ', 'ವಿಜಯಪುರ', '586207', 'ರಮೇಶ ಪಾಟೀಲ', '9845011222'],
+        ['ಅಂಜುಟಗಿ', 'ಇಂಡಿ ಸ್ಟೇಶನ್ ಸರ್ಕಲ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586209', 'ಸುರೇಶ ಬಿರಾದಾರ', '9845011223'],
+        ['ಅಥರ್ಗಾ', 'ತಾಂಬಾ ಸರ್ಕಲ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586112', 'ಬಸವರಾಜ ಹಡಪದ', '9845011224']
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(sampleRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Circle_Details');
+      XLSX.writeFile(wb, 'circle_details_template.xlsx');
+      showToast('Downloaded official 7-column Circle Excel template');
+    } else {
+      const headers = [
+        'Book. No', 'Sl. No', 'Share No', 'Share Holder Name', 'Gender', 'Aadhaar Card No',
+        'Reg. Date', 'Receipt No', 'Receipt Amount', 'Date', 'Reciept', 'Amount', 'Total Amount',
+        'No. of Shares', 'Schedule Cast', 'Address', 'Nagara', 'Road', 'Place', 'Taluk', 'District',
+        'Pin Code', 'Circle', 'Member Type', 'Relationship', 'Tharava Date', 'Tharava No',
+        'Mobile No', 'Photo URL', 'Signature URL', 'Thumb URL', 'Photo Updated', 'Signature Updated',
+        'Thumb Updated', 'Nominee Name', 'Nominee Aadhaar No', 'Nominee Mobile No', 'Nominee Address'
+      ];
+      const sampleRows = [
+        headers,
+        ['B.No: 1', 1, '1', 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', 'M', '4582 9981 1234', '10/Aug/1982', '1', 2000, '10/Aug/1982', '1', 2000, 2000, 1, 'ಅ - ವರ್ಗ', 'ಬಳ್ಳೊಳ್ಳಿ ಗ್ರಾಮ, ಶ್ರೀ ಹನುಮಾನ್ ದೇವಸ್ಥಾನದ ಹತ್ತಿರ', 'ಗ್ರಾಮ ಠಾಣಾ', 'ಮುಖ್ಯ ರಸ್ತೆ', 'ಬಳ್ಳೊಳ್ಳಿ', 'ಇಂಡಿ', 'ವಿಜಯಪುರ', '586 117', 'ಇಂಡಿ', 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)', 'ಸ್ವಂತ (Self)', '10/Aug/1982', 'TR-01/1982', '9845012341', '', '', '', 'Yes', 'Yes', 'Yes', 'ಕಾಮಣ್ಣ ಬೀರಪ್ಪ ಸಗಾಯಿ', '4582 9981 5566', '9845012342', 'ಬಳ್ಳೊಳ್ಳಿ, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ']
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(sampleRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Shareholders_Ledger');
+      XLSX.writeFile(wb, 'shareholders_details_template.xlsx');
+      showToast('Downloaded official 38-column Excel (.xlsx) template with Kannada Unicode');
+    }
   };
 
   const handleCommitImport = async () => {
     if (previewRecords.length === 0) return;
     setIsProcessing(true);
     const count = previewRecords.length;
-    await ApiService.addShareholdersBulk(previewRecords);
-    setIsProcessing(false);
-    showToast(`Successfully committed ${count.toLocaleString()} records into the live Shareholders Registry!`);
-    setPreviewRecords([]);
-    setActiveModule('shareholders');
+
+    if (importType === 'circles') {
+      await ApiService.addCircleDirectoryBulk(previewRecords);
+      setIsProcessing(false);
+      showToast(`Successfully committed ${count.toLocaleString()} Circle & Village records to the directory!`);
+      setPreviewRecords([]);
+      setActiveModule('circles');
+    } else {
+      await ApiService.addShareholdersBulk(previewRecords);
+      setIsProcessing(false);
+      showToast(`Successfully committed ${count.toLocaleString()} records into the live Shareholders Registry!`);
+      setPreviewRecords([]);
+      setActiveModule('shareholders');
+    }
   };
 
   return (
@@ -285,10 +394,10 @@ export default function DataImportExport() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
         <div>
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5 text-emerald-400" /> Shareholder Details Excel (.xlsx / .xls) Uploader
+            <FileSpreadsheet className="w-5 h-5 text-emerald-400" /> Cooperative Data Excel (.xlsx / .xls) Uploader
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Upload official 38-column shareholder ledger Excel spreadsheet (Book No, Share No, Aadhaar, Receipt, Place, Nominee, Tharava)
+            Bulk upload official spreadsheets with 100% Kannada Unicode (Shareholders 38 Columns or Circle Details 7 Columns)
           </p>
         </div>
 
@@ -298,15 +407,8 @@ export default function DataImportExport() {
             onClick={handleDownloadTemplateXlsx}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
           >
-            <Download className="w-4 h-4" /> Download Excel Template (.xlsx)
+            <Download className="w-4 h-4" /> Download Template ({importType === 'circles' ? '7 Columns' : '38 Columns'})
           </button>
-          <a
-            href="./shareholders_details.xlsx"
-            download="shareholders_details.xlsx"
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 border border-slate-800 text-slate-200 hover:text-white rounded-xl text-xs font-semibold transition-all"
-          >
-            <Download className="w-4 h-4 text-emerald-400" /> Direct Sample (.xlsx)
-          </a>
           <button
             type="button"
             onClick={() => setShowResetModal(true)}
@@ -318,12 +420,39 @@ export default function DataImportExport() {
         </div>
       </div>
 
-      {/* Hidden File Input - Configured strictly for Excel files (.xlsx, .xls) */}
+      {/* Import Mode Selector Tabs */}
+      <div className="flex items-center gap-2 bg-slate-950/80 p-2 rounded-2xl border border-slate-800">
+        <button
+          onClick={() => { setImportType('shareholders'); setPreviewRecords([]); }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            importType === 'shareholders'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>1. Shareholders Registry (38 Columns Format)</span>
+        </button>
+
+        <button
+          onClick={() => { setImportType('circles'); setPreviewRecords([]); }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            importType === 'circles'
+              ? 'bg-teal-600 text-white shadow-md shadow-teal-950'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          }`}
+        >
+          <MapPin className="w-4 h-4" />
+          <span>2. Circle & Village Master (7 Headers: Address, Circle Name, Taluk, District, Pincode...)</span>
+        </button>
+      </div>
+
+      {/* Hidden File Input */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+        accept=".xlsx, .xls, .csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
         className="hidden"
       />
 
@@ -340,10 +469,12 @@ export default function DataImportExport() {
 
         <div>
           <h3 className="font-bold text-slate-100 text-sm">
-            {fileName ? `Selected Excel File: ${fileName}` : 'Click here to Browse or Drag & Drop your Excel Spreadsheet (.xlsx, .xls)'}
+            {fileName ? `Selected Excel File: ${fileName}` : `Click here to Browse or Drag & Drop your ${importType === 'circles' ? 'Circle Details (7 Columns)' : 'Shareholder Ledger (38 Columns)'} Spreadsheet`}
           </h3>
           <p className="text-xs text-slate-400 mt-1">
-            Accepts Microsoft Excel (.xlsx / .xls) statutory 38-column cooperative ledger spreadsheets with Kannada Unicode support
+            {importType === 'circles'
+              ? 'Accepts Address | Circle Name | Taluk | District | Pincode | Circle In-charge | Contact No'
+              : 'Accepts official 38-column shareholder ledger with Book No, Share No, Aadhaar, Receipt, Place, Nominee, Tharava'}
           </p>
         </div>
 
@@ -361,7 +492,7 @@ export default function DataImportExport() {
             onClick={(e) => { e.stopPropagation(); loadDefaultSample(); }}
             className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl transition-all"
           >
-            Load Sample Ledger (Vijayapura/Indi)
+            {importType === 'circles' ? 'Load Sample Circle Details (19 Rows)' : 'Load Sample Ledger (Vijayapura/Indi)'}
           </button>
         </div>
       </div>
@@ -373,9 +504,9 @@ export default function DataImportExport() {
             <div>
               <h2 className="font-bold text-slate-100 text-sm flex items-center gap-2">
                 <FileCheck className="w-4 h-4 text-emerald-400" />
-                Parsed {previewRecords.length} Shareholder Records from {fileName || 'Excel Spreadsheet'}
+                Parsed {previewRecords.length} {importType === 'circles' ? 'Circle & Village' : 'Shareholder'} Records from {fileName || 'Excel Spreadsheet'}
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">Ready to commit to active registry database</p>
+              <p className="text-xs text-slate-400 mt-0.5">Ready to commit to active database</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -398,52 +529,94 @@ export default function DataImportExport() {
           </div>
 
           <div className="overflow-x-auto max-h-[50vh]">
-            <table className="w-full text-left text-xs whitespace-nowrap">
-              <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] sticky top-0">
-                <tr>
-                  <th className="py-2.5 px-3">Book No</th>
-                  <th className="py-2.5 px-3">Sl No</th>
-                  <th className="py-2.5 px-3">Share No</th>
-                  <th className="py-2.5 px-4">Share Holder Name</th>
-                  <th className="py-2.5 px-2 text-center">Gender</th>
-                  <th className="py-2.5 px-3">Reg. Date</th>
-                  <th className="py-2.5 px-3 text-right">Total Amount</th>
-                  <th className="py-2.5 px-2 text-center">Shares</th>
-                  <th className="py-2.5 px-3">Schedule Cast</th>
-                  <th className="py-2.5 px-3">Place</th>
-                  <th className="py-2.5 px-3">Taluk</th>
-                  <th className="py-2.5 px-3">Circle</th>
-                  <th className="py-2.5 px-3 font-mono">Mobile</th>
-                  <th className="py-2.5 px-3">Nominee Name</th>
-                  <th className="py-2.5 px-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800 text-slate-200">
-                {previewRecords.slice(0, 50).map((r, i) => (
-                  <tr key={i} className="hover:bg-slate-900/60">
-                    <td className="py-2 px-3 font-mono text-sky-400 font-bold">{r.book_no}</td>
-                    <td className="py-2 px-3 font-mono">{r.sl_no}</td>
-                    <td className="py-2 px-3 font-mono text-emerald-400 font-bold">{r.share_no}</td>
-                    <td className="py-2 px-4 font-bold text-slate-100">{r.shareholder_name}</td>
-                    <td className="py-2 px-2 text-center">{r.gender}</td>
-                    <td className="py-2 px-3 text-slate-400">{r.reg_date}</td>
-                    <td className="py-2 px-3 text-right font-mono text-amber-400 font-bold">₹ {(r.total_amount || 2000).toLocaleString()}</td>
-                    <td className="py-2 px-2 text-center font-bold text-emerald-400">{r.number_of_shares}</td>
-                    <td className="py-2 px-3 text-center">{r.schedule_cast}</td>
-                    <td className="py-2 px-3 font-bold text-emerald-300">{r.place}</td>
-                    <td className="py-2 px-3">{r.taluk}</td>
-                    <td className="py-2 px-3 text-slate-400">{r.circle}</td>
-                    <td className="py-2 px-3 font-mono text-emerald-400">{r.mobile_no || '—'}</td>
-                    <td className="py-2 px-3 text-slate-300">{r.nominee_name || '—'}</td>
-                    <td className="py-2 px-3">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                        ✓ {r.validation}
-                      </span>
-                    </td>
+            {importType === 'circles' ? (
+              /* 7 Columns Table View for Circle Details */
+              <table className="w-full text-left text-xs whitespace-nowrap">
+                <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] sticky top-0">
+                  <tr>
+                    <th className="py-2.5 px-3">#</th>
+                    <th className="py-2.5 px-4">Address (ಗ್ರಾಮ / ಸ್ಥಳ)</th>
+                    <th className="py-2.5 px-4">Circle Name (ಸರ್ಕಲ್ ಹೆಸರು)</th>
+                    <th className="py-2.5 px-3">Taluk (ತಾಲೂಕು)</th>
+                    <th className="py-2.5 px-3">District (ಜಿಲ್ಲೆ)</th>
+                    <th className="py-2.5 px-3">Pincode (ಪಿನ್‌ಕೋಡ್)</th>
+                    <th className="py-2.5 px-4">Circle In-charge (ಪ್ರಭಾರಿ)</th>
+                    <th className="py-2.5 px-3 font-mono">Contact No (ಸಂಪರ್ಕ ಸಂಖ್ಯೆ)</th>
+                    <th className="py-2.5 px-3">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-800 text-slate-200">
+                  {previewRecords.slice(0, 50).map((r, i) => (
+                    <tr key={i} className="hover:bg-slate-900/60">
+                      <td className="py-2 px-3 font-mono text-slate-500">{i + 1}</td>
+                      <td className="py-2 px-4 font-bold text-slate-100 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{r.address}</span>
+                      </td>
+                      <td className="py-2 px-4 font-semibold text-emerald-400">{r.circle_name}</td>
+                      <td className="py-2 px-3">{r.taluk}</td>
+                      <td className="py-2 px-3 text-slate-400">{r.district}</td>
+                      <td className="py-2 px-3 font-mono">{r.pincode || '—'}</td>
+                      <td className="py-2 px-4 text-slate-300">{r.circle_in_charge || '—'}</td>
+                      <td className="py-2 px-3 font-mono text-teal-400">{r.contact_no || '—'}</td>
+                      <td className="py-2 px-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                          ✓ {r.validation}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              /* 38 Columns Table View for Shareholders */
+              <table className="w-full text-left text-xs whitespace-nowrap">
+                <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] sticky top-0">
+                  <tr>
+                    <th className="py-2.5 px-3">Book No</th>
+                    <th className="py-2.5 px-3">Sl No</th>
+                    <th className="py-2.5 px-3">Share No</th>
+                    <th className="py-2.5 px-4">Share Holder Name</th>
+                    <th className="py-2.5 px-2 text-center">Gender</th>
+                    <th className="py-2.5 px-3">Reg. Date</th>
+                    <th className="py-2.5 px-3 text-right">Total Amount</th>
+                    <th className="py-2.5 px-2 text-center">Shares</th>
+                    <th className="py-2.5 px-3">Schedule Cast</th>
+                    <th className="py-2.5 px-3">Place</th>
+                    <th className="py-2.5 px-3">Taluk</th>
+                    <th className="py-2.5 px-3">Circle</th>
+                    <th className="py-2.5 px-3 font-mono">Mobile</th>
+                    <th className="py-2.5 px-3">Nominee Name</th>
+                    <th className="py-2.5 px-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800 text-slate-200">
+                  {previewRecords.slice(0, 50).map((r, i) => (
+                    <tr key={i} className="hover:bg-slate-900/60">
+                      <td className="py-2 px-3 font-mono text-sky-400 font-bold">{r.book_no}</td>
+                      <td className="py-2 px-3 font-mono">{r.sl_no}</td>
+                      <td className="py-2 px-3 font-mono text-emerald-400 font-bold">{r.share_no}</td>
+                      <td className="py-2 px-4 font-bold text-slate-100">{r.shareholder_name}</td>
+                      <td className="py-2 px-2 text-center">{r.gender}</td>
+                      <td className="py-2 px-3 text-slate-400">{r.reg_date}</td>
+                      <td className="py-2 px-3 text-right font-mono text-amber-400 font-bold">₹ {(r.total_amount || 2000).toLocaleString()}</td>
+                      <td className="py-2 px-2 text-center font-bold text-emerald-400">{r.number_of_shares}</td>
+                      <td className="py-2 px-3 text-center">{r.schedule_cast}</td>
+                      <td className="py-2 px-3 font-bold text-emerald-300">{r.place}</td>
+                      <td className="py-2 px-3">{r.taluk}</td>
+                      <td className="py-2 px-3 text-slate-400">{r.circle}</td>
+                      <td className="py-2 px-3 font-mono text-emerald-400">{r.mobile_no || '—'}</td>
+                      <td className="py-2 px-3 text-slate-300">{r.nominee_name || '—'}</td>
+                      <td className="py-2 px-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                          ✓ {r.validation}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
           {previewRecords.length > 50 && (
             <p className="text-[11px] text-slate-500 text-right mt-2">
