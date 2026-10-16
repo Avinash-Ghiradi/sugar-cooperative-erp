@@ -237,6 +237,25 @@ export const ApiService = {
       .map(c => ({ circle_name: c, total: cCounts[c] }))
       .sort((a, b) => b.total - a.total);
 
+    // Schedule Cast / ವರ್ಗ breakdown (Statutory Cooperative Demographics)
+    const scCounts = {};
+    const scShares = {};
+    mockShareholders.forEach(s => {
+      const rawSc = (s.schedule_cast || 'ಅ - ವರ್ಗ').trim().normalize('NFC');
+      const sc = rawSc || 'ಅ - ವರ್ಗ';
+      const shares = parseInt(s.number_of_shares) || 1;
+      scCounts[sc] = (scCounts[sc] || 0) + 1;
+      scShares[sc] = (scShares[sc] || 0) + shares;
+    });
+
+    const scheduleCastBreakdown = Object.keys(scCounts).map(sc => ({
+      category: sc,
+      name: sc,
+      count: scCounts[sc],
+      shares: scShares[sc],
+      percentage: mockShareholders.length > 0 ? ((scCounts[sc] / mockShareholders.length) * 100).toFixed(1) : '0'
+    })).sort((a, b) => b.count - a.count);
+
     // Dynamic unique collections across actual dataset (e.g. 300+ places)
     const uniquePlaces = new Set();
     const uniqueCircles = new Set();
@@ -265,6 +284,8 @@ export const ApiService = {
         totalVillages: calculatedVillages,
         totalCircles: calculatedCircles,
         totalBooks: calculatedBooks,
+        totalCategories: scheduleCastBreakdown.length,
+        topCategory: scheduleCastBreakdown.length > 0 ? `${scheduleCastBreakdown[0].category} (${scheduleCastBreakdown[0].count.toLocaleString()})` : 'ಅ - ವರ್ಗ',
         pendingVarasa: mockVarasaTransfers.filter(v => v.approval_status !== 'Completed').length,
         completedVarasa: mockVarasaTransfers.filter(v => v.approval_status === 'Completed').length,
         todayTx: mockTransactions.length,
@@ -275,6 +296,7 @@ export const ApiService = {
       charts: {
         shareholdersByVillage,
         shareholdersByCircle,
+        scheduleCastBreakdown,
         shareRange: [
           { range: '1 Share (ಅ)', count: mockShareholders.filter(s => (parseInt(s.number_of_shares) || 1) === 1).length },
           { range: '2-4 Shares', count: mockShareholders.filter(s => (parseInt(s.number_of_shares) || 1) >= 2 && (parseInt(s.number_of_shares) || 1) <= 4).length },
@@ -291,9 +313,9 @@ export const ApiService = {
     };
   },
 
-  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '' }) {
+  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '' }) {
     await ensureDBReady();
-    const apiRes = await fetchApi(`/shareholders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&village_id=${village_id}&circle_id=${circle_id}&status=${status}&book_no=${book_no}`);
+    const apiRes = await fetchApi(`/shareholders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&village_id=${village_id}&circle_id=${circle_id}&status=${status}&book_no=${book_no}&schedule_cast=${encodeURIComponent(schedule_cast)}`);
     if (apiRes && apiRes.success) return apiRes;
 
     let filtered = mockShareholders;
@@ -347,6 +369,10 @@ export const ApiService = {
     if (book_no) {
       const bq = book_no.trim().toLowerCase();
       filtered = filtered.filter(s => s.book_no && s.book_no.trim().toLowerCase() === bq);
+    }
+    if (schedule_cast) {
+      const scq = schedule_cast.trim().toLowerCase().normalize('NFC');
+      filtered = filtered.filter(s => (s.schedule_cast || '').trim().toLowerCase().normalize('NFC') === scq);
     }
 
     const total = filtered.length;
@@ -849,6 +875,20 @@ export const ApiService = {
       const numB = parseInt(b.replace(/\D/g, '')) || 0;
       return numA - numB || a.localeCompare(b);
     });
+    return { success: true, data: list };
+  },
+
+  async getScheduleCasts() {
+    await ensureDBReady();
+    const scSet = new Set();
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const c = (mockShareholders[i].schedule_cast || '').trim().normalize('NFC');
+      if (c) scSet.add(c);
+    }
+    if (scSet.size === 0) {
+      return { success: true, data: ['ಅ - ವರ್ಗ', 'ಬ - ವರ್ಗ', 'ಕ - ವರ್ಗ', 'ಡ - ವರ್ಗ'] };
+    }
+    const list = Array.from(scSet).sort((a, b) => a.localeCompare(b, 'kn'));
     return { success: true, data: list };
   },
 

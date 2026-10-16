@@ -3,7 +3,7 @@ import { ApiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   Users, UserCheck, UserX, Coins, Building2, MapPin, FileCheck2, Clock,
-  CreditCard, CalendarCheck, Package, Briefcase, Download, Filter, RefreshCw, BookOpen
+  CreditCard, CalendarCheck, Package, Briefcase, Download, Filter, RefreshCw, BookOpen, Layers
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid
@@ -50,11 +50,11 @@ export default function Dashboard() {
     { title: 'Total Villages / Places', value: stats.totalVillages.toLocaleString(), icon: Building2, color: 'blue', link: 'villages' },
     { title: 'Total Circles', value: stats.totalCircles.toLocaleString(), icon: MapPin, color: 'indigo', link: 'circles' },
     { title: 'Total Books (Ledgers)', value: (stats.totalBooks || 1).toLocaleString(), icon: BookOpen, color: 'sky', link: 'shareholders' },
+    { title: 'Schedule Cast / ವರ್ಗ', value: stats.topCategory || `${stats.totalCategories || 1} Classes`, icon: Layers, color: 'purple', link: 'shareholders' },
     { title: 'Pending Varasa', value: stats.pendingVarasa.toLocaleString(), icon: Clock, color: 'amber', link: 'varasa' },
     { title: 'Completed Varasa', value: stats.completedVarasa.toLocaleString(), icon: FileCheck2, color: 'emerald', link: 'varasa' },
     { title: 'Today\'s Transactions', value: stats.todayTx.toLocaleString(), icon: CreditCard, color: 'purple', link: 'transactions' },
     { title: 'Sugar Allotted (kg)', value: `${stats.totalSugarAlloted.toLocaleString()} kg`, icon: Package, color: 'teal', link: 'sugar_allotment' },
-    { title: 'Total Employees', value: stats.totalEmployees.toLocaleString(), icon: Briefcase, color: 'blue', link: 'employees' },
   ];
 
   return (
@@ -112,6 +112,113 @@ export default function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Schedule Cast / ವರ್ಗ Statutory Breakdown Section */}
+      <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-800/80">
+          <div>
+            <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-emerald-400" />
+              <span>Schedule Cast / ವರ್ಗ Demographics & Share Distribution (ಜಾತಿ / ವರ್ಗವಾರು ವಿಂಗಡಣೆ)</span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Statutory member classifications, quotas, total shares held, and share capital distribution across classes (ಅ, ಬ, ಕ, ಡ ವರ್ಗಗಳು)
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
+              {charts.scheduleCastBreakdown?.length || 0} Statutory Categories Identified
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          {/* Left: Donut Chart */}
+          <div className="lg:col-span-5 flex flex-col items-center justify-center">
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={charts.scheduleCastBreakdown}
+                    dataKey="count"
+                    nameKey="category"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={85}
+                    innerRadius={52}
+                    paddingAngle={3}
+                    label={({ category, percent }) => `${category} (${(percent * 100).toFixed(0)}%)`}
+                  >
+                    {(charts.scheduleCastBreakdown || []).map((entry, index) => (
+                      <Cell key={`cell-sc-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
+                    formatter={(val, name, item) => [`${Number(val).toLocaleString()} members (${Number(item?.payload?.shares || val).toLocaleString()} shares)`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+              {(charts.scheduleCastBreakdown || []).map((item, index) => (
+                <div key={item.category} className="flex items-center gap-1.5 text-xs text-slate-300">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                  <span>{item.category}: <strong className="text-slate-100">{item.count.toLocaleString()}</strong> ({item.percentage}%)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Statutory Category Detail Table */}
+          <div className="lg:col-span-7 overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="py-2.5 px-3">Category (ವರ್ಗ)</th>
+                  <th className="py-2.5 px-3 text-right">Shareholders</th>
+                  <th className="py-2.5 px-3 text-right">Total Shares</th>
+                  <th className="py-2.5 px-3 text-right">Share Value (₹)</th>
+                  <th className="py-2.5 px-3">Distribution (%)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 text-xs text-slate-300">
+                {(charts.scheduleCastBreakdown || []).map((row, idx) => (
+                  <tr key={row.category} className="hover:bg-slate-900/60 transition-colors">
+                    <td className="py-2.5 px-3 font-semibold text-slate-100 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                      <span>{row.category}</span>
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-medium text-emerald-400">
+                      {row.count.toLocaleString()}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-slate-200">
+                      {(row.shares || row.count).toLocaleString()}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-amber-400">
+                      ₹{((row.shares || row.count) * 2000).toLocaleString('en-IN')}
+                    </td>
+                    <td className="py-2.5 px-3 w-40">
+                      <div className="flex items-center gap-2">
+                        <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${row.percentage}%`,
+                              backgroundColor: COLORS[idx % COLORS.length]
+                            }}
+                          />
+                        </div>
+                        <span className="text-[11px] font-mono text-slate-400 w-10 text-right">{row.percentage}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* Visualizations Section */}

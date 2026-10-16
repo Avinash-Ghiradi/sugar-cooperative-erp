@@ -22,12 +22,14 @@ export default function ShareholderList() {
   const [selectedCircle, setSelectedCircle] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedBook, setSelectedBook] = useState('');
+  const [selectedCast, setSelectedCast] = useState('');
   const [viewMode, setViewMode] = useState('ledger'); // 'ledger' (38 columns) or 'summary'
 
   // Options
   const [villages, setVillages] = useState([]);
   const [circles, setCircles] = useState([]);
   const [bookList, setBookList] = useState(['B.No: 1', 'B.No: 2', 'B.No: 3', 'B.No: 4', 'B.No: 5']);
+  const [castList, setCastList] = useState([]);
 
   // Modals
   const [activeProfileId, setActiveProfileId] = useState(null);
@@ -46,7 +48,7 @@ export default function ShareholderList() {
 
   useEffect(() => {
     fetchShareholders(1);
-  }, [search, selectedVillage, selectedCircle, selectedStatus, selectedBook]);
+  }, [search, selectedVillage, selectedCircle, selectedStatus, selectedBook, selectedCast]);
 
   // CSV Line Parser handling quotes and commas
   const parseCsvLine = (line) => {
@@ -294,6 +296,9 @@ export default function ShareholderList() {
 
     const bRes = await ApiService.getBooks();
     if (bRes && bRes.data) setBookList(bRes.data);
+
+    const scRes = await ApiService.getScheduleCasts();
+    if (scRes && scRes.data) setCastList(scRes.data);
   };
 
   const fetchShareholders = async (page = 1) => {
@@ -305,7 +310,8 @@ export default function ShareholderList() {
       village_id: selectedVillage,
       circle_id: selectedCircle,
       status: selectedStatus,
-      book_no: selectedBook
+      book_no: selectedBook,
+      schedule_cast: selectedCast
     });
 
     if (res && res.success) {
@@ -473,7 +479,7 @@ export default function ShareholderList() {
               38 Columns Official Format
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800/80 text-emerald-300 border border-slate-700 font-mono">
-              Total: {pagination.total.toLocaleString()} Members • {villages.length} Places • {circles.length} Circles • {bookList.length} Books
+              Total: {pagination.total.toLocaleString()} Members • {villages.length} Places • {circles.length} Circles • {castList.length} Categories • {bookList.length} Books
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -599,9 +605,9 @@ export default function ShareholderList() {
       </div>
 
       {/* Multi-Field Search & Statutory Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
         {/* Search */}
-        <div className="lg:col-span-2 relative">
+        <div className="sm:col-span-2 lg:col-span-2 relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
           <input
             type="text"
@@ -621,6 +627,18 @@ export default function ShareholderList() {
           <option value="">All Books ({bookList.length})</option>
           {bookList.map(b => (
             <option key={b} value={b}>{b}</option>
+          ))}
+        </select>
+
+        {/* Schedule Cast / ವರ್ಗ Filter */}
+        <select
+          value={selectedCast}
+          onChange={(e) => setSelectedCast(e.target.value)}
+          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none transition-all"
+        >
+          <option value="">All Categories / ವರ್ಗ ({castList.length})</option>
+          {castList.map(c => (
+            <option key={c} value={c}>{c}</option>
           ))}
         </select>
 
