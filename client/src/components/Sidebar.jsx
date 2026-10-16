@@ -3,12 +3,13 @@ import { useAuth, ROLE_PERMISSIONS } from '../context/AuthContext';
 import {
   LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert,
-  Settings, LogOut
+  Settings, LogOut, Upload
 } from 'lucide-react';
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'shareholders', label: 'Shareholders (17k+)', icon: Users },
+  { id: 'import_export', label: 'Upload CSV (ಅಪ್ಲೋಡ್)', icon: Upload },
   { id: 'transactions', label: 'Transactions', icon: CreditCard },
   { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
   { id: 'sugar_allotment', label: 'Sugar Allotment', icon: PackageCheck },
@@ -20,7 +21,6 @@ const MENU_ITEMS = [
   { id: 'employees', label: 'Employees', icon: Briefcase },
   { id: 'users', label: 'Users & RBAC', icon: UserCog },
   { id: 'audit_logs', label: 'Audit Logs', icon: History },
-  { id: 'import_export', label: 'Import / Export', icon: ShieldAlert },
   { id: 'settings', label: 'Cooperative Settings', icon: Settings },
 ];
 

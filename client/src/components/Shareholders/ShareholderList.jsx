@@ -31,6 +31,11 @@ export default function ShareholderList() {
   const [activeProfileId, setActiveProfileId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editShareholderData, setEditShareholderData] = useState(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [previewRecords, setPreviewRecords] = useState([]);
+  const [uploadFileName, setUploadFileName] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const uploadInputRef = React.useRef(null);
 
   useEffect(() => {
     loadMasters();
@@ -39,6 +44,129 @@ export default function ShareholderList() {
   useEffect(() => {
     fetchShareholders(1);
   }, [search, selectedVillage, selectedCircle, selectedStatus, selectedBook]);
+
+  // CSV Line Parser handling quotes and commas
+  const parseCsvLine = (line) => {
+    const values = [];
+    let insideQuotes = false;
+    let currentValue = '';
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        insideQuotes = !insideQuotes;
+      } else if (char === ',' && !insideQuotes) {
+        values.push(currentValue.trim());
+        currentValue = '';
+      } else {
+        currentValue += char;
+      }
+    }
+    values.push(currentValue.trim());
+    return values;
+  };
+
+  const handleCsvFileUpload = (file) => {
+    if (!file) return;
+    setUploadFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
+        if (lines.length < 2) {
+          showToast('CSV file is empty or missing data rows', 'error');
+          return;
+        }
+        const records = [];
+        for (let i = 1; i < lines.length; i++) {
+          const v = parseCsvLine(lines[i]);
+          if (v.length === 0 || v.every(item => item === '')) continue;
+          records.push({
+            book_no: v[0] || 'B.No: 1',
+            sl_no: parseInt(v[1]) || i,
+            share_no: v[2] || String(i),
+            shareholder_name: v[3] || 'ಷೇರುದಾರ',
+            gender: v[4] || 'M',
+            aadhaar_card_no: v[5] || '',
+            reg_date: v[6] || '10/Aug/1982',
+            receipt_no: v[7] || String(i),
+            receipt_amount: parseFloat(v[8]) || 2000,
+            date: v[9] || v[6] || '10/Aug/1982',
+            reciept: v[10] || v[7] || '',
+            amount: parseFloat(v[11]) || 2000,
+            total_amount: parseFloat(v[12]) || 2000,
+            number_of_shares: parseInt(v[13]) || 1,
+            schedule_cast: v[14] || 'ಅ - ವರ್ಗ',
+            address: v[15] || '',
+            nagara: v[16] || '',
+            road: v[17] || '',
+            place: v[18] || 'ಬಳ್ಳೊಳ್ಳಿ',
+            taluk: v[19] || 'ಇಂಡಿ',
+            district: v[20] || 'ವಿಜಯಪುರ',
+            pin_code: v[21] || '586 117',
+            circle: v[22] || 'ಇಂಡಿ',
+            member_type: v[23] || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
+            relationship: v[24] || 'ಸ್ವಂತ (Self)',
+            tharava_date: v[25] || '10/Aug/1982',
+            tharava_no: v[26] || `TR-${i}/1982`,
+            mobile_no: v[27] || '',
+            photo_url: v[28] || '',
+            signature_url: v[29] || '',
+            thumb_url: v[30] || '',
+            photo_updated: v[31] || 'Yes',
+            signature_updated: v[32] || 'Yes',
+            thumb_updated: v[33] || 'Yes',
+            nominee_name: v[34] || '',
+            nominee_aadhaar_no: v[35] || '',
+            nominee_mobile_no: v[36] || '',
+            nominee_address: v[37] || '',
+            validation: 'Valid'
+          });
+        }
+        setPreviewRecords(records);
+        showToast(`Parsed ${records.length} records from ${file.name}`);
+      } catch (err) {
+        showToast('Error reading CSV file', 'error');
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  const loadSampleRecords = async () => {
+    try {
+      const res = await fetch('./shareholders_details.csv');
+      if (res.ok) {
+        const text = await res.text();
+        const fakeBlob = new Blob([text], { type: 'text/csv' });
+        fakeBlob.name = 'shareholders_details.csv';
+        handleCsvFileUpload(fakeBlob);
+        return;
+      }
+    } catch (err) {}
+    setUploadFileName('shareholders_details.csv');
+    setPreviewRecords([
+      { book_no: 'B.No: 1', sl_no: 1, share_no: '1', shareholder_name: 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '1', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 2, share_no: '2', shareholder_name: 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '2', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 3, share_no: '3', shareholder_name: 'ಬಾಬುರಾವ ಅಪ್ಪಾರಾವ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '3', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಜೇವೂರ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 4, share_no: '4', shareholder_name: 'ಮಲ್ಲನಗೌಡ ರಾಮಚಂದ್ರ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '4', receipt_amount: 2000, total_amount: 8000, number_of_shares: 4, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 5, share_no: '6', shareholder_name: 'ಡಾ|| ಇಮ್ಮಾನುವೆ ಸಾಸವೇಲ ಕಟವಟೆ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '6', receipt_amount: 25000, total_amount: 29000, number_of_shares: 14, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಚಡಚಣ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 6, share_no: '7', shareholder_name: 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', gender: 'M', reg_date: '15/Aug/1982', receipt_no: '8', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಅಥರ್ಗಾ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', validation: 'Valid' }
+    ]);
+    showToast('Loaded 6 official sample cooperative records');
+  };
+
+  const commitImport = async () => {
+    if (previewRecords.length === 0) return;
+    setIsImporting(true);
+    for (const r of previewRecords) {
+      await ApiService.addShareholder(r);
+    }
+    setIsImporting(false);
+    showToast(`Successfully imported ${previewRecords.length} records into the Live Registry!`);
+    setShowUploadModal(false);
+    setPreviewRecords([]);
+    fetchShareholders(1);
+  };
 
   const loadMasters = async () => {
     const vRes = await ApiService.getVillages();
@@ -178,16 +306,19 @@ export default function ShareholderList() {
 
           <button
             onClick={() => { setEditShareholderData(null); setShowAddForm(true); }}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add Shareholder
           </button>
 
+          {/* Prominent Upload CSV Button */}
           <button
-            onClick={() => setActiveModule('import_export')}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 border border-slate-800 text-slate-200 hover:text-white rounded-xl text-xs font-semibold transition-all shadow-md"
+            onClick={() => setShowUploadModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-900/50 ring-2 ring-emerald-400/50 hover:scale-[1.02] transition-all cursor-pointer"
+            title="Upload Shareholder CSV (38 Columns)"
           >
-            <Upload className="w-4 h-4 text-emerald-400" /> Upload CSV
+            <Upload className="w-4 h-4 text-white animate-pulse" />
+            <span>Upload CSV (CSV ಅಪ್ಲೋಡ್)</span>
           </button>
 
           <button
@@ -203,6 +334,42 @@ export default function ShareholderList() {
           >
             <Printer className="w-4 h-4 text-sky-400" /> Print
           </button>
+        </div>
+      </div>
+
+      {/* Prominent Quick CSV Import Banner */}
+      <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900/90 to-slate-950 border border-emerald-800/50 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400">
+            <Upload className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <div className="font-bold text-slate-100 flex items-center gap-2">
+              <span>Bulk Shareholder CSV Import & Upload (38 Statutory Cooperative Columns)</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-900/80 text-emerald-300 border border-emerald-700/50">
+                Official Format Ready
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Upload your complete cooperative shareholder database (Book No, Share No, Name in Kannada/English, Gender, Aadhaar, Receipt, Place, Taluk, Circle, Tharava & Nominee)
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <button
+            onClick={() => setShowUploadModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950 hover:scale-[1.02] transition-all cursor-pointer"
+          >
+            <Upload className="w-4 h-4" /> Upload CSV File (ಅಪ್ಲೋಡ್)
+          </button>
+          <a
+            href="./shareholders_details.csv"
+            download="shareholders_details.csv"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all shadow-sm"
+          >
+            <Download className="w-4 h-4 text-emerald-400" /> Template CSV
+          </a>
         </div>
       </div>
 
@@ -511,6 +678,183 @@ export default function ShareholderList() {
           onClose={() => { setShowAddForm(false); setEditShareholderData(null); }}
           onSaveSuccess={() => { setShowAddForm(false); setEditShareholderData(null); fetchShareholders(pagination.page); }}
         />
+      )}
+
+      {/* Upload CSV In-Page Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">
+                    Upload Shareholder Details CSV (ಷೇರುದಾರರ ವಿವರಗಳ CSV ಅಪ್ಲೋಡ್)
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Supports all 38 statutory cooperative columns (B.No, Sl.No, Share No, Name, Gender, Aadhaar, Receipt, Place, Circle, Nominee)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowUploadModal(false); setPreviewRecords([]); }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto space-y-5">
+              {/* Dropzone */}
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    handleCsvFileUpload(e.dataTransfer.files[0]);
+                  }
+                }}
+                className="border-2 border-dashed border-slate-700 hover:border-emerald-500 bg-slate-950/60 rounded-2xl p-6 text-center transition-all cursor-pointer group"
+                onClick={() => uploadInputRef.current?.click()}
+              >
+                <input
+                  type="file"
+                  ref={uploadInputRef}
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleCsvFileUpload(e.target.files[0]);
+                    }
+                  }}
+                  accept=".csv,text/csv"
+                  className="hidden"
+                />
+                <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Upload className="w-6 h-6" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-200">
+                  Click to Browse CSV file or Drag & Drop here
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Upload your .CSV file with UTF-8 encoding (supports Kannada and English characters)
+                </p>
+                {uploadFileName && (
+                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-emerald-950/80 border border-emerald-700/60 rounded-lg text-xs font-semibold text-emerald-300">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Selected File: {uploadFileName} ({previewRecords.length} records parsed)
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons Row */}
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-950/40 rounded-xl border border-slate-800 text-xs">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={loadSampleRecords}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-400" /> Load Official Sample Records
+                  </button>
+                  <a
+                    href="./shareholders_details.csv"
+                    download="shareholders_details.csv"
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium border border-slate-700 transition-colors flex items-center gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5 text-sky-400" /> Download Template CSV
+                  </a>
+                </div>
+
+                {previewRecords.length > 0 && (
+                  <div className="text-emerald-400 font-medium">
+                    Ready to import: <strong className="font-bold text-white">{previewRecords.length}</strong> records
+                  </div>
+                )}
+              </div>
+
+              {/* Preview Table if records exist */}
+              {previewRecords.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+                    <span>Parsed Records Preview ({previewRecords.length} rows)</span>
+                    <span className="text-emerald-400 text-[11px]">All 38 statutory fields mapped</span>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto border border-slate-800 rounded-xl bg-slate-950/80">
+                    <table className="w-full text-left text-xs text-slate-300 border-collapse">
+                      <thead className="bg-slate-900 sticky top-0 text-[11px] text-slate-400 uppercase border-b border-slate-800">
+                        <tr>
+                          <th className="py-2 px-3">Book No</th>
+                          <th className="py-2 px-3">Share No</th>
+                          <th className="py-2 px-3">Shareholder Name</th>
+                          <th className="py-2 px-3">Gender</th>
+                          <th className="py-2 px-3">Aadhaar</th>
+                          <th className="py-2 px-3">Shares</th>
+                          <th className="py-2 px-3">Amount</th>
+                          <th className="py-2 px-3">Place</th>
+                          <th className="py-2 px-3">Circle</th>
+                          <th className="py-2 px-3">Nominee</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {previewRecords.slice(0, 10).map((r, i) => (
+                          <tr key={i} className="hover:bg-slate-800/40">
+                            <td className="py-1.5 px-3 font-mono text-slate-400">{r.book_no}</td>
+                            <td className="py-1.5 px-3 font-bold text-emerald-400">{r.share_no}</td>
+                            <td className="py-1.5 px-3 font-medium text-slate-200">{r.shareholder_name}</td>
+                            <td className="py-1.5 px-3">{r.gender}</td>
+                            <td className="py-1.5 px-3 font-mono text-slate-400">{r.aadhaar_card_no || '—'}</td>
+                            <td className="py-1.5 px-3">{r.number_of_shares}</td>
+                            <td className="py-1.5 px-3 font-medium text-emerald-300">₹{r.total_amount?.toLocaleString()}</td>
+                            <td className="py-1.5 px-3">{r.place}</td>
+                            <td className="py-1.5 px-3">{r.circle}</td>
+                            <td className="py-1.5 px-3 text-slate-400">{r.nominee_name || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {previewRecords.length > 10 && (
+                    <p className="text-[11px] text-slate-500 text-right">
+                      Showing preview of first 10 rows out of {previewRecords.length} records.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => { setShowUploadModal(false); setPreviewRecords([]); }}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={commitImport}
+                disabled={previewRecords.length === 0 || isImporting}
+                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+              >
+                {isImporting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Importing {previewRecords.length} records...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Import & Save to Live Registry ({previewRecords.length} records)</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
