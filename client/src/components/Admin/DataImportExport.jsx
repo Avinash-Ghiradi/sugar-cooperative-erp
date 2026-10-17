@@ -189,6 +189,10 @@ export default function DataImportExport() {
 
           if (!shName && !shareNo) continue;
 
+          const rawPlace = getVal(cPlace) || getVal(cAddr) || '';
+          const circleInfo = ApiService.resolveCircleForPlace ? ApiService.resolveCircleForPlace(rawPlace) : null;
+          const resolvedCircle = circleInfo?.circle_name ? circleInfo.circle_name : 'ಇತರೆ (Other)';
+
           records.push({
             book_no: getVal(cBook) || 'B.No: 1',
             sl_no: parseInt(getVal(cSl)) || i,
@@ -209,11 +213,11 @@ export default function DataImportExport() {
             address: getVal(cAddr),
             nagara: getVal(cNagara),
             road: getVal(cRoad),
-            place: getVal(cPlace) || getVal(cAddr) || '',
-            taluk: getVal(cTaluk) || '',
-            district: getVal(cDist) || '',
-            pin_code: getVal(cPin) || '',
-            circle: getVal(cCircle) || '',
+            place: rawPlace,
+            taluk: circleInfo?.taluk || getVal(cTaluk) || '',
+            district: circleInfo?.district || getVal(cDist) || '',
+            pin_code: circleInfo?.pincode || getVal(cPin) || '',
+            circle: resolvedCircle, // STRICT RULE: Do not consider circle column from shareholder list. Derived strictly from place.
             member_type: getVal(cMemberType) || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
             relationship: getVal(cRel) || 'ಸ್ವಂತ (Self)',
             tharava_date: getVal(cTharavaDate) || '10/Aug/1982',

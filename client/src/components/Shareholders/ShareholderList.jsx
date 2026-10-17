@@ -176,6 +176,10 @@ export default function ShareholderList() {
         const nameVal = getVal(cName);
         const shareNoVal = getVal(cShare) || String(i);
 
+        const rawPlace = getVal(cPlace) || '';
+        const circleInfo = ApiService.resolveCircleForPlace ? ApiService.resolveCircleForPlace(rawPlace) : null;
+        const resolvedCircle = circleInfo?.circle_name ? circleInfo.circle_name : 'ಇತರೆ (Other)';
+
         records.push({
           book_no: getVal(cBook) || 'B.No: 1',
           sl_no: parseInt(getVal(cSl)) || i,
@@ -195,11 +199,11 @@ export default function ShareholderList() {
           address: getVal(cAddr),
           nagara: getVal(cNagara),
           road: getVal(cRoad),
-          place: getVal(cPlace) || '',
-          taluk: getVal(cTaluk) || '',
-          district: getVal(cDist) || '',
-          pin_code: getVal(cPin) || '',
-          circle: getVal(cCircle) || '',
+          place: rawPlace,
+          taluk: circleInfo?.taluk || getVal(cTaluk) || '',
+          district: circleInfo?.district || getVal(cDist) || '',
+          pin_code: circleInfo?.pincode || getVal(cPin) || '',
+          circle: resolvedCircle, // STRICT RULE: Do not consider circle column from shareholder list. Derived strictly from place.
           member_type: getVal(cMemberType) || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
           relationship: getVal(cRel) || 'ಸ್ವಂತ (Self)',
           tharava_date: getVal(cTharavaDate) || '10/Aug/1982',
@@ -237,12 +241,12 @@ export default function ShareholderList() {
     } catch (err) {}
     setUploadFileName('shareholders_details.xlsx');
     setPreviewRecords([
-      { book_no: 'B.No: 1', sl_no: 1, share_no: '1', shareholder_name: 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '1', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 2, share_no: '2', shareholder_name: 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '2', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 3, share_no: '3', shareholder_name: 'ಬಾಬುರಾವ ಅಪ್ಪಾರಾವ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '3', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಜೇವೂರ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 4, share_no: '4', shareholder_name: 'ಮಲ್ಲನಗೌಡ ರಾಮಚಂದ್ರ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '4', receipt_amount: 2000, total_amount: 8000, number_of_shares: 4, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 5, share_no: '6', shareholder_name: 'ಡಾ|| ಇಮ್ಮಾನುವೆ ಸಾಸವೇಲ ಕಟವಟೆ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '6', receipt_amount: 25000, total_amount: 29000, number_of_shares: 14, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಚಡಚಣ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', circle: 'ಚಡಚಣ', validation: 'Valid' },
-      { book_no: 'B.No: 1', sl_no: 6, share_no: '7', shareholder_name: 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', gender: 'M', reg_date: '15/Aug/1982', receipt_no: '8', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಅಥರ್ಗಾ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ', validation: 'Valid' }
+      { book_no: 'B.No: 1', sl_no: 1, share_no: '1', shareholder_name: 'ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '1', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', circle: 'ಧೂಳಖೇಡ ಸರ್ಕಲ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 2, share_no: '2', shareholder_name: 'ರಮೇಶ ವೆಂಕಟೇಶ ಪುರಾಣಿಕ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '2', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', circle: 'ಧೂಳಖೇಡ ಸರ್ಕಲ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 3, share_no: '3', shareholder_name: 'ಬಾಬುರಾವ ಅಪ್ಪಾರಾವ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '3', receipt_amount: 1000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಜೇವೂರ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ ಸರ್ಕಲ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 4, share_no: '4', shareholder_name: 'ಮಲ್ಲನಗೌಡ ರಾಮಚಂದ್ರ ಪಾಟೀಲ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '4', receipt_amount: 2000, total_amount: 8000, number_of_shares: 4, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', circle: 'ಧೂಳಖೇಡ ಸರ್ಕಲ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 5, share_no: '6', shareholder_name: 'ಡಾ|| ಇಮ್ಮಾನುವೆ ಸಾಸವೇಲ ಕಟವಟೆ', gender: 'M', reg_date: '10/Aug/1982', receipt_no: '6', receipt_amount: 25000, total_amount: 29000, number_of_shares: 14, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಚಡಚಣ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', circle: 'ಚಡಚಣ ಸರ್ಕಲ', validation: 'Valid' },
+      { book_no: 'B.No: 1', sl_no: 6, share_no: '7', shareholder_name: 'ಎಸ್ ಎಂ ಕುಂಬಾಳ', gender: 'M', reg_date: '15/Aug/1982', receipt_no: '8', receipt_amount: 2000, total_amount: 2000, number_of_shares: 1, schedule_cast: 'ಅ - ವರ್ಗ', place: 'ಅಥರ್ಗಾ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', circle: 'ಇಂಡಿ ಸರ್ಕಲ', validation: 'Valid' }
     ]);
     showToast('Loaded 6 official sample cooperative records (ಕನ್ನಡ ಯುನಿಕೋಡ್)');
   };

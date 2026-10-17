@@ -183,11 +183,53 @@ export function ensureDBReady() {
         loadFromIndexedDB(),
         loadCircleDirectoryFromDB()
       ]).then(([dbData, circleData]) => {
-        if (dbData && dbData.length > 0) {
-          mockShareholders = dbData;
-        }
         if (circleData && Array.isArray(circleData) && circleData.length > 0) {
           mockCircleDirectory = circleData;
+        }
+        if (dbData && dbData.length > 0) {
+          mockShareholders = dbData;
+          // STRICT RULE: Do not consider circle column from shareholder list. Derive strictly from place -> Circle Directory
+          const placeMap = new Map();
+          mockCircleDirectory.forEach(cd => {
+            const p = (cd.address || '').trim().toLowerCase().normalize('NFC');
+            if (p) placeMap.set(p, cd);
+          });
+          let modified = false;
+          mockShareholders.forEach(s => {
+            const plKey = (s.place || s.village_name || '').trim().toLowerCase().normalize('NFC');
+            let m = placeMap.get(plKey);
+            if (!m && plKey) {
+              for (const [k, v] of placeMap.entries()) {
+                if (plKey === k || plKey.startsWith(k) || k.startsWith(plKey) || plKey.includes(k) || k.includes(plKey)) {
+                  m = v;
+                  break;
+                }
+              }
+            }
+            const expectedCircle = (m && m.circle_name) ? m.circle_name.trim().normalize('NFC') : 'ಇತರೆ (Other)';
+            if (s.circle !== expectedCircle) {
+              s.circle = expectedCircle;
+              s.circle_name = expectedCircle;
+              modified = true;
+            }
+            if (m) {
+              if (m.taluk && (!s.taluk || s.taluk === 'ಇಂಡಿ' || s.taluk !== m.taluk)) {
+                s.taluk = m.taluk;
+                modified = true;
+              }
+              if (m.district && (!s.district || s.district === 'ವಿಜಯಪುರ' || s.district !== m.district)) {
+                s.district = m.district;
+                modified = true;
+              }
+              if (m.pincode && (!s.pin_code || s.pin_code === '586 117' || s.pin_code !== m.pincode)) {
+                s.pin_code = m.pincode;
+                modified = true;
+              }
+            }
+          });
+          if (modified) {
+            saveToIndexedDB(mockShareholders).catch(() => {});
+          }
         }
         isDBReady = true;
         return mockShareholders;
@@ -266,15 +308,23 @@ export const ApiService = {
       if (pl && c) dirPlaceToCircle.set(pl, c);
     });
 
-    // Circle breakdown
+    const getCircleFromPlace = (rawPlace) => {
+      if (!rawPlace) return 'ಇತರೆ (Other)';
+      const pKey = rawPlace.trim().toLowerCase().normalize('NFC');
+      if (dirPlaceToCircle.has(pKey)) return dirPlaceToCircle.get(pKey);
+      for (const [k, v] of dirPlaceToCircle.entries()) {
+        if (pKey === k || pKey.startsWith(k) || k.startsWith(pKey) || pKey.includes(k) || k.includes(pKey)) {
+          return v;
+        }
+      }
+      return 'ಇತರೆ (Other)';
+    };
+
+    // Circle breakdown - STRICT RULE: Never consider circle column from shareholder list. Derive strictly from Place -> Circle Directory
     const cCounts = {};
     mockShareholders.forEach(s => {
-      const pl = (s.place || s.village_name || '').trim().toLowerCase().normalize('NFC');
-      let c = (s.circle || s.circle_name || '').trim().normalize('NFC');
-      if ((!c || c === 'ಇತರೆ') && dirPlaceToCircle.has(pl)) {
-        c = dirPlaceToCircle.get(pl);
-      }
-      if (!c) c = 'ಇತರೆ (Other)';
+      const pl = (s.place || s.village_name || '').trim();
+      const c = getCircleFromPlace(pl);
       cCounts[c] = (cCounts[c] || 0) + 1;
     });
     const shareholdersByCircle = Object.keys(cCounts)
@@ -307,9 +357,13 @@ export const ApiService = {
 
     mockShareholders.forEach(s => {
       const p = (s.place || s.village_name || '').trim();
-      if (p) uniquePlaces.add(p.toLowerCase().normalize('NFC'));
-      const c = (s.circle || s.circle_name || '').trim();
-      if (c) uniqueCircles.add(c.toLowerCase().normalize('NFC'));
+      if (p) {
+        uniquePlaces.add(p.toLowerCase().normalize('NFC'));
+        const resolvedC = getCircleFromPlace(p);
+        if (resolvedC && resolvedC !== 'ಇತರೆ (Other)') {
+          uniqueCircles.add(resolvedC.toLowerCase().normalize('NFC'));
+        }
+      }
       const b = (s.book_no || '').trim();
       if (b) uniqueBooks.add(b);
     });
@@ -517,7 +571,8 @@ export const ApiService = {
       }
 
       const finalPlace = rawPlace || (match ? match.address : '') || (data.address ? data.address.split(',')[0].trim() : '');
-      const finalCircle = ((match && match.circle_name) ? match.circle_name : (data.circle || data.circle_name || '')).normalize('NFC');
+      // STRICT RULE: Do not consider circle column from shareholder list. Derive strictly from place matching against Circle Directory.
+      const finalCircle = ((match && match.circle_name) ? match.circle_name.trim() : 'ಇತರೆ (Other)').normalize('NFC');
       const finalTaluk = ((match && match.taluk) ? match.taluk : (data.taluk || '')).normalize('NFC');
       const finalDistrict = ((match && match.district) ? match.district : (data.district || '')).normalize('NFC');
       const finalPin = (match && match.pincode) ? match.pincode : (data.pin_code || '');
@@ -626,7 +681,8 @@ export const ApiService = {
     }
 
     const finalPlace = rawPlace || (match ? match.address : '') || (data.address ? data.address.split(',')[0].trim() : '');
-    const finalCircle = ((match && match.circle_name) ? match.circle_name : (data.circle || data.circle_name || '')).normalize('NFC');
+    // STRICT RULE: Do not consider circle column from shareholder list. Derive strictly from place matching against Circle Directory.
+    const finalCircle = ((match && match.circle_name) ? match.circle_name.trim() : 'ಇತರೆ (Other)').normalize('NFC');
     const finalTaluk = ((match && match.taluk) ? match.taluk : (data.taluk || '')).normalize('NFC');
     const finalDistrict = ((match && match.district) ? match.district : (data.district || '')).normalize('NFC');
     const finalPin = (match && match.pincode) ? match.pincode : (data.pin_code || '');
@@ -911,13 +967,24 @@ export const ApiService = {
         item.total_shares += shares;
         if (s.taluk && !item.taluk) item.taluk = s.taluk.trim();
         if (s.district && !item.district) item.district = s.district.trim();
-        if ((!item.circle_name || item.circle_name === 'ಇತರೆ')) {
-          if (s.circle && s.circle !== 'ಇತರೆ') item.circle_name = s.circle.trim();
-          else if (placeToCircle.has(key)) item.circle_name = placeToCircle.get(key);
+        // Circle is strictly derived from placeToCircle (Circle Directory)
+        if (placeToCircle.has(key)) {
+          item.circle_name = placeToCircle.get(key);
         }
         if (s.pin_code && !item.pin_code) item.pin_code = s.pin_code.trim();
       } else {
-        const resolvedCircle = (s.circle || s.circle_name || placeToCircle.get(key) || 'ಇತರೆ').trim().normalize('NFC');
+        // STRICT RULE: Do not consider circle column from shareholder list. Derive strictly from place matching in Circle Directory.
+        let resolvedCircle = placeToCircle.get(key);
+        if (!resolvedCircle && key) {
+          for (const [k, v] of placeToCircle.entries()) {
+            if (key === k || key.startsWith(k) || k.startsWith(key) || key.includes(k) || k.includes(key)) {
+              resolvedCircle = v;
+              break;
+            }
+          }
+        }
+        if (!resolvedCircle) resolvedCircle = 'ಇತರೆ (Other)';
+
         placeMap.set(key, {
           village_id: s.village_id || `VIL-${String(placeMap.size + 1).padStart(3, '0')}`,
           name: rawPlace,
@@ -999,12 +1066,17 @@ export const ApiService = {
       const rawPlace = (s.place || s.village_name || '').trim().normalize('NFC');
       const plKey = rawPlace.toLowerCase();
 
-      // Connect shareholder to circle: directly or via place lookup in circle directory
-      let rawCircle = (s.circle || s.circle_name || '').trim().normalize('NFC');
-      if ((!rawCircle || rawCircle === 'ಇತರೆ') && placeToCircle.has(plKey)) {
-        rawCircle = placeToCircle.get(plKey);
+      // Connect shareholder to circle: STRICTLY via place lookup in circle directory (never consider s.circle)
+      let rawCircle = placeToCircle.get(plKey);
+      if (!rawCircle && plKey) {
+        for (const [k, v] of placeToCircle.entries()) {
+          if (plKey === k || plKey.startsWith(k) || k.startsWith(plKey) || plKey.includes(k) || k.includes(plKey)) {
+            rawCircle = v;
+            break;
+          }
+        }
       }
-      if (!rawCircle) continue;
+      if (!rawCircle) rawCircle = 'ಇತರೆ (Other)';
 
       const key = rawCircle.toLowerCase();
       const shares = parseInt(s.number_of_shares) || 1;
@@ -1274,6 +1346,24 @@ export const ApiService = {
     mockEmployees.unshift(newEmp);
     saveStoredData(STORAGE_KEY_EMP, mockEmployees);
     return { success: true, employee_id: newEmp.employee_id };
+  },
+
+  resolveCircleForPlace(place) {
+    if (!place) return { circle_name: 'ಇತರೆ (Other)', taluk: '', district: '', pincode: '' };
+    const pKey = place.trim().toLowerCase().normalize('NFC');
+    for (let i = 0; i < mockCircleDirectory.length; i++) {
+      const cd = mockCircleDirectory[i];
+      const addr = (cd.address || '').trim().toLowerCase().normalize('NFC');
+      if (addr === pKey) return cd;
+    }
+    for (let i = 0; i < mockCircleDirectory.length; i++) {
+      const cd = mockCircleDirectory[i];
+      const addr = (cd.address || '').trim().toLowerCase().normalize('NFC');
+      if (addr && (pKey.startsWith(addr) || addr.startsWith(pKey) || pKey.includes(addr) || addr.includes(pKey))) {
+        return cd;
+      }
+    }
+    return { circle_name: 'ಇತರೆ (Other)', taluk: '', district: '', pincode: '' };
   },
 
   async getAuditLogs() {

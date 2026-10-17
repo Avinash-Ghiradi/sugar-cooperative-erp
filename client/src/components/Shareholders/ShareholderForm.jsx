@@ -66,12 +66,14 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
 
   const handlePlaceChange = (placeName) => {
     const matchedV = villages.find(v => v.name === placeName);
+    const circleInfo = ApiService.resolveCircleForPlace ? ApiService.resolveCircleForPlace(placeName) : null;
     setFormData(prev => ({
       ...prev,
       place: placeName,
-      taluk: matchedV ? matchedV.taluk : prev.taluk,
-      circle: matchedV ? matchedV.circle_name : prev.circle,
-      pin_code: matchedV ? matchedV.pin_code : prev.pin_code
+      taluk: (circleInfo?.taluk) || (matchedV ? matchedV.taluk : prev.taluk),
+      circle: (circleInfo?.circle_name && circleInfo.circle_name !== 'ಇತರೆ (Other)') ? circleInfo.circle_name : (matchedV ? matchedV.circle_name : prev.circle),
+      pin_code: (circleInfo?.pincode) || (matchedV ? matchedV.pin_code : prev.pin_code),
+      district: (circleInfo?.district) || prev.district
     }));
   };
 
@@ -365,12 +367,15 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Circle (ವಲಯ)</label>
+                <label className="block text-slate-400 mb-1 font-medium">
+                  Circle (ವಲಯ) <span className="text-[10px] text-emerald-400">(Auto-derived from Place)</span>
+                </label>
                 <input
                   type="text"
+                  readOnly
+                  title="Circle is determined strictly from Place according to the Official Circle Directory"
                   value={formData.circle}
-                  onChange={(e) => setFormData({ ...formData, circle: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sky-400 outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-semibold outline-none cursor-not-allowed"
                 />
               </div>
 
