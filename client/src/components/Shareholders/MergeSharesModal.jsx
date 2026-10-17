@@ -4,12 +4,13 @@ import { useAuth } from '../../context/AuthContext';
 import {
   GitMerge, Search, CheckCircle2, AlertCircle, X, ShieldCheck,
   RefreshCw, Layers, Coins, Award, Check, Filter, ChevronRight,
-  Plus, Trash2, ArrowRight, CheckSquare, Sparkles, UserCheck, HelpCircle
+  Plus, Trash2, ArrowRight, CheckSquare, Sparkles, UserCheck, HelpCircle,
+  Clock, XCircle, Send, CheckCircle, FileText
 } from 'lucide-react';
 
 export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, initialSelectedShares = [] }) {
   const { showToast, user } = useAuth();
-  const [activeTab, setActiveTab] = useState('by_selection'); // 'by_selection' or 'auto_detected'
+  const [activeTab, setActiveTab] = useState('by_selection'); // 'by_selection', 'approvals', 'auto_detected'
   
   // Selection mode states
   const [shareInput, setShareInput] = useState('');
@@ -18,7 +19,16 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
   const [isSearching, setIsSearching] = useState(false);
   const [selectedShareRecords, setSelectedShareRecords] = useState([]);
   const [primaryRecordId, setPrimaryRecordId] = useState(null);
-  const [isMergingSelected, setIsMergingSelected] = useState(false);
+  const [mergeRemarks, setMergeRemarks] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [directApprove, setDirectApprove] = useState(false);
+
+  // Approval Requests state
+  const [mergeRequests, setMergeRequests] = useState([]);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+  const [approvalFilter, setApprovalFilter] = useState('all'); // 'all', 'pending', 'approved', 'rejected'
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [processingRequestId, setProcessingRequestId] = useState(null);
 
   // Auto-detected mode states
   const [loadingAuto, setLoadingAuto] = useState(false);
@@ -34,14 +44,32 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
         setPrimaryRecordId(initialSelectedShares[0]?.id || null);
         setActiveTab('by_selection');
       }
+      loadMergeRequests();
       loadAutoHoldings();
     } else {
       setSelectedShareRecords([]);
       setShareInput('');
       setSearchResults([]);
       setPrimaryRecordId(null);
+      setMergeRemarks('');
     }
   }, [isOpen]);
+
+  // Load Merge Approval Requests
+  const loadMergeRequests = async () => {
+    setLoadingRequests(true);
+    try {
+      const res = await ApiService.getMergeRequests();
+      if (res && res.success) {
+        setMergeRequests(res.data || []);
+        setPendingApprovalsCount(res.pendingCount || 0);
+      }
+    } catch (e) {
+      console.error('Error loading merge requests:', e);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
 
   // Search live database for share numbers / shareholder names
   useEffect(() => {
@@ -92,12 +120,13 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
     const newRecords = [...selectedShareRecords];
 
     for (const part of parts) {
-      const res = await ApiService.searchShareholdersByShareNo(part);
+      const cleanNo = part.replace(/^#/, '').trim();
+      const res = await ApiService.searchShareholdersByShareNo(cleanNo);
       if (res && res.success && res.data.length > 0) {
         const exact = res.data.find(d => 
-          String(d.share_no) === part || 
-          (d.all_share_numbers || []).includes(part) ||
-          String(d.id) === part
+          String(d.share_no) === cleanNo || 
+          (d.all_share_numbers || []).includes(cleanNo) ||
+          String(d.id) === cleanNo
         ) || res.data[0];
 
         if (!newRecords.some(r => r.id === exact.id)) {
@@ -112,7 +141,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
       if (!primaryRecordId && newRecords.length > 0) {
         setPrimaryRecordId(newRecords[0].id);
       }
-      showToast(`${addedCount} ಷೇರು ಖಾತೆಗಳನ್ನು ಆಯ್ಕೆಗೆ ಸೇರಿಸಲಾಗಿದೆ (Added to selection)`);
+      showToast(`${addedCount} ಷೇರು ಖಾತೆಗಳನ್ನು ಆಯ್ಕೆಗೆ ಸೇರಿಸಲಾಗಿದೆ!`);
       setShareInput('');
     } else {
       showToast(`ನಮೂದಿಸಿದ ಷೇರು ಸಂಖ್ಯೆಗಳಿಗೆ ಯಾವುದೇ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ: ${parts.join(', ')}`, 'error');
@@ -128,8 +157,8 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
     }
   };
 
-  // Execute Merge Selected Shares
-  const handleMergeSelected = async () => {
+  // SUBMIT FOR ADMIN APPROVAL
+  const handleSubmitForApproval = async () => {
     if (selectedShareRecords.length < 2) {
       showToast('ವಿಲೀನಗೊಳಿಸಲು ಕನಿಷ್ಠ 2 ಷೇರುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ (ದಯವಿಟ್ಟು ಕನಿಷ್ಠ 2 ಷೇರು ಸಂಖ್ಯೆಗಳನ್ನು ಸೇರಿಸಿ)', 'error');
       return;
@@ -138,27 +167,97 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
     const shareNumbers = selectedShareRecords.map(r => r.share_no || r.id);
     const primaryRecord = selectedShareRecords.find(r => r.id === primaryRecordId) || selectedShareRecords[0];
 
-    setIsMergingSelected(true);
+    setIsSubmitting(true);
     try {
-      const res = await ApiService.mergeSharesByShareNumbers({
-        shareNumbers,
-        primaryShareNo: primaryRecord.share_no || primaryRecord.id,
-        adminUser: user?.name || 'Admin'
-      });
+      if (directApprove) {
+        // Direct execution by Admin
+        const res = await ApiService.mergeSharesByShareNumbers({
+          shareNumbers,
+          primaryShareNo: primaryRecord.share_no || primaryRecord.id,
+          adminUser: user?.name || 'Admin'
+        });
 
-      if (res && res.success) {
-        showToast(`ಅಭಿನಂದನೆಗಳು! ಷೇರುಗಳು #${res.combinedShareNoStr} ಯಶಸ್ವಿಯಾಗಿ ಏಕೀಕೃತಗೊಂಡಿವೆ! ಒಟ್ಟು: ${res.combinedShares} ಷೇರುಗಳು, ₹${res.combinedTotalAmt?.toLocaleString()}.`);
-        setSelectedShareRecords([]);
-        setPrimaryRecordId(null);
-        if (onMergeSuccess) await onMergeSuccess();
-        onClose();
+        if (res && res.success) {
+          showToast(`ಅಭಿನಂದನೆಗಳು! ಷೇರುಗಳು #${res.combinedShareNoStr} ಯಶಸ್ವಿಯಾಗಿ ಏಕೀಕೃತಗೊಂಡಿವೆ! ಒಟ್ಟು: ${res.combinedShares} ಷೇರುಗಳು, ₹${res.combinedTotalAmt?.toLocaleString()}.`);
+          setSelectedShareRecords([]);
+          setPrimaryRecordId(null);
+          if (onMergeSuccess) await onMergeSuccess();
+          onClose();
+        } else {
+          showToast(res?.message || 'ವಿಲೀನಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ', 'error');
+        }
       } else {
-        showToast(res?.message || 'ವಿಲೀನಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ', 'error');
+        // Submit for Admin Approval Gate
+        const res = await ApiService.submitMergeRequest({
+          shareNumbers,
+          primaryShareNo: primaryRecord.share_no || primaryRecord.id,
+          requestedBy: user?.name || 'Operator',
+          remarks: mergeRemarks || 'ಬಹು-ಷೇರುಗಳನ್ನು ಏಕೀಕರಿಸಲು ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಸಲ್ಲಿಸಲಾದ ವಿನಂತಿ.'
+        });
+
+        if (res && res.success) {
+          showToast(`ವಿಲೀನ ವಿನಂತಿ #${res.data?.request_id} ಯಶಸ್ವಿಯಾಗಿ ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಕಳುಹಿಸಲಾಗಿದೆ!`);
+          setSelectedShareRecords([]);
+          setPrimaryRecordId(null);
+          setMergeRemarks('');
+          await loadMergeRequests();
+          setActiveTab('approvals');
+        } else {
+          showToast(res?.message || 'ವಿನಂತಿ ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ', 'error');
+        }
       }
     } catch (err) {
       showToast('ದೋಷ: ' + err.message, 'error');
     } finally {
-      setIsMergingSelected(false);
+      setIsSubmitting(false);
+    }
+  };
+
+  // ADMIN APPROVE MERGE REQUEST
+  const handleApproveRequest = async (request) => {
+    setProcessingRequestId(request.id);
+    try {
+      const res = await ApiService.approveMergeRequestByAdmin({
+        requestId: request.id,
+        adminUser: user?.name || 'Admin',
+        remarks: 'ಅಡ್ಮಿನ್ ಅಧಿಕೃತ ಅನುಮೋದನೆ ನೀಡಿ ಮಾಸ್ಟರ್ ಶಾಸನಬದ್ಧ ಶೀಟ್‌ಗೆ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ.'
+      });
+
+      if (res && res.success) {
+        showToast(`ಅಭಿನಂದನೆಗಳು! ವಿನಂತಿ #${request.request_id} ಯಶಸ್ವಿಯಾಗಿ ಅನುಮೋದನೆಗೊಂಡು, ಷೇರುಗಳು #${request.combined_share_no_str} ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಏಕೀಕೃತಗೊಂಡಿವೆ!`);
+        await loadMergeRequests();
+        await loadAutoHoldings();
+        if (onMergeSuccess) await onMergeSuccess();
+      } else {
+        showToast(res?.message || 'ಅನುಮೋದನೆ ವಿಫಲವಾಗಿದೆ', 'error');
+      }
+    } catch (err) {
+      showToast('ದೋಷ: ' + err.message, 'error');
+    } finally {
+      setProcessingRequestId(null);
+    }
+  };
+
+  // ADMIN REJECT MERGE REQUEST
+  const handleRejectRequest = async (request) => {
+    setProcessingRequestId(request.id);
+    try {
+      const res = await ApiService.rejectMergeRequestByAdmin({
+        requestId: request.id,
+        adminUser: user?.name || 'Admin',
+        remarks: 'ಅಡ್ಮಿನ್ ಪರಿಶೀಲನೆಯಲ್ಲಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.'
+      });
+
+      if (res && res.success) {
+        showToast(`ವಿನಂತಿ #${request.request_id} ಅನ್ನು ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.`);
+        await loadMergeRequests();
+      } else {
+        showToast(res?.message || 'ಪ್ರಕ್ರಿಯೆ ವಿಫಲವಾಗಿದೆ', 'error');
+      }
+    } catch (err) {
+      showToast('ದೋಷ: ' + err.message, 'error');
+    } finally {
+      setProcessingRequestId(null);
     }
   };
 
@@ -188,19 +287,26 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
     return name.includes(q) || place.includes(q) || taluk.includes(q) || shareNos.includes(q);
   });
 
-  const handleMergeOneAuto = async (candidate) => {
+  // Submit single auto candidate for approval
+  const handleSubmitAutoForApproval = async (candidate) => {
+    const shareNumbers = candidate.share_numbers || [];
+    if (shareNumbers.length < 2) return;
+
     setMergingKey(candidate.key);
     try {
-      const res = await ApiService.mergeShareholderHoldings({
-        groupKey: candidate.key,
-        adminUser: user?.name || 'Admin'
+      const res = await ApiService.submitMergeRequest({
+        shareNumbers,
+        primaryShareNo: shareNumbers[0],
+        requestedBy: user?.name || 'Operator',
+        remarks: `ಸ್ವಯಂ ಪತ್ತೆಯಾದ ಬಹು-ಶೇರುದಾರರ (${candidate.shareholder_name}, ${candidate.place}) ವಿಲೀನ ವಿನಂತಿ.`
       });
+
       if (res && res.success) {
-        showToast(`ಯಶಸ್ವಿಯಾಗಿ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ! ${candidate.shareholder_name} ಅವರ ಷೇರುಗಳು (${res.combinedShares} ಷೇರುಗಳು, ₹${res.combinedTotalAmt?.toLocaleString()}) ಏಕೀಕರಿಸಲಾಗಿದೆ.`);
-        await loadAutoHoldings();
-        if (onMergeSuccess) await onMergeSuccess();
+        showToast(`ವಿನಂತಿ #${res.data?.request_id} (${candidate.shareholder_name}) ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಸಲ್ಲಿಸಲಾಗಿದೆ!`);
+        await loadMergeRequests();
+        setActiveTab('approvals');
       } else {
-        showToast(res?.message || 'ವಿಲೀನಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ', 'error');
+        showToast(res?.message || 'ವಿನಂತಿ ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ', 'error');
       }
     } catch (err) {
       showToast('ದೋಷ: ' + err.message, 'error');
@@ -209,30 +315,6 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
     }
   };
 
-  const handleMergeAllAuto = async () => {
-    const count = autoCandidates.length;
-    if (count === 0) return;
-
-    setIsMergingAuto(true);
-    try {
-      const res = await ApiService.mergeAllMultipleHoldings({
-        adminUser: user?.name || 'Admin'
-      });
-      if (res && res.success) {
-        showToast(`ಅಭಿನಂದನೆಗಳು! ಒಟ್ಟು ${res.mergedCount} ಶೇರುದಾರರ ${res.totalSharesCombined} ಷೇರುಗಳು ಮತ್ತು ₹${res.totalCapitalCombined?.toLocaleString()} ಮೊತ್ತವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಏಕೀಕರಿಸಲಾಗಿದೆ!`);
-        await loadAutoHoldings();
-        if (onMergeSuccess) await onMergeSuccess();
-      } else {
-        showToast(res?.message || 'ವಿಲೀನ ವಿಫಲವಾಗಿದೆ', 'error');
-      }
-    } catch (err) {
-      showToast('ದೋಷ: ' + err.message, 'error');
-    } finally {
-      setIsMergingAuto(false);
-    }
-  };
-
-  // Transfer candidate records from Auto-detected to Selection tab
   const handleLoadCandidateIntoSelection = (candidate) => {
     const list = candidate.holdings || candidate.records || [];
     const records = list.map((r, idx) => ({
@@ -250,10 +332,18 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
     setSelectedShareRecords(records);
     if (records.length > 0) setPrimaryRecordId(records[0].id);
     setActiveTab('by_selection');
-    showToast(`${records.length} ಷೇರುಗಳನ್ನು ಆಯ್ಕೆ ಮೋಡ್‌ಗೆ ಲೋಡ್ ಮಾಡಲಾಗಿದೆ. ಮುಖ್ಯ ಖಾತೆ ಪರಿಶೀಲಿಸಿ ವಿಲೀನಗೊಳಿಸಿ.`);
+    showToast(`${records.length} ಷೇರುಗಳನ್ನು ಆಯ್ಕೆ ಮೋಡ್‌ಗೆ ಲೋಡ್ ಮಾಡಲಾಗಿದೆ. ಮುಖ್ಯ ಖಾತೆ ಪರಿಶೀಲಿಸಿ ಅನುಮೋದನೆಗೆ ಸಲ್ಲಿಸಿ.`);
   };
 
   if (!isOpen) return null;
+
+  // Filtered approval requests
+  const filteredRequests = mergeRequests.filter(r => {
+    if (approvalFilter === 'pending') return (r.approval_status || '').includes('Pending');
+    if (approvalFilter === 'approved') return (r.approval_status || '').includes('Approved');
+    if (approvalFilter === 'rejected') return (r.approval_status || '').includes('Rejected');
+    return true;
+  });
 
   // Selection calculations
   const totalSelectedShares = selectedShareRecords.reduce((sum, r) => sum + (parseInt(r.number_of_shares) || 1), 0);
@@ -271,11 +361,16 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
               <GitMerge className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">
-                ಷೇರುಗಳ ವಿಲೀನ ನಿರ್ವಹಣೆ (Merge Shares & Holdings)
-              </h2>
-              <p className="text-xs text-slate-400">
-                ಷೇರು ಸಂಖ್ಯೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಸ್ವಯಂ-ಪತ್ತೆಯಾದ ಖಾತೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ ಏಕೀಕೃತ ಖಾತೆಯಾಗಿ ವಿಲೀನಗೊಳಿಸಿ.
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-slate-100">
+                  ಷೇರುಗಳ ವಿಲೀನ & ಅಡ್ಮಿನ್ ಅನುಮೋದನೆ (Merge Shares & Admin Approval Gate)
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950 border border-amber-700/60 text-amber-300 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-amber-400" /> Statutory Approval
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                ಷೇರುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಸಲ್ಲಿಸಿ. ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಯ ನಂತರವೇ ಮಾಸ್ಟರ್ ಶೀಟ್‌ನಲ್ಲಿ ವಿಲೀನಗೊಳ್ಳುತ್ತದೆ.
               </p>
             </div>
           </div>
@@ -288,18 +383,19 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
         </div>
 
         {/* Mode Navigation Tabs */}
-        <div className="flex items-center gap-2 px-5 pt-3 border-b border-slate-800 bg-slate-950/40">
+        <div className="flex items-center gap-2 px-5 pt-3 border-b border-slate-800 bg-slate-950/40 overflow-x-auto">
+          {/* Tab 1: Selection */}
           <button
             type="button"
             onClick={() => setActiveTab('by_selection')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all shrink-0 cursor-pointer ${
               activeTab === 'by_selection'
                 ? 'border-amber-400 text-amber-400 bg-amber-500/10 rounded-t-xl'
                 : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 rounded-t-xl'
             }`}
           >
             <CheckSquare className="w-4 h-4" />
-            <span>ಷೇರು ಸಂಖ್ಯೆಗಳ ಆಯ್ಕೆ ಮೂಲಕ ವಿಲೀನ (Merge by Selecting Share Numbers)</span>
+            <span>1. ಷೇರುಗಳ ಆಯ್ಕೆ & ಸಲ್ಲಿಕೆ (Select Shares)</span>
             {selectedShareRecords.length > 0 && (
               <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-slate-950 font-black">
                 {selectedShareRecords.length}
@@ -307,24 +403,48 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
             )}
           </button>
 
+          {/* Tab 2: Admin Approvals */}
           <button
             type="button"
-            onClick={() => setActiveTab('auto_detected')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
-              activeTab === 'auto_detected'
+            onClick={() => setActiveTab('approvals')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all shrink-0 cursor-pointer ${
+              activeTab === 'approvals'
                 ? 'border-emerald-400 text-emerald-400 bg-emerald-500/10 rounded-t-xl'
                 : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 rounded-t-xl'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
-            <span>ಸ್ವಯಂ ಪತ್ತೆಯಾದ ಬಹು-ಶೇರುಗಳು (Auto-Detected Holdings)</span>
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>2. ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗಳು (Admin Approvals)</span>
+            {pendingApprovalsCount > 0 ? (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-slate-950 font-black animate-pulse">
+                {pendingApprovalsCount} ಬಾಕಿ
+              </span>
+            ) : (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-bold">
+                {mergeRequests.length}
+              </span>
+            )}
+          </button>
+
+          {/* Tab 3: Auto Detected */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('auto_detected')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all shrink-0 cursor-pointer ${
+              activeTab === 'auto_detected'
+                ? 'border-sky-400 text-sky-400 bg-sky-500/10 rounded-t-xl'
+                : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 rounded-t-xl'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-sky-400" />
+            <span>3. ಸ್ವಯಂ ಪತ್ತೆಯಾದ ಬಹು-ಶೇರುಗಳು (Auto-Detected)</span>
             <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-bold">
               {loadingAuto ? '...' : (autoSummary?.totalDetectedShareholders || 0)}
             </span>
           </button>
         </div>
 
-        {/* TAB 1: MERGE BY SELECTING SHARE NUMBERS */}
+        {/* TAB 1: SELECT SHARES & SUBMIT FOR APPROVAL */}
         {activeTab === 'by_selection' && (
           <div className="p-5 overflow-y-auto flex-1 space-y-5">
             {/* Search and Quick Add Bar */}
@@ -435,7 +555,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                     onClick={() => { setSelectedShareRecords([]); setPrimaryRecordId(null); }}
                     className="text-[11px] text-rose-400 hover:text-rose-300 font-semibold cursor-pointer"
                   >
-                    ಎಲ್ಲವನ್ನೂ ತೆರವಗೊಳಿಸಿ (Clear All)
+                    ಎಲ್ಲವನ್ನೂ ತೆರವುಗೊಳಿಸಿ (Clear All)
                   </button>
                 )}
               </div>
@@ -544,7 +664,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                     </h4>
                   </div>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
-                    ಏಕೀಕೃತ ಮಾಸ್ಟರ್ ರೆಕಾರ್ಡ್
+                    ಅಡ್ಮಿನ್ ಅನುಮೋದನೆ ಸಲ್ಲಿಕೆ
                   </span>
                 </div>
 
@@ -575,15 +695,230 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                   </div>
                 </div>
 
-                <p className="text-[11px] text-slate-400">
-                  <strong className="text-slate-300">ವಿಲೀನದ ನಿಯಮ:</strong> ಇತರೆ {selectedShareRecords.length - 1} ಪ್ರತ್ಯೇಕ ದಾಖಲೆಗಳು ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಿಂದ ತೆಗೆದುಹಾಕಲ್ಪಟ್ಟು, ಅವುಗಳ ಎಲ್ಲಾ ಷೇರುಗಳು, ರಶೀದಿಗಳು ಮತ್ತು ಕಂತು ಮೊತ್ತಗಳು ಮುಖ್ಯ ಖಾತೆಯಲ್ಲಿ ವಿಲೀನಗೊಳ್ಳುತ್ತವೆ.
-                </p>
+                {/* Remarks & Approval Settings */}
+                <div className="pt-2 space-y-2">
+                  <input
+                    type="text"
+                    value={mergeRemarks}
+                    onChange={(e) => setMergeRemarks(e.target.value)}
+                    placeholder="ಅಡ್ಮಿನ್ ಪರಿಶೀಲನೆಗಾಗಿ ಟಿಪ್ಪಣಿ/ಷರಾ (Remarks for Admin Approval)..."
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+
+                  {user?.role === 'Admin' && (
+                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-amber-300 bg-amber-950/20 p-2.5 rounded-xl border border-amber-900/40">
+                      <input
+                        type="checkbox"
+                        checked={directApprove}
+                        onChange={(e) => setDirectApprove(e.target.checked)}
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 bg-slate-900 border-slate-700 cursor-pointer"
+                      />
+                      <span className="font-semibold">
+                        ಅಡ್ಮಿನ್ ವಿಶೇಷಾಧಿಕಾರ: ವಿನಂತಿ ಕಳುಹಿಸುವ ಬದಲು ತಕ್ಷಣವೇ ನೇರವಾಗಿ ಅನುಮೋದಿಸಿ ಮತ್ತು ವಿಲೀನಗೊಳಿಸಿ (Directly Approve & Execute)
+                      </span>
+                    </label>
+                  )}
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {/* TAB 2: AUTO-DETECTED HOLDINGS */}
+        {/* TAB 2: PENDING ADMIN APPROVALS */}
+        {activeTab === 'approvals' && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Filter Pills */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-3 bg-slate-950/40 text-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setApprovalFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition-colors cursor-pointer ${
+                    approvalFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  ಎಲ್ಲಾ ವಿನಂತಿಗಳು ({mergeRequests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setApprovalFilter('pending')}
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    approvalFilter === 'pending' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>ಅನುಮೋದನೆ ಬಾಕಿ ({pendingApprovalsCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setApprovalFilter('approved')}
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    approvalFilter === 'approved' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>ಮಂಜೂರಾದವು</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={loadMergeRequests}
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+                title="ಮರುಲೋಡ್ ಮಾಡಿ"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingRequests ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            {/* Requests List */}
+            <div className="p-4 overflow-y-auto flex-1 space-y-3">
+              {loadingRequests ? (
+                <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-amber-400" />
+                  <span>ಅನುಮೋದನೆ ವಿನಂತಿಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...</span>
+                </div>
+              ) : filteredRequests.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 space-y-2">
+                  <ShieldCheck className="w-10 h-10 mx-auto text-slate-600" />
+                  <p className="font-semibold text-slate-200">
+                    {approvalFilter === 'pending' ? 'ಅನುಮೋದನೆಗಾಗಿ ಯಾವುದೇ ವಿನಂತಿಗಳು ಬಾಕಿ ಉಳಿದಿಲ್ಲ.' : 'ಯಾವುದೇ ವಿಲೀನ ವಿನಂತಿಗಳು ಕಂಡುಬಂದಿಲ್ಲ.'}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    ಹೊಸ ಷೇರುಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಲು ಟ್ಯಾಬ್ 1 ರಲ್ಲಿ ಷೇರುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ "ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಕಳುಹಿಸಿ" ಕ್ಲಿಕ್ ಮಾಡಿ.
+                  </p>
+                </div>
+              ) : (
+                filteredRequests.map((req) => {
+                  const isPending = (req.approval_status || '').includes('Pending');
+                  const isApproved = (req.approval_status || '').includes('Approved');
+                  const isRejected = (req.approval_status || '').includes('Rejected');
+                  const isProcessing = processingRequestId === req.id;
+
+                  return (
+                    <div
+                      key={req.id}
+                      className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                        isPending
+                          ? 'bg-slate-950/80 border-amber-500/40 shadow-lg shadow-amber-950/20'
+                          : isApproved
+                          ? 'bg-slate-950/50 border-emerald-500/30'
+                          : 'bg-slate-950/30 border-rose-900/30 opacity-70'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-mono font-bold text-xs text-amber-400">
+                            #{req.request_id || req.id}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            ದಿನಾಂಕ: {new Date(req.request_date).toLocaleDateString()}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            • ಸಲ್ಲಿಸಿದವರು: <strong className="text-slate-300">{req.requested_by}</strong>
+                          </span>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div>
+                          {isPending && (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-950 text-amber-300 border border-amber-700 flex items-center gap-1.5 animate-pulse">
+                              <Clock className="w-3.5 h-3.5 text-amber-400" />
+                              <span>ಅಡ್ಮಿನ್ ಅನುಮೋದನೆ ಬಾಕಿ (Pending Admin Approval)</span>
+                            </span>
+                          )}
+                          {isApproved && (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>ಮಂಜೂರಾಗಿದೆ ಮತ್ತು ವಿಲೀನಗೊಂಡಿದೆ ({req.approved_by || 'Admin'})</span>
+                            </span>
+                          )}
+                          {isRejected && (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-950 text-rose-300 border border-rose-700 flex items-center gap-1.5">
+                              <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                              <span>ತಿರಸ್ಕರಿಸಲಾಗಿದೆ</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Request Details Card */}
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-xs">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block font-medium">ವಿಲೀನಗೊಳ್ಳುವ ಷೇರು ಸಂಖ್ಯೆಗಳು</span>
+                          <strong className="text-amber-300 font-mono text-sm">
+                            #{req.combined_share_no_str || (req.share_numbers || []).join(', #')}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block font-medium">ಒಟ್ಟು ಸಂಯೋಜಿತ ಷೇರುಗಳು</span>
+                          <strong className="text-emerald-300 font-mono text-sm">
+                            {req.combined_shares} ಷೇರುಗಳು
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block font-medium">ಒಟ್ಟು ಸಂಯೋಜಿತ ಬಂಡವಾಳ</span>
+                          <strong className="text-emerald-400 font-mono text-sm">
+                            ₹{req.combined_total_amount?.toLocaleString()}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block font-medium">ಉಳಿಯುವ ಮುಖ್ಯ ಮಾಸ್ಟರ್ ಖಾತೆ</span>
+                          <strong className="text-slate-100 truncate block text-xs">
+                            {req.primary_record?.name || 'ಮುಖ್ಯ ಖಾತೆ'} ({req.primary_record?.place || '—'})
+                          </strong>
+                        </div>
+                      </div>
+
+                      {/* Remarks */}
+                      {req.remarks && (
+                        <p className="text-[11px] text-slate-400 italic bg-slate-900/40 p-2 rounded-lg border border-slate-800/60">
+                          ಷರಾ/ಟಿಪ್ಪಣಿ: "{req.remarks}"
+                        </p>
+                      )}
+
+                      {/* Action buttons for Admin */}
+                      {isPending && (
+                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+                          <button
+                            type="button"
+                            onClick={() => handleRejectRequest(req)}
+                            disabled={isProcessing}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                          >
+                            <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                            <span>ತಿರಸ್ಕರಿಸಿ (Reject)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleApproveRequest(req)}
+                            disabled={isProcessing}
+                            className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+                          >
+                            {isProcessing ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>ಅನುಮೋದಿಸಲಾಗುತ್ತಿದೆ...</span>
+                              </>
+                            ) : (
+                              <>
+                                <ShieldCheck className="w-4 h-4" />
+                                <span>ಅನುಮೋದಿಸಿ ಮತ್ತು ಮಾಸ್ಟರ್ ಶೀಟ್‌ಗೆ ಸೇರಿಸಿ (Approve & Merge)</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: AUTO-DETECTED HOLDINGS */}
         {activeTab === 'auto_detected' && (
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Stats Summary Cards */}
@@ -638,24 +973,9 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                 />
               </div>
 
-              <button
-                type="button"
-                onClick={handleMergeAllAuto}
-                disabled={isMergingAuto || autoCandidates.length === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-slate-950 font-bold rounded-xl text-xs shadow-lg shadow-amber-950 transition-all cursor-pointer"
-              >
-                {isMergingAuto ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>ವಿಲೀನ ಪ್ರಕ್ರಿಯೆಯಲ್ಲಿದೆ...</span>
-                  </>
-                ) : (
-                  <>
-                    <GitMerge className="w-4 h-4" />
-                    <span>ಎಲ್ಲಾ ಬಹು-ಶೇರುಗಳನ್ನು ಒಟ್ಟಿಗೆ ವಿಲೀನಗೊಳಿಸಿ (Merge All {autoCandidates.length})</span>
-                  </>
-                )}
-              </button>
+              <div className="text-xs text-slate-400">
+                ಪತ್ತೆಯಾದ ಪ್ರತಿ ಬಹು-ಶೇರುಗಳನ್ನು ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಸಲ್ಲಿಸಬಹುದು
+              </div>
             </div>
 
             {/* Candidates List */}
@@ -707,16 +1027,16 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleMergeOneAuto(c)}
+                          onClick={() => handleSubmitAutoForApproval(c)}
                           disabled={mergingKey === c.key}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-slate-950 font-bold rounded-xl text-xs transition-colors cursor-pointer"
                         >
                           {mergingKey === c.key ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                           ) : (
-                            <GitMerge className="w-3.5 h-3.5" />
+                            <Send className="w-3.5 h-3.5" />
                           )}
-                          <span>ವಿಲೀನಗೊಳಿಸಿ</span>
+                          <span>ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಸಲ್ಲಿಸಿ</span>
                         </button>
                       </div>
                     </div>
@@ -753,52 +1073,50 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
             ಮುಚ್ಚಿ (Close)
           </button>
 
-          {activeTab === 'by_selection' ? (
+          {activeTab === 'by_selection' && (
             <button
               type="button"
-              onClick={handleMergeSelected}
-              disabled={isMergingSelected}
+              onClick={handleSubmitForApproval}
+              disabled={isSubmitting}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all cursor-pointer ${
                 selectedShareRecords.length >= 2
-                  ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-950/60 ring-2 ring-amber-400/50'
+                  ? directApprove
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60 ring-2 ring-emerald-400/50'
+                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-950/60 ring-2 ring-amber-400/50'
                   : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-600/40'
               }`}
             >
-              {isMergingSelected ? (
+              {isSubmitting ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>ಆಯ್ಕೆಮಾಡಿದ ಷೇರುಗಳ ವಿಲೀನ ನಡೆಯುತ್ತಿದೆ...</span>
+                  <span>ಸಲ್ಲಿಸಲಾಗುತ್ತಿದೆ...</span>
                 </>
+              ) : selectedShareRecords.length >= 2 ? (
+                directApprove ? (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>ನೇರವಾಗಿ ಅನುಮೋದಿಸಿ ಮತ್ತು ವಿಲೀನಗೊಳಿಸಿ (Approve & Execute)</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಕಳುಹಿಸಿ (Submit for Admin Approval)</span>
+                  </>
+                )
               ) : (
                 <>
                   <GitMerge className="w-4 h-4" />
-                  <span>
-                    {selectedShareRecords.length >= 2
-                      ? `ಆಯ್ಕೆಮಾಡಿದ ${selectedShareRecords.length} ಷೇರುಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ (Confirm Merge)`
-                      : `ಷೇರುಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ (ಕನಿಷ್ಠ 2 ಷೇರುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ)`}
-                  </span>
+                  <span>ವಿಲೀನ ವಿನಂತಿ ಸಲ್ಲಿಸಿ (ಕನಿಷ್ಠ 2 ಷೇರುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ)</span>
                 </>
               )}
             </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleMergeAllAuto}
-              disabled={isMergingAuto || autoCandidates.length === 0}
-              className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-slate-950 rounded-xl text-xs font-bold shadow-lg shadow-amber-950 transition-all cursor-pointer"
-            >
-              {isMergingAuto ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>ಎಲ್ಲಾ ಬಹು-ಶೇರುಗಳ ವಿಲೀನ ನಡೆಯುತ್ತಿದೆ...</span>
-                </>
-              ) : (
-                <>
-                  <GitMerge className="w-4 h-4" />
-                  <span>ಎಲ್ಲಾ ಬಹು-ಶೇರುಗಳನ್ನು ಒಟ್ಟಿಗೆ ವಿಲೀನಗೊಳಿಸಿ (Merge All {autoCandidates.length})</span>
-                </>
-              )}
-            </button>
+          )}
+
+          {activeTab === 'approvals' && (
+            <div className="text-xs text-slate-400 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಯ ನಂತರವೇ ಮಾಸ್ಟರ್ ಶಾಸನಬದ್ಧ ಶೀಟ್‌ನಲ್ಲಿ ಪ್ರತಿಫಲಿಸುತ್ತದೆ.</span>
+            </div>
           )}
         </div>
       </div>

@@ -28,3 +28,6 @@ dist-ssr/
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Scratch helper scripts
+scratch/

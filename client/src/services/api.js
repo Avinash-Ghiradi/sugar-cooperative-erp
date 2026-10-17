@@ -12,6 +12,7 @@ const STORAGE_KEY_VG = 'sugar_erp_clean_vargavane_v4';
 const STORAGE_KEY_ENROLLMENT = 'sugar_erp_clean_enrollment_v2';
 const STORAGE_KEY_EMP = 'sugar_erp_clean_emp_v3';
 const STORAGE_KEY_LOGS = 'sugar_erp_clean_logs_v3';
+const STORAGE_KEY_MERGE_REQ = 'sugar_erp_clean_merge_requests_v1';
 
 // Clear legacy mock cache keys
 try {
@@ -325,6 +326,7 @@ export const initialNewEnrollments = [];
 let mockEnrollments = loadStoredData(STORAGE_KEY_ENROLLMENT, []);
 let mockEmployees = loadStoredData(STORAGE_KEY_EMP, []);
 let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
+let mockMergeRequests = loadStoredData(STORAGE_KEY_MERGE_REQ, []);
 
 // Helper API execution with auto backend failover
 async function fetchApi(endpoint, options = {}) {
@@ -3105,4 +3107,198 @@ export const ApiService = {
     };
   }
 
+,
+
+  async getMergeRequests(status = '') {
+    await ensureDBReady();
+    let filtered = mockMergeRequests;
+    if (status) {
+      filtered = filtered.filter(m => (m.approval_status || '').toLowerCase().includes(status.toLowerCase()));
+    }
+    return {
+      success: true,
+      data: filtered,
+      totalCount: mockMergeRequests.length,
+      pendingCount: mockMergeRequests.filter(m => (m.approval_status || '').includes('Pending')).length,
+      approvedCount: mockMergeRequests.filter(m => (m.approval_status || '').includes('Approved')).length,
+      rejectedCount: mockMergeRequests.filter(m => (m.approval_status || '').includes('Rejected')).length
+    };
+  },
+
+  async submitMergeRequest({ shareNumbers = [], primaryShareNo = null, requestedBy = 'Operator', remarks = '' }) {
+    await ensureDBReady();
+    if (!Array.isArray(shareNumbers) || shareNumbers.length < 2) {
+      return { success: false, message: 'ವಿಲೀನಗೊಳಿಸಲು ಕನಿಷ್ಠ 2 ಷೇರು ಸಂಖ್ಯೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ.' };
+    }
+
+    const cleanTargets = shareNumbers.map(n => String(n).replace(/^#/, '').trim()).filter(Boolean);
+    const matchingRecords = [];
+    const matchedIds = new Set();
+
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const s = mockShareholders[i];
+      const sNo = String(s.share_no || s.share_number || '').trim();
+      const allNos = Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
+        ? s.all_share_numbers.map(n => String(n).trim())
+        : sNo.split(',').map(n => n.trim()).filter(Boolean);
+
+      const matchesTarget = cleanTargets.some(target => 
+        allNos.some(num => num.toLowerCase() === target.toLowerCase()) ||
+        String(s.id) === String(target) ||
+        sNo.toLowerCase() === target.toLowerCase()
+      );
+
+      if (matchesTarget && !matchedIds.has(s.id)) {
+        matchedIds.add(s.id);
+        matchingRecords.push(s);
+      }
+    }
+
+    if (matchingRecords.length < 2) {
+      return { success: false, message: 'ವಿಲೀನಗೊಳಿಸಲು ಕನಿಷ್ಠ 2 ಮಾನ್ಯ ಷೇರು ದಾಖಲೆಗಳು ಅಗತ್ಯವಿದೆ.' };
+    }
+
+    let primary = matchingRecords[0];
+    if (primaryShareNo) {
+      const foundPrimary = matchingRecords.find(r => {
+        const rNo = String(r.share_no || r.share_number || '').trim();
+        const allNos = Array.isArray(r.all_share_numbers) ? r.all_share_numbers.map(n => String(n).trim()) : rNo.split(',').map(n => n.trim());
+        return allNos.includes(String(primaryShareNo).trim()) || String(r.id) === String(primaryShareNo);
+      });
+      if (foundPrimary) primary = foundPrimary;
+    }
+
+    let combinedShares = 0;
+    let combinedTotalAmt = 0;
+    const allShareNos = [];
+
+    matchingRecords.forEach(item => {
+      const sAmt1 = parseFloat(item.receipt_amount) || 0;
+      const sAmt2 = parseFloat(item.amount) || 0;
+      const sTot = parseFloat(item.total_amount) || (sAmt1 + sAmt2) || 2000;
+      const sCount = parseInt(item.number_of_shares) || (sTot ? Math.max(1, Math.floor(sTot / 2000)) : 1);
+
+      combinedShares += sCount;
+      combinedTotalAmt += sTot;
+
+      const itemNos = Array.isArray(item.all_share_numbers) && item.all_share_numbers.length > 0
+        ? item.all_share_numbers.map(n => String(n).trim())
+        : String(item.share_no || item.share_number || '').split(',').map(n => n.trim()).filter(Boolean);
+
+      itemNos.forEach(num => {
+        if (!allShareNos.includes(num)) allShareNos.push(num);
+      });
+    });
+
+    const nextId = mockMergeRequests.length + 1;
+    const newReq = {
+      id: `MRG-${Date.now()}`,
+      request_id: `MRG-${new Date().getFullYear()}-${String(nextId).padStart(3, '0')}`,
+      request_date: new Date().toISOString(),
+      requested_by: requestedBy || 'Operator',
+      share_numbers: allShareNos,
+      primary_share_no: primary.share_no,
+      primary_record_id: primary.id,
+      primary_record: {
+        id: primary.id,
+        share_no: primary.share_no,
+        name: primary.shareholder_name || primary.name,
+        place: primary.place,
+        taluk: primary.taluk,
+        shares: primary.number_of_shares,
+        amount: primary.total_amount
+      },
+      records_to_merge: matchingRecords.map(r => ({
+        id: r.id,
+        share_no: r.share_no,
+        name: r.shareholder_name || r.name,
+        place: r.place,
+        taluk: r.taluk,
+        shares: r.number_of_shares,
+        amount: r.total_amount,
+        receipt_no: r.receipt_no
+      })),
+      combined_shares: combinedShares,
+      combined_total_amount: combinedTotalAmt,
+      combined_share_nos: allShareNos,
+      combined_share_no_str: allShareNos.join(', '),
+      approval_status: 'Pending Admin Approval',
+      remarks: remarks || 'ಆಡಳಿತ ಮಂಡಳಿ / ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಸಲ್ಲಿಸಲಾದ ಬಹು-ಶೇರುಗಳ ವಿಲೀನ ವಿನಂತಿ.'
+    };
+
+    mockMergeRequests.unshift(newReq);
+    saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
+
+    return {
+      success: true,
+      data: newReq,
+      message: `ವಿಲೀನ ವಿನಂತಿ (#${newReq.request_id}) ಅನ್ನು ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ!`
+    };
+  },
+
+  async approveMergeRequestByAdmin({ requestId, adminUser = 'Admin', remarks = '' }) {
+    await ensureDBReady();
+    const req = mockMergeRequests.find(m => m.id === requestId || m.request_id === requestId);
+    if (!req) return { success: false, message: 'Merge request not found' };
+
+    // Execute the actual merge in live master list
+    const mergeRes = await this.mergeSharesByShareNumbers({
+      shareNumbers: req.share_numbers,
+      primaryShareNo: req.primary_share_no,
+      adminUser
+    });
+
+    if (!mergeRes.success) {
+      return mergeRes;
+    }
+
+    // Update request status to Approved & Merged
+    req.approval_status = 'Approved & Merged (ಅನುಮೋದಿಸಿ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ)';
+    req.approved_by = adminUser;
+    req.approved_at = new Date().toISOString();
+    req.approval_remarks = remarks || 'ಅಡ್ಮಿನ್ ಅಧಿಕೃತ ಅನುಮೋದನೆ ನೀಡಿ ಮಾಸ್ಟರ್ ಶೀಟ್‌ಗೆ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ.';
+    req.merged_result = {
+      combinedShares: mergeRes.combinedShares,
+      combinedTotalAmt: mergeRes.combinedTotalAmt,
+      combinedShareNoStr: mergeRes.combinedShareNoStr
+    };
+
+    saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
+
+    return {
+      success: true,
+      data: req,
+      mergeRes,
+      message: `ವಿಲೀನ ವಿನಂತಿ #${req.request_id} ಯಶಸ್ವಿಯಾಗಿ ಅನುಮೋದನೆಗೊಂಡು, ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಷೇರುಗಳು #${req.combined_share_no_str} ಅಧಿಕೃತವಾಗಿ ವಿಲೀನಗೊಂಡಿವೆ!`
+    };
+  },
+
+  async rejectMergeRequestByAdmin({ requestId, adminUser = 'Admin', remarks = '' }) {
+    await ensureDBReady();
+    const req = mockMergeRequests.find(m => m.id === requestId || m.request_id === requestId);
+    if (!req) return { success: false, message: 'Merge request not found' };
+
+    req.approval_status = 'Rejected (ತಿರಸ್ಕರಿಸಲಾಗಿದೆ)';
+    req.rejected_by = adminUser;
+    req.rejected_at = new Date().toISOString();
+    req.rejection_remarks = remarks || 'ಅಡ್ಮಿನ್ ಪರಿಶೀಲನೆಯಲ್ಲಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.';
+
+    saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
+
+    return {
+      success: true,
+      data: req,
+      message: `ವಿಲೀನ ವಿನಂತಿ #${req.request_id} ಅನ್ನು ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.`
+    };
+  },
+
+  async deleteMergeRequest(requestId) {
+    const idx = mockMergeRequests.findIndex(m => m.id === requestId || m.request_id === requestId);
+    if (idx !== -1) {
+      mockMergeRequests.splice(idx, 1);
+      saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
+      return { success: true };
+    }
+    return { success: false, message: 'Request not found' };
+  }
 };
