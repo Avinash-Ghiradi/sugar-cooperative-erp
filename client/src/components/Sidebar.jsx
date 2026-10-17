@@ -3,7 +3,7 @@ import { useAuth, ROLE_PERMISSIONS } from '../context/AuthContext';
 import {
   LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert,
-  Settings, LogOut, Upload
+  Settings, LogOut, Upload, ArrowRightLeft
 } from 'lucide-react';
 
 const MENU_ITEMS = [
@@ -13,7 +13,8 @@ const MENU_ITEMS = [
   { id: 'transactions', label: 'Transactions', icon: CreditCard },
   { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
   { id: 'sugar_allotment', label: 'Sugar Allotment', icon: PackageCheck },
-  { id: 'varasa', label: 'Varasa Transfer', icon: FileSpreadsheet },
+  { id: 'varasa', label: 'Varasa Transfer (ವಾರಸುದಾರರು)', icon: FileSpreadsheet },
+  { id: 'vargavane', label: 'Vargavane Transfer (ವರ್ಗಾವಣೆ)', icon: ArrowRightLeft },
   { id: 'villages', label: 'Village Master', icon: Building2 },
   { id: 'circles', label: 'Circle Master', icon: MapPin },
   { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },

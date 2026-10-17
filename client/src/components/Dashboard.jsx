@@ -3,7 +3,7 @@ import { ApiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   Users, UserCheck, UserX, Coins, Building2, MapPin, FileCheck2, Clock,
-  CreditCard, CalendarCheck, Package, Briefcase, Download, Filter, RefreshCw, BookOpen, Layers
+  CreditCard, CalendarCheck, Package, Briefcase, Download, Filter, RefreshCw, BookOpen, Layers, ArrowRightLeft
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid
@@ -53,8 +53,12 @@ export default function Dashboard() {
     { title: 'Schedule Cast / ವರ್ಗ', value: stats.totalShareholders > 0 ? (stats.topCategory || `${stats.totalCategories || 0} Classes`) : '0 Classes', icon: Layers, color: 'purple', link: 'shareholders' },
     { title: 'Pending Varasa', value: stats.pendingVarasa.toLocaleString(), icon: Clock, color: 'amber', link: 'varasa' },
     { title: 'Completed Varasa', value: stats.completedVarasa.toLocaleString(), icon: FileCheck2, color: 'emerald', link: 'varasa' },
+    { title: 'Vargavane (ವರ್ಗಾವಣೆ)', value: (stats.totalVargavane || 0).toLocaleString(), icon: ArrowRightLeft, color: 'cyan', link: 'vargavane' },
+    { title: 'Completed Vargavane', value: (stats.completedVargavane || 0).toLocaleString(), icon: FileCheck2, color: 'teal', link: 'vargavane' },
     { title: 'Today\'s Transactions', value: stats.todayTx.toLocaleString(), icon: CreditCard, color: 'purple', link: 'transactions' },
     { title: 'Sugar Allotted (kg)', value: `${stats.totalSugarAlloted.toLocaleString()} kg`, icon: Package, color: 'teal', link: 'sugar_allotment' },
+    { title: 'Cooperative Staff', value: (stats.totalEmployees || 0).toLocaleString(), icon: Briefcase, color: 'indigo', link: 'hr' },
+    { title: 'Total Transfers (ವ/ವ)', value: ((stats.completedVarasa || 0) + (stats.totalVargavane || 0)).toLocaleString(), icon: ArrowRightLeft, color: 'emerald', link: 'vargavane' },
   ];
 
   return (

@@ -8,6 +8,7 @@ const STORAGE_KEY_SH = 'sugar_erp_clean_shareholders_v3';
 const STORAGE_KEY_TX = 'sugar_erp_clean_tx_v3';
 const STORAGE_KEY_SA = 'sugar_erp_clean_allotments_v3';
 const STORAGE_KEY_VT = 'sugar_erp_clean_varasa_v3';
+const STORAGE_KEY_VG = 'sugar_erp_clean_vargavane_v3';
 const STORAGE_KEY_EMP = 'sugar_erp_clean_emp_v3';
 const STORAGE_KEY_LOGS = 'sugar_erp_clean_logs_v3';
 
@@ -448,6 +449,120 @@ if (!mockVarasaTransfers || mockVarasaTransfers.length === 0) {
   mockVarasaTransfers = initialVarasaTransfers;
   saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
 }
+
+export const initialVargavaneTransfers = [
+  {
+    id: 1,
+    sl_no: 1,
+    transfer_id: 'VGN-2024-001',
+    // 1. Transferor Shareholder
+    transferor_name: 'ಶ್ರೀಮತಿ ಕಸ್ತೂರಿಬಾಯಿ ಗದ್ದೆಪ್ಪ ಕುಂಬಾರ',
+    shareholder_name: 'ಶ್ರೀಮತಿ ಕಸ್ತೂರಿಬಾಯಿ ಗದ್ದೆಪ್ಪ ಕುಂಬಾರ',
+    transferor_place: 'ಅಹಿರಸಂಗ',
+    transferor_taluk: 'ಇಂಡಿ',
+    transferor_district: 'ವಿಜಯಪುರ',
+    transferor_relationship: 'ತಾಯಿ',
+    transferor_age: '',
+    transferor_aadhaar: '3892 6622 2757',
+    transferor_mobile: '',
+    // 2. Transferee (Vargavane Madikolluvaru)
+    transferee_name: 'ಶ್ರೀ ರಾಜಶೇಖರ ಗದ್ದೆಪ್ಪ ಕುಂಬಾರ',
+    transferee_place: 'ಅಹಿರಸಂಗ',
+    transferee_taluk: 'ಇಂಡಿ',
+    transferee_district: 'ವಿಜಯಪುರ',
+    transferee_relationship: 'ಮಗ',
+    transferee_aadhaar: '4269 5069 6182',
+    transferee_mobile: '9632668696',
+    transferee_photo: '',
+    // Share & Fee Details
+    share_no: '157',
+    category: 'ಅ - ವರ್ಗ',
+    no_of_shares: 2,
+    fees: 570,
+    receipt_no: '591',
+    receipt_date: '01-06-2024',
+    approval_status: 'Completed',
+    documents_verified: 'Verified',
+    application_date: '01-06-2024',
+    remarks: 'ತಾಯಿಯಿಂದ ಮಗನಿಗೆ ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ.'
+  },
+  {
+    id: 2,
+    sl_no: 2,
+    transfer_id: 'VGN-2024-002',
+    // 1. Transferor Shareholder
+    transferor_name: 'ಶ್ರೀ ಈರಪ್ಪ ಮಲ್ಲಪ್ಪ ಬಂಟ್ರೇ',
+    shareholder_name: 'ಶ್ರೀ ಈರಪ್ಪ ಮಲ್ಲಪ್ಪ ಬಂಟ್ರೇ',
+    transferor_place: 'ನಾಟೇಕಾರಗಾಂವ ಕೆ ಆಂಡ್‌',
+    transferor_taluk: 'ಇಂಡಿ',
+    transferor_district: 'ವಿಜಯಪುರ',
+    transferor_relationship: 'ತಂದೆ',
+    transferor_age: '',
+    transferor_aadhaar: '8703 1269 4835',
+    transferor_mobile: '',
+    // 2. Transferee (Vargavane Madikolluvaru)
+    transferee_name: 'ಶ್ರೀ ರೇವಣಸಿದ್ದ ಈರಪ್ಪ ಭಂಡಾರೆ',
+    transferee_place: 'ನಾಟೇಕಾರಗಾಂವ',
+    transferee_taluk: 'ಇಂಡಿ',
+    transferee_district: 'ವಿಜಯಪುರ',
+    transferee_relationship: 'ಮಗ',
+    transferee_aadhaar: '4420 4882 2014',
+    transferee_mobile: '7022153017',
+    transferee_photo: '',
+    // Share & Fee Details
+    share_no: '13453',
+    category: 'ಅ - ವರ್ಗ',
+    no_of_shares: 1,
+    fees: 570,
+    receipt_no: '592',
+    receipt_date: '13-06-2024',
+    approval_status: 'Completed',
+    documents_verified: 'Verified',
+    application_date: '13-06-2024',
+    remarks: 'ತಂದೆಯಿಂದ ಮಗನಿಗೆ ಶೇರು ವರ್ಗಾವಣೆ ನಮೂನೆ.'
+  },
+  {
+    id: 3,
+    sl_no: 3,
+    transfer_id: 'VGN-2024-003',
+    // 1. Transferor Shareholder
+    transferor_name: 'ಶ್ರೀಮತಿ ಕಮಲಾಬಾಯಿ ಶಿವಾಜಿ ಕಾಂಬಳೆ',
+    shareholder_name: 'ಶ್ರೀಮತಿ ಕಮಲಾಬಾಯಿ ಶಿವಾಜಿ ಕಾಂಬಳೆ',
+    transferor_place: 'ಹಳ್ಳಿಹಾಳ',
+    transferor_taluk: 'ಚಡಚಣ',
+    transferor_district: 'ವಿಜಯಪುರ',
+    transferor_relationship: 'ತಾಯಿ',
+    transferor_age: '',
+    transferor_aadhaar: '6905 1126 5971',
+    transferor_mobile: '',
+    // 2. Transferee (Vargavane Madikolluvaru)
+    transferee_name: 'ಶ್ರೀ ಲಕ್ಷ್ಮಣಸಿಂಗ ಶಿವಾಜಿ ಪಾಟೀಲ',
+    transferee_place: 'ಹಳ್ಳಿಹಾಳ',
+    transferee_taluk: 'ಚಡಚಣ',
+    transferee_district: 'ವಿಜಯಪುರ',
+    transferee_relationship: 'ಮಗ',
+    transferee_aadhaar: '5000 4439 5939',
+    transferee_mobile: '9060809296',
+    transferee_photo: '',
+    // Share & Fee Details
+    share_no: '5294',
+    category: 'ಅ - ವರ್ಗ',
+    no_of_shares: 3,
+    fees: 570,
+    receipt_no: '598',
+    receipt_date: '22-07-2024',
+    approval_status: 'Completed',
+    documents_verified: 'Verified',
+    application_date: '22-07-2024',
+    remarks: 'ತಾಯಿಯಿಂದ ಮಗನಿಗೆ 3 ಶೇರುಗಳ ನೇರ ವರ್ಗಾವಣೆ.'
+  }
+];
+
+let mockVargavaneTransfers = loadStoredData(STORAGE_KEY_VG, initialVargavaneTransfers);
+if (!mockVargavaneTransfers || mockVargavaneTransfers.length === 0) {
+  mockVargavaneTransfers = initialVargavaneTransfers;
+  saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+}
 let mockEmployees = loadStoredData(STORAGE_KEY_EMP, []);
 let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
 
@@ -586,6 +701,9 @@ export const ApiService = {
         topCategory: scheduleCastBreakdown.length > 0 ? `${scheduleCastBreakdown[0].category} (${scheduleCastBreakdown[0].count.toLocaleString()})` : '—',
         pendingVarasa: mockVarasaTransfers.filter(v => v.approval_status !== 'Completed').length,
         completedVarasa: mockVarasaTransfers.filter(v => v.approval_status === 'Completed').length,
+        totalVargavane: mockVargavaneTransfers.length,
+        pendingVargavane: mockVargavaneTransfers.filter(v => v.approval_status !== 'Completed').length,
+        completedVargavane: mockVargavaneTransfers.filter(v => v.approval_status === 'Completed').length,
         todayTx: mockTransactions.length,
         todayAttendance: 0,
         totalSugarAlloted: mockSugarAllotments.reduce((acc, a) => acc + (parseFloat(a.issued_quantity_kg) || 0), 0),
@@ -606,6 +724,12 @@ export const ApiService = {
           { status: 'Under Verification', count: mockVarasaTransfers.filter(v => v.approval_status === 'Under Verification').length },
           { status: 'Approved', count: mockVarasaTransfers.filter(v => v.approval_status === 'Approved').length },
           { status: 'Completed', count: mockVarasaTransfers.filter(v => v.approval_status === 'Completed').length }
+        ],
+        vargavaneStatusBreakdown: [
+          { status: 'Application Received', count: mockVargavaneTransfers.filter(v => v.approval_status === 'Application Received').length },
+          { status: 'Under Verification', count: mockVargavaneTransfers.filter(v => v.approval_status === 'Under Verification').length },
+          { status: 'Approved', count: mockVargavaneTransfers.filter(v => v.approval_status === 'Approved').length },
+          { status: 'Completed', count: mockVargavaneTransfers.filter(v => v.approval_status === 'Completed').length }
         ]
       }
     };
@@ -1311,6 +1435,175 @@ export const ApiService = {
       const sMob = String(s.mobile_no || s.mobile || '');
       return sNo === q || sNo.startsWith(q) || sName.includes(q) || sId === q || sMob.includes(q);
     }).slice(0, 8);
+  },
+
+  async getVargavaneTransfers({ search = '', status = '', taluk = '' } = {}) {
+    await ensureDBReady();
+    const apiRes = await fetchApi('/vargavane');
+    if (apiRes && apiRes.success) return apiRes;
+
+    let filtered = mockVargavaneTransfers;
+    if (search) {
+      const q = search.trim().toLowerCase().normalize('NFC');
+      filtered = filtered.filter(v => {
+        const torName = (v.transferor_name || v.shareholder_name || '').toLowerCase().normalize('NFC');
+        const teeName = (v.transferee_name || '').toLowerCase().normalize('NFC');
+        const shNo = String(v.share_no || '').toLowerCase();
+        const torMob = String(v.transferor_mobile || '').toLowerCase();
+        const teeMob = String(v.transferee_mobile || '').toLowerCase();
+        const torAadh = String(v.transferor_aadhaar || '').toLowerCase();
+        const teeAadh = String(v.transferee_aadhaar || '').toLowerCase();
+        const rNo = String(v.receipt_no || '').toLowerCase();
+        const torPlace = (v.transferor_place || '').toLowerCase().normalize('NFC');
+        const teePlace = (v.transferee_place || '').toLowerCase().normalize('NFC');
+        const tId = (v.transfer_id || '').toLowerCase();
+
+        return torName.includes(q) || teeName.includes(q) || shNo.includes(q) ||
+          torMob.includes(q) || teeMob.includes(q) || torAadh.includes(q) || teeAadh.includes(q) ||
+          rNo.includes(q) || torPlace.includes(q) || teePlace.includes(q) || tId.includes(q);
+      });
+    }
+    if (status) {
+      filtered = filtered.filter(v => v.approval_status === status);
+    }
+    if (taluk) {
+      const tq = taluk.trim().toLowerCase().normalize('NFC');
+      filtered = filtered.filter(v =>
+        (v.transferor_taluk && v.transferor_taluk.toLowerCase().normalize('NFC').includes(tq)) ||
+        (v.transferee_taluk && v.transferee_taluk.toLowerCase().normalize('NFC').includes(tq))
+      );
+    }
+
+    return { success: true, data: filtered };
+  },
+
+  async addVargavaneTransfer(data) {
+    await ensureDBReady();
+    const nextSl = mockVargavaneTransfers.length > 0 ? Math.max(...mockVargavaneTransfers.map(v => parseInt(v.sl_no) || 0)) + 1 : 1;
+    const nextId = mockVargavaneTransfers.length > 0 ? Math.max(...mockVargavaneTransfers.map(v => parseInt(v.id) || 0)) + 1 : 1;
+    const transferId = data.transfer_id || `VGN-${new Date().getFullYear()}-${String(nextId).padStart(3, '0')}`;
+
+    const newV = {
+      id: nextId,
+      sl_no: data.sl_no ? parseInt(data.sl_no) : nextSl,
+      transfer_id: transferId,
+      // 1. Transferor
+      transferor_name: (data.transferor_name || data.shareholder_name || '').normalize('NFC'),
+      shareholder_name: (data.transferor_name || data.shareholder_name || '').normalize('NFC'),
+      transferor_place: (data.transferor_place || '').normalize('NFC'),
+      transferor_taluk: (data.transferor_taluk || '').normalize('NFC'),
+      transferor_district: (data.transferor_district || 'ವಿಜಯಪುರ').normalize('NFC'),
+      transferor_relationship: (data.transferor_relationship || 'ಸ್ವಂತ').normalize('NFC'),
+      transferor_age: data.transferor_age || '',
+      transferor_aadhaar: data.transferor_aadhaar || '',
+      transferor_mobile: data.transferor_mobile || '',
+      // 2. Transferee (Vargavane Madikolluvaru)
+      transferee_name: (data.transferee_name || '').normalize('NFC'),
+      transferee_place: (data.transferee_place || '').normalize('NFC'),
+      transferee_taluk: (data.transferee_taluk || '').normalize('NFC'),
+      transferee_district: (data.transferee_district || 'ವಿಜಯಪುರ').normalize('NFC'),
+      transferee_relationship: (data.transferee_relationship || 'ಮಗ').normalize('NFC'),
+      transferee_aadhaar: data.transferee_aadhaar || '',
+      transferee_mobile: data.transferee_mobile || '',
+      transferee_photo: data.transferee_photo || '',
+      // 3. Share & Fee
+      share_no: String(data.share_no || ''),
+      category: data.category || 'ಅ - ವರ್ಗ',
+      no_of_shares: parseInt(data.no_of_shares) || 1,
+      fees: parseFloat(data.fees) !== undefined && !isNaN(parseFloat(data.fees)) ? parseFloat(data.fees) : 570,
+      receipt_no: String(data.receipt_no || ''),
+      receipt_date: data.receipt_date || new Date().toLocaleDateString('en-GB'),
+      application_date: data.application_date || new Date().toLocaleDateString('en-GB'),
+      approval_status: data.approval_status || 'Application Received',
+      documents_verified: data.documents_verified || 'Pending',
+      remarks: data.remarks || '',
+      created_at: new Date().toISOString()
+    };
+    mockVargavaneTransfers.unshift(newV);
+    saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+    return { success: true, transfer_id: newV.transfer_id, data: newV };
+  },
+
+  async updateVargavaneTransfer(idOrTransferId, data) {
+    await ensureDBReady();
+    const idx = mockVargavaneTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
+    if (idx !== -1) {
+      mockVargavaneTransfers[idx] = { ...mockVargavaneTransfers[idx], ...data };
+      saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+      return { success: true, data: mockVargavaneTransfers[idx] };
+    }
+    return { success: false, message: 'Record not found' };
+  },
+
+  async deleteVargavaneTransfer(idOrTransferId) {
+    await ensureDBReady();
+    const idx = mockVargavaneTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
+    if (idx !== -1) {
+      mockVargavaneTransfers.splice(idx, 1);
+      saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+      return { success: true };
+    }
+    return { success: false, message: 'Record not found' };
+  },
+
+  async updateVargavaneStatus(transfer_id, approval_status) {
+    await ensureDBReady();
+    const item = mockVargavaneTransfers.find(v => v.transfer_id === transfer_id || String(v.id) === String(transfer_id));
+    if (item) {
+      item.approval_status = approval_status;
+      saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+      return { success: true };
+    }
+    return { success: false };
+  },
+
+  async addVargavaneTransfersBulk(records) {
+    await ensureDBReady();
+    if (!Array.isArray(records) || records.length === 0) return { success: true, count: 0 };
+    let maxId = mockVargavaneTransfers.reduce((m, v) => Math.max(m, parseInt(v.id) || 0), 0);
+    let maxSl = mockVargavaneTransfers.reduce((m, v) => Math.max(m, parseInt(v.sl_no) || 0), 0);
+
+    const items = records.map((r, i) => {
+      const id = maxId + i + 1;
+      const sl = r.sl_no ? parseInt(r.sl_no) : (maxSl + i + 1);
+      return {
+        id,
+        sl_no: sl,
+        transfer_id: r.transfer_id || `VGN-${new Date().getFullYear()}-${String(id).padStart(3, '0')}`,
+        transferor_name: (r.transferor_name || r.shareholder_name || '').normalize('NFC'),
+        shareholder_name: (r.transferor_name || r.shareholder_name || '').normalize('NFC'),
+        transferor_place: (r.transferor_place || '').normalize('NFC'),
+        transferor_taluk: (r.transferor_taluk || '').normalize('NFC'),
+        transferor_district: (r.transferor_district || 'ವಿಜಯಪುರ').normalize('NFC'),
+        transferor_relationship: (r.transferor_relationship || 'ಸ್ವಂತ').normalize('NFC'),
+        transferor_age: r.transferor_age || '',
+        transferor_aadhaar: r.transferor_aadhaar || '',
+        transferor_mobile: r.transferor_mobile || '',
+        transferee_name: (r.transferee_name || '').normalize('NFC'),
+        transferee_place: (r.transferee_place || '').normalize('NFC'),
+        transferee_taluk: (r.transferee_taluk || '').normalize('NFC'),
+        transferee_district: (r.transferee_district || 'ವಿಜಯಪುರ').normalize('NFC'),
+        transferee_relationship: (r.transferee_relationship || 'ಮಗ').normalize('NFC'),
+        transferee_aadhaar: r.transferee_aadhaar || '',
+        transferee_mobile: r.transferee_mobile || '',
+        transferee_photo: r.transferee_photo || '',
+        share_no: String(r.share_no || ''),
+        category: r.category || 'ಅ - ವರ್ಗ',
+        no_of_shares: parseInt(r.no_of_shares) || 1,
+        fees: parseFloat(r.fees) || 570,
+        receipt_no: String(r.receipt_no || ''),
+        receipt_date: r.receipt_date || new Date().toLocaleDateString('en-GB'),
+        application_date: r.application_date || new Date().toLocaleDateString('en-GB'),
+        approval_status: r.approval_status || 'Application Received',
+        documents_verified: r.documents_verified || 'Pending',
+        remarks: r.remarks || '',
+        created_at: new Date().toISOString()
+      };
+    });
+
+    mockVargavaneTransfers = [...items, ...mockVargavaneTransfers];
+    saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+    return { success: true, count: items.length };
   },
 
   async getVillages() {

@@ -8,6 +8,7 @@ import TransactionsModule from './components/Transactions/TransactionsModule';
 import AttendanceModule from './components/Attendance/AttendanceModule';
 import SugarAllotmentModule from './components/SugarAllotment/SugarAllotmentModule';
 import VarasaTransferModule from './components/Varasa/VarasaTransferModule';
+import VargavaneTransferModule from './components/Vargavane/VargavaneTransferModule';
 import VillageMaster from './components/Master/VillageMaster';
 import CircleMaster from './components/Master/CircleMaster';
 import ReportsModule from './components/Reports/ReportsModule';
@@ -113,6 +114,7 @@ function AppContent() {
       case 'attendance': return <AttendanceModule />;
       case 'sugar_allotment': return <SugarAllotmentModule />;
       case 'varasa': return <VarasaTransferModule />;
+      case 'vargavane': return <VargavaneTransferModule />;
       case 'villages': return <VillageMaster />;
       case 'circles': return <CircleMaster />;
       case 'reports': return <ReportsModule />;

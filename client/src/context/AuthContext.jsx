@@ -3,9 +3,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 export const ROLE_PERMISSIONS = {
-  Admin: ['dashboard', 'shareholders', 'transactions', 'attendance', 'sugar_allotment', 'varasa', 'villages', 'circles', 'reports', 'id_cards', 'employees', 'users', 'audit_logs', 'settings', 'import_export', 'backup'],
+  Admin: ['dashboard', 'shareholders', 'transactions', 'attendance', 'sugar_allotment', 'varasa', 'vargavane', 'villages', 'circles', 'reports', 'id_cards', 'employees', 'users', 'audit_logs', 'settings', 'import_export', 'backup'],
   Cashier: ['dashboard', 'shareholders', 'transactions', 'reports'],
-  'Computer Operator': ['dashboard', 'shareholders', 'attendance', 'sugar_allotment', 'varasa', 'reports', 'id_cards', 'villages', 'circles', 'import_export'],
+  'Computer Operator': ['dashboard', 'shareholders', 'attendance', 'sugar_allotment', 'varasa', 'vargavane', 'reports', 'id_cards', 'villages', 'circles', 'import_export'],
   Employee: ['dashboard', 'attendance', 'reports']
 };
 
