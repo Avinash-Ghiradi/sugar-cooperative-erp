@@ -4,18 +4,23 @@ import { useAuth } from '../../context/AuthContext';
 import {
   User, Coins, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   X, Printer, Contact, CheckCircle2, ShieldCheck, MapPin, Phone, Building2,
-  BookOpen, FileText, Fingerprint, Users2
+  BookOpen, FileText, Fingerprint, Users2, History, ArrowRightLeft, Stamp,
+  Clock, ArrowRight, Award
 } from 'lucide-react';
 
-export default function ShareholderProfile({ shareholderId, onClose }) {
+export default function ShareholderProfile({ shareholderId, onClose, initialTab = 'ledger' }) {
   const { setActiveModule } = useAuth();
   const [profile, setProfile] = useState(null);
-  const [activeTab, setActiveTab] = useState('ledger');
+  const [activeTab, setActiveTab] = useState(initialTab || 'ledger');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadProfile();
   }, [shareholderId]);
+
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
 
   const loadProfile = async () => {
     setLoading(true);
@@ -46,6 +51,7 @@ export default function ShareholderProfile({ shareholderId, onClose }) {
     { id: 'kyc', label: '5. KYC & Biometrics', icon: Fingerprint },
     { id: 'transactions', label: `6. Transactions (${history.transactions?.length || 0})`, icon: CreditCard },
     { id: 'allotments', label: `7. Sugar Quota (${history.sugarAllotments?.length || 0})`, icon: PackageCheck },
+    { id: 'history', label: `8. History & Audit Trail (${(history.timeline || []).length || 0})`, icon: History },
   ];
 
   return (
@@ -346,6 +352,138 @@ export default function ShareholderProfile({ shareholderId, onClose }) {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab 8: History & Audit Trail */}
+          {activeTab === 'history' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800">
+                <div>
+                  <h3 className="font-bold text-slate-100 flex items-center gap-2 text-xs">
+                    <History className="w-4 h-4 text-emerald-400" />
+                    <span>ಶೇರುದಾರರ ಸಮಗ್ರ ಇತಿಹಾಸ ಮತ್ತು ಲೆಕ್ಕಪರಿಶೋಧನಾ ದಾಖಲೆ (Shareholder Lifecycle Audit Trail)</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    ಮೂಲ ನೋಂದಣಿ, ವಾರಸು ವರ್ಗಾವಣೆ, ನೇರ ವರ್ಗಾವಣೆ ಮತ್ತು Admin ಮಂಜೂರಾತಿಗಳ ಅಧಿಕೃತ ದಾಖಲಾತಿ
+                  </p>
+                </div>
+                <span className="text-[11px] px-2.5 py-1 rounded-full font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                  {history.timeline?.length || 0} ಈವೆಂಟ್‌ಗಳು (Events)
+                </span>
+              </div>
+
+              {(!history.timeline || history.timeline.length === 0) ? (
+                <div className="text-center py-12 text-slate-500 text-xs">
+                  ಯಾವುದೇ ಇತಿಹಾಸ ದಾಖಲೆಗಳು ಲಭ್ಯವಿಲ್ಲ.
+                </div>
+              ) : (
+                <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+                  {history.timeline.map((evt, idx) => {
+                    const isEnrollment = evt.type === 'NEW_ENROLLMENT' || evt.type === 'INITIAL_MEMBERSHIP';
+                    const isVarasa = evt.type === 'VARASA_TRANSFER';
+                    const isVargavane = evt.type === 'VARGAVANE_TRANSFER';
+
+                    const dotColor = isEnrollment
+                      ? 'bg-emerald-500 ring-emerald-950'
+                      : isVarasa
+                      ? 'bg-amber-500 ring-amber-950'
+                      : isVargavane
+                      ? 'bg-cyan-500 ring-cyan-950'
+                      : 'bg-purple-500 ring-purple-950';
+
+                    const borderColor = isEnrollment
+                      ? 'border-emerald-800/60 bg-emerald-950/20'
+                      : isVarasa
+                      ? 'border-amber-800/60 bg-amber-950/20'
+                      : isVargavane
+                      ? 'border-cyan-800/60 bg-cyan-950/20'
+                      : 'border-slate-800 bg-slate-900/60';
+
+                    const iconColor = isEnrollment
+                      ? 'text-emerald-400'
+                      : isVarasa
+                      ? 'text-amber-400'
+                      : isVargavane
+                      ? 'text-cyan-400'
+                      : 'text-purple-400';
+
+                    return (
+                      <div key={evt.id || idx} className="relative">
+                        {/* Timeline dot */}
+                        <div className={`absolute -left-6 top-2 w-3.5 h-3.5 rounded-full ${dotColor} ring-4 border border-slate-900 shadow-md`} />
+
+                        <div className={`p-4 rounded-2xl border ${borderColor} shadow-lg space-y-3`}>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-800/60 pb-2">
+                            <div className="flex items-center gap-2">
+                              {isEnrollment && <Coins className={`w-4 h-4 ${iconColor}`} />}
+                              {isVarasa && <FileSpreadsheet className={`w-4 h-4 ${iconColor}`} />}
+                              {isVargavane && <ArrowRightLeft className={`w-4 h-4 ${iconColor}`} />}
+                              {!isEnrollment && !isVarasa && !isVargavane && <Clock className={`w-4 h-4 ${iconColor}`} />}
+                              <span className="font-bold text-slate-100 text-xs">{evt.title}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-slate-500" />
+                                {evt.date}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-900 text-slate-300 border border-slate-800 flex items-center gap-1">
+                                <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                                {evt.performed_by}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            {evt.description}
+                          </p>
+
+                          {/* Key details tags */}
+                          {evt.details && Object.keys(evt.details).length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-800/40 text-[11px]">
+                              {evt.details.receipt_no && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 font-mono">
+                                  ರಶೀದಿ: #{evt.details.receipt_no}
+                                </span>
+                              )}
+                              {evt.details.tharava_no && (
+                                <span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 font-mono">
+                                  ಠರಾವು: {evt.details.tharava_no}
+                                </span>
+                              )}
+                              {evt.details.tharava_date && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-400 font-mono">
+                                  ದಿನಾಂಕ: {evt.details.tharava_date}
+                                </span>
+                              )}
+                              {evt.details.transfer_id && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 font-mono">
+                                  ID: {evt.details.transfer_id}
+                                </span>
+                              )}
+                              {evt.details.relationship && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300">
+                                  ಸಂಬಂಧ: {evt.details.relationship}
+                                </span>
+                              )}
+                              {evt.details.shares && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-emerald-400 font-bold">
+                                  ಶೇರುಗಳು: {evt.details.shares}
+                                </span>
+                              )}
+                              {evt.details.total_amount && (
+                                <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold font-mono">
+                                  ಜಮಾ: ₹{Number(evt.details.total_amount).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

@@ -883,12 +883,146 @@ export const ApiService = {
     const apiRes = await fetchApi(`/shareholders/${id}`);
     if (apiRes && apiRes.success) return apiRes;
 
-    const sh = mockShareholders.find(s => s.shareholder_id === id || s.id === parseInt(id) || s.share_no === id);
+    const sh = mockShareholders.find(s => 
+      s.shareholder_id === id || 
+      String(s.id) === String(id) || 
+      String(s.share_no) === String(id) || 
+      String(s.share_number) === String(id)
+    );
     if (!sh) return { success: false, message: 'Not found' };
+
+    const shNo = String(sh.share_no || sh.share_number || '').trim();
+    const shName = (sh.shareholder_name || sh.name || '').trim().toLowerCase().normalize('NFC');
 
     const txs = mockTransactions.filter(t => t.shareholder_id === sh.shareholder_id);
     const allotments = mockSugarAllotments.filter(a => a.shareholder_id === sh.shareholder_id);
-    const varasa = mockVarasaTransfers.filter(v => v.existing_shareholder_id === sh.shareholder_id);
+
+    // Find any Varasa transfers where this shareholder is either deceased holder or heir
+    const varasaMatches = mockVarasaTransfers.filter(v => {
+      const vShareNo = String(v.share_no || v.existing_share_number || '').trim();
+      const vShName = (v.shareholder_name || v.existing_shareholder_name || '').trim().toLowerCase().normalize('NFC');
+      const vHeirName = (v.heir_name || v.varasa_member || '').trim().toLowerCase().normalize('NFC');
+      return (shNo && vShareNo === shNo) || (shName && (vShName.includes(shName) || shName.includes(vShName) || vHeirName.includes(shName) || shName.includes(vHeirName)));
+    });
+
+    // Find any Vargavane transfers where this shareholder is either transferor or transferee
+    const vargavaneMatches = mockVargavaneTransfers.filter(v => {
+      const vShareNo = String(v.share_no || '').trim();
+      const vTransferor = (v.transferor_name || v.shareholder_name || '').trim().toLowerCase().normalize('NFC');
+      const vTransferee = (v.transferee_name || '').trim().toLowerCase().normalize('NFC');
+      return (shNo && vShareNo === shNo) || (shName && (vTransferor.includes(shName) || shName.includes(vTransferor) || vTransferee.includes(shName) || shName.includes(vTransferee)));
+    });
+
+    // Find any Enrollment application
+    const enrollmentMatches = mockEnrollments.filter(e => {
+      const eShareNo = String(e.share_no || '').trim();
+      const eName = (e.full_name || '').trim().toLowerCase().normalize('NFC');
+      return (shNo && eShareNo === shNo) || (shName && (eName.includes(shName) || shName.includes(eName)));
+    });
+
+    // Unified Chronological Audit Trail
+    const timeline = [];
+
+    // 1. Any direct audit_history entries
+    if (Array.isArray(sh.audit_history)) {
+      sh.audit_history.forEach(aud => {
+        timeline.push({
+          id: aud.id || `aud-${Math.random()}`,
+          date: aud.timestamp || aud.date || '—',
+          type: aud.type || 'AUDIT_LOG',
+          title: aud.title || 'ಮಾಹಿತಿ ದಾಖಲಾತಿ',
+          description: aud.description || '',
+          performed_by: aud.performed_by || 'Admin',
+          details: aud.details || {},
+          badgeColor: 'emerald'
+        });
+      });
+    }
+
+    // 2. Varasa transfers
+    varasaMatches.forEach(v => {
+      timeline.push({
+        id: `var-${v.transfer_id || v.id}`,
+        date: v.receipt_date || v.application_date || '—',
+        type: 'VARASA_TRANSFER',
+        title: `ವಾರಸುದಾರರ ವರ್ಗಾವಣೆ (${v.approval_status || 'ನೋಂದಣಿ'})`,
+        description: `ಮೂಲ ಶೇರುದಾರರು: ${v.shareholder_name || '—'} (${v.dod ? `ನಿಧನ: ${v.dod}` : ''}) ➔ ವಾರಸುದಾರರು: ${v.heir_name} (${v.heir_relationship || 'ವಾರಸುದಾರರು'}). ರಶೀದಿ ನಂ: ${v.receipt_no || '—'}, ಶುಲ್ಕ: ₹${v.fees || 570}.`,
+        performed_by: v.approved_by || 'Admin (System Administrator)',
+        details: {
+          transfer_id: v.transfer_id,
+          share_no: v.share_no,
+          deceased_holder: v.shareholder_name,
+          heir_name: v.heir_name,
+          relationship: v.heir_relationship,
+          dod: v.dod,
+          receipt_no: v.receipt_no,
+          status: v.approval_status
+        },
+        badgeColor: 'amber'
+      });
+    });
+
+    // 3. Vargavane transfers
+    vargavaneMatches.forEach(v => {
+      timeline.push({
+        id: `vg-${v.transfer_id || v.id}`,
+        date: v.receipt_date || v.application_date || '—',
+        type: 'VARGAVANE_TRANSFER',
+        title: `ನೇರ ಶೇರು ವರ್ಗಾವಣೆ (${v.approval_status || 'ನೋಂದಣಿ'})`,
+        description: `ವರ್ಗಾವಣೆದಾರರು: ${v.transferor_name || '—'} ➔ ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು: ${v.transferee_name} (${v.transferee_relationship || 'ಸಂಬಂಧ'}). ${v.no_of_shares || 1} ಶೇರು, ರಶೀದಿ ನಂ: ${v.receipt_no || '—'}.`,
+        performed_by: v.approved_by || 'Admin (System Administrator)',
+        details: {
+          transfer_id: v.transfer_id,
+          share_no: v.share_no,
+          transferor: v.transferor_name,
+          transferee: v.transferee_name,
+          relationship: v.transferee_relationship,
+          receipt_no: v.receipt_no,
+          status: v.approval_status
+        },
+        badgeColor: 'cyan'
+      });
+    });
+
+    // 4. Enrollment record
+    enrollmentMatches.forEach(e => {
+      timeline.push({
+        id: `enr-${e.enrollment_id || e.id}`,
+        date: e.date || '—',
+        type: 'NEW_ENROLLMENT',
+        title: `ಹೊಸ ಶೇರು ನೋಂದಣಿ ಮತ್ತು ಪ್ರವೇಶ (${e.approval_status || 'ಮಂಜೂರಾಗಿದೆ'})`,
+        description: `ಸದಸ್ಯರ ಹೆಸರು: ${e.full_name}, ಸ್ಥಳ: ${e.place}. ₹${Number(e.share_amount || 24000).toLocaleString()} ಶೇರು ಬಂಡವಾಳ + ₹${e.admission_fee || 570} ಪ್ರವೇಶ ಶುಲ್ಕ. ಒಟ್ಟು: ₹${Number(e.total_amount || 24570).toLocaleString()}. ಠರಾವು ನಂ: ${e.tharava_no || '05(8)'}, ಠರಾವು ದಿನಾಂಕ: ${e.tharava_date || '—'}.`,
+        performed_by: e.approved_by || 'Admin (System Administrator)',
+        details: {
+          enrollment_id: e.enrollment_id,
+          share_no: e.share_no,
+          tharava_no: e.tharava_no,
+          tharava_date: e.tharava_date,
+          receipt_no: e.receipt_no,
+          status: e.approval_status
+        },
+        badgeColor: 'emerald'
+      });
+    });
+
+    // If no explicit enrollment entry exists yet, synthesize default admission entry from member details
+    if (timeline.length === 0) {
+      timeline.push({
+        id: `orig-${sh.id || 1}`,
+        date: sh.date_of_joining || sh.admission_date || 'ಮೂಲ ಸದಸ್ಯತ್ವ',
+        type: 'INITIAL_MEMBERSHIP',
+        title: 'ಮೂಲ ಸದಸ್ಯತ್ವ ನೋಂದಣಿ (Original Statutory Membership)',
+        description: `ಶ್ರೀ ಛತ್ರಪತಿ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆಯ ಅಧಿಕೃತ ಶೇರುದಾರರಾಗಿ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿದ್ದಾರೆ. ಶೇರು ನಂ: #${shNo}, ಶೇರುಗಳು: ${sh.number_of_shares || 1}, ವರ್ಗ: ${sh.schedule_cast || 'ಅ - ವರ್ಗ'}, ಪುಸ್ತಕ ನಂ: ${sh.book_no || '1'}.`,
+        performed_by: 'Authorized Secretary / Admin',
+        details: {
+          share_no: shNo,
+          shares: sh.number_of_shares || 1,
+          category: sh.schedule_cast || 'ಅ - ವರ್ಗ',
+          book_no: sh.book_no
+        },
+        badgeColor: 'emerald'
+      });
+    }
 
     return {
       success: true,
@@ -896,7 +1030,10 @@ export const ApiService = {
       history: {
         transactions: txs,
         sugarAllotments: allotments,
-        varasaHistory: varasa,
+        varasaHistory: varasaMatches,
+        vargavaneHistory: vargavaneMatches,
+        enrollmentHistory: enrollmentMatches,
+        timeline,
         attendance: []
       }
     };
@@ -1841,31 +1978,42 @@ export const ApiService = {
     return { success: false, message: 'Record not found' };
   },
 
-  async promoteEnrollmentToShareholder(idOrEnrollmentId, shareNo) {
+  // 1. Approve New Shareholder Enrollment by Admin
+  async approveEnrollmentByAdmin({ enrollmentId, shareNo, adminUser = 'Admin', tharavaNo, tharavaDate, remarks }) {
     await ensureDBReady();
-    const item = mockEnrollments.find(e => String(e.id) === String(idOrEnrollmentId) || e.enrollment_id === idOrEnrollmentId);
+    const item = mockEnrollments.find(e => String(e.id) === String(enrollmentId) || e.enrollment_id === enrollmentId);
     if (!item) return { success: false, message: 'Enrollment record not found' };
 
     const assignedShareNo = String(shareNo || item.share_no || '').trim();
     if (!assignedShareNo) {
-      return { success: false, message: 'Please assign an official Share Certificate Number' };
+      return { success: false, message: 'ದಯವಿಟ್ಟು ಅಧಿಕೃತ ಶೇರು ಸರ್ಟಿಫಿಕೇಟ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ (Please assign Share Certificate Number)' };
     }
 
-    // Check if share_number already exists in master database
+    // Check if share_number already exists in active master database
     const existingSh = mockShareholders.find(s => String(s.share_number || s.share_no) === assignedShareNo);
     if (existingSh) {
-      return { success: false, message: `Share No ${assignedShareNo} is already assigned to ${existingSh.shareholder_name}` };
+      return { success: false, message: `ಶೇರು ಸಂಖ್ಯೆ ${assignedShareNo} ಈಗಾಗಲೇ "${existingSh.shareholder_name}" ಅವರಿಗೆ ನಿಯೋಜಿತವಾಗಿದೆ (Already assigned)` };
     }
 
-    // Auto resolve circle
+    // Auto resolve circle from place
     const resolvedCircle = this.resolveCircleForPlace(item.place);
 
-    const nextId = mockShareholders.reduce((m, s) => Math.max(m, parseInt(s.id) || 0), 0) + 1;
+    let maxId = 0;
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const mid = Number(mockShareholders[i]?.id);
+      if (mid > maxId) maxId = mid;
+    }
+    const nextId = maxId + 1;
+    const finalTharavaNo = tharavaNo || item.tharava_no || '05(8)';
+    const finalTharavaDate = tharavaDate || item.tharava_date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+
     const newMember = {
       id: nextId,
       share_number: assignedShareNo,
       share_no: assignedShareNo,
+      shareholder_id: `SH-${String(nextId).padStart(5, '0')}`,
       shareholder_name: item.full_name,
+      name: item.full_name,
       place: item.place,
       village_name: item.place,
       taluk: item.taluk || resolvedCircle.taluk || 'ಚಡಚಣ',
@@ -1873,16 +2021,42 @@ export const ApiService = {
       circle: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
       circle_name: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
       number_of_shares: parseInt(item.no_shares) || 1,
-      schedule_cast: item.category || 'ಅ - ವರ್ಗ',
+      schedule_cast: item.category || 'ಅ ವರ್ಗ',
       status: 'Active',
       mobile_number: item.mobile_no || '',
+      mobile_no: item.mobile_no || '',
       aadhaar_number: item.aadhaar_no || '',
+      aadhaar_card_no: item.aadhaar_no || '',
       photo: item.photo || '',
+      photo_url: item.photo || '',
       signature: item.signature || '',
+      signature_url: item.signature || '',
       thumb_impression: item.thumb_impression || '',
-      date_of_joining: item.date || new Date().toLocaleDateString('en-GB'),
-      book_no: item.tharava_no ? `ಠರಾವು-${item.tharava_no}` : 'BOOK-NEW',
-      notes: `ಹೊಸ ನೋಂದಣಿ ಸಂಖ್ಯೆ: ${item.enrollment_id}, ರಶೀದಿ ನಂ: ${item.receipt_no || '—'}`
+      thumb_url: item.thumb_impression || '',
+      date_of_joining: item.date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
+      book_no: finalTharavaNo ? `ಠರಾವು-${finalTharavaNo}` : 'BOOK-1',
+      notes: `ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ: ${item.enrollment_id}, ರಶೀದಿ ನಂ: ${item.receipt_no || '—'}. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`,
+      audit_history: [
+        {
+          id: `AUD-${Date.now()}-1`,
+          timestamp: new Date().toISOString(),
+          performed_by: adminUser || 'System Administrator (Admin)',
+          type: 'NEW_ENROLLMENT',
+          title: 'ಹೊಸ ಶೇರು ನೋಂದಣಿ & ಮಂಜೂರಾತಿ (New Share Enrollment Approved)',
+          description: `ಆಡಳಿತ ಮಂಡಳಿ ಅನುಮೋದನೆ ಮೇರೆಗೆ ₹${Number(item.share_amount || 24000).toLocaleString()} ಶೇರು ಬಂಡವಾಳ ಮತ್ತು ₹${item.admission_fee || 570} ಪ್ರವೇಶ ಶುಲ್ಕ ಸ್ವೀಕರಿಸಿ ಅಧಿಕೃತ ಶೇರು ಸಂಖ್ಯೆ #${assignedShareNo} ನೀಡಿ ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಪಟ್ಟಿಗೆ ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ.`,
+          details: {
+            enrollment_id: item.enrollment_id,
+            share_no: assignedShareNo,
+            shares: item.no_shares || 1,
+            category: item.category || 'ಅ ವರ್ಗ',
+            total_amount: item.total_amount,
+            receipt_no: item.receipt_no,
+            tharava_no: finalTharavaNo,
+            tharava_date: finalTharavaDate,
+            approved_by: adminUser
+          }
+        }
+      ]
     };
 
     mockShareholders.unshift(newMember);
@@ -1890,10 +2064,275 @@ export const ApiService = {
 
     // Update enrollment status
     item.share_no = assignedShareNo;
-    item.approval_status = 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)';
+    item.tharava_no = finalTharavaNo;
+    item.tharava_date = finalTharavaDate;
+    item.approval_status = 'Approved & Active in Master (ಮಂಜೂರಾಗಿದೆ)';
+    item.approved_by = adminUser;
+    item.approved_at = new Date().toISOString();
     saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
 
     return { success: true, share_no: assignedShareNo, shareholder: newMember };
+  },
+
+  async promoteEnrollmentToShareholder(idOrEnrollmentId, shareNo, adminUser = 'Admin') {
+    return this.approveEnrollmentByAdmin({ enrollmentId: idOrEnrollmentId, shareNo, adminUser });
+  },
+
+  // 2. Approve Varasa Legal-Heir Transfer by Admin
+  async approveVarasaTransferByAdmin({ transferId, adminUser = 'Admin', remarks = '' }) {
+    await ensureDBReady();
+    const item = mockVarasaTransfers.find(v => String(v.id) === String(transferId) || v.transfer_id === transferId);
+    if (!item) return { success: false, message: 'Varasa transfer record not found' };
+
+    const targetShareNo = String(item.share_no || item.existing_share_number || '').trim();
+    const rawTargetName = (item.shareholder_name || item.existing_shareholder_name || '').trim().toLowerCase().normalize('NFC');
+
+    // Find original shareholder in master database
+    let sh = mockShareholders.find(s => {
+      const sNo = String(s.share_no || s.share_number || '').trim();
+      return targetShareNo && sNo === targetShareNo;
+    });
+
+    if (!sh && rawTargetName) {
+      sh = mockShareholders.find(s => {
+        const sName = (s.shareholder_name || s.name || '').trim().toLowerCase().normalize('NFC');
+        return sName === rawTargetName || sName.includes(rawTargetName) || rawTargetName.includes(sName);
+      });
+    }
+
+    const prevHolderName = sh ? (sh.shareholder_name || sh.name) : (item.shareholder_name || 'ಮೂಲ ಶೇರುದಾರರು');
+    const newHeirName = item.heir_name || item.varasa_member;
+
+    if (sh) {
+      if (!Array.isArray(sh.audit_history)) sh.audit_history = [];
+      sh.audit_history.unshift({
+        id: `AUD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: new Date().toISOString(),
+        performed_by: adminUser || 'System Administrator (Admin)',
+        type: 'VARASA_TRANSFER',
+        title: 'ವಾರಸುದಾರರ ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ (Varasa Legal-Heir Transfer Approved)',
+        description: `ಮೂಲ ಶೇರುದಾರರಾದ ಶ್ರೀ/ಶ್ರೀಮತಿ ${prevHolderName} ಅವರ ನಿಧನದ ನಂತರ (ಮರಣ ದಿನಾಂಕ: ${item.dod || '—'}), ಅವರ ಕಾನೂನುಬದ್ಧ ವಾರಸುದಾರರಾದ ಶ್ರೀ/ಶ್ರೀಮತಿ ${newHeirName} (${item.heir_relationship || 'ವಾರಸುದಾರರು'}) ಅವರ ಹೆಸರಿಗೆ ಶೇರು ಸಂಖ್ಯೆ #${sh.share_no || targetShareNo} ರ ${item.no_of_shares || sh.number_of_shares || 1} ಶೇರುಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ವರ್ಗಾವಣೆ ಮಾಡಲಾಗಿದೆ. ಶುಲ್ಕ: ₹${item.fees || 570}, ರಶೀದಿ ನಂ: ${item.receipt_no || '—'}.`,
+        details: {
+          transfer_id: item.transfer_id,
+          share_no: sh.share_no || targetShareNo,
+          previous_shareholder: prevHolderName,
+          heir_name: newHeirName,
+          relationship: item.heir_relationship,
+          dod: item.dod,
+          receipt_no: item.receipt_no,
+          receipt_date: item.receipt_date,
+          fee: item.fees || 570,
+          approved_by: adminUser
+        }
+      });
+
+      sh.shareholder_name = newHeirName;
+      sh.name = newHeirName;
+      if (item.heir_place) {
+        sh.place = item.heir_place;
+        sh.village_name = item.heir_place;
+      }
+      if (item.heir_taluk) sh.taluk = item.heir_taluk;
+      if (item.heir_district) sh.district = item.heir_district;
+      if (item.heir_mobile) {
+        sh.mobile_number = item.heir_mobile;
+        sh.mobile_no = item.heir_mobile;
+      }
+      if (item.heir_aadhaar) {
+        sh.aadhaar_number = item.heir_aadhaar;
+        sh.aadhaar_card_no = item.heir_aadhaar;
+      }
+      if (item.heir_photo) {
+        sh.photo = item.heir_photo;
+        sh.photo_url = item.heir_photo;
+      }
+      sh.notes = `ವಾರಸು ವರ್ಗಾವಣೆ: ${prevHolderName} (ನಿಧನ: ${item.dod || '—'}) ಇವರ ವಾರಸುದಾರರಾದ ${newHeirName} (${item.heir_relationship || 'ವಾರಸುದಾರರು'}) ಇವರಿಗೆ ವರ್ಗಾಯಿಸಲಾಗಿದೆ. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`;
+
+      await saveToIndexedDB(mockShareholders);
+    } else {
+      const resolvedCircle = this.resolveCircleForPlace(item.heir_place || item.shareholder_place);
+      let maxId = 0;
+      for (let i = 0; i < mockShareholders.length; i++) {
+        const mid = Number(mockShareholders[i]?.id);
+        if (mid > maxId) maxId = mid;
+      }
+      const nextId = maxId + 1;
+      const createdSh = {
+        id: nextId,
+        share_number: targetShareNo || String(nextId),
+        share_no: targetShareNo || String(nextId),
+        shareholder_id: `SH-${String(nextId).padStart(5, '0')}`,
+        shareholder_name: newHeirName,
+        name: newHeirName,
+        place: item.heir_place || item.shareholder_place || '',
+        village_name: item.heir_place || item.shareholder_place || '',
+        taluk: item.heir_taluk || resolvedCircle.taluk || 'ಇಂಡಿ',
+        district: item.heir_district || resolvedCircle.district || 'ವಿಜಯಪುರ',
+        circle: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
+        circle_name: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
+        number_of_shares: parseInt(item.no_of_shares) || 1,
+        schedule_cast: item.category || 'ಅ - ವರ್ಗ',
+        status: 'Active',
+        mobile_number: item.heir_mobile || '',
+        aadhaar_number: item.heir_aadhaar || '',
+        photo: item.heir_photo || '',
+        notes: `ವಾರಸು ವರ್ಗಾವಣೆ: ${prevHolderName} (ನಿಧನ: ${item.dod || '—'}) ಇವರ ವಾರಸುದಾರರಾದ ${newHeirName} (${item.heir_relationship}) ಇವರಿಗೆ ವರ್ಗಾಯಿಸಲಾಗಿದೆ.`,
+        audit_history: [
+          {
+            id: `AUD-${Date.now()}-1`,
+            timestamp: new Date().toISOString(),
+            performed_by: adminUser || 'System Administrator (Admin)',
+            type: 'VARASA_TRANSFER',
+            title: 'ವಾರಸುದಾರರ ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ (Varasa Transfer Approved)',
+            description: `ಮೂಲ ಶೇರುದಾರರಾದ ಶ್ರೀ/ಶ್ರೀಮತಿ ${prevHolderName} ಅವರ ನಿಧನದ ನಂತರ ${newHeirName} ಹೆಸರಿಗೆ ಶೇರು ವರ್ಗಾಯಿಸಲಾಗಿದೆ.`,
+            details: {
+              transfer_id: item.transfer_id,
+              previous_holder: prevHolderName,
+              heir_name: newHeirName,
+              relationship: item.heir_relationship,
+              approved_by: adminUser
+            }
+          }
+        ]
+      };
+      mockShareholders.unshift(createdSh);
+      await saveToIndexedDB(mockShareholders);
+    }
+
+    item.approval_status = 'Completed';
+    item.approved_by = adminUser;
+    item.approved_at = new Date().toISOString();
+    saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+
+    return { success: true, heir_name: newHeirName, previous_holder: prevHolderName };
+  },
+
+  // 3. Approve Vargavane Transfer by Admin
+  async approveVargavaneTransferByAdmin({ transferId, adminUser = 'Admin', remarks = '' }) {
+    await ensureDBReady();
+    const item = mockVargavaneTransfers.find(v => String(v.id) === String(transferId) || v.transfer_id === transferId);
+    if (!item) return { success: false, message: 'Vargavane transfer record not found' };
+
+    const targetShareNo = String(item.share_no || '').trim();
+    const rawTransferor = (item.transferor_name || item.shareholder_name || '').trim().toLowerCase().normalize('NFC');
+    const newTransfereeName = item.transferee_name;
+
+    // Find original transferor in master database
+    let sh = mockShareholders.find(s => {
+      const sNo = String(s.share_no || s.share_number || '').trim();
+      return targetShareNo && sNo === targetShareNo;
+    });
+
+    if (!sh && rawTransferor) {
+      sh = mockShareholders.find(s => {
+        const sName = (s.shareholder_name || s.name || '').trim().toLowerCase().normalize('NFC');
+        return sName === rawTransferor || sName.includes(rawTransferor) || rawTransferor.includes(sName);
+      });
+    }
+
+    const prevHolderName = sh ? (sh.shareholder_name || sh.name) : (item.transferor_name || 'ಮೂಲ ಶೇರುದಾರರು');
+
+    if (sh) {
+      if (!Array.isArray(sh.audit_history)) sh.audit_history = [];
+      sh.audit_history.unshift({
+        id: `AUD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: new Date().toISOString(),
+        performed_by: adminUser || 'System Administrator (Admin)',
+        type: 'VARGAVANE_TRANSFER',
+        title: 'ನೇರ ಶೇರು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ (Vargavane Transfer Approved)',
+        description: `ಮೂಲ ಶೇರುದಾರರಾದ ಶ್ರೀ/ಶ್ರೀಮತಿ ${prevHolderName} ಅವರಿಂದ ಅವರ ${item.transferee_relationship || 'ಸಂಬಂಧ'} ಆದ ಶ್ರೀ/ಶ್ರೀಮತಿ ${newTransfereeName} ಅವರ ಹೆಸರಿಗೆ ಶೇರು ಸಂಖ್ಯೆ #${sh.share_no || targetShareNo} ರ ${item.no_of_shares || sh.number_of_shares || 1} ಶೇರುಗಳನ್ನು Admin ಅನುಮೋದನೆ ಮೇರೆಗೆ ವರ್ಗಾವಣೆ ಮಾಡಲಾಗಿದೆ. ರಶೀದಿ ನಂ: ${item.receipt_no || '—'}, ಶುಲ್ಕ: ₹${item.fees || 570}.`,
+        details: {
+          transfer_id: item.transfer_id,
+          share_no: sh.share_no || targetShareNo,
+          transferor: prevHolderName,
+          transferee: newTransfereeName,
+          relationship: item.transferee_relationship,
+          receipt_no: item.receipt_no,
+          receipt_date: item.receipt_date,
+          fee: item.fees || 570,
+          approved_by: adminUser
+        }
+      });
+
+      sh.shareholder_name = newTransfereeName;
+      sh.name = newTransfereeName;
+      if (item.transferee_place) {
+        sh.place = item.transferee_place;
+        sh.village_name = item.transferee_place;
+      }
+      if (item.transferee_taluk) sh.taluk = item.transferee_taluk;
+      if (item.transferee_district) sh.district = item.transferee_district;
+      if (item.transferee_mobile) {
+        sh.mobile_number = item.transferee_mobile;
+        sh.mobile_no = item.transferee_mobile;
+      }
+      if (item.transferee_aadhaar) {
+        sh.aadhaar_number = item.transferee_aadhaar;
+        sh.aadhaar_card_no = item.transferee_aadhaar;
+      }
+      if (item.transferee_photo) {
+        sh.photo = item.transferee_photo;
+        sh.photo_url = item.transferee_photo;
+      }
+      sh.notes = `ವರ್ಗಾವಣೆ: ${prevHolderName} ಇವರಿಂದ ${newTransfereeName} (${item.transferee_relationship || 'ವರ್ಗಾವಣೆ'}) ಇವರಿಗೆ ವರ್ಗಾಯಿಸಲಾಗಿದೆ. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`;
+
+      await saveToIndexedDB(mockShareholders);
+    } else {
+      const resolvedCircle = this.resolveCircleForPlace(item.transferee_place || item.transferor_place);
+      let maxId = 0;
+      for (let i = 0; i < mockShareholders.length; i++) {
+        const mid = Number(mockShareholders[i]?.id);
+        if (mid > maxId) maxId = mid;
+      }
+      const nextId = maxId + 1;
+      const createdSh = {
+        id: nextId,
+        share_number: targetShareNo || String(nextId),
+        share_no: targetShareNo || String(nextId),
+        shareholder_id: `SH-${String(nextId).padStart(5, '0')}`,
+        shareholder_name: newTransfereeName,
+        name: newTransfereeName,
+        place: item.transferee_place || item.transferor_place || '',
+        village_name: item.transferee_place || item.transferor_place || '',
+        taluk: item.transferee_taluk || resolvedCircle.taluk || 'ಚಡಚಣ',
+        district: item.transferee_district || resolvedCircle.district || 'ವಿಜಯಪುರ',
+        circle: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
+        circle_name: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
+        number_of_shares: parseInt(item.no_of_shares) || 1,
+        schedule_cast: item.category || 'ಅ - ವರ್ಗ',
+        status: 'Active',
+        mobile_number: item.transferee_mobile || '',
+        aadhaar_number: item.transferee_aadhaar || '',
+        photo: item.transferee_photo || '',
+        notes: `ವರ್ಗಾವಣೆ: ${prevHolderName} ಇವರಿಂದ ${newTransfereeName} (${item.transferee_relationship}) ಇವರಿಗೆ ವರ್ಗಾಯಿಸಲಾಗಿದೆ.`,
+        audit_history: [
+          {
+            id: `AUD-${Date.now()}-1`,
+            timestamp: new Date().toISOString(),
+            performed_by: adminUser || 'System Administrator (Admin)',
+            type: 'VARGAVANE_TRANSFER',
+            title: 'ನೇರ ಶೇರು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ (Vargavane Transfer Approved)',
+            description: `ಮೂಲ ಶೇರುದಾರರಾದ ಶ್ರೀ/ಶ್ರೀಮತಿ ${prevHolderName} ಅವರಿಂದ ${newTransfereeName} ಹೆಸರಿಗೆ ಶೇರು ವರ್ಗಾಯಿಸಲಾಗಿದೆ.`,
+            details: {
+              transfer_id: item.transfer_id,
+              transferor: prevHolderName,
+              transferee: newTransfereeName,
+              relationship: item.transferee_relationship,
+              approved_by: adminUser
+            }
+          }
+        ]
+      };
+      mockShareholders.unshift(createdSh);
+      await saveToIndexedDB(mockShareholders);
+    }
+
+    item.approval_status = 'Completed';
+    item.approved_by = adminUser;
+    item.approved_at = new Date().toISOString();
+    saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+
+    return { success: true, transferee_name: newTransfereeName, previous_holder: prevHolderName };
   },
 
   async addEnrollmentsBulk(records) {

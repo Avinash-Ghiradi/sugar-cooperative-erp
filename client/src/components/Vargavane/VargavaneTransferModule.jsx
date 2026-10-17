@@ -25,6 +25,7 @@ export default function VargavaneTransferModule() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFileName, setUploadFileName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [adminApproveModal, setAdminApproveModal] = useState({ open: false, transfer: null, remarks: '' });
   const uploadFileInputRef = useRef(null);
 
   useEffect(() => {
@@ -45,10 +46,40 @@ export default function VargavaneTransferModule() {
   };
 
   const handleStatusUpdate = async (transferId, newStatus) => {
+    if (newStatus === 'Completed') {
+      if (user?.role !== 'Admin') {
+        showToast('ಕೇವಲ Admin ಗಳಿಗೆ ಮಾತ್ರ ವರ್ಗಾವಣೆ ಮಂಜೂರಿಸಿ ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ನವೀಕರಿಸಲು ಅನುಮತಿ ಇದೆ (Admin approval required)', 'error');
+        return;
+      }
+      const item = transfers.find(t => String(t.transfer_id) === String(transferId) || String(t.id) === String(transferId));
+      setAdminApproveModal({ open: true, transfer: item, remarks: '' });
+      return;
+    }
     const res = await ApiService.updateVargavaneStatus(transferId, newStatus);
     if (res && res.success) {
       showToast(`Vargavane status updated to: ${newStatus}`);
       loadTransfers();
+    }
+  };
+
+  const handleConfirmAdminApproval = async (e) => {
+    e.preventDefault();
+    if (!adminApproveModal.transfer) return;
+    try {
+      const res = await ApiService.approveVargavaneTransferByAdmin({
+        transferId: adminApproveModal.transfer.transfer_id || adminApproveModal.transfer.id,
+        adminUser: user?.name || 'Admin',
+        remarks: adminApproveModal.remarks
+      });
+      if (res && res.success) {
+        showToast(`ವರ್ಗಾವಣೆ ಮಂಜೂರಾಗಿದೆ! ಶೇರು ಸಂಖ್ಯೆ #${adminApproveModal.transfer.share_no} ಯಶಸ್ವಿಯಾಗಿ ${res.transferee_name} ಅವರ ಹೆಸರಿಗೆ ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ನವೀಕರಿಸಲಾಗಿದೆ ಮತ್ತು ಆಡಿಟ್ ಇತಿಹಾಸ ದಾಖಲಾಗಿದೆ.`);
+        setAdminApproveModal({ open: false, transfer: null, remarks: '' });
+        loadTransfers();
+      } else {
+        showToast(res?.message || 'ಅನುಮೋದನೆ ವಿಫಲವಾಗಿದೆ', 'error');
+      }
+    } catch (err) {
+      showToast('ದೋಷ: ' + err.message, 'error');
     }
   };
 
@@ -596,6 +627,29 @@ export default function VargavaneTransferModule() {
                     {/* Actions */}
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {v.approval_status !== 'Completed' ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (user?.role !== 'Admin') {
+                                showToast('ಕೇವಲ Admin ಗಳಿಗೆ ಮಾತ್ರ ವರ್ಗಾವಣೆ ಮಂಜೂರಿಸಿ ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ನವೀಕರಿಸಲು ಅನುಮತಿ ಇದೆ (Admin approval required)', 'error');
+                                return;
+                              }
+                              setAdminApproveModal({ open: true, transfer: v, remarks: '' });
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-950/80 hover:bg-sky-800 text-sky-300 border border-sky-700/70 text-[11px] font-semibold transition-colors cursor-pointer shadow-sm"
+                            title="Admin Approve & Update Master Shareholder Record"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" />
+                            <span>ಮಂಜೂರಾತಿ</span>
+                          </button>
+                        ) : (
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-950/40 text-sky-400 text-[10px] font-medium border border-sky-900/50">
+                            <CheckCircle2 className="w-3 h-3 text-sky-400" />
+                            <span>ಮಂಜೂರಾಗಿದೆ</span>
+                          </span>
+                        )}
+
                         <button
                           type="button"
                           onClick={() => setPrintSlipTransfer(v)}
@@ -803,6 +857,111 @@ export default function VargavaneTransferModule() {
                 className="flex items-center gap-1.5 px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-lg"
               >
                 <Printer className="w-4 h-4" /> Print Receipt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Approval & Master Sync Modal */}
+      {adminApproveModal.open && adminApproveModal.transfer && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-sky-500/50 w-full max-w-xl rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-sky-400" />
+                  ಅಡ್ಮಿನ್ ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ (Admin Vargavane Approval)
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಪಟ್ಟಿಗೆ ಅಧಿಕೃತ ಅಂತರ-ಸದಸ್ಯ ವರ್ಗಾವಣೆ ಅನುಮೋದನೆ
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminApproveModal({ open: false, transfer: null, remarks: '' })}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-amber-950/30 border border-amber-800/40 rounded-xl p-3 text-xs text-amber-200 leading-relaxed flex items-start gap-2.5">
+              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <span>
+                <strong>ಗಮನಿಸಿ:</strong> ಈ ಶೇರು ವರ್ಗಾವಣೆಯನ್ನು ಅನುಮೋದಿಸಿದ ತಕ್ಷಣ, ಶೇರು ಸಂಖ್ಯೆ <strong>#{adminApproveModal.transfer.share_no}</strong> ಯಜಮಾನಿಕೆಯು ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಪಟ್ಟಿಯಲ್ಲಿ ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರಾದ <strong>{adminApproveModal.transfer.transferee_name || adminApproveModal.transfer.vargavane_madikolluvaru}</strong> ಅವರ ಹೆಸರಿಗೆ ಅಧಿಕೃತವಾಗಿ ನವೀಕರಣಗೊಳ್ಳುತ್ತದೆ ಮತ್ತು ಶಾಶ್ವತ ಆಡಿಟ್ ಇತಿಹಾಸ ದಾಖಲಾಗುತ್ತದೆ.
+              </span>
+            </div>
+
+            {/* Transfer Summary */}
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-slate-950/60 border border-slate-800 p-3 rounded-xl space-y-1">
+                <span className="text-[10px] uppercase font-bold text-amber-400 block tracking-wider">ಮೂಲ ಶೇರುದಾರರು (ವರ್ಗಾವಣೆ ಕೊಡುವವರು)</span>
+                <p className="font-semibold text-slate-200">{adminApproveModal.transfer.transferor_name || adminApproveModal.transfer.shareholder_name}</p>
+                <p className="text-slate-400 text-[11px]">ಶೇರು ಸಂಖ್ಯೆ: <strong className="text-sky-400">#{adminApproveModal.transfer.share_no}</strong></p>
+                <p className="text-slate-400 text-[11px]">ಗ್ರಾಮ: {adminApproveModal.transfer.transferor_place || adminApproveModal.transfer.shareholder_place || '—'}</p>
+                <p className="text-slate-400 text-[11px]">ಮೊಬೈಲ್: {adminApproveModal.transfer.transferor_mobile || '—'}</p>
+              </div>
+
+              <div className="bg-slate-950/60 border border-sky-900/40 p-3 rounded-xl space-y-1">
+                <span className="text-[10px] uppercase font-bold text-sky-400 block tracking-wider">ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು (ಸ್ವೀಕರ್ತರು)</span>
+                <p className="font-semibold text-slate-100">{adminApproveModal.transfer.transferee_name || adminApproveModal.transfer.vargavane_madikolluvaru}</p>
+                <p className="text-slate-400 text-[11px]">ಸಂಬಂಧ: <strong>{adminApproveModal.transfer.relationship || adminApproveModal.transfer.transferee_relationship || '—'}</strong></p>
+                <p className="text-slate-400 text-[11px]">ಮೊಬೈಲ್: {adminApproveModal.transfer.transferee_mobile || '—'}</p>
+                <p className="text-slate-400 text-[11px]">ಗ್ರಾಮ: {adminApproveModal.transfer.transferee_place || '—'}, {adminApproveModal.transfer.transferee_taluk || ''}</p>
+              </div>
+            </div>
+
+            {/* Fee & Receipt Details */}
+            <div className="bg-slate-950/40 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
+              <div>
+                <span className="text-slate-500 block text-[10px]">ರಶೀದಿ ಸಂಖ್ಯೆ</span>
+                <span className="font-mono font-bold text-slate-200">#{adminApproveModal.transfer.receipt_no || '—'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">ವರ್ಗಾವಣೆ ಶುಲ್ಕ</span>
+                <span className="font-mono font-bold text-emerald-400">₹{adminApproveModal.transfer.fees || 570}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">ಶೇರುಗಳ ಸಂಖ್ಯೆ</span>
+                <span className="text-slate-300 font-semibold">{adminApproveModal.transfer.no_of_shares || 1} ಶೇರು</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">ಅರ್ಜಿ ದಿನಾಂಕ</span>
+                <span className="text-slate-300">{adminApproveModal.transfer.receipt_date || adminApproveModal.transfer.application_date || '—'}</span>
+              </div>
+            </div>
+
+            {/* Admin Remarks / Board Resolution */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                ಆಡಳಿತ ಮಂಡಳಿ ನಿರ್ಣಯ / ಷರಾ (Board Resolution No. / Tharavu & Remarks):
+              </label>
+              <textarea
+                value={adminApproveModal.remarks}
+                onChange={(e) => setAdminApproveModal(prev => ({ ...prev, remarks: e.target.value }))}
+                placeholder="ಉದಾ: ನಿರ್ಣಯ ಸಂಖ್ಯೆ #18/2026 ಪ್ರಕಾರ ವರ್ಗಾವಣೆ ಮಂಜೂರು ಮಾಡಲಾಗಿದೆ (Resolution #18 approved)..."
+                rows={2}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setAdminApproveModal({ open: false, transfer: null, remarks: '' })}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                ರದ್ದುಮಾಡಿ (Cancel)
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAdminApproval}
+                className="flex items-center gap-1.5 px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-sky-950/40 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                ಮಂಜೂರಾತಿ ನೀಡಿ & ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಬದಲಾಯಿಸಿ (Approve & Update Master)
               </button>
             </div>
           </div>

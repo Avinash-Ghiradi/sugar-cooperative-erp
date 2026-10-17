@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 export default function NewShareholderModule() {
-  const { showToast } = useAuth();
+  const { showToast, user } = useAuth();
   const fileInputRef = useRef(null);
 
   // Data states
@@ -40,7 +40,14 @@ export default function NewShareholderModule() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [printingRecord, setPrintingRecord] = useState(null);
-  const [promoteModal, setPromoteModal] = useState({ open: false, record: null, shareNo: '' });
+  const [promoteModal, setPromoteModal] = useState({
+    open: false,
+    record: null,
+    shareNo: '',
+    tharavaNo: '',
+    tharavaDate: '',
+    remarks: ''
+  });
 
   useEffect(() => {
     loadEnrollments();
@@ -82,17 +89,28 @@ export default function NewShareholderModule() {
     }
   };
 
-  // Promote to Master Shareholder Database
+  // Promote to Master Shareholder Database via Admin Approval
   const handlePromoteSubmit = async (e) => {
     e.preventDefault();
+    if (user?.role !== 'Admin') {
+      showToast('ಕೇವಲ Admin ಗಳಿಗೆ ಮಾತ್ರ ಹೊಸ ಶೇರುದಾರರನ್ನು ಮಂಜೂರಿಸಿ ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಸೇರಿಸಲು ಅನುಮತಿ ಇದೆ (Admin approval required)', 'error');
+      return;
+    }
     if (!promoteModal.shareNo?.trim()) {
       showToast('ದಯವಿಟ್ಟು ಅಧಿಕೃತ ಶೇರು ಸರ್ಟಿಫಿಕೇಟ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ (Enter Share No)', 'error');
       return;
     }
-    const res = await ApiService.promoteEnrollmentToShareholder(promoteModal.record.id, promoteModal.shareNo.trim());
+    const res = await ApiService.approveEnrollmentByAdmin({
+      enrollmentId: promoteModal.record.id,
+      shareNo: promoteModal.shareNo.trim(),
+      adminUser: user?.name || 'Admin',
+      tharavaNo: promoteModal.tharavaNo || promoteModal.record.tharava_no || '',
+      tharavaDate: promoteModal.tharavaDate || promoteModal.record.tharava_date || '',
+      remarks: promoteModal.remarks || ''
+    });
     if (res && res.success) {
-      showToast(`ಶೇರು ನಂ. ${res.share_no} ಯಶಸ್ವಿಯಾಗಿ ಕಾರ್ಖಾನೆಯ ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಪಟ್ಟಿಗೆ ಸೇರಿಸಲಾಗಿದೆ!`);
-      setPromoteModal({ open: false, record: null, shareNo: '' });
+      showToast(`ಶೇರು ನಂ. #${res.share_no} ಯಶಸ್ವಿಯಾಗಿ ಕಾರ್ಖಾನೆಯ ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಪಟ್ಟಿಗೆ ಸೇರಿಸಲಾಗಿದೆ ಮತ್ತು ಆಡಿಟ್ ಇತಿಹಾಸ ದಾಖಲಾಗಿದೆ!`);
+      setPromoteModal({ open: false, record: null, shareNo: '', tharavaNo: '', tharavaDate: '', remarks: '' });
       loadEnrollments();
     } else {
       showToast(res?.message || 'ಕಾರ್ಯಾಚರಣೆ ವಿಫಲವಾಗಿದೆ', 'error');
@@ -557,14 +575,31 @@ export default function NewShareholderModule() {
                       <div className="flex items-center justify-center gap-1.5">
                         
                         {/* Promote / Add to Master Shareholders */}
-                        {!item.share_no && (
+                        {!item.share_no ? (
                           <button
-                            onClick={() => setPromoteModal({ open: true, record: item, shareNo: '' })}
-                            className="p-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 transition-colors"
-                            title="ಶೇರು ಸರ್ಟಿಫಿಕೇಟ್ ನೀಡಿ ಮಾಸ್ಟರ್ ಶೇರುದಾರರಿಗೆ ಸೇರಿಸಿ"
+                            onClick={() => {
+                              if (user?.role !== 'Admin') {
+                                showToast('ಕೇವಲ Admin ಗಳಿಗೆ ಮಾತ್ರ ಹೊಸ ಶೇರುದಾರರನ್ನು ಮಂಜೂರಿಸಿ ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಸೇರಿಸಲು ಅನುಮತಿ ಇದೆ (Admin approval required)', 'error');
+                                return;
+                              }
+                              setPromoteModal({
+                                open: true,
+                                record: item,
+                                shareNo: '',
+                                tharavaNo: item.tharava_no || '',
+                                tharavaDate: item.tharava_date || '',
+                                remarks: ''
+                              });
+                            }}
+                            className="p-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 transition-colors cursor-pointer"
+                            title="Admin ಮಂಜೂರಾತಿ ನೀಡಿ ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಪಟ್ಟಿಗೆ ಸೇರಿಸಿ"
                           >
                             <ShieldCheck className="w-3.5 h-3.5" />
                           </button>
+                        ) : (
+                          <span className="p-1.5 rounded-lg bg-slate-900 text-emerald-400 border border-emerald-900/50" title="ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಸಕ್ರಿಯವಾಗಿದೆ">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          </span>
                         )}
 
                         {/* Print Receipt */}
@@ -643,51 +678,58 @@ export default function NewShareholderModule() {
         editRecord={editingRecord}
       />
 
-      {/* Modal: Promote / Assign Share Certificate Number to Master Shareholders */}
+      {/* Modal: Admin Approval & Promote to Master Shareholders */}
       {promoteModal.open && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-emerald-500/50 rounded-3xl w-full max-w-lg p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-100 text-sm">ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಪಟ್ಟಿಗೆ ಸೇರಿಸಿ</h3>
-                  <p className="text-[11px] text-slate-400">ಶೇರು ಸರ್ಟಿಫಿಕೇಟ್ ಹಂಚಿಕೆ & ಸಕ್ರಿಯಗೊಳಿಸುವಿಕೆ</p>
+                  <h3 className="font-bold text-slate-100 text-sm">ಅಡ್ಮಿನ್ ಹೊಸ ಶೇರು ಮಂಜೂರಾತಿ (Admin Share Approval)</h3>
+                  <p className="text-[11px] text-slate-400">ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಡೇಟಾಬೇಸ್‌ಗೆ ಅಧಿಕೃತ ಸೇರ್ಪಡೆ</p>
                 </div>
               </div>
               <button
-                onClick={() => setPromoteModal({ open: false, record: null, shareNo: '' })}
+                onClick={() => setPromoteModal({ open: false, record: null, shareNo: '', tharavaNo: '', tharavaDate: '', remarks: '' })}
                 className="text-slate-400 hover:text-slate-200"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 space-y-1.5 text-xs">
+            <div className="bg-amber-950/30 border border-amber-800/40 rounded-xl p-3 text-xs text-amber-200 leading-relaxed flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <span>
+                <strong>ಗಮನಿಸಿ:</strong> ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಯ ನಂತರ, ಈ ಸದಸ್ಯರು ಅಧಿಕೃತ ಶೇರು ಸಂಖ್ಯೆಯೊಂದಿಗೆ ಕಾರ್ಖಾನೆಯ ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಪಟ್ಟಿಗೆ ಸೇರ್ಪಡೆಗೊಳ್ಳುತ್ತಾರೆ ಮತ್ತು ಖಾತೆಗೆ ಶಾಶ್ವತ ಆಡಿಟ್ ಇತಿಹಾಸ ಸೃಷ್ಟಿಯಾಗುತ್ತದೆ.
+              </span>
+            </div>
+
+            <div className="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800 space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-400">ಸದಸ್ಯರ ಹೆಸರು:</span>
-                <span className="font-bold text-slate-200">{promoteModal.record?.full_name}</span>
+                <span className="font-bold text-slate-100">{promoteModal.record?.full_name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">ಸ್ಥಳ / ಊರು:</span>
-                <span className="text-emerald-400">{promoteModal.record?.place} ({promoteModal.record?.taluk})</span>
+                <span className="text-slate-400">ಗ್ರಾಮ / ತಾಲೂಕು:</span>
+                <span className="text-emerald-400 font-semibold">{promoteModal.record?.place} ({promoteModal.record?.taluk || promoteModal.record?.dist})</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">ಶೇರುಗಳ ಸಂಖ್ಯೆ:</span>
-                <span className="text-slate-200">{promoteModal.record?.no_shares} ಶೇರು ({promoteModal.record?.category})</span>
+                <span className="text-slate-400">ಶೇರು ವಿವರ:</span>
+                <span className="text-slate-200">{promoteModal.record?.no_shares || 1} ಶೇರು ({promoteModal.record?.category || 'ಅ ವರ್ಗ'}) • ₹{promoteModal.record?.share_amount || 2000}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">ಠರಾವು ನಂ:</span>
-                <span className="text-amber-400">{promoteModal.record?.tharava_no || '05(8)'}</span>
+                <span className="text-slate-400">ಪ್ರವೇಶ ಶುಲ್ಕ & ರಶೀದಿ:</span>
+                <span className="text-slate-200 font-mono">₹{promoteModal.record?.admission_fee || 50} (ರಶೀದಿ #{promoteModal.record?.receipt_no || '—'})</span>
               </div>
             </div>
 
-            <form onSubmit={handlePromoteSubmit} className="space-y-4 text-xs">
+            <form onSubmit={handlePromoteSubmit} className="space-y-3.5 text-xs">
               <div>
-                <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
-                  <Hash className="w-3.5 h-3.5 text-slate-400" /> ಅಧಿಕೃತ ಶೇರು ಸಂಖ್ಯೆ (Official Share Certificate No) *
+                <label className="block text-slate-300 font-medium mb-1 flex items-center gap-1">
+                  <Hash className="w-3.5 h-3.5 text-emerald-400" /> ಅಧಿಕೃತ ಶೇರು ಸಂಖ್ಯೆ (Official Share Certificate No) *
                 </label>
                 <input
                   type="text"
@@ -696,26 +738,63 @@ export default function NewShareholderModule() {
                   value={promoteModal.shareNo}
                   onChange={(e) => setPromoteModal(prev => ({ ...prev, shareNo: e.target.value }))}
                   placeholder="ಉದಾ: 17077 / 18500"
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-emerald-400 font-mono font-bold text-sm outline-none"
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-emerald-400 font-mono font-bold text-sm outline-none"
                 />
-                <p className="text-[10px] text-slate-500 mt-1">
-                  ಈ ಸಂಖ್ಯೆಯೊಂದಿಗೆ ಸದಸ್ಯರು ಕಾರ್ಖಾನೆಯ 17,076 ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಡೇಟಾಬೇಸ್‌ಗೆ ಸೇರ್ಪಡೆಗೊಳ್ಳುತ್ತಾರೆ.
-                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">
+                    ಠರಾವು ಸಂಖ್ಯೆ (Tharava / Resolution No):
+                  </label>
+                  <input
+                    type="text"
+                    value={promoteModal.tharavaNo}
+                    onChange={(e) => setPromoteModal(prev => ({ ...prev, tharavaNo: e.target.value }))}
+                    placeholder="ಉದಾ: 05(8)"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200 font-mono outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">
+                    ಠರಾವು ದಿನಾಂಕ (Tharava Date):
+                  </label>
+                  <input
+                    type="text"
+                    value={promoteModal.tharavaDate}
+                    onChange={(e) => setPromoteModal(prev => ({ ...prev, tharavaDate: e.target.value }))}
+                    placeholder="DD-MM-YYYY"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200 font-mono outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-medium mb-1">
+                  ಷರಾ / ಆಡಳಿತ ಮಂಡಳಿ ಅನುಮೋದನೆ ಟಿಪ್ಪಣಿ (Admin Remarks):
+                </label>
+                <input
+                  type="text"
+                  value={promoteModal.remarks}
+                  onChange={(e) => setPromoteModal(prev => ({ ...prev, remarks: e.target.value }))}
+                  placeholder="ಆಡಳಿತ ಮಂಡಳಿ ಸಭೆಯಲ್ಲಿ ಅಧಿಕೃತವಾಗಿ ಅಂಗೀಕರಿಸಲಾಗಿದೆ..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200 outline-none focus:border-emerald-500"
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setPromoteModal({ open: false, record: null, shareNo: '' })}
-                  className="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  onClick={() => setPromoteModal({ open: false, record: null, shareNo: '', tharavaNo: '', tharavaDate: '', remarks: '' })}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer"
                 >
-                  ರದ್ದು
+                  ರದ್ದು (Cancel)
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-md shadow-emerald-950"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-md shadow-emerald-950 cursor-pointer"
                 >
-                  <ShieldCheck className="w-4 h-4" /> ಶೇರು ಹಂಚಿಕೆ ಖಚಿತಪಡಿಸಿ
+                  <ShieldCheck className="w-4 h-4" /> ಮಂಜೂರಾತಿ ನೀಡಿ & ಮಾಸ್ಟರ್ ಪಟ್ಟಿಗೆ ಸೇರಿಸಿ
                 </button>
               </div>
             </form>

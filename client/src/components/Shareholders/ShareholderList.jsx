@@ -4,7 +4,8 @@ import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
-  Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle
+  Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle,
+  History
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
 import ShareholderForm from './ShareholderForm';
@@ -33,6 +34,7 @@ export default function ShareholderList() {
 
   // Modals
   const [activeProfileId, setActiveProfileId] = useState(null);
+  const [activeProfileTab, setActiveProfileTab] = useState('ledger');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editShareholderData, setEditShareholderData] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -766,11 +768,24 @@ export default function ShareholderList() {
                     <td className="py-2.5 px-2 bg-slate-950 group-hover:bg-slate-900 sticky left-0 z-10">
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => setActiveProfileId(sh.shareholder_id || sh.id)}
-                          title="View Full Profile"
+                          onClick={() => {
+                            setActiveProfileId(sh.shareholder_id || sh.id);
+                            setActiveProfileTab('ledger');
+                          }}
+                          title="View Full Profile (ಸಮಗ್ರ ಪ್ರೊಫೈಲ್)"
                           className="p-1 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors"
                         >
                           <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setActiveProfileId(sh.shareholder_id || sh.id);
+                            setActiveProfileTab('history');
+                          }}
+                          title="ಇತಿಹಾಸ & ದಾಖಲೆಗಳು (History & Audit Trail)"
+                          className="p-1 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded transition-colors"
+                        >
+                          <History className="w-3.5 h-3.5 text-amber-400" />
                         </button>
                         <button
                           onClick={() => { setEditShareholderData(sh); setShowAddForm(true); }}
@@ -967,7 +982,11 @@ export default function ShareholderList() {
       {activeProfileId && (
         <ShareholderProfile
           shareholderId={activeProfileId}
-          onClose={() => setActiveProfileId(null)}
+          initialTab={activeProfileTab}
+          onClose={() => {
+            setActiveProfileId(null);
+            setActiveProfileTab('ledger');
+          }}
         />
       )}
 
