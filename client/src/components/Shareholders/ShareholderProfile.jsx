@@ -5,7 +5,7 @@ import {
   User, Coins, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   X, Printer, Contact, CheckCircle2, ShieldCheck, MapPin, Phone, Building2,
   BookOpen, FileText, Fingerprint, Users2, History, ArrowRightLeft, Stamp,
-  Clock, ArrowRight, Award
+  Clock, ArrowRight, Award, GitMerge
 } from 'lucide-react';
 
 export default function ShareholderProfile({ shareholderId, onClose, initialTab = 'ledger' }) {
@@ -160,6 +160,68 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Registration Date:</span><span className="text-slate-200">{sh.reg_date || sh.registration_date}</span></div>
                 <div className="flex justify-between py-1"><span className="text-slate-400">Cooperative Status:</span><span className="text-emerald-400 font-bold">{sh.status || 'Active'}</span></div>
               </div>
+
+              {/* Merged Share Certificates & Multiple Amounts Section */}
+              {(sh.is_merged || (sh.merged_holdings && sh.merged_holdings.length > 0) || (sh.amount > 0 && sh.reciept)) && (
+                <div className="md:col-span-2 bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-amber-950/20 border border-amber-500/30 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <h3 className="font-semibold text-slate-100 text-sm flex items-center gap-2">
+                      <GitMerge className="w-4 h-4 text-amber-400" />
+                      ಬಹು-ಶೇರುಗಳು & ಪಾವತಿ ವಿವರಗಳು (Merged Share Holdings & Installments)
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-700/60 font-mono">
+                      {sh.merged_holdings ? `${sh.merged_holdings.length} Certificates Merged` : 'Multiple Installments'}
+                    </span>
+                  </div>
+
+                  {sh.merged_holdings && sh.merged_holdings.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                      {sh.merged_holdings.map((h, hIdx) => (
+                        <div key={h.id || hIdx} className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono font-bold text-emerald-400 text-xs">ಶೇರು #{h.share_no}</span>
+                            <span className="text-[11px] font-bold text-slate-300">{h.shares} ಶೇರು</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-400">
+                            <span>ರಶೀದಿ #{h.receipt_no}</span>
+                            <span className="font-mono font-bold text-amber-400">₹ {Number(h.amount || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-500">{h.receipt_date} • {h.book_no || 'B.No: 1'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">1ನೇ ಕಂತು / ರಶೀದಿ (1st Installment)</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-300">ರಶೀದಿ #{sh.receipt_no || '—'}</span>
+                          <span className="font-mono font-bold text-emerald-400">₹ {Number(sh.receipt_amount || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500">{sh.date || sh.reg_date}</div>
+                      </div>
+
+                      <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-amber-400">2ನೇ ಕಂತು / ರಶೀದಿ (2nd Installment)</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-300">ರಶೀದಿ #{sh.reciept || '—'}</span>
+                          <span className="font-mono font-bold text-amber-400">₹ {Number(sh.amount || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500">{sh.date || sh.reg_date}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-1 flex flex-wrap items-center justify-between text-[11px] text-slate-300 border-t border-slate-800/60">
+                    <div>
+                      ಒಟ್ಟು ಸಂಯೋಜಿತ ಶೇರುಗಳು: <strong className="text-emerald-400">{sh.number_of_shares || 1} ಶೇರುಗಳು</strong>
+                    </div>
+                    <div>
+                      ಒಟ್ಟು ಶೇರು ಬಂಡವಾಳ ಜಮೆ: <strong className="text-amber-400 font-mono">₹ {Number(sh.total_amount || 0).toLocaleString()}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

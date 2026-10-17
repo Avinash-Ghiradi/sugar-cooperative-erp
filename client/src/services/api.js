@@ -1024,6 +1024,48 @@ export const ApiService = {
       });
     }
 
+    // If shareholder has merged holdings or multiple amounts, ensure timeline displays it
+    if (sh.merged_holdings && sh.merged_holdings.length > 0) {
+      const alreadyLogged = timeline.some(t => t.type === 'MERGE_SHARES');
+      if (!alreadyLogged) {
+        timeline.unshift({
+          id: `merge-${sh.id}`,
+          date: sh.merged_holdings[1]?.receipt_date || sh.reg_date || '—',
+          type: 'MERGE_SHARES',
+          title: 'ಬಹು-ಶೇರುಗಳು ಮತ್ತು ಮೊತ್ತಗಳ ಅಧಿಕೃತ ವಿಲೀನ (Multiple Shares Merged)',
+          description: `ಶೇರುದಾರರ ಹೆಸರಿನಲ್ಲಿದ್ದ ${sh.merged_holdings.length} ಪ್ರತ್ಯೇಕ ಶೇರು ಸರ್ಟಿಫಿಕೇಟ್‌ಗಳು (#${(sh.all_share_numbers || [sh.share_no]).join(', #')}) ಮತ್ತು ಮೊತ್ತಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ ಏಕೀಕೃತ ಖಾತೆಯಾಗಿ (ಒಟ್ಟು ${sh.number_of_shares} ಶೇರುಗಳು, ₹${Number(sh.total_amount || 0).toLocaleString()}) ನವೀಕರಿಸಲಾಗಿದೆ.`,
+          performed_by: 'Admin (System Administrator)',
+          details: {
+            merged_certificates: sh.all_share_numbers || [sh.share_no],
+            total_shares: sh.number_of_shares,
+            total_amount: sh.total_amount,
+            holdings: sh.merged_holdings
+          },
+          badgeColor: 'amber'
+        });
+      }
+    } else if ((parseFloat(sh.receipt_amount) > 0 && parseFloat(sh.amount) > 0) || parseFloat(sh.total_amount) > parseFloat(sh.receipt_amount)) {
+      const hasInstallment = timeline.some(t => t.type === 'MULTIPLE_AMOUNTS');
+      if (!hasInstallment) {
+        timeline.push({
+          id: `amt-${sh.id}`,
+          date: sh.date || sh.reg_date || '—',
+          type: 'MULTIPLE_AMOUNTS',
+          title: 'ಬಹು ಕಂತುಗಳ ಶೇರು ಪಾವತಿ (Multiple Share Installments Recorded)',
+          description: `1ನೇ ರಶೀದಿ #${sh.receipt_no || '—'}: ₹${Number(sh.receipt_amount || 0).toLocaleString()} ಮತ್ತು 2ನೇ ರಶೀದಿ #${sh.reciept || '—'}: ₹${Number(sh.amount || 0).toLocaleString()} ಸೇರಿದಂತೆ ಒಟ್ಟು ₹${Number(sh.total_amount || 0).toLocaleString()} ಮೊತ್ತ ಜಮೆಯಾಗಿದೆ.`,
+          performed_by: 'Accountant / Admin',
+          details: {
+            receipt_1: sh.receipt_no,
+            amount_1: sh.receipt_amount,
+            receipt_2: sh.reciept,
+            amount_2: sh.amount,
+            total: sh.total_amount
+          },
+          badgeColor: 'cyan'
+        });
+      }
+    }
+
     return {
       success: true,
       shareholder: sh,
@@ -2855,6 +2897,280 @@ export const ApiService = {
     return {
       success: true,
       data: mockAuditLogs
+    };
+  },
+
+  // -------------------------------------------------------------
+  // MERGE SHARES & SHARE DETAILS FOR SHAREHOLDERS WITH MULTIPLE AMOUNTS
+  // -------------------------------------------------------------
+
+  async getMultipleHoldingsSummary() {
+    await ensureDBReady();
+    const groups = new Map();
+
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const s = mockShareholders[i];
+      const rawName = (s.shareholder_name || s.name || '').trim().replace(/\s+/g, ' ');
+      const rawPlace = (s.place || s.village_name || '').trim().replace(/\s+/g, ' ');
+      if (!rawName) continue;
+      
+      const key = `${rawName.toLowerCase().normalize('NFC')} | ${rawPlace.toLowerCase().normalize('NFC')}`;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          shareholder_name: rawName,
+          place: rawPlace,
+          taluk: s.taluk || '',
+          district: s.district || '',
+          circle: s.circle || s.circle_name || '',
+          gender: s.gender || 'M',
+          mobile_no: s.mobile_no || s.mobile || '',
+          aadhaar_card_no: s.aadhaar_card_no || s.aadhaar_ref || '',
+          schedule_cast: s.schedule_cast || 'ಅ - ವರ್ಗ',
+          items: []
+        });
+      }
+      groups.get(key).items.push(s);
+    }
+
+    const detectedHoldings = [];
+    let totalRedundantRecords = 0;
+    let totalMergedSharesSum = 0;
+    let totalMergedCapitalSum = 0;
+
+    for (const [key, g] of groups.entries()) {
+      if (g.items.length > 1) {
+        let combinedShares = 0;
+        let combinedTotalAmt = 0;
+        const shareNos = [];
+        const receipts = [];
+        const holdingsBreakdown = [];
+
+        g.items.forEach(item => {
+          const sAmt1 = parseFloat(item.receipt_amount) || 0;
+          const sAmt2 = parseFloat(item.amount) || 0;
+          const sTot = parseFloat(item.total_amount) || (sAmt1 + sAmt2) || 2000;
+          const sCount = parseInt(item.number_of_shares) || (sTot ? Math.max(1, Math.floor(sTot / 2000)) : 1);
+          
+          combinedShares += sCount;
+          combinedTotalAmt += sTot;
+          const sNo = String(item.share_no || item.share_number || '').trim();
+          if (sNo && !shareNos.includes(sNo)) shareNos.push(sNo);
+          if (item.receipt_no && !receipts.includes(item.receipt_no)) receipts.push(item.receipt_no);
+          if (item.reciept && !receipts.includes(item.reciept)) receipts.push(item.reciept);
+
+          holdingsBreakdown.push({
+            id: item.id,
+            share_no: sNo,
+            shares: sCount,
+            amount: sTot,
+            receipt_no: item.receipt_no || '—',
+            receipt_date: item.reg_date || item.date || '—',
+            reciept_2: item.reciept || '',
+            amount_2: sAmt2 || 0,
+            date_2: item.date || ''
+          });
+        });
+
+        totalRedundantRecords += (g.items.length - 1);
+        totalMergedSharesSum += combinedShares;
+        totalMergedCapitalSum += combinedTotalAmt;
+
+        detectedHoldings.push({
+          key,
+          shareholder_name: g.shareholder_name,
+          place: g.place,
+          taluk: g.taluk,
+          district: g.district,
+          circle: g.circle,
+          mobile_no: g.mobile_no,
+          aadhaar_card_no: g.aadhaar_card_no,
+          schedule_cast: g.schedule_cast,
+          count: g.items.length,
+          combined_shares: combinedShares,
+          combined_total_amount: combinedTotalAmt,
+          share_numbers: shareNos,
+          receipt_numbers: receipts,
+          holdings: holdingsBreakdown,
+          primary_id: g.items[0].id
+        });
+      }
+    }
+
+    return {
+      success: true,
+      totalDetectedShareholders: detectedHoldings.length,
+      totalRedundantRecords,
+      totalMergedSharesSum,
+      totalMergedCapitalSum,
+      data: detectedHoldings
+    };
+  },
+
+  async mergeShareholderHoldings({ groupKey, adminUser = 'Admin' }) {
+    await ensureDBReady();
+    if (!groupKey) return { success: false, message: 'Group key required' };
+
+    // Find all matching shareholder records
+    const matchingIndices = [];
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const s = mockShareholders[i];
+      const rawName = (s.shareholder_name || s.name || '').trim().replace(/\s+/g, ' ');
+      const rawPlace = (s.place || s.village_name || '').trim().replace(/\s+/g, ' ');
+      const key = `${rawName.toLowerCase().normalize('NFC')} | ${rawPlace.toLowerCase().normalize('NFC')}`;
+      if (key === groupKey) {
+        matchingIndices.push(i);
+      }
+    }
+
+    if (matchingIndices.length <= 1) {
+      return { success: false, message: 'No multiple records found to merge for this shareholder.' };
+    }
+
+    const items = matchingIndices.map(idx => mockShareholders[idx]);
+    const primary = items[0];
+    const duplicates = items.slice(1);
+
+    let combinedShares = 0;
+    let combinedTotalAmt = 0;
+    const shareNos = [];
+    const receipts = [];
+    const mergedHoldings = [];
+
+    items.forEach(item => {
+      const sAmt1 = parseFloat(item.receipt_amount) || 0;
+      const sAmt2 = parseFloat(item.amount) || 0;
+      const sTot = parseFloat(item.total_amount) || (sAmt1 + sAmt2) || 2000;
+      const sCount = parseInt(item.number_of_shares) || (sTot ? Math.max(1, Math.floor(sTot / 2000)) : 1);
+      
+      combinedShares += sCount;
+      combinedTotalAmt += sTot;
+      const sNo = String(item.share_no || item.share_number || '').trim();
+      if (sNo && !shareNos.includes(sNo)) shareNos.push(sNo);
+      if (item.receipt_no && !receipts.includes(item.receipt_no)) receipts.push(item.receipt_no);
+      if (item.reciept && !receipts.includes(item.reciept)) receipts.push(item.reciept);
+
+      mergedHoldings.push({
+        id: item.id,
+        share_no: sNo,
+        shares: sCount,
+        amount: sTot,
+        receipt_no: item.receipt_no || '—',
+        receipt_date: item.reg_date || item.date || '—',
+        book_no: item.book_no || 'B.No: 1',
+        reciept_2: item.reciept || '',
+        amount_2: sAmt2 || 0,
+        date_2: item.date || ''
+      });
+    });
+
+    // Update primary record with consolidated shares and amounts
+    primary.number_of_shares = combinedShares;
+    primary.total_amount = combinedTotalAmt;
+    primary.share_value = combinedTotalAmt;
+    primary.share_no = shareNos.join(', ');
+    primary.primary_share_no = shareNos[0];
+    primary.all_share_numbers = shareNos;
+    primary.all_receipt_numbers = receipts;
+    primary.multiple_amounts = true;
+    primary.is_merged = true;
+    primary.merged_holdings = mergedHoldings;
+    
+    // Receipt 1 & Receipt 2 details
+    if (mergedHoldings[0]) {
+      primary.receipt_no = mergedHoldings[0].receipt_no;
+      primary.receipt_amount = mergedHoldings[0].amount;
+    }
+    if (mergedHoldings[1]) {
+      primary.reciept = mergedHoldings[1].receipt_no;
+      primary.amount = mergedHoldings[1].amount;
+      primary.date = mergedHoldings[1].receipt_date;
+    }
+
+    // Populate best phone / aadhaar if primary was missing
+    items.forEach(it => {
+      if (!primary.mobile_no && (it.mobile_no || it.mobile)) {
+        primary.mobile_no = it.mobile_no || it.mobile;
+        primary.mobile = primary.mobile_no;
+      }
+      if (!primary.aadhaar_card_no && (it.aadhaar_card_no || it.aadhaar_ref)) {
+        primary.aadhaar_card_no = it.aadhaar_card_no || it.aadhaar_ref;
+        primary.aadhaar_ref = primary.aadhaar_card_no;
+      }
+      if (!primary.nominee_name && it.nominee_name) {
+        primary.nominee_name = it.nominee_name;
+        primary.nominee_aadhaar_no = it.nominee_aadhaar_no;
+        primary.nominee_mobile_no = it.nominee_mobile_no;
+        primary.nominee_address = it.nominee_address;
+      }
+    });
+
+    primary.notes = `ಬಹು-ಶೇರುಗಳ ಮತ್ತು ಮೊತ್ತಗಳ ವಿಲೀನ: ಶೇರು ಸಂಖ್ಯೆ #${shareNos.join(', #')} ಮತ್ತು ಮೊತ್ತಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ ಒಟ್ಟು ${combinedShares} ಶೇರುಗಳು (₹${combinedTotalAmt.toLocaleString()}) ಏಕೀಕರಿಸಲಾಗಿದೆ.`;
+
+    // Add Audit Trail entry
+    if (!Array.isArray(primary.audit_history)) primary.audit_history = [];
+    primary.audit_history.unshift({
+      id: `AUD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toISOString(),
+      performed_by: adminUser || 'Admin',
+      type: 'MERGE_SHARES',
+      title: 'ಬಹು-ಶೇರುಗಳ ಮತ್ತು ಮೊತ್ತಗಳ ಅಧಿಕೃತ ವಿಲೀನ (Multiple Shares Merged)',
+      description: `ಶೇರುದಾರರಾದ ಶ್ರೀ/ಶ್ರೀಮತಿ ${primary.shareholder_name || primary.name} ಅವರ ಹೆಸರಿನಲ್ಲಿದ್ದ ${items.length} ಪ್ರತ್ಯೇಕ ಶೇರು ಸರ್ಟಿಫಿಕೇಟ್‌ಗಳು (#${shareNos.join(', #')}) ಮತ್ತು ಮೊತ್ತಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ ಏಕೀಕೃತ ಖಾತೆಯಾಗಿ (ಒಟ್ಟು ${combinedShares} ಶೇರುಗಳು, ₹${combinedTotalAmt.toLocaleString()}) ನವೀಕರಿಸಲಾಗಿದೆ.`,
+      details: {
+        shareholder_name: primary.shareholder_name || primary.name,
+        place: primary.place,
+        merged_share_nos: shareNos,
+        total_shares: combinedShares,
+        total_amount: combinedTotalAmt,
+        holdings: mergedHoldings,
+        approved_by: adminUser
+      }
+    });
+
+    // Remove duplicate IDs from mockShareholders
+    const duplicateIds = new Set(duplicates.map(d => d.id));
+    mockShareholders = mockShareholders.filter(s => !duplicateIds.has(s.id));
+
+    // Save consolidated master list to IndexedDB
+    await saveToIndexedDB(mockShareholders);
+
+    return {
+      success: true,
+      mergedRecord: primary,
+      removedCount: duplicates.length,
+      combinedShares,
+      combinedTotalAmt
+    };
+  },
+
+  async mergeAllMultipleHoldings({ adminUser = 'Admin' }) {
+    await ensureDBReady();
+    const summary = await this.getMultipleHoldingsSummary();
+    if (!summary.data || summary.data.length === 0) {
+      return { success: true, count: 0, message: 'ಯಾವುದೇ ಬಹು-ಶೇರುಗಳು ಕಂಡುಬಂದಿಲ್ಲ (No multiple holdings found)' };
+    }
+
+    let mergedCount = 0;
+    let totalSharesCombined = 0;
+    let totalCapitalCombined = 0;
+
+    for (const g of summary.data) {
+      const res = await this.mergeShareholderHoldings({ groupKey: g.key, adminUser });
+      if (res.success) {
+        mergedCount++;
+        totalSharesCombined += (res.combinedShares || 0);
+        totalCapitalCombined += (res.combinedTotalAmt || 0);
+      }
+    }
+
+    await saveToIndexedDB(mockShareholders);
+
+    return {
+      success: true,
+      mergedCount,
+      totalSharesCombined,
+      totalCapitalCombined,
+      remainingMasterCount: mockShareholders.length
     };
   }
 };

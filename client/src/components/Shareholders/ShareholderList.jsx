@@ -5,14 +5,15 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
   Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle,
-  History
+  History, GitMerge
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
 import ShareholderForm from './ShareholderForm';
 import ResetConfirmModal from '../Common/ResetConfirmModal';
+import MergeSharesModal from './MergeSharesModal';
 
 export default function ShareholderList() {
-  const { showToast, setActiveModule } = useAuth();
+  const { showToast, setActiveModule, user } = useAuth();
   const [shareholders, setShareholders] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(true);
@@ -39,9 +40,12 @@ export default function ShareholderList() {
   const [editShareholderData, setEditShareholderData] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [multipleHoldingsCount, setMultipleHoldingsCount] = useState(0);
   const [previewRecords, setPreviewRecords] = useState([]);
   const [uploadFileName, setUploadFileName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [autoMergeOnImport, setAutoMergeOnImport] = useState(true);
   const uploadInputRef = React.useRef(null);
 
   useEffect(() => {
@@ -285,6 +289,18 @@ export default function ShareholderList() {
     setIsImporting(true);
     const count = previewRecords.length;
     await ApiService.addShareholdersBulk(previewRecords);
+
+    if (autoMergeOnImport) {
+      try {
+        const mergeRes = await ApiService.mergeAllMultipleHoldings({ adminUser: user?.name || 'Admin' });
+        if (mergeRes && mergeRes.success && mergeRes.mergedCount > 0) {
+          showToast(`ಸ್ವಯಂಚಾಲಿತ ವಿಲೀನ ಪೂರ್ಣಗೊಂಡಿದೆ: ${mergeRes.mergedCount} ಬಹು-ಶೇರುಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ!`, 'success');
+        }
+      } catch (err) {
+        console.error('Auto merge error:', err);
+      }
+    }
+
     setIsImporting(false);
     showToast(`Successfully imported ${count.toLocaleString()} records into the Live Registry!`);
     setShowUploadModal(false);
@@ -305,6 +321,13 @@ export default function ShareholderList() {
 
     const scRes = await ApiService.getScheduleCasts();
     if (scRes && scRes.data) setCastList(scRes.data);
+
+    try {
+      const mRes = await ApiService.getMultipleHoldingsSummary();
+      if (mRes && mRes.success) {
+        setMultipleHoldingsCount(mRes.totalDetectedShareholders || 0);
+      }
+    } catch (err) {}
   };
 
   const fetchShareholders = async (page = 1) => {
@@ -519,6 +542,21 @@ export default function ShareholderList() {
             className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add Shareholder
+          </button>
+
+          {/* Merge Multiple Shares Button */}
+          <button
+            onClick={() => setShowMergeModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-400 text-slate-950 rounded-xl text-xs font-bold shadow-lg shadow-amber-950/40 ring-1 ring-amber-400/60 hover:scale-[1.02] transition-all cursor-pointer"
+            title="ಬಹು ಮೊತ್ತಗಳನ್ನು ಹೊಂದಿರುವ ಶೇರುದಾರರ ಶೇರುಗಳು ಮತ್ತು ವಿವರಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ"
+          >
+            <GitMerge className="w-4 h-4 text-slate-950" />
+            <span>ಬಹು-ಶೇರು ವಿಲೀನ (Merge Shares)</span>
+            {multipleHoldingsCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-slate-950 text-amber-300 text-[10px] font-mono font-bold">
+                {multipleHoldingsCount}
+              </span>
+            )}
           </button>
 
           {/* Prominent Upload Excel Button */}
@@ -813,7 +851,17 @@ export default function ShareholderList() {
                     <td className="py-2.5 px-3 text-center text-slate-400 font-mono">{sh.sl_no || idx + 1}</td>
 
                     {/* 3. Share No */}
-                    <td className="py-2.5 px-3 font-mono font-bold text-emerald-400">{sh.share_no || sh.share_number}</td>
+                    <td className="py-2.5 px-3 font-mono font-bold text-emerald-400">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{sh.share_no || sh.share_number}</span>
+                        {(sh.is_merged || (sh.all_share_numbers && sh.all_share_numbers.length > 1) || String(sh.share_no).includes(',')) && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-700/60 text-[9px] font-sans font-bold flex items-center gap-1 shrink-0" title="ಬಹು-ಶೇರುಗಳು ಮತ್ತು ಮೊತ್ತಗಳು ವಿಲೀನಗೊಂಡಿವೆ">
+                            <GitMerge className="w-2.5 h-2.5 text-amber-400" />
+                            <span>ವಿಲೀನ</span>
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
                     {/* 4. Share Holder Name */}
                     <td className="py-2.5 px-4 font-bold text-slate-100 text-[13px]">
@@ -1156,6 +1204,23 @@ export default function ShareholderList() {
                   )}
                 </div>
               )}
+
+              {/* Auto-merge Multiple Holdings & Amounts Checkbox */}
+              <div className="flex items-start gap-3 p-3 bg-emerald-950/25 border border-emerald-800/40 rounded-xl text-xs text-slate-300">
+                <input
+                  type="checkbox"
+                  id="autoMergeCheckbox"
+                  checked={autoMergeOnImport}
+                  onChange={(e) => setAutoMergeOnImport(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 bg-slate-900 border-slate-700 cursor-pointer"
+                />
+                <label htmlFor="autoMergeCheckbox" className="cursor-pointer select-none">
+                  <span className="font-semibold text-emerald-400">ಸ್ವಯಂಚಾಲಿತ ಬಹು-ಶೇರು & ಕಂತು ಮೊತ್ತ ವಿಲೀನ (Auto-merge Multiple Holdings & Amounts):</span>
+                  <span className="text-slate-400 block mt-0.5">
+                    ಒಂದಕ್ಕಿಂತ ಹೆಚ್ಚು ಶೇರು ಪ್ರಮಾಣಪತ್ರ ಅಥವಾ ಕಂತು ಮೊತ್ತ ಹೊಂದಿರುವ ಷೇರುದಾರರ ಖಾತೆಗಳನ್ನು ಆಮದು ನಂತರ ತಕ್ಷಣವೇ ಒಂದೇ ಮಾಸ್ಟರ್ ಖಾತೆಗೆ ಸಂಯೋಜಿಸಿ (Consolidate shares and total amounts).
+                  </span>
+                </label>
+              </div>
             </div>
 
             {/* Modal Footer */}
@@ -1199,6 +1264,16 @@ export default function ShareholderList() {
           setPreviewRecords([]);
           await loadMasters();
           fetchShareholders(1);
+        }}
+      />
+
+      {/* Merge Multiple Shares Modal */}
+      <MergeSharesModal
+        isOpen={showMergeModal}
+        onClose={() => setShowMergeModal(false)}
+        onMergeSuccess={async () => {
+          await loadMasters();
+          fetchShareholders(pagination.page);
         }}
       />
     </div>
