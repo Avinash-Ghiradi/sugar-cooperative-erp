@@ -950,11 +950,14 @@ export default function ShareholderList() {
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => setActiveModule('id_cards')}
-                          title="Generate ID Card"
-                          className="p-1 text-slate-400 hover:text-purple-400 hover:bg-slate-800 rounded transition-colors"
+                          onClick={() => {
+                            setActiveProfileId(sh.shareholder_id || sh.id);
+                            setActiveProfileTab('id_card');
+                          }}
+                          title="ಗುರುತಿನ ಚೀಟಿ (Print Official Statutory ID Card)"
+                          className="p-1 text-slate-400 hover:text-emerald-300 hover:bg-emerald-950/40 rounded transition-colors"
                         >
-                          <Contact className="w-3.5 h-3.5" />
+                          <Contact className="w-3.5 h-3.5 text-emerald-400" />
                         </button>
                       </div>
                     </td>

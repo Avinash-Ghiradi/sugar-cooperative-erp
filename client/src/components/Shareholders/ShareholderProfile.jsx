@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService, hasSecondInstallment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import OfficialShareholderIDCard from '../IDCards/OfficialShareholderIDCard';
 import {
   User, Coins, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   X, Printer, Contact, CheckCircle2, ShieldCheck, MapPin, Phone, Building2,
@@ -13,6 +14,8 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
   const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState(initialTab || 'ledger');
   const [loading, setLoading] = useState(true);
+  const [idCardSide, setIdCardSide] = useState('Front');
+  const [idCardSeal, setIdCardSeal] = useState(true);
 
   useEffect(() => {
     loadProfile();
@@ -45,13 +48,14 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
 
   const tabs = [
     { id: 'ledger', label: '1. Statutory Ledger (ನಮೂನೆ ವಹಿ)', icon: BookOpen },
-    { id: 'address', label: '2. Address & Place (ಸ್ಥಳ/ವಿಳಾಸ)', icon: MapPin },
-    { id: 'tharava', label: '3. Board Tharava (ಠರಾವು ವಿವರ)', icon: FileText },
-    { id: 'nominee', label: '4. Nominee (ನಾಮಿನಿ ವಿವರ)', icon: Users2 },
-    { id: 'kyc', label: '5. KYC & Biometrics', icon: Fingerprint },
-    { id: 'transactions', label: `6. Transactions (${history.transactions?.length || 0})`, icon: CreditCard },
-    { id: 'allotments', label: `7. Sugar Quota (${history.sugarAllotments?.length || 0})`, icon: PackageCheck },
-    { id: 'history', label: `8. History & Audit Trail (${(history.timeline || []).length || 0})`, icon: History },
+    { id: 'id_card', label: '2. ಗುರುತಿನ ಚೀಟಿ (Official ID Card)', icon: Contact },
+    { id: 'address', label: '3. Address & Place (ಸ್ಥಳ/ವಿಳಾಸ)', icon: MapPin },
+    { id: 'tharava', label: '4. Board Tharava (ಠರಾವು ವಿವರ)', icon: FileText },
+    { id: 'nominee', label: '5. Nominee (ನಾಮಿನಿ ವಿವರ)', icon: Users2 },
+    { id: 'kyc', label: '6. KYC & Biometrics', icon: Fingerprint },
+    { id: 'transactions', label: `7. Transactions (${history.transactions?.length || 0})`, icon: CreditCard },
+    { id: 'allotments', label: `8. Sugar Quota (${history.sugarAllotments?.length || 0})`, icon: PackageCheck },
+    { id: 'history', label: `9. History & Audit Trail (${(history.timeline || []).length || 0})`, icon: History },
   ];
 
   return (
@@ -94,6 +98,17 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('id_card')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === 'id_card'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-700/80'
+              }`}
+            >
+              <Contact className="w-4 h-4 text-emerald-400" /> ಗುರುತಿನ ಚೀಟಿ (ID Card)
+            </button>
+
             <button
               onClick={() => window.print()}
               className="p-2 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs flex items-center gap-1.5 transition-colors"
@@ -244,7 +259,74 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
             </div>
           )}
 
-          {/* Tab 2: Address & Place */}
+          {/* Tab: Official ID Card */}
+          {activeTab === 'id_card' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800">
+                <div>
+                  <h4 className="font-bold text-slate-100 text-xs flex items-center gap-2">
+                    <Contact className="w-4 h-4 text-emerald-400" />
+                    ಅಧಿಕೃತ ಸದಸ್ಯರ ಗುರುತಿನ ಚೀಟಿ (Official Statutory ID Card)
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ. ಮರೂರ • CR80 Plastic PVC Plastic Card & Print Layout
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                    <button
+                      onClick={() => setIdCardSide('Front')}
+                      className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                        idCardSide === 'Front' ? 'bg-emerald-600 text-white' : 'text-slate-400'
+                      }`}
+                    >
+                      ಮುಂಭಾಗ (Front)
+                    </button>
+                    <button
+                      onClick={() => setIdCardSide('Back')}
+                      className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                        idCardSide === 'Back' ? 'bg-emerald-600 text-white' : 'text-slate-400'
+                      }`}
+                    >
+                      ಹಿಂಬದಿ (Back)
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setIdCardSeal(!idCardSeal)}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-medium border ${
+                      idCardSeal ? 'bg-purple-950/70 text-purple-300 border-purple-800' : 'bg-slate-950 text-slate-500 border-slate-800'
+                    }`}
+                  >
+                    {idCardSeal ? 'Seal: ON' : 'Seal: OFF'}
+                  </button>
+
+                  <button
+                    onClick={() => window.print()}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" /> Print Card
+                  </button>
+                </div>
+              </div>
+
+              {/* Card Presentation Container */}
+              <div className="py-8 flex flex-col items-center justify-center bg-slate-900/40 rounded-3xl border border-slate-800/80 p-6">
+                <OfficialShareholderIDCard
+                  shareholder={sh}
+                  side={idCardSide}
+                  showSeal={idCardSeal}
+                  scale={1.25}
+                />
+                <p className="text-[11px] text-slate-500 mt-4 text-center">
+                  Standard Statutory Cooperative ID Card Dimensions (85.6mm × 54mm) • Attested with Official Stamp & Signatures
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 3: Address & Place */}
           {activeTab === 'address' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
               <div className="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">

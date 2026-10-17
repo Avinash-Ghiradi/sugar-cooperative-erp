@@ -1,0 +1,346 @@
+import React from 'react';
+
+// Extract class letter from schedule_cast (e.g. 'ಅ - ವರ್ಗ' -> 'ಅ')
+function getClassLetter(sc) {
+  if (!sc) return 'ಅ';
+  const str = String(sc).trim();
+  if (str.includes('ಅ')) return 'ಅ';
+  if (str.includes('ಬ')) return 'ಬ';
+  if (str.includes('ಕ')) return 'ಕ';
+  if (str.includes('ಡ')) return 'ಡ';
+  return str.charAt(0) || 'ಅ';
+}
+
+// Crisp Vector Cooperative Rubber Stamp (Official Seal)
+export function OfficialSocietySeal({ className = "w-20 h-20" }) {
+  return (
+    <svg viewBox="0 0 200 200" className={className} style={{ filter: 'drop-shadow(0 1px 1px rgba(88,28,135,0.25))' }}>
+      <defs>
+        {/* Top curved path for factory name */}
+        <path id="topArcPath" d="M 24,100 A 76,76 0 1,1 176,100" fill="none" />
+        {/* Bottom curved path for location */}
+        <path id="bottomArcPath" d="M 176,100 A 76,76 0 0,1 24,100" fill="none" />
+      </defs>
+
+      {/* Outer dual concentric stamped rings */}
+      <circle cx="100" cy="100" r="95" fill="none" stroke="#581c87" strokeWidth="2.5" opacity="0.85" />
+      <circle cx="100" cy="100" r="91" fill="none" stroke="#581c87" strokeWidth="1.2" strokeDasharray="5,2" opacity="0.75" />
+      <circle cx="100" cy="100" r="63" fill="none" stroke="#581c87" strokeWidth="1.8" opacity="0.85" />
+
+      {/* Top Arc Text: Factory Name */}
+      <text fill="#581c87" fontSize="13.5" fontWeight="900" opacity="0.9" letterSpacing="0.5">
+        <textPath href="#topArcPath" startOffset="50%" textAnchor="middle">
+          ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ.
+        </textPath>
+      </text>
+
+      {/* Star ornaments */}
+      <text x="21" y="104" fill="#581c87" fontSize="13" fontWeight="bold" opacity="0.9">★</text>
+      <text x="169" y="104" fill="#581c87" fontSize="13" fontWeight="bold" opacity="0.9">★</text>
+
+      {/* Bottom Arc Text: Chadachan • Vijayapura */}
+      <text fill="#581c87" fontSize="11" fontWeight="800" opacity="0.88" letterSpacing="1">
+        <textPath href="#bottomArcPath" startOffset="50%" textAnchor="middle">
+          ತಾ॥ ಚಡಚಣ • ಜಿ॥ ವಿಜಯಪುರ
+        </textPath>
+      </text>
+
+      {/* Center Box / Text: ಮರೂರ */}
+      <rect x="52" y="83" width="96" height="34" rx="4" fill="none" stroke="#581c87" strokeWidth="1.2" strokeDasharray="3,1" opacity="0.7" />
+      <text x="100" y="107" fill="#581c87" fontSize="21" fontWeight="900" textAnchor="middle" letterSpacing="3" opacity="0.95">
+        ಮರೂರ
+      </text>
+    </svg>
+  );
+}
+
+// Authentic Sugarcane Stalk & Leaves Watermark Vector
+export function SugarcaneWatermark({ className = "w-10 h-44" }) {
+  return (
+    <svg viewBox="0 0 80 320" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Sugarcane Stalk 1 */}
+      <path d="M 22,320 L 22,250 M 22,246 L 22,180 M 22,176 L 22,110 M 22,106 L 22,40" stroke="#15803d" strokeWidth="4.5" strokeLinecap="round" opacity="0.6" />
+      {/* Cane nodes (rings) */}
+      <ellipse cx="22" cy="248" rx="4.5" ry="2" fill="#166534" opacity="0.7" />
+      <ellipse cx="22" cy="178" rx="4.5" ry="2" fill="#166534" opacity="0.7" />
+      <ellipse cx="22" cy="108" rx="4.5" ry="2" fill="#166534" opacity="0.7" />
+
+      {/* Sugarcane Stalk 2 (thinner background stalk) */}
+      <path d="M 38,320 L 38,220 M 38,216 L 38,130 M 38,126 L 38,60" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" opacity="0.45" />
+      <ellipse cx="38" cy="218" rx="3.5" ry="1.5" fill="#15803d" opacity="0.5" />
+      <ellipse cx="38" cy="128" rx="3.5" ry="1.5" fill="#15803d" opacity="0.5" />
+
+      {/* Graceful Arching Cane Leaves */}
+      <path d="M 22,180 Q 8,130 5,70 Q 3,30 2,5 Q 12,35 18,90 Q 22,130 22,176" fill="#16a34a" opacity="0.4" />
+      <path d="M 22,110 Q 35,70 50,40 Q 65,15 75,2 Q 62,25 45,65 Q 26,100 22,106" fill="#22c55e" opacity="0.45" />
+      <path d="M 22,248 Q 42,200 55,160 Q 68,120 72,90 Q 60,130 45,180 Q 28,220 22,246" fill="#15803d" opacity="0.35" />
+      <path d="M 22,40 Q 20,20 18,2 Q 26,15 28,35 Z" fill="#4ade80" opacity="0.5" />
+    </svg>
+  );
+}
+
+export default function OfficialShareholderIDCard({
+  shareholder,
+  side = 'Front',
+  showSeal = true,
+  scale = 1,
+  onFlip
+}) {
+  const sh = shareholder || {};
+  const classLetter = getClassLetter(sh.schedule_cast);
+  const sharesCount = sh.number_of_shares || 1;
+  const shareNo = sh.share_no || sh.share_number || '3335';
+  const memberName = sh.shareholder_name || sh.name || 'ಸದಸ್ಯರ ಹೆಸರು';
+  const placeName = sh.place || sh.village_name || 'ಅಥರ್ಗಾ';
+  const talukName = sh.taluk || 'ಇಂಡಿ';
+  const districtName = sh.district || 'ವಿಜಯಪುರ';
+
+  return (
+    <div
+      className="relative select-none transition-all duration-300"
+      style={{
+        width: `${372 * scale}px`,
+        height: `${238 * scale}px`,
+        transformOrigin: 'top left'
+      }}
+    >
+      {/* Outer Card with Double Green Borders matching official plastic ID card */}
+      <div className="w-full h-full bg-white rounded-xl border-2 border-[#166534] p-[2.5px] shadow-2xl relative flex flex-col overflow-hidden text-slate-900 id-card-container">
+        {/* Inner Border */}
+        <div className="w-full h-full border border-[#16a34a]/70 rounded-[9px] flex flex-col justify-between overflow-hidden relative bg-gradient-to-br from-[#f2fcf4] via-[#f7fee7]/80 to-[#edfbf1]">
+
+          {/* FRONT VIEW */}
+          {side === 'Front' ? (
+            <>
+              {/* Sugarcane stalks watermark on left */}
+              <div className="absolute left-0 bottom-0 pointer-events-none z-0">
+                <SugarcaneWatermark className="w-9 h-40" />
+              </div>
+
+              {/* 1. TOP HEADER BAR */}
+              <div className="relative z-10 bg-gradient-to-r from-[#0d6b2c] via-[#15803d] to-[#0a5c24] text-white px-2 py-1.5 flex items-center gap-2 border-b-2 border-[#166534] shadow-sm">
+                {/* BSSKN Logo on left */}
+                <div className="w-9 h-10 shrink-0 flex items-center justify-center">
+                  <img
+                    src="/id_assets/bsskn_logo.png"
+                    alt="BSSKN Logo"
+                    className="w-full h-full object-contain filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                    onError={(e) => {
+                      // Fallback if image asset fails to load
+                      e.target.style.display = 'none';
+                      if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="hidden w-8 h-8 rounded-full bg-amber-400 text-emerald-950 font-black text-[9px] items-center justify-center">
+                    BSSKN
+                  </div>
+                </div>
+
+                {/* Society Name & Address in Kannada */}
+                <div className="flex-1 text-center pr-2">
+                  <h2 className="font-extrabold text-[12.5px] leading-tight tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] font-sans">
+                    ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ.
+                  </h2>
+                  <p className="font-bold text-[9.5px] leading-tight text-white/95 mt-0.5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
+                    ಮರೂರ 586 204 ತಾ॥ ಚಡಚಣ ಜಿ॥ ವಿಜಯಪುರ
+                  </p>
+                </div>
+              </div>
+
+              {/* Header double-line accent */}
+              <div className="h-[2px] bg-gradient-to-r from-emerald-600 via-lime-400 to-emerald-600 border-b border-[#166534]"></div>
+
+              {/* 2. SUB-HEADER: ID Card No & Center Badge */}
+              <div className="relative z-10 px-3 pt-1 flex items-center justify-between">
+                <span className="text-[8px] font-bold text-slate-800 tracking-tight font-mono">
+                  ID Card N: 2025-26/02/{shareNo}
+                </span>
+
+                {/* Center Badge: ಗುರುತಿನ ಚೀಟಿ */}
+                <div className="text-center mr-8">
+                  <div className="bg-[#e8f5e9] border border-[#2e7d32] rounded-md px-3 py-0.5 shadow-sm inline-block">
+                    <span className="font-black text-[11.5px] text-[#14532d] leading-none tracking-wider font-sans">
+                      ಗುರುತಿನ ಚೀಟಿ
+                    </span>
+                  </div>
+                  {/* Decorative wavy underline */}
+                  <div className="w-16 h-1 mx-auto mt-[-1px] text-[#2e7d32] overflow-hidden">
+                    <svg viewBox="0 0 60 4" className="w-full h-full" fill="none">
+                      <path d="M0 2 Q 5 0, 10 2 T 20 2 T 30 2 T 40 2 T 50 2 T 60 2" stroke="currentColor" strokeWidth="1.2" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="w-8"></div>
+              </div>
+
+              {/* 3. CARD BODY: Member Info (Left) + Photo & Seal (Right) */}
+              <div className="relative z-10 px-3 py-0.5 flex items-start justify-between gap-2 flex-1">
+                {/* Left: Shareholder Information */}
+                <div className="space-y-1 text-slate-950 flex-1 pt-1">
+                  {/* Line 1: ಶೇರು ನಂ */}
+                  <div className="flex text-[11px] leading-tight font-bold items-baseline">
+                    <span className="w-18 shrink-0 text-slate-900 font-extrabold">ಶೇರು ನಂ</span>
+                    <span className="font-extrabold text-[12px] text-slate-950">
+                      : {shareNo} (“{classLetter}” – {sharesCount})
+                    </span>
+                  </div>
+
+                  {/* Line 2: ಸದಸ್ಯರ ಹೆಸರು */}
+                  <div className="flex text-[11px] leading-tight font-bold items-baseline">
+                    <span className="w-18 shrink-0 text-slate-900 font-extrabold">ಸದಸ್ಯರ ಹೆಸರು</span>
+                    <span className="font-black text-[12px] text-slate-950 truncate max-w-[170px]" title={memberName}>
+                      : {memberName}
+                    </span>
+                  </div>
+
+                  {/* Line 3: ಸ್ಥಳ */}
+                  <div className="flex text-[11px] leading-tight font-bold items-baseline">
+                    <span className="w-18 shrink-0 text-slate-900 font-extrabold">ಸ್ಥಳ</span>
+                    <span className="font-extrabold text-[11.5px] text-slate-950">
+                      : ಸಾ॥ {placeName}
+                    </span>
+                  </div>
+
+                  {/* Line 4: ತಾಲ್ಲೂಕು & ಜಿಲ್ಲೆ (Indented under village name) */}
+                  <div className="text-[11px] font-extrabold text-slate-950 pl-[70px] leading-tight">
+                    ತಾ॥ {talukName} ಜಿ॥ {districtName}
+                  </div>
+                </div>
+
+                {/* Right: Shareholder Photo & Overlapping Official Seal */}
+                <div className="relative shrink-0 mr-1 mt-0.5">
+                  {/* Photo Frame */}
+                  <div className="w-[80px] h-[98px] border-2 border-black bg-slate-100 rounded-sm overflow-hidden shadow-md flex items-center justify-center">
+                    {sh.photo_url ? (
+                      <img
+                        src={sh.photo_url}
+                        alt={memberName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-200 to-slate-300 text-slate-500 p-1 text-center">
+                        <svg className="w-8 h-8 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                        <span className="text-[7px] font-bold text-slate-600 mt-1 uppercase">ಭಾವಚಿತ್ರ</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Overlapping Purple Official Cooperative Stamp (Seal) */}
+                  {showSeal && (
+                    <div
+                      className="absolute -left-7 -bottom-5 w-[76px] h-[76px] pointer-events-none select-none z-20"
+                      style={{ transform: 'rotate(-10deg)' }}
+                    >
+                      <OfficialSocietySeal className="w-full h-full" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. BOTTOM ROW: Signatures */}
+              <div className="relative z-10 px-4 pb-1.5 pt-0.5 flex items-end justify-between">
+                {/* Left: Member Signature */}
+                <div className="text-center w-28">
+                  <div className="h-6 flex items-center justify-center">
+                    {sh.signature_url ? (
+                      <img
+                        src={sh.signature_url}
+                        alt="Member Signature"
+                        className="max-h-6 max-w-[90px] object-contain"
+                      />
+                    ) : sh.thumb_url ? (
+                      <img
+                        src={sh.thumb_url}
+                        alt="Member Thumb"
+                        className="max-h-6 max-w-[40px] object-contain"
+                      />
+                    ) : (
+                      <div className="px-2 py-0.5 bg-amber-50/70 border border-amber-200/50 rounded font-serif italic text-[10px] text-slate-700 tracking-wider">
+                        {memberName.split(' ').map(n => n.charAt(0)).join(' ')}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-[9.5px] font-black text-slate-950 mt-0.5 border-t border-slate-300 pt-0.5">
+                    ಸದಸ್ಯರ ಸಹಿ
+                  </div>
+                </div>
+
+                {/* Right: Managing Director Signature */}
+                <div className="text-center w-32">
+                  <div className="h-6 flex items-center justify-center">
+                    <img
+                      src="/id_assets/md_signature_transparent.png"
+                      alt="MD Signature"
+                      className="max-h-6 max-w-[85px] object-contain"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <span className="hidden font-serif italic text-emerald-700 font-bold text-xs">
+                      MD Signature
+                    </span>
+                  </div>
+                  <div className="text-[9.5px] font-black text-slate-950 mt-0.5 border-t border-slate-300 pt-0.5">
+                    ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* BACK VIEW */
+            <div className="w-full h-full p-2.5 flex flex-col justify-between text-slate-900 bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0]">
+              {/* Header */}
+              <div className="border-b-2 border-emerald-700 pb-1 text-center">
+                <h3 className="font-black text-[11px] text-emerald-900 leading-tight">
+                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ. ಮರೂರ
+                </h3>
+                <p className="text-[8px] font-bold text-slate-600">
+                  ತಾ॥ ಚಡಚಣ ಜಿ॥ ವಿಜಯಪುರ • ಶಾಸನಬದ್ಧ ಸದಸ್ಯರ ಗುರುತಿನ ಚೀಟಿ (ಹಿಂಬದಿ)
+                </p>
+              </div>
+
+              {/* Statutory Member Details Grid */}
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[8.5px] py-1 border-b border-slate-300">
+                <div>• ಪುಸ್ತಕ ಸಂ (Book): <strong className="font-mono text-emerald-900">{sh.book_no || 'B.No: 1'}</strong></div>
+                <div>• ಕ್ರಮ ಸಂ (Sl No): <strong className="font-mono">{sh.sl_no || '—'}</strong></div>
+                <div>• ವರ್ಗ (Class): <strong className="text-emerald-800">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</strong></div>
+                <div>• ಷೇರುಗಳ ಸಂಖ್ಯೆ: <strong>{sharesCount}</strong> (₹ {(sh.total_amount || 2000).toLocaleString()})</div>
+                <div>• ನೋಂದಣಿ ದಿನಾಂಕ: <span className="font-mono">{sh.reg_date || sh.registration_date || '—'}</span></div>
+                <div>• ಮಂಡಳಿ ಠರಾವು: <span className="font-mono">{sh.tharava_no || 'TR-01/1982'}</span></div>
+                <div>• ಸದಸ್ಯರ ಆಧಾರ್: <span className="font-mono">{sh.aadhaar_card_no || sh.aadhaar_ref || '—'}</span></div>
+                <div>• ಮೊಬೈಲ್: <span className="font-mono">{sh.mobile_no || sh.mobile || '—'}</span></div>
+                <div className="col-span-2 truncate">• ನಾಮಿನಿ ಹೆಸರು: <strong className="text-slate-900">{sh.nominee_name || '—'}</strong> ({sh.nominee_aadhaar_no || '—'})</div>
+              </div>
+
+              {/* Statutory Rules / ಸೂಚನೆಗಳು */}
+              <div className="text-[7.2px] text-slate-700 space-y-0.5 py-0.5">
+                <div className="font-bold text-slate-900 text-[7.8px]">ಮುಖ್ಯ ಸೂಚನೆಗಳು:</div>
+                <div>1. ವಾರ್ಷಿಕ ಮಹಾಸಭೆ ಹಾಗೂ ಕಾರ್ಖಾನೆಯ ಸಭೆಗಳಿಗೆ ಹಾಜರಾಗಲು ಈ ಚೀಟಿ ಕಡ್ಡಾಯ.</div>
+                <div>2. ಕಬ್ಬು ಪೂರೈಕೆ, ತೂಕದ ಬಿಲ್ಲು ಪಾವತಿ ಮತ್ತು ಸಕ್ಕರೆ ಕೋಟಾ ಪಡೆಯಲು ಹಾಜರುಪಡಿಸತಕ್ಕದ್ದು.</div>
+                <div>3. ಈ ಚೀಟಿ ಕಳೆದುಹೋದಲ್ಲಿ ತಕ್ಷಣವೇ ಕಾರ್ಖಾನೆಯ ಆಡಳಿತ ಕಚೇರಿಗೆ ತಿಳಿಸತಕ್ಕದ್ದು.</div>
+              </div>
+
+              {/* Footer with Barcode & Signatures */}
+              <div className="pt-1 border-t border-slate-300 flex items-center justify-between text-[8px]">
+                {/* Simulated Barcode */}
+                <div className="bg-white px-2 py-0.5 rounded border border-slate-300 font-mono font-bold text-[7.5px] text-slate-900 tracking-widest text-center">
+                  |||||| || ||| {shareNo} |||| |||
+                </div>
+
+                <div className="text-right">
+                  <div className="font-bold text-slate-900 text-[8px]">ಆಡಳಿತ ಮಂಡಳಿ ಪರವಾಗಿ</div>
+                  <div className="text-[7.5px] text-emerald-800 font-semibold">ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿಗಳು</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
