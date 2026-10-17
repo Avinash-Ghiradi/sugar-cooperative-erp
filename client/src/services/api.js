@@ -302,9 +302,152 @@ if (typeof window !== 'undefined') {
   ensureDBReady();
 }
 
+export const initialVarasaTransfers = [
+  {
+    id: 1,
+    sl_no: 1,
+    transfer_id: 'VAR-2022-001',
+    varasa_member: 'ಶಂಕರಗೌಡ ಮಲ್ಲಪ್ಪ ತಾರಾಪೂರ',
+    heir_name: 'ಶಂಕರಗೌಡ ಮಲ್ಲಪ್ಪ ತಾರಾಪೂರ',
+    heir_place: 'ಅಥರ್ಗಾ',
+    heir_taluk: 'ಇಂಡಿ',
+    heir_district: 'ವಿಜಯಪುರ',
+    heir_relationship: 'ಮಗ',
+    heir_age: '',
+    heir_mobile: '9901661920',
+    heir_aadhaar: '',
+    heir_photo: '',
+    shareholder_name: 'ಮಲ್ಲಪ್ಪ ಈರಣ್ಣ ತಾರಾಪೂರ',
+    existing_shareholder_name: 'ಮಲ್ಲಪ್ಪ ಈರಣ್ಣ ತಾರಾಪೂರ',
+    shareholder_place: 'ಅಥರ್ಗಾ',
+    shareholder_taluk: 'ಇಂಡಿ',
+    shareholder_district: 'ವಿಜಯಪುರ',
+    shareholder_relationship: 'ತಂದೆ',
+    dod: '05/11/2021',
+    share_no: '10006',
+    existing_share_number: '10006',
+    category: 'ಅ - ವರ್ಗ',
+    no_of_shares: 1,
+    existing_shares: 1,
+    fees: 570,
+    receipt_no: '816',
+    receipt_date: '05-11-2022',
+    approval_status: 'Completed',
+    documents_verified: 'Verified',
+    application_date: '05-11-2022',
+    remarks: 'ಮರಣ ಪ್ರಮಾಣ ಪತ್ರ ಹಾಗೂ ವಾರಸುದಾರರ ಪ್ರಮಾಣ ಪತ್ರ ಲಗತ್ತಿಸಲಾಗಿದೆ.'
+  },
+  {
+    id: 2,
+    sl_no: 2,
+    transfer_id: 'VAR-2022-002',
+    varasa_member: 'ಸುರೇಶ ಗಂಗಾಧರ ಖೊಬ್ರಾಸಿ',
+    heir_name: 'ಸುರೇಶ ಗಂಗಾಧರ ಖೊಬ್ರಾಸಿ',
+    heir_place: 'ಇಂಚಗೇರಿ ಬೊಳೆಗಾಂವ > ಬಳ್ಳೊಳ್ಳಿ',
+    heir_taluk: 'ಇಂಡಿ',
+    heir_district: 'ವಿಜಯಪುರ',
+    heir_relationship: 'ಬೊಮ್ಮಣ್ಣ',
+    heir_age: '42',
+    heir_mobile: '9481000000',
+    heir_aadhaar: '2288 3046 0600',
+    heir_photo: '',
+    shareholder_name: 'ಬಸಪ್ಪ ಜಾಲಪ್ಪರಾಯ ಖೊಬ್ರಾಸಿ',
+    existing_shareholder_name: 'ಬಸಪ್ಪ ಜಾಲಪ್ಪರಾಯ ಖೊಬ್ರಾಸಿ',
+    shareholder_place: 'ಇಂಚಗೇರಿ',
+    shareholder_taluk: 'ಇಂಡಿ',
+    shareholder_district: 'ವಿಜಯಪುರ',
+    shareholder_relationship: 'ಅಜ್ಜ',
+    dod: '01/05/2000',
+    share_no: '3494',
+    existing_share_number: '3494',
+    category: 'ಅ - ವರ್ಗ',
+    no_of_shares: 1,
+    existing_shares: 1,
+    fees: 570,
+    receipt_no: '817',
+    receipt_date: '05-11-2022',
+    approval_status: 'Completed',
+    documents_verified: 'Verified',
+    application_date: '05-11-2022',
+    remarks: 'ಅಜ್ಜ ತೀರಿಕೊಂಡ ನಂತರ ಮೊಮ್ಮಗನ ಹೆಸರಿಗೆ ಶೇರು ವರ್ಗಾವಣೆ.'
+  },
+  {
+    id: 3,
+    sl_no: 3,
+    transfer_id: 'VAR-2022-003',
+    varasa_member: 'ಶ್ರೀಮತಿ ಅಂಬಿಕಾದೇವಿ ಗುರುಶಾಂತ ಕುರಟಿಕೋಟಿ',
+    heir_name: 'ಶ್ರೀಮತಿ ಅಂಬಿಕಾದೇವಿ ಗುರುಶಾಂತ ಕುರಟಿಕೋಟಿ',
+    heir_place: 'ಬಾಗಲಕೋಟ',
+    heir_taluk: 'ಬನಹಟ್ಟಿ',
+    heir_district: 'ವಿಜಯಪುರ',
+    heir_relationship: 'ಪತ್ನಿ',
+    heir_age: '47',
+    heir_mobile: '9021738554',
+    heir_aadhaar: '6812 1184 9589',
+    heir_photo: '',
+    shareholder_name: 'ಗುರುಶಾಂತ ಶಿವಲಿಂಗ ಕುರಟಿಕೋಟಿ',
+    existing_shareholder_name: 'ಗುರುಶಾಂತ ಶಿವಲಿಂಗ ಕುರಟಿಕೋಟಿ',
+    shareholder_place: 'ಬಾಗಲಕೋಟ',
+    shareholder_taluk: 'ಬನಹಟ್ಟಿ',
+    shareholder_district: 'ವಿಜಯಪುರ',
+    shareholder_relationship: 'ಪತಿ',
+    dod: '20/07/2018',
+    share_no: '2496',
+    existing_share_number: '2496',
+    category: 'ಅ - ವರ್ಗ',
+    no_of_shares: 4,
+    existing_shares: 4,
+    fees: 570,
+    receipt_no: '819',
+    receipt_date: '08-11-2022',
+    approval_status: 'Approved',
+    documents_verified: 'Verified',
+    application_date: '08-11-2022',
+    remarks: 'ಪತಿಯ ನಿಧನದ ನಂತರ ಪತ್ನಿಯ ಹೆಸರಿಗೆ ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ.'
+  },
+  {
+    id: 4,
+    sl_no: 4,
+    transfer_id: 'VAR-2022-004',
+    varasa_member: 'ಶ್ರೀ ಸೈಪನ್ನ ಚಂದ್ರಪ್ಪಾ ಕಲೇಶ್ವರ',
+    heir_name: 'ಶ್ರೀ ಸೈಪನ್ನ ಚಂದ್ರಪ್ಪಾ ಕಲೇಶ್ವರ',
+    heir_place: 'ಇಂಚಗೇರಿ ಬೊಳೆಗಾಂವ > ಬಳ್ಳೊಳ್ಳಿ',
+    heir_taluk: 'ಇಂಡಿ',
+    heir_district: 'ವಿಜಯಪುರ',
+    heir_relationship: 'ಮಗ',
+    heir_age: '35',
+    heir_mobile: '9972258194',
+    heir_aadhaar: '2265 6941 1426',
+    heir_photo: '',
+    shareholder_name: 'ಶ್ರೀ ಚಂದ್ರಪ್ಪಾ ಸೈಪನ್ನ ಕಲೇಶ್ವರ',
+    existing_shareholder_name: 'ಶ್ರೀ ಚಂದ್ರಪ್ಪಾ ಸೈಪನ್ನ ಕಲೇಶ್ವರ',
+    shareholder_place: 'ಇಂಚಗೇರಿ',
+    shareholder_taluk: 'ಇಂಡಿ',
+    shareholder_district: 'ವಿಜಯಪುರ',
+    shareholder_relationship: 'ತಂದೆ',
+    dod: '14/11/2009',
+    share_no: '8151',
+    existing_share_number: '8151',
+    category: 'ಅ - ವರ್ಗ',
+    no_of_shares: 1,
+    existing_shares: 1,
+    fees: 570,
+    receipt_no: '823',
+    receipt_date: '19-11-2022',
+    approval_status: 'Under Verification',
+    documents_verified: 'Pending',
+    application_date: '19-11-2022',
+    remarks: 'ದಾಖಲಾತಿಗಳ ಪರಿಶೀಲನೆ ಪ್ರಕ್ರಿಯೆಯಲ್ಲಿದೆ.'
+  }
+];
+
 let mockTransactions = loadStoredData(STORAGE_KEY_TX, []);
 let mockSugarAllotments = loadStoredData(STORAGE_KEY_SA, []);
-let mockVarasaTransfers = loadStoredData(STORAGE_KEY_VT, []);
+let mockVarasaTransfers = loadStoredData(STORAGE_KEY_VT, initialVarasaTransfers);
+if (!mockVarasaTransfers || mockVarasaTransfers.length === 0) {
+  mockVarasaTransfers = initialVarasaTransfers;
+  saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+}
 let mockEmployees = loadStoredData(STORAGE_KEY_EMP, []);
 let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
 
@@ -979,12 +1122,42 @@ export const ApiService = {
     return { success: true, allotment_id: newSa.allotment_id };
   },
 
-  async getVarasaTransfers() {
+  async getVarasaTransfers({ search = '', status = '', taluk = '' } = {}) {
     await ensureDBReady();
     const apiRes = await fetchApi('/varasa');
     if (apiRes && apiRes.success) return apiRes;
 
-    return { success: true, data: mockVarasaTransfers };
+    let filtered = mockVarasaTransfers;
+    if (search) {
+      const q = search.trim().toLowerCase().normalize('NFC');
+      filtered = filtered.filter(v => {
+        const vMember = (v.varasa_member || v.heir_name || '').toLowerCase().normalize('NFC');
+        const shName = (v.shareholder_name || v.existing_shareholder_name || '').toLowerCase().normalize('NFC');
+        const shNo = String(v.share_no || v.existing_share_number || '').toLowerCase();
+        const mob = String(v.heir_mobile || '').toLowerCase();
+        const aadh = String(v.heir_aadhaar || '').toLowerCase();
+        const rNo = String(v.receipt_no || '').toLowerCase();
+        const hPlace = (v.heir_place || '').toLowerCase().normalize('NFC');
+        const sPlace = (v.shareholder_place || '').toLowerCase().normalize('NFC');
+        const tId = (v.transfer_id || '').toLowerCase();
+
+        return vMember.includes(q) || shName.includes(q) || shNo.includes(q) ||
+          mob.includes(q) || aadh.includes(q) || rNo.includes(q) ||
+          hPlace.includes(q) || sPlace.includes(q) || tId.includes(q);
+      });
+    }
+    if (status) {
+      filtered = filtered.filter(v => v.approval_status === status);
+    }
+    if (taluk) {
+      const tq = taluk.trim().toLowerCase().normalize('NFC');
+      filtered = filtered.filter(v => 
+        (v.heir_taluk && v.heir_taluk.toLowerCase().normalize('NFC').includes(tq)) ||
+        (v.shareholder_taluk && v.shareholder_taluk.toLowerCase().normalize('NFC').includes(tq))
+      );
+    }
+
+    return { success: true, data: filtered };
   },
 
   async addVarasaTransfer(data) {
@@ -992,18 +1165,74 @@ export const ApiService = {
     const apiRes = await fetchApi('/varasa', { method: 'POST', body: JSON.stringify(data) });
     if (apiRes && apiRes.success) return apiRes;
 
-    const sh = mockShareholders.find(s => s.shareholder_id === data.existing_shareholder_id);
+    const nextSl = mockVarasaTransfers.length > 0 ? Math.max(...mockVarasaTransfers.map(v => parseInt(v.sl_no) || 0)) + 1 : 1;
+    const nextId = mockVarasaTransfers.length > 0 ? Math.max(...mockVarasaTransfers.map(v => parseInt(v.id) || 0)) + 1 : 1;
+    const transferId = data.transfer_id || `VAR-${new Date().getFullYear()}-${String(nextId).padStart(3, '0')}`;
+    
+    // Auto lookup shareholder if existing_shareholder_id provided
+    const sh = data.existing_shareholder_id ? mockShareholders.find(s => s.shareholder_id === data.existing_shareholder_id) : null;
+
     const newV = {
-      id: mockVarasaTransfers.length + 1,
-      transfer_id: `VAR-${Date.now()}`,
-      ...data,
-      existing_shareholder_name: sh ? (sh.shareholder_name || sh.name) : 'Existing Member',
-      approval_status: 'Application Received',
-      documents_verified: 'Pending'
+      id: nextId,
+      sl_no: data.sl_no ? parseInt(data.sl_no) : nextSl,
+      transfer_id: transferId,
+      varasa_member: (data.varasa_member || data.heir_name || '').normalize('NFC'),
+      heir_name: (data.varasa_member || data.heir_name || '').normalize('NFC'),
+      heir_place: (data.heir_place || '').normalize('NFC'),
+      heir_taluk: (data.heir_taluk || '').normalize('NFC'),
+      heir_district: (data.heir_district || 'ವಿಜಯಪುರ').normalize('NFC'),
+      heir_relationship: (data.heir_relationship || 'ಮಗ').normalize('NFC'),
+      heir_age: data.heir_age || '',
+      heir_mobile: data.heir_mobile || '',
+      heir_aadhaar: data.heir_aadhaar || '',
+      heir_photo: data.heir_photo || '',
+      shareholder_name: (data.shareholder_name || data.existing_shareholder_name || (sh ? (sh.shareholder_name || sh.name) : '')).normalize('NFC'),
+      existing_shareholder_name: (data.shareholder_name || data.existing_shareholder_name || (sh ? (sh.shareholder_name || sh.name) : '')).normalize('NFC'),
+      existing_shareholder_id: data.existing_shareholder_id || (sh ? sh.shareholder_id : ''),
+      shareholder_place: (data.shareholder_place || (sh ? sh.place : '')).normalize('NFC'),
+      shareholder_taluk: (data.shareholder_taluk || (sh ? sh.taluk : '')).normalize('NFC'),
+      shareholder_district: (data.shareholder_district || (sh ? sh.district : 'ವಿಜಯಪುರ')).normalize('NFC'),
+      shareholder_relationship: (data.shareholder_relationship || 'ತಂದೆ').normalize('NFC'),
+      dod: data.dod || '',
+      share_no: String(data.share_no || data.existing_share_number || (sh ? sh.share_no : '')),
+      existing_share_number: String(data.share_no || data.existing_share_number || (sh ? sh.share_no : '')),
+      category: data.category || (sh ? sh.schedule_cast : 'ಅ - ವರ್ಗ'),
+      no_of_shares: parseInt(data.no_of_shares) || parseInt(data.existing_shares) || (sh ? parseInt(sh.number_of_shares) : 1) || 1,
+      existing_shares: parseInt(data.no_of_shares) || parseInt(data.existing_shares) || (sh ? parseInt(sh.number_of_shares) : 1) || 1,
+      fees: parseFloat(data.fees) !== undefined && !isNaN(parseFloat(data.fees)) ? parseFloat(data.fees) : 570,
+      receipt_no: String(data.receipt_no || ''),
+      receipt_date: data.receipt_date || new Date().toLocaleDateString('en-GB'),
+      application_date: data.application_date || new Date().toLocaleDateString('en-GB'),
+      approval_status: data.approval_status || 'Application Received',
+      documents_verified: data.documents_verified || 'Pending',
+      remarks: data.remarks || '',
+      created_at: new Date().toISOString()
     };
     mockVarasaTransfers.unshift(newV);
     saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
-    return { success: true, transfer_id: newV.transfer_id };
+    return { success: true, transfer_id: newV.transfer_id, data: newV };
+  },
+
+  async updateVarasaTransfer(idOrTransferId, data) {
+    await ensureDBReady();
+    const idx = mockVarasaTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
+    if (idx !== -1) {
+      mockVarasaTransfers[idx] = { ...mockVarasaTransfers[idx], ...data };
+      saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+      return { success: true, data: mockVarasaTransfers[idx] };
+    }
+    return { success: false, message: 'Transfer record not found' };
+  },
+
+  async deleteVarasaTransfer(idOrTransferId) {
+    await ensureDBReady();
+    const idx = mockVarasaTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
+    if (idx !== -1) {
+      mockVarasaTransfers.splice(idx, 1);
+      saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+      return { success: true };
+    }
+    return { success: false, message: 'Transfer record not found' };
   },
 
   async updateVarasaStatus(transfer_id, approval_status) {
@@ -1011,12 +1240,77 @@ export const ApiService = {
     const apiRes = await fetchApi(`/varasa/${transfer_id}/status`, { method: 'PUT', body: JSON.stringify({ approval_status }) });
     if (apiRes && apiRes.success) return apiRes;
 
-    const item = mockVarasaTransfers.find(v => v.transfer_id === transfer_id);
+    const item = mockVarasaTransfers.find(v => v.transfer_id === transfer_id || String(v.id) === String(transfer_id));
     if (item) {
       item.approval_status = approval_status;
       saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
     }
     return { success: true };
+  },
+
+  async addVarasaTransfersBulk(records) {
+    await ensureDBReady();
+    if (!Array.isArray(records) || records.length === 0) return { success: true, count: 0 };
+    let maxId = mockVarasaTransfers.reduce((m, v) => Math.max(m, parseInt(v.id) || 0), 0);
+    let maxSl = mockVarasaTransfers.reduce((m, v) => Math.max(m, parseInt(v.sl_no) || 0), 0);
+
+    const items = records.map((r, i) => {
+      const id = maxId + i + 1;
+      const sl = r.sl_no ? parseInt(r.sl_no) : (maxSl + i + 1);
+      return {
+        id,
+        sl_no: sl,
+        transfer_id: r.transfer_id || `VAR-${new Date().getFullYear()}-${String(id).padStart(3, '0')}`,
+        varasa_member: (r.varasa_member || r.heir_name || '').normalize('NFC'),
+        heir_name: (r.varasa_member || r.heir_name || '').normalize('NFC'),
+        heir_place: (r.heir_place || '').normalize('NFC'),
+        heir_taluk: (r.heir_taluk || '').normalize('NFC'),
+        heir_district: (r.heir_district || 'ವಿಜಯಪುರ').normalize('NFC'),
+        heir_relationship: (r.heir_relationship || 'ಮಗ').normalize('NFC'),
+        heir_age: r.heir_age || '',
+        heir_mobile: r.heir_mobile || '',
+        heir_aadhaar: r.heir_aadhaar || '',
+        heir_photo: r.heir_photo || '',
+        shareholder_name: (r.shareholder_name || r.existing_shareholder_name || '').normalize('NFC'),
+        existing_shareholder_name: (r.shareholder_name || r.existing_shareholder_name || '').normalize('NFC'),
+        existing_shareholder_id: r.existing_shareholder_id || '',
+        shareholder_place: (r.shareholder_place || '').normalize('NFC'),
+        shareholder_taluk: (r.shareholder_taluk || '').normalize('NFC'),
+        shareholder_district: (r.shareholder_district || 'ವಿಜಯಪುರ').normalize('NFC'),
+        shareholder_relationship: (r.shareholder_relationship || 'ತಂದೆ').normalize('NFC'),
+        dod: r.dod || '',
+        share_no: String(r.share_no || r.existing_share_number || ''),
+        existing_share_number: String(r.share_no || r.existing_share_number || ''),
+        category: r.category || 'ಅ - ವರ್ಗ',
+        no_of_shares: parseInt(r.no_of_shares) || 1,
+        existing_shares: parseInt(r.no_of_shares) || 1,
+        fees: parseFloat(r.fees) || 570,
+        receipt_no: String(r.receipt_no || ''),
+        receipt_date: r.receipt_date || new Date().toLocaleDateString('en-GB'),
+        application_date: r.application_date || new Date().toLocaleDateString('en-GB'),
+        approval_status: r.approval_status || 'Application Received',
+        documents_verified: r.documents_verified || 'Pending',
+        remarks: r.remarks || '',
+        created_at: new Date().toISOString()
+      };
+    });
+
+    mockVarasaTransfers = [...items, ...mockVarasaTransfers];
+    saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+    return { success: true, count: items.length };
+  },
+
+  async searchShareholderForVarasa(query) {
+    await ensureDBReady();
+    if (!query || query.trim().length < 1) return [];
+    const q = query.trim().toLowerCase().normalize('NFC');
+    return mockShareholders.filter(s => {
+      const sNo = String(s.share_no || '').toLowerCase();
+      const sName = (s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
+      const sId = (s.shareholder_id || '').toLowerCase();
+      const sMob = String(s.mobile_no || s.mobile || '');
+      return sNo === q || sNo.startsWith(q) || sName.includes(q) || sId === q || sMob.includes(q);
+    }).slice(0, 8);
   },
 
   async getVillages() {
