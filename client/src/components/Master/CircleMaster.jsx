@@ -247,10 +247,10 @@ export default function CircleMaster() {
   };
 
   const handleResetCircles = async () => {
-    if (!window.confirm('Reset Circle Directory to initial state?')) return;
+    if (!window.confirm('Clear Circle Directory and remove all circles?')) return;
     await ApiService.resetCircleDirectory();
     await loadData();
-    showToast('Circle directory reset to default');
+    showToast('Circle directory cleared successfully');
   };
 
   // Filtered views
@@ -439,87 +439,123 @@ export default function CircleMaster() {
         </div>
       ) : activeTab === 'circles' ? (
         /* View 1: Circles Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredCircles.map((c) => {
-            const isExpanded = expandedCircle === c.name;
-            return (
-              <div
-                key={c.circle_id || c.name}
-                className="bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 p-4 rounded-2xl space-y-3 transition-all shadow-sm"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[10px] font-mono text-emerald-400 uppercase font-semibold">
-                      {c.circle_id}
-                    </span>
-                    <h3 className="font-bold text-slate-100 text-sm mt-0.5">{c.name}</h3>
-                    <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-                      <span>ತಾ: {c.taluk || 'ಇಂಡಿ'}</span>
-                      <span>•</span>
-                      <span>ಜಿ: {c.district || 'ವಿಜಯಪುರ'}</span>
+        filteredCircles.length === 0 ? (
+          <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-12 text-center space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <MapPin className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-slate-100">
+                {circles.length === 0 ? 'No Circles Registered Yet (ಯಾವುದೇ ಸರ್ಕಲ್ ನೋಂದಾಯಿಸಿಲ್ಲ)' : 'No Circles Found Matching Your Search'}
+              </h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                {circles.length === 0
+                  ? 'Circle Master is currently in a clean, empty state. Upload your 7-column Circle Excel spreadsheet or Shareholders ledger to automatically populate cane circles and village mappings.'
+                  : 'Try adjusting your search query or filter options above.'}
+              </p>
+            </div>
+            {circles.length === 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowUploadModal(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+                >
+                  <Upload className="w-4 h-4" /> Upload Circle Excel (ಅಪ್ಲೋಡ್)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplateXlsx}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-teal-300 rounded-xl text-xs font-semibold border border-slate-700 transition-all cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-teal-400" /> Download Excel Template
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredCircles.map((c) => {
+              const isExpanded = expandedCircle === c.name;
+              return (
+                <div
+                  key={c.circle_id || c.name}
+                  className="bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 p-4 rounded-2xl space-y-3 transition-all shadow-sm"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] font-mono text-emerald-400 uppercase font-semibold">
+                        {c.circle_id}
+                      </span>
+                      <h3 className="font-bold text-slate-100 text-sm mt-0.5">{c.name}</h3>
+                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                        <span>ತಾ: {c.taluk || 'ಇಂಡಿ'}</span>
+                        <span>•</span>
+                        <span>ಜಿ: {c.district || 'ವಿಜಯಪುರ'}</span>
+                      </div>
                     </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono font-bold">
-                    {c.village_count || 0} Villages
-                  </span>
-                </div>
-
-                {/* Circle In-charge & Contact details */}
-                <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1 text-xs">
-                  <div className="flex items-center gap-1.5 text-slate-300">
-                    <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-[11px] font-medium truncate">
-                      {c.circle_in_charge || 'ಪ್ರಭಾರಿ ಅಧಿಕಾರಿ ನೇಮಿಸಿಲ್ಲ'}
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono font-bold">
+                      {c.village_count || 0} Villages
                     </span>
                   </div>
-                  {c.contact_no && (
-                    <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-mono">
-                      <Phone className="w-3 h-3 text-teal-400" />
-                      <span>{c.contact_no}</span>
+
+                  {/* Circle In-charge & Contact details */}
+                  <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/80 space-y-1 text-xs">
+                    <div className="flex items-center gap-1.5 text-slate-300">
+                      <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-[11px] font-medium truncate">
+                        {c.circle_in_charge || 'ಪ್ರಭಾರಿ ಅಧಿಕಾರಿ ನೇಮಿಸಿಲ್ಲ'}
+                      </span>
                     </div>
-                  )}
-                </div>
-
-                {/* Statistics Row */}
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/60 text-xs">
-                  <div className="bg-slate-900/60 p-2 rounded-xl text-center">
-                    <span className="text-slate-400 text-[10px]">Shareholders</span>
-                    <div className="font-bold text-emerald-400 mt-0.5">{c.shareholder_count ?? 0}</div>
-                  </div>
-                  <div className="bg-slate-900/60 p-2 rounded-xl text-center">
-                    <span className="text-slate-400 text-[10px]">Total Shares</span>
-                    <div className="font-bold text-slate-100 mt-0.5">{c.total_shares ?? 0}</div>
-                  </div>
-                </div>
-
-                {/* Expandable Villages List */}
-                {c.villages && c.villages.length > 0 && (
-                  <div className="pt-2 border-t border-slate-800/60">
-                    <button
-                      onClick={() => setExpandedCircle(isExpanded ? null : c.name)}
-                      className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-400 hover:text-slate-200 transition-colors"
-                    >
-                      <span>Mapped Villages ({c.villages.length})</span>
-                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
-                    {isExpanded && (
-                      <div className="flex flex-wrap gap-1.5 mt-2 max-h-40 overflow-y-auto p-1 bg-slate-900/80 rounded-xl">
-                        {c.villages.map((v, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 rounded-lg bg-slate-800/90 text-slate-200 text-[10px]"
-                          >
-                            {v}
-                          </span>
-                        ))}
+                    {c.contact_no && (
+                      <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-mono">
+                        <Phone className="w-3 h-3 text-teal-400" />
+                        <span>{c.contact_no}</span>
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+
+                  {/* Statistics Row */}
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/60 text-xs">
+                    <div className="bg-slate-900/60 p-2 rounded-xl text-center">
+                      <span className="text-slate-400 text-[10px]">Shareholders</span>
+                      <div className="font-bold text-emerald-400 mt-0.5">{c.shareholder_count ?? 0}</div>
+                    </div>
+                    <div className="bg-slate-900/60 p-2 rounded-xl text-center">
+                      <span className="text-slate-400 text-[10px]">Total Shares</span>
+                      <div className="font-bold text-slate-100 mt-0.5">{c.total_shares ?? 0}</div>
+                    </div>
+                  </div>
+
+                  {/* Expandable Villages List */}
+                  {c.villages && c.villages.length > 0 && (
+                    <div className="pt-2 border-t border-slate-800/60">
+                      <button
+                        onClick={() => setExpandedCircle(isExpanded ? null : c.name)}
+                        className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        <span>Mapped Villages ({c.villages.length})</span>
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </button>
+                      {isExpanded && (
+                        <div className="flex flex-wrap gap-1.5 mt-2 max-h-40 overflow-y-auto p-1 bg-slate-900/80 rounded-xl">
+                          {c.villages.map((v, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 rounded-lg bg-slate-800/90 text-slate-200 text-[10px]"
+                            >
+                              {v}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )
       ) : (
         /* View 2: All 7-Column Addresses & Villages Directory Table */
         <div className="space-y-4">
@@ -566,8 +602,22 @@ export default function CircleMaster() {
                   ))}
                   {paginatedDirectory.length === 0 && (
                     <tr>
-                      <td colSpan="8" className="py-8 text-center text-slate-400">
-                        No addresses found matching your search or filters.
+                      <td colSpan="8" className="py-12 text-center text-slate-400">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Layers className="w-8 h-8 text-slate-600 mb-1" />
+                          <span className="font-semibold text-slate-300">
+                            {directory.length === 0 ? 'No Village Directory Mappings Registered (ಯಾವುದೇ ಸ್ಥಳಗಳ ವಿವರಗಳಿಲ್ಲ)' : 'No records found matching your filters.'}
+                          </span>
+                          {directory.length === 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setShowUploadModal(true)}
+                              className="mt-2 text-xs font-bold text-emerald-400 hover:underline cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Upload className="w-3.5 h-3.5" /> Upload 7-Column Circle Excel
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )}

@@ -30,7 +30,7 @@ const DB_NAME = 'SugarCooperativeERP_DB_v2';
 const DB_VERSION = 2;
 const STORE_NAME = 'shareholders';
 const CIRCLE_STORE = 'circle_directory';
-const STORAGE_KEY_CIRCLE_DIR = 'sugar_erp_circle_directory_v2';
+const STORAGE_KEY_CIRCLE_DIR = 'sugar_erp_circle_directory_clean';
 
 function openERPDB() {
   return new Promise((resolve) => {
@@ -116,112 +116,60 @@ async function loadCircleDirectoryFromDB() {
   try {
     const db = await openERPDB();
     if (!db || !db.objectStoreNames.contains(CIRCLE_STORE)) {
-      return loadStoredData(STORAGE_KEY_CIRCLE_DIR, null);
+      return loadStoredData(STORAGE_KEY_CIRCLE_DIR, []);
     }
     return new Promise((resolve) => {
       const tx = db.transaction([CIRCLE_STORE], 'readonly');
       const store = tx.objectStore(CIRCLE_STORE);
       const req = store.getAll();
       req.onsuccess = () => {
-        if (req.result && req.result.length > 0) resolve(req.result);
-        else resolve(loadStoredData(STORAGE_KEY_CIRCLE_DIR, null));
+        const res = req.result || [];
+        // If the only records in IndexedDB are the legacy mock items, discard and clear them
+        if (res.length === 26 && res[0]?.address === 'ಅಗರಖೇಡ') {
+          try {
+            const clearTx = db.transaction([CIRCLE_STORE], 'readwrite');
+            clearTx.objectStore(CIRCLE_STORE).clear();
+          } catch (e) {}
+          resolve([]);
+          return;
+        }
+        if (res && res.length > 0) resolve(res);
+        else resolve(loadStoredData(STORAGE_KEY_CIRCLE_DIR, []));
       };
-      req.onerror = () => resolve(loadStoredData(STORAGE_KEY_CIRCLE_DIR, null));
+      req.onerror = () => resolve(loadStoredData(STORAGE_KEY_CIRCLE_DIR, []));
     });
   } catch (err) {
-    return loadStoredData(STORAGE_KEY_CIRCLE_DIR, null);
+    return loadStoredData(STORAGE_KEY_CIRCLE_DIR, []);
   }
 }
 
-async function clearIndexedDB() {
+async function clearIndexedDB(includeCircles = true) {
   try {
     const db = await openERPDB();
     if (!db) return;
-    const tx = db.transaction([STORE_NAME], 'readwrite');
-    tx.objectStore(STORE_NAME).clear();
+    const stores = [STORE_NAME];
+    if (includeCircles && db.objectStoreNames.contains(CIRCLE_STORE)) {
+      stores.push(CIRCLE_STORE);
+    }
+    const tx = db.transaction(stores, 'readwrite');
+    stores.forEach(s => {
+      try { tx.objectStore(s).clear(); } catch (e) {}
+    });
   } catch (e) {}
 }
 
-// Initial Official Circle & Village Directory mapping (Address, Circle Name, Taluk, District, Pincode, Circle In-charge, Contact No)
-export const initialCircleDirectory = [
-  { id: 1, address: 'ಅಗರಖೇಡ', circle_name: 'ಇಂಡಿ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586209', circle_in_charge: 'ಸಂಗಮೇಶ ಕುಂಬಾರ', contact_no: '9845011221' },
-  { id: 2, address: 'ಅಗಸನಾಳ', circle_name: 'ಧೋಳಖೇಡ ಸರ್ಕಲ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', pincode: '586207', circle_in_charge: 'ರಮೇಶ ಪಾಟೀಲ', contact_no: '9845011222' },
-  { id: 3, address: 'ಅಂಜುಟಗಿ', circle_name: 'ಇಂಡಿ ಸ್ಟೇಶನ್ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586209', circle_in_charge: 'ಸುರೇಶ ಬಿರಾದಾರ', contact_no: '9845011223' },
-  { id: 4, address: 'ಅಣಚಿ', circle_name: 'ಧೋಳಖೇಡ ಸರ್ಕಲ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', pincode: '586207', circle_in_charge: 'ರಮೇಶ ಪಾಟೀಲ', contact_no: '9845011222' },
-  { id: 5, address: 'ಅಥರ್ಗಾ', circle_name: 'ತಾಂಬಾ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586112', circle_in_charge: 'ಬಸವರಾಜ ಹಡಪದ', contact_no: '9845011224' },
-  { id: 6, address: 'ಅಫಜಲಪೂರ', circle_name: 'Post', taluk: 'III', district: 'ಕಲಬುರಗಿ', pincode: '598999', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225' },
-  { id: 7, address: 'ಅರಕೇರಿ', circle_name: 'Post', taluk: 'ವಿಜಯಪುರ', district: 'ವಿಜಯಪುರ', pincode: '586104', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225' },
-  { id: 8, address: 'ಅರ್ಜನಾಳ', circle_name: 'ಧೋಳಖೇಡ ಸರ್ಕಲ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', pincode: '586207', circle_in_charge: 'ರಮೇಶ ಪಾಟೀಲ', contact_no: '9845011222' },
-  { id: 9, address: 'ಅರ್ಜುಣಗಿ ಕೆ ಡಿ', circle_name: 'ಸಾಲೋಟಗಿ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586217', circle_in_charge: 'ಮಲ್ಲಪ್ಪ ಪೂಜಾರಿ', contact_no: '9845011226' },
-  { id: 10, address: 'ಅರ್ಜುಣಗಿ ಬಿ ಕೆ', circle_name: 'ಸಾಲೋಟಗಿ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586217', circle_in_charge: 'ಮಲ್ಲಪ್ಪ ಪೂಜಾರಿ', contact_no: '9845011226' },
-  { id: 11, address: 'ಅಲಹಳ್ಳಿ', circle_name: 'ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ', taluk: 'ಸಿಂದಗಿ', district: 'ವಿಜಯಪುರ', pincode: '586128', circle_in_charge: 'ಸಿದ್ದರಾಮಯ್ಯ ಹಿರೇಮಠ', contact_no: '9845011227' },
-  { id: 12, address: 'ಅಲಿಯಾಬಾದ', circle_name: 'Post', taluk: 'ವಿಜಯಪುರ', district: 'ವಿಜಯಪುರ', pincode: '586101', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225' },
-  { id: 13, address: 'ಅಸಂತಾಪೂರ', circle_name: 'Post', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586209', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225' },
-  { id: 14, address: 'ಅಸ್ತಿ', circle_name: 'Post', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586209', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225' },
-  { id: 15, address: 'ಅಹೀರಸಂಗ', circle_name: 'ಇಂಡಿ ಸ್ಟೇಶನ್ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586209', circle_in_charge: 'ಸುರೇಶ ಬಿರಾದಾರ', contact_no: '9845011223' },
-  { id: 16, address: 'ಆಲಗೂರ', circle_name: 'ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ', taluk: 'ಸಿಂದಗಿ', district: 'ವಿಜಯಪುರ', pincode: '586128', circle_in_charge: 'ಸಿದ್ದರಾಮಯ್ಯ ಹಿರೇಮಠ', contact_no: '9845011227' },
-  { id: 17, address: 'ಆಲಮಟ್ಟಿ', circle_name: 'Post', taluk: 'ನಿಡಗುಂದಿ', district: 'ವಿಜಯಪುರ', pincode: '586201', circle_in_charge: 'ಪೋಸ್ಟ್ ಅಧಿಕಾರಿ', contact_no: '9845011225' },
-  { id: 18, address: 'ಆಲಮೇಲ', circle_name: 'ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ', taluk: 'ಸಿಂದಗಿ', district: 'ವಿಜಯಪುರ', pincode: '586202', circle_in_charge: 'ಸಿದ್ದರಾಮಯ್ಯ ಹಿರೇಮಠ', contact_no: '9845011227' },
-  { id: 19, address: 'ಅಸಂಗಿಹಾಳ', circle_name: 'ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ', taluk: 'ಸಿಂದಗಿ', district: 'ವಿಜಯಪುರ', pincode: '586128', circle_in_charge: 'ಸಿದ್ದರಾಮಯ್ಯ ಹಿರೇಮಠ', contact_no: '9845011227' },
-  { id: 20, address: 'ಬಳ್ಳೊಳ್ಳಿ', circle_name: 'ಬಳ್ಳೊಳ್ಳಿ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586117', circle_in_charge: 'ಮಲ್ಲಪ್ಪ ಗೌಡರ', contact_no: '9845011228' },
-  { id: 21, address: 'ಜೇವೂರ', circle_name: 'ಇಂಡಿ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586112', circle_in_charge: 'ಸಂಗಮೇಶ ಕುಂಬಾರ', contact_no: '9845011221' },
-  { id: 22, address: 'ಚಡಚಣ', circle_name: 'ಚಡಚಣ ಸರ್ಕಲ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', pincode: '586205', circle_in_charge: 'ಆನಂದ ಬಿರಾದಾರ', contact_no: '9845011229' },
-  { id: 23, address: 'ಹೊರ್ತಿ', circle_name: 'ಹೊರ್ತಿ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586117', circle_in_charge: 'ಪ್ರಕಾಶ ಕಲಬುರಗಿ', contact_no: '9845011230' },
-  { id: 24, address: 'ಲಚ್ಯಾಣ', circle_name: 'ಲಚ್ಯಾಣ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586211', circle_in_charge: 'ವಿಜಯಕುಮಾರ ಪಾಟೀಲ', contact_no: '9845011231' },
-  { id: 25, address: 'ಸಾಲೋಟಗಿ', circle_name: 'ಸಾಲೋಟಗಿ ಸರ್ಕಲ', taluk: 'ಇಂಡಿ', district: 'ವಿಜಯಪುರ', pincode: '586217', circle_in_charge: 'ಮಲ್ಲಪ್ಪ ಪೂಜಾರಿ', contact_no: '9845011226' },
-  { id: 26, address: 'ಹಲಸಂಗಿ', circle_name: 'ಹಲಸಂಗಿ ಸರ್ಕಲ', taluk: 'ಚಡಚಣ', district: 'ವಿಜಯಪುರ', pincode: '586205', circle_in_charge: 'ಸುನೀಲ ಜೋಶಿ', contact_no: '9845011232' }
-];
+// Initial Official Circle & Village Directory mapping (Empty initial state - 100% clean)
+export const initialCircleDirectory = [];
 
-export let mockCircleDirectory = loadStoredData(STORAGE_KEY_CIRCLE_DIR, [...initialCircleDirectory]);
+export let mockCircleDirectory = loadStoredData(STORAGE_KEY_CIRCLE_DIR, []);
 
-// Circles in Indi / Chadchan / Vijayapura Region (Geographic Master)
-export const mockCircles = [
-  { circle_id: 'CIR-001', name: 'ಇಂಡಿ ಸರ್ಕಲ', description: 'Indi Central Cane Zone', village_count: 8, shareholder_count: 0, total_shares: 0 },
-  { circle_id: 'CIR-002', name: 'ಚಡಚಣ ಸರ್ಕಲ', description: 'Chadchan Sugar Basin Zone', village_count: 7, shareholder_count: 0, total_shares: 0 },
-  { circle_id: 'CIR-003', name: 'ಬಳ್ಳೊಳ್ಳಿ ಸರ್ಕಲ', description: 'Ballolli Sugarcane Belt', village_count: 6, shareholder_count: 0, total_shares: 0 },
-  { circle_id: 'CIR-004', name: 'ಧೋಳಖೇಡ ಸರ್ಕಲ', description: 'Dholkhed Division', village_count: 6, shareholder_count: 0, total_shares: 0 },
-  { circle_id: 'CIR-005', name: 'ತಾಂಬಾ ಸರ್ಕಲ', description: 'Tamba Agricultural Division', village_count: 6, shareholder_count: 0, total_shares: 0 },
-  { circle_id: 'CIR-006', name: 'ಇಂಡಿ ಸ್ಟೇಶನ್ ಸರ್ಕಲ', description: 'Indi Station Belt', village_count: 6, shareholder_count: 0, total_shares: 0 },
-  { circle_id: 'CIR-007', name: 'ಸಾಲೋಟಗಿ ಸರ್ಕಲ', description: 'Salotgi Historical Zone', village_count: 6, shareholder_count: 0, total_shares: 0 },
-  { circle_id: 'CIR-008', name: 'ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ', description: 'Almel-Sindagi-Devar Hippargi Zone', village_count: 6, shareholder_count: 0, total_shares: 0 }
-];
+// Circles Master (Empty initial state - 100% clean)
+export const mockCircles = [];
 
-// Villages / Places in Vijayapura District (Geographic Master)
-export const placesList = [
-  { name: 'ಬಳ್ಳೊಳ್ಳಿ', taluk: 'ಇಂಡಿ', circle: 'ಬಳ್ಳೊಳ್ಳಿ (Ballolli Circle)', pin: '586 117' },
-  { name: 'ಜೇವೂರ', taluk: 'ಇಂಡಿ', circle: 'ಇಂಡಿ (Indi Circle)', pin: '586 112' },
-  { name: 'ಚಡಚಣ', taluk: 'ಚಡಚಣ', circle: 'ಚಡಚಣ (Chadchan Circle)', pin: '586 205' },
-  { name: 'ಅಥರ್ಗಾ', taluk: 'ಇಂಡಿ', circle: 'ಅಥರ್ಗಾ (Atharga Circle)', pin: '586 112' },
-  { name: 'ಹಿರೇಬೇವನೂರ', taluk: 'ಇಂಡಿ', circle: 'ಇಂಡಿ (Indi Circle)', pin: '586 112' },
-  { name: 'ಲೋಣಿ ಬಿ.ಕೆ.', taluk: 'ಇಂಡಿ', circle: 'ಬಳ್ಳೊಳ್ಳಿ (Ballolli Circle)', pin: '586 211' },
-  { name: 'ತಡವಲಗಾ', taluk: 'ಇಂಡಿ', circle: 'ಇಂಡಿ (Indi Circle)', pin: '586 211' },
-  { name: 'ಅಂಜುಟಗಿ', taluk: 'ಇಂಡಿ', circle: 'ಇಂಡಿ (Indi Circle)', pin: '586 112' },
-  { name: 'ಹೊರ್ತಿ', taluk: 'ಇಂಡಿ', circle: 'ಹೊರ್ತಿ (Horti Circle)', pin: '586 117' },
-  { name: 'ಲಚ್ಯಾಣ', taluk: 'ಇಂಡಿ', circle: 'ಲಚ್ಯಾಣ (Lachyan Circle)', pin: '586 211' },
-  { name: 'ಸಾಲೋಟಗಿ', taluk: 'ಇಂಡಿ', circle: 'ಸಾಲೋಟಗಿ (Salotgi Circle)', pin: '586 217' },
-  { name: 'ನಿಂಬಾಳ', taluk: 'ಇಂಡಿ', circle: 'ಇಂಡಿ (Indi Circle)', pin: '586 211' },
-  { name: 'ಶಿರಾಡೋಣ', taluk: 'ಚಡಚಣ', circle: 'ಚಡಚಣ (Chadchan Circle)', pin: '586 205' },
-  { name: 'ಹಲಸಂಗಿ', taluk: 'ಚಡಚಣ', circle: 'ಹಲಸಂಗಿ (Halasangi Circle)', pin: '586 205' },
-  { name: 'ಧೂಳಖೇಡ', taluk: 'ಚಡಚಣ', circle: 'ಚಡಚಣ (Chadchan Circle)', pin: '586 205' },
-  { name: 'ಉಮರಾಣಿ', taluk: 'ಚಡಚಣ', circle: 'ಚಡಚಣ (Chadchan Circle)', pin: '586 205' },
-  { name: 'ರೋಡಗಿ', taluk: 'ಇಂಡಿ', circle: 'ಇಂಡಿ (Indi Circle)', pin: '586 112' },
-  { name: 'ತಮದಡ್ಡಿ', taluk: 'ಇಂಡಿ', circle: 'ಇಂಡಿ (Indi Circle)', pin: '586 112' },
-  { name: 'ದೇವರ ನಿಂಬರಗಿ', taluk: 'ಚಡಚಣ', circle: 'ಚಡಚಣ (Chadchan Circle)', pin: '586 205' },
-  { name: 'ಇಂಡಿ ಗ್ರಾಮೀಣ', taluk: 'ಇಂಡಿ', circle: 'ಇಂಡಿ (Indi Circle)', pin: '586 112' }
-];
+// Villages / Places Master (Empty initial state - 100% clean)
+export const placesList = [];
 
-export const mockVillages = placesList.map((p, idx) => ({
-  village_id: `VIL-${String(idx + 1).padStart(3, '0')}`,
-  name: p.name,
-  taluk: p.taluk,
-  district: 'ವಿಜಯಪುರ',
-  circle_name: p.circle,
-  circle_id: `CIR-${String((idx % 8) + 1).padStart(3, '0')}`,
-  pin_code: p.pin,
-  status: 'Active',
-  shareholder_count: 0,
-  total_shares: 0
-}));
+export const mockVillages = [];
 
 // Real Live Datasets (Initialized as clean empty arrays - zero mock records)
 let mockShareholders = loadStoredData(STORAGE_KEY_SH, []);
@@ -340,7 +288,7 @@ export const ApiService = {
       percentage: mockShareholders.length > 0 ? ((scCounts[sc] / mockShareholders.length) * 100).toFixed(1) : '0'
     })).sort((a, b) => b.count - a.count);
 
-    // Dynamic unique collections across actual dataset (e.g. 300+ places)
+    // Dynamic unique collections across actual dataset and uploaded circle directory
     const uniquePlaces = new Set();
     const uniqueCircles = new Set();
     const uniqueBooks = new Set();
@@ -354,9 +302,14 @@ export const ApiService = {
       if (b) uniqueBooks.add(b);
     });
 
-    const calculatedVillages = uniquePlaces.size > 0 ? uniquePlaces.size : mockVillages.length;
-    const calculatedCircles = uniqueCircles.size > 0 ? uniqueCircles.size : mockCircles.length;
-    const calculatedBooks = uniqueBooks.size > 0 ? uniqueBooks.size : 5;
+    mockCircleDirectory.forEach(cd => {
+      if (cd.address) uniquePlaces.add(cd.address.trim().toLowerCase().normalize('NFC'));
+      if (cd.circle_name) uniqueCircles.add(cd.circle_name.trim().toLowerCase().normalize('NFC'));
+    });
+
+    const calculatedVillages = uniquePlaces.size;
+    const calculatedCircles = uniqueCircles.size;
+    const calculatedBooks = uniqueBooks.size;
 
     return {
       success: true,
@@ -369,7 +322,7 @@ export const ApiService = {
         totalCircles: calculatedCircles,
         totalBooks: calculatedBooks,
         totalCategories: scheduleCastBreakdown.length,
-        topCategory: scheduleCastBreakdown.length > 0 ? `${scheduleCastBreakdown[0].category} (${scheduleCastBreakdown[0].count.toLocaleString()})` : 'ಅ - ವರ್ಗ',
+        topCategory: scheduleCastBreakdown.length > 0 ? `${scheduleCastBreakdown[0].category} (${scheduleCastBreakdown[0].count.toLocaleString()})` : '—',
         pendingVarasa: mockVarasaTransfers.filter(v => v.approval_status !== 'Completed').length,
         completedVarasa: mockVarasaTransfers.filter(v => v.approval_status === 'Completed').length,
         todayTx: mockTransactions.length,
@@ -549,15 +502,15 @@ export const ApiService = {
         address: (data.address || '').normalize('NFC'),
         nagara: (data.nagara || '').normalize('NFC'),
         road: (data.road || '').normalize('NFC'),
-        place: (data.place || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
-        village_name: (data.place || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
-        village_id: data.village_id || 'VIL-001',
-        taluk: (data.taluk || 'ಇಂಡಿ').normalize('NFC'),
-        district: (data.district || 'ವಿಜಯಪುರ').normalize('NFC'),
-        pin_code: data.pin_code || '586 117',
-        circle: (data.circle || 'ಇಂಡಿ').normalize('NFC'),
-        circle_name: (data.circle || 'ಇಂಡಿ').normalize('NFC'),
-        circle_id: data.circle_id || 'CIR-001',
+        place: (data.place || data.village_name || '').normalize('NFC'),
+        village_name: (data.place || data.village_name || '').normalize('NFC'),
+        village_id: data.village_id || '',
+        taluk: (data.taluk || '').normalize('NFC'),
+        district: (data.district || '').normalize('NFC'),
+        pin_code: data.pin_code || '',
+        circle: (data.circle || data.circle_name || '').normalize('NFC'),
+        circle_name: (data.circle || data.circle_name || '').normalize('NFC'),
+        circle_id: data.circle_id || '',
         member_type: (data.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
         relationship: (data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
         tharava_date: data.tharava_date || data.reg_date || nowStr,
@@ -636,15 +589,15 @@ export const ApiService = {
       address: (data.address || '').normalize('NFC'),
       nagara: (data.nagara || '').normalize('NFC'),
       road: (data.road || '').normalize('NFC'),
-      place: (data.place || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
-      village_name: (data.place || 'ಬಳ್ಳೊಳ್ಳಿ').normalize('NFC'),
-      village_id: data.village_id || 'VIL-001',
-      taluk: (data.taluk || 'ಇಂಡಿ').normalize('NFC'),
-      district: (data.district || 'ವಿಜಯಪುರ').normalize('NFC'),
-      pin_code: data.pin_code || '586 117',
-      circle: (data.circle || 'ಇಂಡಿ').normalize('NFC'),
-      circle_name: (data.circle || 'ಇಂಡಿ').normalize('NFC'),
-      circle_id: data.circle_id || 'CIR-001',
+      place: (data.place || data.village_name || '').normalize('NFC'),
+      village_name: (data.place || data.village_name || '').normalize('NFC'),
+      village_id: data.village_id || '',
+      taluk: (data.taluk || '').normalize('NFC'),
+      district: (data.district || '').normalize('NFC'),
+      pin_code: data.pin_code || '',
+      circle: (data.circle || data.circle_name || '').normalize('NFC'),
+      circle_name: (data.circle || data.circle_name || '').normalize('NFC'),
+      circle_id: data.circle_id || '',
       member_type: (data.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
       relationship: (data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
       tharava_date: data.tharava_date || data.reg_date || nowStr,
@@ -677,7 +630,7 @@ export const ApiService = {
     await ensureDBReady();
     mockShareholders = [];
     saveStoredData(STORAGE_KEY_SH, []);
-    await clearIndexedDB();
+    await clearIndexedDB(false);
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.removeItem(STORAGE_KEY_SH);
@@ -691,18 +644,20 @@ export const ApiService = {
   async clearAllData() {
     await ensureDBReady();
     mockShareholders = [];
+    mockCircleDirectory = [];
     mockTransactions = [];
     mockSugarAllotments = [];
     mockVarasaTransfers = [];
     mockEmployees = [];
     mockAuditLogs = [];
     saveStoredData(STORAGE_KEY_SH, []);
+    saveStoredData(STORAGE_KEY_CIRCLE_DIR, []);
     saveStoredData(STORAGE_KEY_TX, []);
     saveStoredData(STORAGE_KEY_SA, []);
     saveStoredData(STORAGE_KEY_VT, []);
     saveStoredData(STORAGE_KEY_EMP, []);
     saveStoredData(STORAGE_KEY_LOGS, []);
-    await clearIndexedDB();
+    await clearIndexedDB(true);
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         Object.keys(localStorage).forEach(k => {
@@ -1106,8 +1061,9 @@ export const ApiService = {
   },
 
   async resetCircleDirectory() {
-    mockCircleDirectory = [...initialCircleDirectory];
-    await saveCircleDirectoryToDB(mockCircleDirectory);
+    mockCircleDirectory = [];
+    saveStoredData(STORAGE_KEY_CIRCLE_DIR, []);
+    await saveCircleDirectoryToDB([]);
     return { success: true };
   },
 
@@ -1119,7 +1075,7 @@ export const ApiService = {
       if (b) bookSet.add(b);
     }
     if (bookSet.size === 0) {
-      return { success: true, data: ['B.No: 1', 'B.No: 2', 'B.No: 3', 'B.No: 4', 'B.No: 5'] };
+      return { success: true, data: [] };
     }
     const list = Array.from(bookSet).sort((a, b) => {
       const numA = parseInt(a.replace(/\D/g, '')) || 0;

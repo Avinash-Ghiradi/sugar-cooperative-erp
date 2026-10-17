@@ -68,36 +68,54 @@ export default function VillageMaster() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paginated.map((v) => (
-              <div key={v.village_id} className="bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 p-4 rounded-2xl space-y-3 transition-all">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-slate-100 text-sm">{v.name}</h3>
-                    <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-                      <span className="text-emerald-400 font-mono">{v.village_id}</span>
-                      <span>•</span>
-                      <span>ತಾ: {v.taluk || 'ಇಂಡಿ'}</span>
+          {filtered.length === 0 ? (
+            <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-12 text-center space-y-4">
+              <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <Building2 className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-100">
+                  {villages.length === 0 ? 'No Villages or Places Registered Yet (ಯಾವುದೇ ಗ್ರಾಮಗಳು ನೋಂದಾಯಿಸಿಲ್ಲ)' : 'No Places Found Matching Your Search'}
+                </h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  {villages.length === 0
+                    ? 'Village Registry is currently in a clean, empty state. Villages and territories will be dynamically extracted when you upload your Circle Excel or Shareholders ledger.'
+                    : 'Try clearing your search query to see all places.'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginated.map((v) => (
+                <div key={v.village_id} className="bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 p-4 rounded-2xl space-y-3 transition-all">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-slate-100 text-sm">{v.name}</h3>
+                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                        <span className="text-emerald-400 font-mono">{v.village_id}</span>
+                        <span>•</span>
+                        <span>ತಾ: {v.taluk || 'ಇಂಡಿ'}</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-semibold">
+                      {v.circle_name || 'ಇಂಡಿ'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 text-xs">
+                    <div className="bg-slate-900 p-2 rounded-xl text-center">
+                      <span className="text-slate-400 text-[10px]">Shareholders</span>
+                      <div className="font-bold text-slate-100 mt-0.5">{v.shareholder_count ?? 0}</div>
+                    </div>
+                    <div className="bg-slate-900 p-2 rounded-xl text-center">
+                      <span className="text-slate-400 text-[10px]">Total Shares</span>
+                      <div className="font-bold text-emerald-400 mt-0.5">{v.total_shares ?? 0}</div>
                     </div>
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-semibold">
-                    {v.circle_name || 'ಇಂಡಿ'}
-                  </span>
                 </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 text-xs">
-                  <div className="bg-slate-900 p-2 rounded-xl text-center">
-                    <span className="text-slate-400 text-[10px]">Shareholders</span>
-                    <div className="font-bold text-slate-100 mt-0.5">{v.shareholder_count ?? 0}</div>
-                  </div>
-                  <div className="bg-slate-900 p-2 rounded-xl text-center">
-                    <span className="text-slate-400 text-[10px]">Total Shares</span>
-                    <div className="font-bold text-emerald-400 mt-0.5">{v.total_shares ?? 0}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (

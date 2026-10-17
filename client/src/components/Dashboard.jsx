@@ -49,8 +49,8 @@ export default function Dashboard() {
     { title: 'Total Shares', value: stats.totalShares.toLocaleString(), icon: Coins, color: 'amber', link: 'shareholders' },
     { title: 'Total Villages / Places', value: stats.totalVillages.toLocaleString(), icon: Building2, color: 'blue', link: 'villages' },
     { title: 'Total Circles', value: stats.totalCircles.toLocaleString(), icon: MapPin, color: 'indigo', link: 'circles' },
-    { title: 'Total Books (Ledgers)', value: (stats.totalBooks || 1).toLocaleString(), icon: BookOpen, color: 'sky', link: 'shareholders' },
-    { title: 'Schedule Cast / ವರ್ಗ', value: stats.topCategory || `${stats.totalCategories || 1} Classes`, icon: Layers, color: 'purple', link: 'shareholders' },
+    { title: 'Total Books (Ledgers)', value: (stats.totalBooks || 0).toLocaleString(), icon: BookOpen, color: 'sky', link: 'shareholders' },
+    { title: 'Schedule Cast / ವರ್ಗ', value: stats.totalShareholders > 0 ? (stats.topCategory || `${stats.totalCategories || 0} Classes`) : '0 Classes', icon: Layers, color: 'purple', link: 'shareholders' },
     { title: 'Pending Varasa', value: stats.pendingVarasa.toLocaleString(), icon: Clock, color: 'amber', link: 'varasa' },
     { title: 'Completed Varasa', value: stats.completedVarasa.toLocaleString(), icon: FileCheck2, color: 'emerald', link: 'varasa' },
     { title: 'Today\'s Transactions', value: stats.todayTx.toLocaleString(), icon: CreditCard, color: 'purple', link: 'transactions' },
@@ -215,6 +215,13 @@ export default function Dashboard() {
                     </td>
                   </tr>
                 ))}
+                {(charts.scheduleCastBreakdown || []).length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="py-8 text-center text-slate-500">
+                      No shareholder records found. Upload official spreadsheet to view demographic breakdown.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
