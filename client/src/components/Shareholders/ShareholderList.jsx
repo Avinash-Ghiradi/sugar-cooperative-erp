@@ -778,8 +778,17 @@ export default function ShareholderList() {
             <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
               <thead className="bg-slate-900 border-b border-slate-800 text-slate-300 font-bold text-[11px] sticky top-0 z-20 shadow-md">
                 <tr className="border-b border-slate-800">
-                  <th className="py-3.5 px-3 bg-slate-900 sticky left-0 z-30 shadow-r">Actions</th>
-                  <th className="py-3.5 px-3 bg-slate-900 sticky left-14 z-30 border-r border-slate-800">Book. No</th>
+                  <th className="py-3.5 px-2 bg-slate-900 sticky left-0 z-30 text-center w-10">
+                    <input
+                      type="checkbox"
+                      checked={shareholders.length > 0 && shareholders.every(s => selectedShareIds.includes(s.id))}
+                      onChange={toggleSelectAllPage}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 bg-slate-950 border-slate-700 cursor-pointer"
+                      title="ಪ್ರಸ್ತುತ ಪುಟದ ಎಲ್ಲಾ ಷೇರುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+                    />
+                  </th>
+                  <th className="py-3.5 px-2 bg-slate-900 sticky left-10 z-30 shadow-r">Actions</th>
+                  <th className="py-3.5 px-3 bg-slate-900 sticky left-[100px] z-30 border-r border-slate-800">Book. No</th>
                   <th className="py-3.5 px-3 text-center">Sl. No</th>
                   <th className="py-3.5 px-3 font-mono text-emerald-400">Share No</th>
                   <th className="py-3.5 px-4 font-bold text-slate-100 min-w-[200px]">Share Holder Name (ಷೇರುದಾರರ ಹೆಸರು)</th>
@@ -818,9 +827,19 @@ export default function ShareholderList() {
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-200">
                 {shareholders.map((sh, idx) => (
-                  <tr key={sh.id || idx} className="hover:bg-slate-900/80 transition-colors group">
+                  <tr key={sh.id || idx} className={`hover:bg-slate-900/80 transition-colors group ${selectedShareIds.includes(sh.id) ? 'bg-amber-950/30' : ''}`}>
+                    {/* Row Checkbox Column */}
+                    <td className="py-2.5 px-2 bg-slate-950 group-hover:bg-slate-900 sticky left-0 z-10 text-center w-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedShareIds.includes(sh.id)}
+                        onChange={() => toggleSelectRow(sh.id)}
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 bg-slate-950 border-slate-700 cursor-pointer"
+                      />
+                    </td>
+
                     {/* Fixed Action Buttons Column */}
-                    <td className="py-2.5 px-2 bg-slate-950 group-hover:bg-slate-900 sticky left-0 z-10">
+                    <td className="py-2.5 px-2 bg-slate-950 group-hover:bg-slate-900 sticky left-10 z-10">
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => {
@@ -860,7 +879,7 @@ export default function ShareholderList() {
                     </td>
 
                     {/* 1. Book. No (Sticky) */}
-                    <td className="py-2.5 px-3 bg-slate-950 group-hover:bg-slate-900 sticky left-14 z-10 font-bold text-sky-400 border-r border-slate-800">
+                    <td className="py-2.5 px-3 bg-slate-950 group-hover:bg-slate-900 sticky left-[100px] z-10 font-bold text-sky-400 border-r border-slate-800">
                       {sh.book_no || 'B.No: 1'}
                     </td>
 

@@ -2874,8 +2874,8 @@ export const ApiService = {
 
   async searchShareholdersByShareNo(query = '') {
     await ensureDBReady();
-    if (!query || !query.trim()) return { success: true, data: [] };
-    const q = query.trim().toLowerCase().normalize('NFC');
+    if (!query || !String(query).trim()) return { success: true, data: [] };
+    const q = String(query).replace(/^#/, '').trim().toLowerCase().normalize('NFC');
     const results = [];
     for (let i = 0; i < mockShareholders.length; i++) {
       const s = mockShareholders[i];
@@ -2925,7 +2925,7 @@ export const ApiService = {
       return { success: false, message: 'ವಿಲೀನಗೊಳಿಸಲು ಕನಿಷ್ಠ 2 ಷೇರು ಸಂಖ್ಯೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ (Please select at least 2 share numbers to merge).' };
     }
 
-    const cleanTargets = shareNumbers.map(n => String(n).trim()).filter(Boolean);
+    const cleanTargets = shareNumbers.map(n => String(n).replace(/^#/, '').trim()).filter(Boolean);
     if (cleanTargets.length < 2) {
       return { success: false, message: 'ಮಾನ್ಯ ಷೇರು ಸಂಖ್ಯೆಗಳನ್ನು ಒದಗಿಸಿ (Invalid share numbers).' };
     }

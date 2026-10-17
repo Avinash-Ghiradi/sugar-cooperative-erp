@@ -21,7 +21,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
   const [isMergingSelected, setIsMergingSelected] = useState(false);
 
   // Auto-detected mode states
-  const [loadingAuto, setLoadingAuto] = useState(true);
+  const [loadingAuto, setLoadingAuto] = useState(false);
   const [isMergingAuto, setIsMergingAuto] = useState(false);
   const [autoSummary, setAutoSummary] = useState(null);
   const [autoSearchTerm, setAutoSearchTerm] = useState('');
@@ -30,8 +30,9 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
   useEffect(() => {
     if (isOpen) {
       if (initialSelectedShares && initialSelectedShares.length > 0) {
+        setSelectedShareRecords(initialSelectedShares);
+        setPrimaryRecordId(initialSelectedShares[0]?.id || null);
         setActiveTab('by_selection');
-        loadPreSelectedShares(initialSelectedShares);
       }
       loadAutoHoldings();
     } else {
@@ -40,34 +41,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
       setSearchResults([]);
       setPrimaryRecordId(null);
     }
-  }, [isOpen, initialSelectedShares]);
-
-  // Load pre-selected shares from table checkboxes
-  const loadPreSelectedShares = async (sharesList) => {
-    try {
-      const records = [];
-      for (const item of sharesList) {
-        const query = typeof item === 'object' ? (item.share_no || item.id) : item;
-        const res = await ApiService.searchShareholdersByShareNo(String(query));
-        if (res && res.success && res.data.length > 0) {
-          const matched = res.data.find(d => 
-            String(d.id) === String(query) || 
-            String(d.share_no) === String(query) ||
-            (d.all_share_numbers || []).includes(String(query))
-          ) || res.data[0];
-          if (!records.some(r => r.id === matched.id)) {
-            records.push(matched);
-          }
-        }
-      }
-      if (records.length > 0) {
-        setSelectedShareRecords(records);
-        setPrimaryRecordId(records[0].id);
-      }
-    } catch (err) {
-      console.error('Error pre-loading shares:', err);
-    }
-  };
+  }, [isOpen]);
 
   // Search live database for share numbers / shareholder names
   useEffect(() => {
@@ -87,7 +61,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
       } finally {
         setIsSearching(false);
       }
-    }, 250);
+    }, 200);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
@@ -104,6 +78,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
     }
     setSearchQuery('');
     setSearchResults([]);
+    showToast(`ಷೇರು #${record.share_no} (${record.shareholder_name}) ಆಯ್ಕೆಗೆ ಸೇರಿಸಲಾಗಿದೆ!`);
   };
 
   // Quick add by comma-separated numbers (e.g. "222, 1665")
@@ -155,21 +130,13 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
 
   // Execute Merge Selected Shares
   const handleMergeSelected = async () => {
-    if (user?.role !== 'Admin') {
-      showToast('ಕೇವಲ Admin ಗಳಿಗೆ ಮಾತ್ರ ಶೇರುಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಲು ಅನುಮತಿ ಇದೆ (Admin approval required)', 'error');
-      return;
-    }
     if (selectedShareRecords.length < 2) {
-      showToast('ವಿಲೀನಗೊಳಿಸಲು ಕನಿಷ್ಠ 2 ಷೇರುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ (Please select at least 2 shares to merge)', 'error');
+      showToast('ವಿಲೀನಗೊಳಿಸಲು ಕನಿಷ್ಠ 2 ಷೇರುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ (ದಯವಿಟ್ಟು ಕನಿಷ್ಠ 2 ಷೇರು ಸಂಖ್ಯೆಗಳನ್ನು ಸೇರಿಸಿ)', 'error');
       return;
     }
 
     const shareNumbers = selectedShareRecords.map(r => r.share_no || r.id);
     const primaryRecord = selectedShareRecords.find(r => r.id === primaryRecordId) || selectedShareRecords[0];
-
-    const confirmMsg = `ನೀವು ಈ ಕೆಳಗಿನ ${selectedShareRecords.length} ಷೇರು ಖಾತೆಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಲು ಬಯಸುವಿರಾ?\n\n• ಷೇರು ಸಂಖ್ಯೆಗಳು: #${shareNumbers.join(', #')}\n• ಉಳಿಸಿಕೊಳ್ಳಲಾಗುವ ಮುಖ್ಯ ಖಾತೆ: ${primaryRecord.shareholder_name} (${primaryRecord.place})\n• ಒಟ್ಟು ಸಂಯೋಜಿತ ಷೇರುಗಳು: ${selectedShareRecords.reduce((s, r) => s + (parseInt(r.number_of_shares) || 1), 0)} ಷೇರುಗಳು\n• ಒಟ್ಟು ಸಂಯೋಜಿತ ಬಂಡವಾಳ: ₹${selectedShareRecords.reduce((s, r) => s + (parseFloat(r.total_amount) || 0), 0).toLocaleString()}\n\nಮುಂದುವರಿಯಲು OK ಒತ್ತಿ.`;
-
-    if (!window.confirm(confirmMsg)) return;
 
     setIsMergingSelected(true);
     try {
@@ -183,7 +150,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
         showToast(`ಅಭಿನಂದನೆಗಳು! ಷೇರುಗಳು #${res.combinedShareNoStr} ಯಶಸ್ವಿಯಾಗಿ ಏಕೀಕೃತಗೊಂಡಿವೆ! ಒಟ್ಟು: ${res.combinedShares} ಷೇರುಗಳು, ₹${res.combinedTotalAmt?.toLocaleString()}.`);
         setSelectedShareRecords([]);
         setPrimaryRecordId(null);
-        if (onMergeSuccess) onMergeSuccess();
+        if (onMergeSuccess) await onMergeSuccess();
         onClose();
       } else {
         showToast(res?.message || 'ವಿಲೀನಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ', 'error');
@@ -222,10 +189,6 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
   });
 
   const handleMergeOneAuto = async (candidate) => {
-    if (user?.role !== 'Admin') {
-      showToast('ಕೇವಲ Admin ಗಳಿಗೆ ಮಾತ್ರ ಶೇರುಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಲು ಅನುಮತಿ ಇದೆ (Admin approval required)', 'error');
-      return;
-    }
     setMergingKey(candidate.key);
     try {
       const res = await ApiService.mergeShareholderHoldings({
@@ -233,9 +196,9 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
         adminUser: user?.name || 'Admin'
       });
       if (res && res.success) {
-        showToast(`ಯಶಸ್ವಿಯಾಗಿ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ! ${candidate.shareholder_name} ಅವರ ${candidate.count} ಷೇರು ಸರ್ಟಿಫಿಕೇಟ್‌ಗಳು (${res.combinedShares} ಷೇರುಗಳು, ₹${res.combinedTotalAmt.toLocaleString()}) ಏಕೀಕರಿಸಲಾಗಿದೆ.`);
+        showToast(`ಯಶಸ್ವಿಯಾಗಿ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ! ${candidate.shareholder_name} ಅವರ ಷೇರುಗಳು (${res.combinedShares} ಷೇರುಗಳು, ₹${res.combinedTotalAmt?.toLocaleString()}) ಏಕೀಕರಿಸಲಾಗಿದೆ.`);
         await loadAutoHoldings();
-        if (onMergeSuccess) onMergeSuccess();
+        if (onMergeSuccess) await onMergeSuccess();
       } else {
         showToast(res?.message || 'ವಿಲೀನಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ', 'error');
       }
@@ -247,16 +210,8 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
   };
 
   const handleMergeAllAuto = async () => {
-    if (user?.role !== 'Admin') {
-      showToast('ಕೇವಲ Admin ಗಳಿಗೆ ಮಾತ್ರ ಶೇರುಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಲು ಅನುಮತಿ ಇದೆ (Admin approval required)', 'error');
-      return;
-    }
     const count = autoCandidates.length;
     if (count === 0) return;
-
-    if (!window.confirm(`ಪತ್ತೆಯಾದ ಒಟ್ಟು ${count} ಶೇರುದಾರರ ಬಹು-ಶೇರುಗಳು ಮತ್ತು ಮೊತ್ತಗಳನ್ನು ಖಚಿತವಾಗಿ ವಿಲೀನಗೊಳಿಸಲು ಬಯಸುವಿರಾ? ಇದು ಎಲ್ಲಾ ಪ್ರತ್ಯೇಕ ಶೇರು ಸಂಖ್ಯೆಗಳು, ಕಂತುಗಳು ಹಾಗೂ ಒಟ್ಟು ಶೇರುಗಳನ್ನು ಏಕೀಕರಿಸುತ್ತದೆ.`)) {
-      return;
-    }
 
     setIsMergingAuto(true);
     try {
@@ -266,7 +221,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
       if (res && res.success) {
         showToast(`ಅಭಿನಂದನೆಗಳು! ಒಟ್ಟು ${res.mergedCount} ಶೇರುದಾರರ ${res.totalSharesCombined} ಷೇರುಗಳು ಮತ್ತು ₹${res.totalCapitalCombined?.toLocaleString()} ಮೊತ್ತವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಏಕೀಕರಿಸಲಾಗಿದೆ!`);
         await loadAutoHoldings();
-        if (onMergeSuccess) onMergeSuccess();
+        if (onMergeSuccess) await onMergeSuccess();
       } else {
         showToast(res?.message || 'ವಿಲೀನ ವಿಫಲವಾಗಿದೆ', 'error');
       }
@@ -277,23 +232,25 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
     }
   };
 
+  // Transfer candidate records from Auto-detected to Selection tab
   const handleLoadCandidateIntoSelection = (candidate) => {
-    const records = (candidate.records || []).map(r => ({
-      id: r.id,
+    const list = candidate.holdings || candidate.records || [];
+    const records = list.map((r, idx) => ({
+      id: r.id || `${candidate.key}_${r.share_no || idx}`,
       share_no: r.share_no,
       shareholder_name: candidate.shareholder_name,
       place: candidate.place,
       taluk: candidate.taluk,
-      number_of_shares: r.shares,
-      total_amount: r.amount,
-      receipt_no: r.receipt_no,
-      reg_date: r.receipt_date,
-      book_no: r.book_no
+      number_of_shares: parseInt(r.shares || r.number_of_shares) || 1,
+      total_amount: parseFloat(r.amount || r.total_amount) || 2000,
+      receipt_no: r.receipt_no || '—',
+      reg_date: r.receipt_date || r.reg_date || '—',
+      book_no: r.book_no || 'B.No: 1'
     }));
     setSelectedShareRecords(records);
     if (records.length > 0) setPrimaryRecordId(records[0].id);
     setActiveTab('by_selection');
-    showToast(`${records.length} ಷೇರುಗಳನ್ನು ಆಯ್ಕೆ ಮೋಡ್‌ಗೆ ಲೋಡ್ ಮಾಡಲಾಗಿದೆ. ಮುಖ್ಯ ಖಾತೆ ಆಯ್ಕೆಮಾಡಿ ವಿಲೀನಗೊಳಿಸಿ.`);
+    showToast(`${records.length} ಷೇರುಗಳನ್ನು ಆಯ್ಕೆ ಮೋಡ್‌ಗೆ ಲೋಡ್ ಮಾಡಲಾಗಿದೆ. ಮುಖ್ಯ ಖಾತೆ ಪರಿಶೀಲಿಸಿ ವಿಲೀನಗೊಳಿಸಿ.`);
   };
 
   if (!isOpen) return null;
@@ -478,7 +435,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                     onClick={() => { setSelectedShareRecords([]); setPrimaryRecordId(null); }}
                     className="text-[11px] text-rose-400 hover:text-rose-300 font-semibold cursor-pointer"
                   >
-                    ಎಲ್ಲವನ್ನೂ ತೆರವುಗೊಳಿಸಿ (Clear All)
+                    ಎಲ್ಲವನ್ನೂ ತೆರವಗೊಳಿಸಿ (Clear All)
                   </button>
                 )}
               </div>
@@ -685,7 +642,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                 type="button"
                 onClick={handleMergeAllAuto}
                 disabled={isMergingAuto || autoCandidates.length === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-bold rounded-xl text-xs shadow-lg shadow-amber-950 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-slate-950 font-bold rounded-xl text-xs shadow-lg shadow-amber-950 transition-all cursor-pointer"
               >
                 {isMergingAuto ? (
                   <>
@@ -766,15 +723,15 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
 
                     {/* Breakdown table */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-                      {(c.records || []).map((r, rIdx) => (
+                      {(c.holdings || c.records || []).map((r, rIdx) => (
                         <div key={rIdx} className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="font-mono font-bold text-amber-400 text-xs">ಷೇರು #{r.share_no}</span>
-                            <span className="text-[10px] font-mono text-slate-400">{r.book_no}</span>
+                            <span className="text-[10px] font-mono text-slate-400">{r.book_no || 'B.No: 1'}</span>
                           </div>
                           <div className="flex items-center justify-between text-[11px] text-slate-300">
-                            <span>ಷೇರುಗಳು: <strong className="text-white">{r.shares}</strong></span>
-                            <span>ಮೊತ್ತ: <strong className="text-emerald-400">₹{r.amount.toLocaleString()}</strong></span>
+                            <span>ಷೇರುಗಳು: <strong className="text-white">{r.shares || r.number_of_shares || 1}</strong></span>
+                            <span>ಮೊತ್ತ: <strong className="text-emerald-400">₹{(r.amount || r.total_amount || 2000).toLocaleString()}</strong></span>
                           </div>
                         </div>
                       ))}
@@ -796,12 +753,16 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
             ಮುಚ್ಚಿ (Close)
           </button>
 
-          {activeTab === 'by_selection' && (
+          {activeTab === 'by_selection' ? (
             <button
               type="button"
               onClick={handleMergeSelected}
-              disabled={selectedShareRecords.length < 2 || isMergingSelected}
-              className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 rounded-xl text-xs font-bold shadow-lg shadow-amber-950 transition-all cursor-pointer"
+              disabled={isMergingSelected}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all cursor-pointer ${
+                selectedShareRecords.length >= 2
+                  ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-950/60 ring-2 ring-amber-400/50'
+                  : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-600/40'
+              }`}
             >
               {isMergingSelected ? (
                 <>
@@ -812,8 +773,29 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                 <>
                   <GitMerge className="w-4 h-4" />
                   <span>
-                    ಆಯ್ಕೆಮಾಡಿದ {selectedShareRecords.length} ಷೇರುಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ (Confirm Merge)
+                    {selectedShareRecords.length >= 2
+                      ? `ಆಯ್ಕೆಮಾಡಿದ ${selectedShareRecords.length} ಷೇರುಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ (Confirm Merge)`
+                      : `ಷೇರುಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ (ಕನಿಷ್ಠ 2 ಷೇರುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ)`}
                   </span>
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleMergeAllAuto}
+              disabled={isMergingAuto || autoCandidates.length === 0}
+              className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-slate-950 rounded-xl text-xs font-bold shadow-lg shadow-amber-950 transition-all cursor-pointer"
+            >
+              {isMergingAuto ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>ಎಲ್ಲಾ ಬಹು-ಶೇರುಗಳ ವಿಲೀನ ನಡೆಯುತ್ತಿದೆ...</span>
+                </>
+              ) : (
+                <>
+                  <GitMerge className="w-4 h-4" />
+                  <span>ಎಲ್ಲಾ ಬಹು-ಶೇರುಗಳನ್ನು ಒಟ್ಟಿಗೆ ವಿಲೀನಗೊಳಿಸಿ (Merge All {autoCandidates.length})</span>
                 </>
               )}
             </button>
