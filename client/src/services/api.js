@@ -750,6 +750,55 @@ export const ApiService = {
     return { success: true, shareholder_id: newSh.shareholder_id };
   },
 
+  async updateShareholder(id, data) {
+    await ensureDBReady();
+    const isStatic = typeof window !== 'undefined' && (window.location.hostname.includes('github.io') || window.location.protocol === 'file:');
+    if (!isStatic) {
+      try {
+        const apiRes = await fetchApi(`/shareholders/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+        if (apiRes && apiRes.success) return apiRes;
+      } catch (e) {}
+    }
+
+    const index = mockShareholders.findIndex(s => s.id === Number(id) || s.shareholder_id === id || s.share_no === String(id));
+    if (index === -1) {
+      return { success: false, message: 'Shareholder not found.' };
+    }
+
+    const current = mockShareholders[index];
+    const rawPlace = (data.place || current.place || '').trim().normalize('NFC');
+    const circleInfo = this.resolveCircleForPlace(rawPlace);
+
+    const updated = {
+      ...current,
+      ...data,
+      id: current.id,
+      shareholder_id: current.shareholder_id || data.shareholder_id,
+      shareholder_name: (data.shareholder_name || data.name || current.shareholder_name || '').normalize('NFC'),
+      name: (data.shareholder_name || data.name || current.name || '').normalize('NFC'),
+      place: rawPlace,
+      village_name: rawPlace,
+      circle: (circleInfo && circleInfo.circle_name !== 'ಇತರೆ (Other)') ? circleInfo.circle_name : (current.circle || 'ಇತರೆ (Other)'),
+      circle_name: (circleInfo && circleInfo.circle_name !== 'ಇತರೆ (Other)') ? circleInfo.circle_name : (current.circle || 'ಇತರೆ (Other)'),
+      taluk: (circleInfo && circleInfo.taluk) ? circleInfo.taluk : (data.taluk || current.taluk || ''),
+      district: (circleInfo && circleInfo.district) ? circleInfo.district : (data.district || current.district || ''),
+      pin_code: (circleInfo && circleInfo.pincode) ? circleInfo.pincode : (data.pin_code || current.pin_code || ''),
+      photo_url: data.photo_url !== undefined ? data.photo_url : current.photo_url,
+      signature_url: data.signature_url !== undefined ? data.signature_url : current.signature_url,
+      thumb_url: data.thumb_url !== undefined ? data.thumb_url : current.thumb_url,
+      photo_updated: data.photo_updated || (data.photo_url ? 'Yes' : current.photo_updated || 'No'),
+      signature_updated: data.signature_updated || (data.signature_url ? 'Yes' : current.signature_updated || 'No'),
+      thumb_updated: data.thumb_updated || (data.thumb_url ? 'Yes' : current.thumb_updated || 'No'),
+    };
+
+    mockShareholders[index] = updated;
+    await saveToIndexedDB(mockShareholders);
+    if (mockShareholders.length < 2500) {
+      saveStoredData(STORAGE_KEY_SH, mockShareholders);
+    }
+    return { success: true, data: updated };
+  },
+
   async clearAllShareholders() {
     await ensureDBReady();
     mockShareholders = [];

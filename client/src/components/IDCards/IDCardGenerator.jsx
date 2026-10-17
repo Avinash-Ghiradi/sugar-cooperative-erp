@@ -123,8 +123,12 @@ export default function IDCardGenerator() {
 
                 {/* Body: Photo + Info */}
                 <div className="flex gap-3 items-center my-auto">
-                  <div className="w-16 h-16 rounded-xl bg-slate-800 border-2 border-emerald-400/60 flex items-center justify-center text-emerald-400 font-extrabold text-2xl shrink-0 shadow-md">
-                    {(sh.shareholder_name || sh.name || 'S').charAt(0)}
+                  <div className="w-16 h-16 rounded-xl bg-slate-800 border-2 border-emerald-400/60 flex items-center justify-center text-emerald-400 font-extrabold text-2xl shrink-0 shadow-md overflow-hidden">
+                    {sh.photo_url ? (
+                      <img src={sh.photo_url} alt={sh.shareholder_name || sh.name} className="w-full h-full object-cover" />
+                    ) : (
+                      (sh.shareholder_name || sh.name || 'S').charAt(0)
+                    )}
                   </div>
 
                   <div className="text-[10px] space-y-0.5 min-w-0">
@@ -149,7 +153,13 @@ export default function IDCardGenerator() {
                 <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[8px] text-slate-400">
                   <span>Mob: {sh.mobile_no || sh.mobile}</span>
                   <span>Circle: {sh.circle || sh.circle_name}</span>
-                  <span className="font-semibold text-emerald-400">Auth Signature</span>
+                  <span className="font-semibold text-emerald-400 flex items-center gap-1">
+                    {sh.signature_url ? (
+                      <img src={sh.signature_url} alt="Signature" className="h-5 max-w-[70px] object-contain filter invert dark:invert-0" />
+                    ) : (
+                      'Auth Signature'
+                    )}
+                  </span>
                 </div>
               </>
             ) : (
@@ -168,9 +178,16 @@ export default function IDCardGenerator() {
                   </div>
                   <div className="pt-2 flex justify-between items-center font-mono text-[8px] border-t border-slate-800">
                     <span className="text-slate-400">Reg: {sh.reg_date || sh.registration_date}</span>
-                    {/* Simulated Barcode */}
-                    <div className="p-1 bg-white text-slate-900 rounded font-mono font-bold text-[8px]">
-                      ||| | {sh.share_no || sh.share_number} |||
+                    <div className="flex items-center gap-2">
+                      {sh.thumb_url && (
+                        <div className="w-6 h-7 rounded border border-slate-700 overflow-hidden bg-slate-950 flex items-center justify-center p-0.5">
+                          <img src={sh.thumb_url} alt="Thumb" className="max-w-full max-h-full object-contain filter invert dark:invert-0" />
+                        </div>
+                      )}
+                      {/* Simulated Barcode */}
+                      <div className="p-1 bg-white text-slate-900 rounded font-mono font-bold text-[8px]">
+                        ||| | {sh.share_no || sh.share_number} |||
+                      </div>
                     </div>
                   </div>
                 </div>

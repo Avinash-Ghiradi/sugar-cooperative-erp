@@ -55,8 +55,12 @@ export default function ShareholderProfile({ shareholderId, onClose }) {
         {/* Profile Header */}
         <div className="p-6 bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border-b border-slate-800 flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-extrabold text-2xl shadow-lg">
-              {(sh.shareholder_name || sh.name || 'S').charAt(0)}
+            <div className="w-16 h-16 rounded-2xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-extrabold text-2xl shadow-lg overflow-hidden shrink-0">
+              {sh.photo_url ? (
+                <img src={sh.photo_url} alt={sh.shareholder_name || sh.name} className="w-full h-full object-cover" />
+              ) : (
+                (sh.shareholder_name || sh.name || 'S').charAt(0)
+              )}
             </div>
 
             <div>
@@ -220,22 +224,54 @@ export default function ShareholderProfile({ shareholderId, onClose }) {
           {activeTab === 'kyc' && (
             <div className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center">
-                  <div className="text-slate-400 mb-1">Photo Upload Status</div>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${sh.photo_updated === 'Yes' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>
-                    {sh.photo_updated === 'Yes' ? '✓ Photo Updated' : 'Pending Upload'}
+                {/* 1. Photo */}
+                <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center flex flex-col items-center shadow-md">
+                  <div className="text-slate-300 font-bold mb-2 flex items-center gap-1.5 text-xs">
+                    <User className="w-3.5 h-3.5 text-emerald-400" /> Shareholder Photo (ಭಾವಚಿತ್ರ)
+                  </div>
+                  <div className="w-28 h-32 rounded-xl border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center mb-2.5 shadow-inner">
+                    {sh.photo_url ? (
+                      <img src={sh.photo_url} alt="Shareholder" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-slate-600 text-[10px]">No Photo</div>
+                    )}
+                  </div>
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${sh.photo_url || sh.photo_updated === 'Yes' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>
+                    {sh.photo_url || sh.photo_updated === 'Yes' ? '✓ Photo Available' : 'Pending Upload'}
                   </span>
                 </div>
-                <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center">
-                  <div className="text-slate-400 mb-1">Signature Status</div>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${sh.signature_updated === 'Yes' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>
-                    {sh.signature_updated === 'Yes' ? '✓ Signature Updated' : 'Pending Signature'}
+
+                {/* 2. Signature */}
+                <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center flex flex-col items-center shadow-md">
+                  <div className="text-slate-300 font-bold mb-2 flex items-center gap-1.5 text-xs">
+                    <FileText className="w-3.5 h-3.5 text-sky-400" /> Member Signature (ಸಹಿ)
+                  </div>
+                  <div className="w-full h-32 rounded-xl border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center mb-2.5 shadow-inner p-2">
+                    {sh.signature_url ? (
+                      <img src={sh.signature_url} alt="Signature" className="max-w-full max-h-full object-contain filter invert dark:invert-0" />
+                    ) : (
+                      <div className="text-slate-600 text-[10px]">No Signature</div>
+                    )}
+                  </div>
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${sh.signature_url || sh.signature_updated === 'Yes' ? 'bg-sky-950 text-sky-400 border border-sky-800' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>
+                    {sh.signature_url || sh.signature_updated === 'Yes' ? '✓ Signature Available' : 'Pending Signature'}
                   </span>
                 </div>
-                <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center">
-                  <div className="text-slate-400 mb-1">Thumb Impression</div>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${sh.thumb_updated === 'Yes' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>
-                    {sh.thumb_updated === 'Yes' ? '✓ Thumb Updated' : 'Pending Thumb'}
+
+                {/* 3. Thumb Impression */}
+                <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-center flex flex-col items-center shadow-md">
+                  <div className="text-slate-300 font-bold mb-2 flex items-center gap-1.5 text-xs">
+                    <Fingerprint className="w-3.5 h-3.5 text-amber-400" /> Thumb Impression (ಹೆಬ್ಬೆರಳು)
+                  </div>
+                  <div className="w-28 h-32 rounded-xl border border-slate-700 bg-slate-950 overflow-hidden flex items-center justify-center mb-2.5 shadow-inner p-2">
+                    {sh.thumb_url ? (
+                      <img src={sh.thumb_url} alt="Thumb" className="max-w-full max-h-full object-contain filter invert dark:invert-0" />
+                    ) : (
+                      <div className="text-slate-600 text-[10px]">No Thumb</div>
+                    )}
+                  </div>
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${sh.thumb_url || sh.thumb_updated === 'Yes' ? 'bg-amber-950 text-amber-400 border border-amber-800' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>
+                    {sh.thumb_url || sh.thumb_updated === 'Yes' ? '✓ Thumb Available' : 'Pending Thumb'}
                   </span>
                 </div>
               </div>

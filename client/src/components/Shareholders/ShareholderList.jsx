@@ -801,7 +801,18 @@ export default function ShareholderList() {
                     <td className="py-2.5 px-3 font-mono font-bold text-emerald-400">{sh.share_no || sh.share_number}</td>
 
                     {/* 4. Share Holder Name */}
-                    <td className="py-2.5 px-4 font-bold text-slate-100 text-[13px]">{sh.shareholder_name || sh.name}</td>
+                    <td className="py-2.5 px-4 font-bold text-slate-100 text-[13px]">
+                      <div className="flex items-center gap-2">
+                        {sh.photo_url ? (
+                          <img src={sh.photo_url} alt="" className="w-7 h-7 rounded-lg object-cover border border-emerald-500/40 shrink-0" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-bold text-xs flex items-center justify-center shrink-0">
+                            {(sh.shareholder_name || sh.name || 'S').charAt(0)}
+                          </div>
+                        )}
+                        <span className="truncate">{sh.shareholder_name || sh.name}</span>
+                      </div>
+                    </td>
 
                     {/* 5. Gender */}
                     <td className="py-2.5 px-2 text-center text-slate-300 font-semibold">{sh.gender || 'M'}</td>
@@ -882,9 +893,27 @@ export default function ShareholderList() {
                     <td className="py-2.5 px-3 font-mono text-emerald-400 font-semibold">{sh.mobile_no || sh.mobile || '—'}</td>
 
                     {/* 29-31. Photos & URL status */}
-                    <td className="py-2.5 px-2 text-center text-[10px] text-slate-300">{sh.photo_updated || 'No'}</td>
-                    <td className="py-2.5 px-2 text-center text-[10px] text-slate-300">{sh.signature_updated || 'No'}</td>
-                    <td className="py-2.5 px-2 text-center text-[10px] text-emerald-400 font-bold">{sh.thumb_updated || 'Yes'}</td>
+                    <td className="py-2.5 px-2 text-center text-[10px]">
+                      {sh.photo_url || sh.photo_updated === 'Yes' ? (
+                        <span className="text-emerald-400 font-bold">Yes</span>
+                      ) : (
+                        <span className="text-slate-500">No</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-2 text-center text-[10px]">
+                      {sh.signature_url || sh.signature_updated === 'Yes' ? (
+                        <span className="text-sky-400 font-bold">Yes</span>
+                      ) : (
+                        <span className="text-slate-500">No</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-2 text-center text-[10px]">
+                      {sh.thumb_url || sh.thumb_updated === 'Yes' ? (
+                        <span className="text-amber-400 font-bold">Yes</span>
+                      ) : (
+                        <span className="text-slate-500">No</span>
+                      )}
+                    </td>
 
                     {/* 35. Nominee Name */}
                     <td className="py-2.5 px-4 font-medium text-slate-200">{sh.nominee_name || '—'}</td>

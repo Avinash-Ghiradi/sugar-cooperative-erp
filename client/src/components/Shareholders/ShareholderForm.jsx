@@ -1,7 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { X, Save, Plus, Printer, Contact, AlertTriangle, BookOpen, MapPin, FileText, Users2, Fingerprint } from 'lucide-react';
+import {
+  X, Save, Plus, Printer, Contact, AlertTriangle, BookOpen, MapPin,
+  FileText, Users2, Fingerprint, Camera, Upload, Trash2, FileSignature, User, CheckCircle2, RefreshCw
+} from 'lucide-react';
+
+// Client-side image compression to store optimized base64 data URLs in IndexedDB
+function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve('');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(event.target.result);
+      img.src = event.target.result;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function ShareholderForm({ initialData, onClose, onSaveSuccess }) {
   const { showToast, setActiveModule } = useAuth();
@@ -77,6 +116,50 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     }));
   };
 
+  const [uploadingState, setUploadingState] = useState({ photo: false, signature: false, thumb: false });
+
+  const handleFileUpload = async (type, file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WEBP).', 'error');
+      return;
+    }
+    setUploadingState(prev => ({ ...prev, [type]: true }));
+    try {
+      const maxWidth = type === 'signature' ? 600 : 500;
+      const maxHeight = type === 'signature' ? 300 : 500;
+      const dataUrl = await compressImage(file, maxWidth, maxHeight, 0.85);
+
+      if (type === 'photo') {
+        setFormData(prev => ({ ...prev, photo_url: dataUrl, photo_updated: 'Yes' }));
+        showToast('Shareholder Photo uploaded successfully!');
+      } else if (type === 'signature') {
+        setFormData(prev => ({ ...prev, signature_url: dataUrl, signature_updated: 'Yes' }));
+        showToast('Shareholder Signature uploaded successfully!');
+      } else if (type === 'thumb') {
+        setFormData(prev => ({ ...prev, thumb_url: dataUrl, thumb_updated: 'Yes' }));
+        showToast('Thumb impression uploaded successfully!');
+      }
+    } catch (err) {
+      showToast('Failed to process image: ' + err.message, 'error');
+    } finally {
+      setUploadingState(prev => ({ ...prev, [type]: false }));
+    }
+  };
+
+  const handleRemoveFile = (type) => {
+    if (type === 'photo') {
+      setFormData(prev => ({ ...prev, photo_url: '', photo_updated: 'No' }));
+      showToast('Photo removed.');
+    } else if (type === 'signature') {
+      setFormData(prev => ({ ...prev, signature_url: '', signature_updated: 'No' }));
+      showToast('Signature removed.');
+    } else if (type === 'thumb') {
+      setFormData(prev => ({ ...prev, thumb_url: '', thumb_updated: 'No' }));
+      showToast('Thumb impression removed.');
+    }
+  };
+
   const handleSharesChange = (shares) => {
     const s = parseInt(shares) || 1;
     setFormData(prev => ({
@@ -96,8 +179,14 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     }
 
     if (initialData) {
-      showToast(`Updated shareholder record for ${formData.shareholder_name}`);
-      if (onSaveSuccess) onSaveSuccess();
+      const shId = initialData.id || initialData.shareholder_id;
+      const res = await ApiService.updateShareholder(shId, formData);
+      if (res && res.success) {
+        showToast(`Updated shareholder record for ${formData.shareholder_name}`);
+        if (onSaveSuccess) onSaveSuccess(res.data);
+      } else {
+        setErrorMsg(res?.message || 'Failed to update shareholder.');
+      }
     } else {
       const res = await ApiService.addShareholder(formData);
       if (res && res.success) {
@@ -110,13 +199,19 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
             shareholder_name: '',
             aadhaar_card_no: '',
             mobile_no: '',
+            photo_url: '',
+            signature_url: '',
+            thumb_url: '',
+            photo_updated: 'No',
+            signature_updated: 'No',
+            thumb_updated: 'No',
             nominee_name: '',
             nominee_aadhaar_no: '',
             nominee_mobile_no: '',
             nominee_address: ''
           }));
         } else {
-          if (onSaveSuccess) onSaveSuccess();
+          if (onSaveSuccess) onSaveSuccess(res);
         }
       } else {
         setErrorMsg(res?.message || 'Failed to save shareholder.');
@@ -516,6 +611,173 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                 onChange={(e) => setFormData({ ...formData, nominee_address: e.target.value })}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
               />
+            </div>
+          </div>
+
+          {/* Section 6: Biometrics & Photos (ಭಾವಚಿತ್ರ, ಸಹಿ ಮತ್ತು ಹೆಬ್ಬೆರಳಿನ ಗುರುತು) */}
+          <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <h3 className="font-bold text-slate-200 text-xs flex items-center gap-2">
+                <Fingerprint className="w-4 h-4 text-emerald-400" /> 6. Shareholder Photo, Signature & Thumb Impression (ಭಾವಚಿತ್ರ, ಸಹಿ ಮತ್ತು ಹೆಬ್ಬೆರಳಿನ ಗುರುತು)
+              </h3>
+              <span className="text-[11px] text-slate-400">
+                Supports JPG, PNG, WEBP • Auto-compressed for instant saving
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* 1. Shareholder Photo */}
+              <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col items-center text-center group hover:border-emerald-500/40 transition-all shadow-md">
+                <div className="w-full flex items-center justify-between mb-3 text-xs">
+                  <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-emerald-400" /> Photo (ಭಾವಚಿತ್ರ)
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${formData.photo_url ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-900 text-slate-500 border border-slate-800'}`}>
+                    {formData.photo_url ? '✓ Uploaded' : 'Pending'}
+                  </span>
+                </div>
+
+                <div className="w-32 h-36 rounded-xl border-2 border-dashed border-slate-700 overflow-hidden bg-slate-900 flex items-center justify-center relative mb-3 shadow-inner group-hover:border-emerald-500/50 transition-colors">
+                  {formData.photo_url ? (
+                    <img src={formData.photo_url} alt="Shareholder Photo" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center p-2 text-slate-500">
+                      <User className="w-10 h-10 mx-auto mb-1 opacity-40 text-emerald-400" />
+                      <span className="text-[10px] font-medium">No Photo Selected</span>
+                    </div>
+                  )}
+                  {uploadingState.photo && (
+                    <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center">
+                      <RefreshCw className="w-5 h-5 text-emerald-400 animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full flex items-center gap-2">
+                  <label className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/50">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{formData.photo_url ? 'Change Photo' : 'Upload Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleFileUpload('photo', e.target.files[0])}
+                    />
+                  </label>
+                  {formData.photo_url && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile('photo')}
+                      className="p-2 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl transition-colors cursor-pointer"
+                      title="Remove Photo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Signature */}
+              <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col items-center text-center group hover:border-sky-500/40 transition-all shadow-md">
+                <div className="w-full flex items-center justify-between mb-3 text-xs">
+                  <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                    <FileSignature className="w-3.5 h-3.5 text-sky-400" /> Signature (ಸಹಿ)
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${formData.signature_url ? 'bg-sky-950 text-sky-400 border border-sky-800' : 'bg-slate-900 text-slate-500 border border-slate-800'}`}>
+                    {formData.signature_url ? '✓ Uploaded' : 'Pending'}
+                  </span>
+                </div>
+
+                <div className="w-full h-36 rounded-xl border-2 border-dashed border-slate-700 overflow-hidden bg-slate-900 flex items-center justify-center relative mb-3 shadow-inner p-2 group-hover:border-sky-500/50 transition-colors">
+                  {formData.signature_url ? (
+                    <img src={formData.signature_url} alt="Shareholder Signature" className="max-w-full max-h-full object-contain filter invert dark:invert-0 bg-white/5 rounded p-1" />
+                  ) : (
+                    <div className="text-center p-2 text-slate-500">
+                      <FileSignature className="w-10 h-10 mx-auto mb-1 opacity-40 text-sky-400" />
+                      <span className="text-[10px] font-medium">No Signature Selected</span>
+                    </div>
+                  )}
+                  {uploadingState.signature && (
+                    <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center">
+                      <RefreshCw className="w-5 h-5 text-sky-400 animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full flex items-center gap-2">
+                  <label className="flex-1 py-2 px-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md shadow-sky-950/50">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{formData.signature_url ? 'Change Sign' : 'Upload Signature'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleFileUpload('signature', e.target.files[0])}
+                    />
+                  </label>
+                  {formData.signature_url && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile('signature')}
+                      className="p-2 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl transition-colors cursor-pointer"
+                      title="Remove Signature"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. Thumb Impression */}
+              <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col items-center text-center group hover:border-amber-500/40 transition-all shadow-md">
+                <div className="w-full flex items-center justify-between mb-3 text-xs">
+                  <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                    <Fingerprint className="w-3.5 h-3.5 text-amber-400" /> Thumb (ಹೆಬ್ಬೆರಳು)
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${formData.thumb_url ? 'bg-amber-950 text-amber-400 border border-amber-800' : 'bg-slate-900 text-slate-500 border border-slate-800'}`}>
+                    {formData.thumb_url ? '✓ Uploaded' : 'Pending'}
+                  </span>
+                </div>
+
+                <div className="w-32 h-36 rounded-xl border-2 border-dashed border-slate-700 overflow-hidden bg-slate-900 flex items-center justify-center relative mb-3 shadow-inner p-2 group-hover:border-amber-500/50 transition-colors">
+                  {formData.thumb_url ? (
+                    <img src={formData.thumb_url} alt="Thumb Impression" className="max-w-full max-h-full object-contain filter invert dark:invert-0 bg-white/5 rounded p-1" />
+                  ) : (
+                    <div className="text-center p-2 text-slate-500">
+                      <Fingerprint className="w-10 h-10 mx-auto mb-1 opacity-40 text-amber-400" />
+                      <span className="text-[10px] font-medium">No Thumb Impression</span>
+                    </div>
+                  )}
+                  {uploadingState.thumb && (
+                    <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center">
+                      <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full flex items-center gap-2">
+                  <label className="flex-1 py-2 px-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/50">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{formData.thumb_url ? 'Change Thumb' : 'Upload Thumb'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleFileUpload('thumb', e.target.files[0])}
+                    />
+                  </label>
+                  {formData.thumb_url && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile('thumb')}
+                      className="p-2 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl transition-colors cursor-pointer"
+                      title="Remove Thumb"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
