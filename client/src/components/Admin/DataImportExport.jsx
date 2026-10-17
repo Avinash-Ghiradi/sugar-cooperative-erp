@@ -630,6 +630,46 @@ export default function DataImportExport() {
         </div>
       )}
 
+      {/* Official Master Dataset Sync & Restore */}
+      <div className="bg-gradient-to-r from-emerald-950/40 via-slate-950 to-slate-900 border border-emerald-900/60 rounded-3xl p-6 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 shrink-0">
+              <RefreshCw className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-emerald-200 flex items-center gap-2">
+                Sync / Restore Official 17,076 Shareholder Master Data (ಅಧಿಕೃತ 17,076 ಶೇರುದಾರರ ಮಾಹಿತಿ ಮರುಸ್ಥಾಪನೆ)
+              </h2>
+              <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                Restore the complete authoritative 17,076 shareholder dataset with all 357 village circle mappings into this device's local database. Use this on any mobile or laptop to immediately sync all records.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={isProcessing}
+            onClick={async () => {
+              setIsProcessing(true);
+              showToast('Syncing official 17,076 records across all circles...');
+              const res = await ApiService.restoreOfficialData();
+              setIsProcessing(false);
+              if (res.success) {
+                showToast(`Successfully synced ${res.count.toLocaleString()} official shareholders!`);
+                setActiveModule('shareholders');
+              } else {
+                showToast(`Sync failed: ${res.message}`, 'error');
+              }
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer shrink-0"
+          >
+            <RefreshCw className={`w-4 h-4 ${isProcessing ? 'animate-spin' : ''}`} />
+            <span>Sync 17,076 Records Now</span>
+          </button>
+        </div>
+      </div>
+
       {/* Danger Zone: Erase Everything & Factory Reset */}
       <div className="bg-gradient-to-r from-rose-950/40 via-slate-950 to-slate-900 border border-rose-900/60 rounded-3xl p-6 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -175,6 +175,31 @@ let mockShareholders = loadStoredData(STORAGE_KEY_SH, []);
 let isDBReady = false;
 let dbInitPromise = null;
 
+async function fetchOfficialShareholdersFallback() {
+  try {
+    const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) ? import.meta.env.BASE_URL : './';
+    const cleanBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+    let res = null;
+    try {
+      res = await fetch(`${cleanBase}officialShareholdersData.json`);
+    } catch (e1) {}
+    if (!res || !res.ok) {
+      try {
+        res = await fetch('./officialShareholdersData.json');
+      } catch (e2) {}
+    }
+    if (res && res.ok) {
+      const officialData = await res.json();
+      if (Array.isArray(officialData) && officialData.length > 0) {
+        return officialData;
+      }
+    }
+  } catch (err) {
+    console.warn('Auto-seed fetch failed:', err);
+  }
+  return null;
+}
+
 export function ensureDBReady() {
   if (isDBReady) return Promise.resolve(mockShareholders);
   if (!dbInitPromise) {
@@ -182,12 +207,24 @@ export function ensureDBReady() {
       dbInitPromise = Promise.all([
         loadFromIndexedDB(),
         loadCircleDirectoryFromDB()
-      ]).then(([dbData, circleData]) => {
+      ]).then(async ([dbData, circleData]) => {
         if (circleData && Array.isArray(circleData) && circleData.length > 0) {
           mockCircleDirectory = circleData;
         }
-        if (dbData && dbData.length > 0) {
-          mockShareholders = dbData;
+
+        let records = (dbData && Array.isArray(dbData)) ? dbData : [];
+        // Cross-device automatic synchronization:
+        // If IndexedDB has no records or only a small mock set (<500 records), auto-fetch official 17,076 dataset!
+        if (records.length < 500) {
+          const officialData = await fetchOfficialShareholdersFallback();
+          if (officialData && officialData.length > 0) {
+            records = officialData;
+            await saveToIndexedDB(records).catch(() => {});
+          }
+        }
+
+        if (records && records.length > 0) {
+          mockShareholders = records;
           // STRICT RULE: Do not consider circle column from shareholder list. Derive strictly from place -> Circle Directory
           const placeMap = new Map();
           mockCircleDirectory.forEach(cd => {
@@ -233,13 +270,28 @@ export function ensureDBReady() {
         }
         isDBReady = true;
         return mockShareholders;
-      }).catch(() => {
+      }).catch(async () => {
+        if (mockShareholders.length < 500) {
+          const officialData = await fetchOfficialShareholdersFallback();
+          if (officialData && officialData.length > 0) {
+            mockShareholders = officialData;
+          }
+        }
         isDBReady = true;
         return mockShareholders;
       });
     } else {
-      isDBReady = true;
-      dbInitPromise = Promise.resolve(mockShareholders);
+      // In environments without IndexedDB (e.g. strict private browsing)
+      dbInitPromise = (async () => {
+        if (mockShareholders.length < 500) {
+          const officialData = await fetchOfficialShareholdersFallback();
+          if (officialData && officialData.length > 0) {
+            mockShareholders = officialData;
+          }
+        }
+        isDBReady = true;
+        return mockShareholders;
+      })();
     }
   }
   return dbInitPromise;
@@ -841,6 +893,23 @@ export const ApiService = {
       }
     } catch (e) {}
     return { success: true, message: 'Entire database wiped and reset to a clean state.' };
+  },
+
+  async restoreOfficialData() {
+    try {
+      mockCircleDirectory = officialCircleData;
+      await saveCircleDirectoryToDB(officialCircleData);
+
+      const officialData = await fetchOfficialShareholdersFallback();
+      if (officialData && officialData.length > 0) {
+        mockShareholders = officialData;
+        await saveToIndexedDB(mockShareholders);
+        return { success: true, count: mockShareholders.length };
+      }
+      return { success: false, message: 'Could not load official dataset' };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
   },
 
   async getTransactions({ page = 1, limit = 20, search = '' }) {
