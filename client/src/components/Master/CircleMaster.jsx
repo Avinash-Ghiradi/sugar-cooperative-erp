@@ -129,8 +129,8 @@ export default function CircleMaster() {
         records.push({
           address: addr,
           circle_name: circle || 'ಇತರೆ',
-          taluk: getVal(cTaluk) || 'ಇಂಡಿ',
-          district: getVal(cDistrict) || 'ವಿಜಯಪುರ',
+          taluk: getVal(cTaluk) || '',
+          district: getVal(cDistrict) || '',
           pincode: getVal(cPincode) || '',
           circle_in_charge: getVal(cInCharge) || '',
           contact_no: getVal(cContact) || '',
@@ -349,8 +349,11 @@ export default function CircleMaster() {
                 ಕನ್ನಡ ಯುನಿಕೋಡ್ 100%
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5 font-mono">
-              Headers: <strong className="text-slate-200">Address | Circle Name | Taluk | District | Pincode | Circle In-charge | Contact No</strong>
+            <p className="text-xs text-emerald-300 mt-1 font-sans">
+              <strong>ಮ್ಯಾಪಿಂಗ್ ನಿಯಮ:</strong> ಸರ್ಕಲ್ ಶೀಟ್‌ನಲ್ಲಿರುವ <strong>Address</strong> ಕಾಲಂ ಷೇರುದಾರರ <strong>ಗ್ರಾಮ / ಸ್ಥಳ (Place)</strong> ವನ್ನು ಗುರುತಿಸುತ್ತದೆ. ಆ ಸ್ಥಳವು <strong>Circle Name</strong> ಗೆ ಒಳಪಟ್ಟಿರುತ್ತದೆ.
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
+              Headers: <strong className="text-slate-200">Address (ಸ್ಥಳ) | Circle Name (ಸರ್ಕಲ್) | Taluk | District | Pincode | Circle In-charge | Contact No</strong>
             </p>
           </div>
         </div>
@@ -539,14 +542,23 @@ export default function CircleMaster() {
                       </button>
                       {isExpanded && (
                         <div className="flex flex-wrap gap-1.5 mt-2 max-h-40 overflow-y-auto p-1 bg-slate-900/80 rounded-xl">
-                          {c.villages.map((v, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-0.5 rounded-lg bg-slate-800/90 text-slate-200 text-[10px]"
-                            >
-                              {v}
-                            </span>
-                          ))}
+                          {(c.villagesWithCount || c.villages.map(v => ({ name: v, count: 0 }))).map((vObj, idx) => {
+                            const vName = typeof vObj === 'string' ? vObj : vObj.name;
+                            const vCount = typeof vObj === 'object' ? vObj.count : 0;
+                            return (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-800/90 text-slate-200 text-[10px]"
+                              >
+                                <span>{vName}</span>
+                                {vCount > 0 && (
+                                  <span className="px-1.5 py-0.2 rounded-full bg-emerald-950 text-emerald-400 font-mono text-[9px] font-bold">
+                                    {vCount}
+                                  </span>
+                                )}
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -565,11 +577,12 @@ export default function CircleMaster() {
                 <thead>
                   <tr className="bg-slate-900 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                     <th className="py-3 px-4">#</th>
-                    <th className="py-3 px-4">Address (ಗ್ರಾಮ / ಸ್ಥಳ)</th>
-                    <th className="py-3 px-4">Circle Name (ಸರ್ಕಲ್)</th>
+                    <th className="py-3 px-4">Address (ಷೇರುದಾರರ ಸ್ಥಳ - Place)</th>
+                    <th className="py-3 px-4">Circle Name (ಒಳಪಟ್ಟ ಸರ್ಕಲ್)</th>
                     <th className="py-3 px-4">Taluk (ತಾಲೂಕು)</th>
                     <th className="py-3 px-4">District (ಜಿಲ್ಲೆ)</th>
                     <th className="py-3 px-4">Pincode (ಪಿನ್‌ಕೋಡ್)</th>
+                    <th className="py-3 px-4 text-center">Shareholders (ಷೇರುದಾರರು)</th>
                     <th className="py-3 px-4">Circle In-charge (ಪ್ರಭಾರಿ)</th>
                     <th className="py-3 px-4">Contact No (ಸಂಪರ್ಕ)</th>
                   </tr>
@@ -589,9 +602,18 @@ export default function CircleMaster() {
                           {row.circle_name}
                         </span>
                       </td>
-                      <td className="py-2.5 px-4 text-slate-300">{row.taluk || 'ಇಂಡಿ'}</td>
-                      <td className="py-2.5 px-4 text-slate-400">{row.district || 'ವಿಜಯಪುರ'}</td>
+                      <td className="py-2.5 px-4 text-slate-300">{row.taluk || '—'}</td>
+                      <td className="py-2.5 px-4 text-slate-400">{row.district || '—'}</td>
                       <td className="py-2.5 px-4 font-mono text-slate-300">{row.pincode || '—'}</td>
+                      <td className="py-2.5 px-4 text-center">
+                        {(row.shareholder_count || 0) > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold font-mono">
+                            <Users className="w-3 h-3" /> {row.shareholder_count.toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 font-mono text-[11px]">—</span>
+                        )}
+                      </td>
                       <td className="py-2.5 px-4 text-slate-300 font-medium">
                         {row.circle_in_charge || '—'}
                       </td>
@@ -602,7 +624,7 @@ export default function CircleMaster() {
                   ))}
                   {paginatedDirectory.length === 0 && (
                     <tr>
-                      <td colSpan="8" className="py-12 text-center text-slate-400">
+                      <td colSpan="9" className="py-12 text-center text-slate-400">
                         <div className="flex flex-col items-center justify-center gap-2">
                           <Layers className="w-8 h-8 text-slate-600 mb-1" />
                           <span className="font-semibold text-slate-300">

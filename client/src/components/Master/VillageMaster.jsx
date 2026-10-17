@@ -93,12 +93,16 @@ export default function VillageMaster() {
                       <h3 className="font-bold text-slate-100 text-sm">{v.name}</h3>
                       <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                         <span className="text-emerald-400 font-mono">{v.village_id}</span>
-                        <span>•</span>
-                        <span>ತಾ: {v.taluk || 'ಇಂಡಿ'}</span>
+                        {v.taluk && (
+                          <>
+                            <span>•</span>
+                            <span>ತಾ: {v.taluk}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-semibold">
-                      {v.circle_name || 'ಇಂಡಿ'}
+                      {v.circle_name || 'ಇತರೆ'}
                     </span>
                   </div>
 

@@ -122,8 +122,8 @@ export default function DataImportExport() {
           records.push({
             address: addr,
             circle_name: circle || 'ಇತರೆ',
-            taluk: getVal(cTaluk) || 'ಇಂಡಿ',
-            district: getVal(cDistrict) || 'ವಿಜಯಪುರ',
+            taluk: getVal(cTaluk) || '',
+            district: getVal(cDistrict) || '',
             pincode: getVal(cPincode) || '',
             circle_in_charge: getVal(cInCharge) || '',
             contact_no: getVal(cContact) || '',

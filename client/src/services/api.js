@@ -259,10 +259,23 @@ export const ApiService = {
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
 
+    // Circle lookup from Circle Directory: Address (Place) -> Circle Name
+    const dirPlaceToCircle = new Map();
+    mockCircleDirectory.forEach(cd => {
+      const pl = (cd.address || '').trim().toLowerCase().normalize('NFC');
+      const c = (cd.circle_name || '').trim().normalize('NFC');
+      if (pl && c) dirPlaceToCircle.set(pl, c);
+    });
+
     // Circle breakdown
     const cCounts = {};
     mockShareholders.forEach(s => {
-      const c = (s.circle || s.circle_name || '').trim() || 'ಇತರೆ (Other)';
+      const pl = (s.place || s.village_name || '').trim().toLowerCase().normalize('NFC');
+      let c = (s.circle || s.circle_name || '').trim().normalize('NFC');
+      if ((!c || c === 'ಇತರೆ') && dirPlaceToCircle.has(pl)) {
+        c = dirPlaceToCircle.get(pl);
+      }
+      if (!c) c = 'ಇತರೆ (Other)';
       cCounts[c] = (cCounts[c] || 0) + 1;
     });
     const shareholdersByCircle = Object.keys(cCounts)
@@ -457,6 +470,13 @@ export const ApiService = {
       return { success: true, count: 0 };
     }
 
+    // Quick lookup map from Circle Directory: Address (Place) -> Circle details
+    const circleLookup = new Map();
+    mockCircleDirectory.forEach(cd => {
+      const k = (cd.address || '').trim().toLowerCase().normalize('NFC');
+      if (k) circleLookup.set(k, cd);
+    });
+
     let maxId = 0;
     for (let i = 0; i < mockShareholders.length; i++) {
       const mid = Number(mockShareholders[i]?.id);
@@ -475,6 +495,33 @@ export const ApiService = {
       const receiptAmt = parseFloat(data.receipt_amount) || 2000;
       const numShares = parseInt(data.number_of_shares) || 1;
       const totalAmt = parseFloat(data.total_amount) || parseFloat(data.amount) || (numShares * 2000);
+
+      const rawPlace = (data.place || data.village_name || '').trim().normalize('NFC');
+      const placeKey = rawPlace.toLowerCase();
+      let match = circleLookup.get(placeKey);
+      if (!match && placeKey) {
+        for (const [k, v] of circleLookup.entries()) {
+          if (placeKey === k || placeKey.startsWith(k) || k.startsWith(placeKey) || placeKey.includes(k) || k.includes(placeKey)) {
+            match = v;
+            break;
+          }
+        }
+      }
+      if (!match && !placeKey && data.address) {
+        const addrKey = data.address.trim().toLowerCase().normalize('NFC');
+        for (const [k, v] of circleLookup.entries()) {
+          if (addrKey === k || addrKey.includes(k)) {
+            match = v;
+            break;
+          }
+        }
+      }
+
+      const finalPlace = rawPlace || (match ? match.address : '') || (data.address ? data.address.split(',')[0].trim() : '');
+      const finalCircle = ((match && match.circle_name) ? match.circle_name : (data.circle || data.circle_name || '')).normalize('NFC');
+      const finalTaluk = ((match && match.taluk) ? match.taluk : (data.taluk || '')).normalize('NFC');
+      const finalDistrict = ((match && match.district) ? match.district : (data.district || '')).normalize('NFC');
+      const finalPin = (match && match.pincode) ? match.pincode : (data.pin_code || '');
 
       return {
         id: currentId,
@@ -502,14 +549,14 @@ export const ApiService = {
         address: (data.address || '').normalize('NFC'),
         nagara: (data.nagara || '').normalize('NFC'),
         road: (data.road || '').normalize('NFC'),
-        place: (data.place || data.village_name || '').normalize('NFC'),
-        village_name: (data.place || data.village_name || '').normalize('NFC'),
+        place: finalPlace,
+        village_name: finalPlace,
         village_id: data.village_id || '',
-        taluk: (data.taluk || '').normalize('NFC'),
-        district: (data.district || '').normalize('NFC'),
-        pin_code: data.pin_code || '',
-        circle: (data.circle || data.circle_name || '').normalize('NFC'),
-        circle_name: (data.circle || data.circle_name || '').normalize('NFC'),
+        taluk: finalTaluk,
+        district: finalDistrict,
+        pin_code: finalPin,
+        circle: finalCircle,
+        circle_name: finalCircle,
         circle_id: data.circle_id || '',
         member_type: (data.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
         relationship: (data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
@@ -563,6 +610,28 @@ export const ApiService = {
     }
     const nextId = maxId + 1;
     const nowStr = new Date().toLocaleDateString('en-GB');
+    const rawPlace = (data.place || data.village_name || '').trim().normalize('NFC');
+    const placeKey = rawPlace.toLowerCase();
+    let match = null;
+    for (let i = 0; i < mockCircleDirectory.length; i++) {
+      const cd = mockCircleDirectory[i];
+      const cdAddr = (cd.address || '').trim().toLowerCase().normalize('NFC');
+      if (placeKey && (cdAddr === placeKey || placeKey.startsWith(cdAddr) || cdAddr.startsWith(placeKey) || placeKey.includes(cdAddr) || cdAddr.includes(placeKey))) {
+        match = cd;
+        break;
+      }
+      if (!placeKey && data.address && cdAddr && data.address.toLowerCase().normalize('NFC').includes(cdAddr)) {
+        match = cd;
+        break;
+      }
+    }
+
+    const finalPlace = rawPlace || (match ? match.address : '') || (data.address ? data.address.split(',')[0].trim() : '');
+    const finalCircle = ((match && match.circle_name) ? match.circle_name : (data.circle || data.circle_name || '')).normalize('NFC');
+    const finalTaluk = ((match && match.taluk) ? match.taluk : (data.taluk || '')).normalize('NFC');
+    const finalDistrict = ((match && match.district) ? match.district : (data.district || '')).normalize('NFC');
+    const finalPin = (match && match.pincode) ? match.pincode : (data.pin_code || '');
+
     const newSh = {
       id: nextId,
       shareholder_id: data.shareholder_id || `SH-${String(nextId).padStart(5, '0')}`,
@@ -589,14 +658,14 @@ export const ApiService = {
       address: (data.address || '').normalize('NFC'),
       nagara: (data.nagara || '').normalize('NFC'),
       road: (data.road || '').normalize('NFC'),
-      place: (data.place || data.village_name || '').normalize('NFC'),
-      village_name: (data.place || data.village_name || '').normalize('NFC'),
+      place: finalPlace,
+      village_name: finalPlace,
       village_id: data.village_id || '',
-      taluk: (data.taluk || '').normalize('NFC'),
-      district: (data.district || '').normalize('NFC'),
-      pin_code: data.pin_code || '',
-      circle: (data.circle || data.circle_name || '').normalize('NFC'),
-      circle_name: (data.circle || data.circle_name || '').normalize('NFC'),
+      taluk: finalTaluk,
+      district: finalDistrict,
+      pin_code: finalPin,
+      circle: finalCircle,
+      circle_name: finalCircle,
       circle_id: data.circle_id || '',
       member_type: (data.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
       relationship: (data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
@@ -784,6 +853,13 @@ export const ApiService = {
 
     const placeMap = new Map();
 
+    const placeToCircle = new Map();
+    mockCircleDirectory.forEach(cd => {
+      const pl = (cd.address || '').trim().toLowerCase().normalize('NFC');
+      const cName = (cd.circle_name || '').trim().normalize('NFC');
+      if (pl && cName) placeToCircle.set(pl, cName);
+    });
+
     // 1. Seed from Circle Directory (uploaded address mappings e.g. 26+ places)
     mockCircleDirectory.forEach((cd, idx) => {
       const rawPlace = (cd.address || '').trim().normalize('NFC');
@@ -792,9 +868,9 @@ export const ApiService = {
       placeMap.set(key, {
         village_id: `VIL-${String(idx + 1).padStart(3, '0')}`,
         name: rawPlace,
-        taluk: cd.taluk || 'ಇಂಡಿ',
-        district: cd.district || 'ವಿಜಯಪುರ',
-        circle_name: cd.circle_name || 'ಇಂಡಿ',
+        taluk: cd.taluk || '',
+        district: cd.district || '',
+        circle_name: cd.circle_name || 'ಇತರೆ',
         pin_code: cd.pincode || '',
         circle_in_charge: cd.circle_in_charge || '',
         contact_no: cd.contact_no || '',
@@ -810,10 +886,10 @@ export const ApiService = {
         placeMap.set(key, {
           village_id: v.village_id,
           name: v.name.trim().normalize('NFC'),
-          taluk: v.taluk || 'ಇಂಡಿ',
-          district: v.district || 'ವಿಜಯಪುರ',
-          circle_name: v.circle_name || 'ಇಂಡಿ',
-          pin_code: v.pin_code || '586 117',
+          taluk: v.taluk || '',
+          district: v.district || '',
+          circle_name: v.circle_name || 'ಇತರೆ',
+          pin_code: v.pin_code || '',
           circle_in_charge: '',
           contact_no: '',
           shareholder_count: 0,
@@ -834,16 +910,21 @@ export const ApiService = {
         const item = placeMap.get(key);
         item.shareholder_count++;
         item.total_shares += shares;
-        if (s.taluk && (!item.taluk || item.taluk === 'ಇಂಡಿ')) item.taluk = s.taluk.trim();
-        if (s.circle && (!item.circle_name || item.circle_name === 'ಇತರೆ')) item.circle_name = s.circle.trim();
+        if (s.taluk && !item.taluk) item.taluk = s.taluk.trim();
+        if (s.district && !item.district) item.district = s.district.trim();
+        if ((!item.circle_name || item.circle_name === 'ಇತರೆ')) {
+          if (s.circle && s.circle !== 'ಇತರೆ') item.circle_name = s.circle.trim();
+          else if (placeToCircle.has(key)) item.circle_name = placeToCircle.get(key);
+        }
         if (s.pin_code && !item.pin_code) item.pin_code = s.pin_code.trim();
       } else {
+        const resolvedCircle = (s.circle || s.circle_name || placeToCircle.get(key) || 'ಇತರೆ').trim().normalize('NFC');
         placeMap.set(key, {
           village_id: s.village_id || `VIL-${String(placeMap.size + 1).padStart(3, '0')}`,
           name: rawPlace,
-          taluk: (s.taluk || 'ಇಂಡಿ').trim().normalize('NFC'),
-          district: (s.district || 'ವಿಜಯಪುರ').trim().normalize('NFC'),
-          circle_name: (s.circle || s.circle_name || 'ಇತರೆ').trim().normalize('NFC'),
+          taluk: (s.taluk || '').trim().normalize('NFC'),
+          district: (s.district || '').trim().normalize('NFC'),
+          circle_name: resolvedCircle,
           pin_code: s.pin_code || '',
           circle_in_charge: '',
           contact_no: '',
@@ -868,17 +949,26 @@ export const ApiService = {
     const circleMap = new Map();
     const circleVillagesMap = new Map();
 
+    // Map each Address (Place) to its Circle Name from mockCircleDirectory
+    const placeToCircle = new Map();
+    mockCircleDirectory.forEach(cd => {
+      const pl = (cd.address || '').trim().toLowerCase().normalize('NFC');
+      const cName = (cd.circle_name || '').trim().normalize('NFC');
+      if (pl && cName) placeToCircle.set(pl, cName);
+    });
+
     // 1. Seed from Circle Directory (uploaded address & circle mapping)
     mockCircleDirectory.forEach(cd => {
       const cName = (cd.circle_name || 'ಇತರೆ').trim().normalize('NFC');
+      if (!cName) return;
       const key = cName.toLowerCase();
       if (!circleMap.has(key)) {
         circleMap.set(key, {
           circle_id: `CIR-${String(circleMap.size + 1).padStart(3, '0')}`,
           name: cName,
           description: `${cName} ಆಡಳಿತ ವಲಯ`,
-          taluk: cd.taluk || 'ಇಂಡಿ',
-          district: cd.district || 'ವಿಜಯಪುರ',
+          taluk: cd.taluk || '',
+          district: cd.district || '',
           pincode: cd.pincode || '',
           circle_in_charge: cd.circle_in_charge || '',
           contact_no: cd.contact_no || '',
@@ -891,8 +981,8 @@ export const ApiService = {
       const cObj = circleMap.get(key);
       if (cd.circle_in_charge && !cObj.circle_in_charge) cObj.circle_in_charge = cd.circle_in_charge;
       if (cd.contact_no && !cObj.contact_no) cObj.contact_no = cd.contact_no;
-      if (cd.taluk && (!cObj.taluk || cObj.taluk === 'ಇಂಡಿ')) cObj.taluk = cd.taluk;
-      if (cd.district && (!cObj.district || cObj.district === 'ವಿಜಯಪುರ')) cObj.district = cd.district;
+      if (cd.taluk && !cObj.taluk) cObj.taluk = cd.taluk;
+      if (cd.district && !cObj.district) cObj.district = cd.district;
       if (cd.pincode && !cObj.pincode) cObj.pincode = cd.pincode;
 
       if (!circleVillagesMap.has(key)) {
@@ -903,40 +993,30 @@ export const ApiService = {
       }
     });
 
-    // 2. Also seed from master reference circles
-    mockCircles.forEach(c => {
-      const key = c.name.trim().toLowerCase().normalize('NFC');
-      if (!circleMap.has(key)) {
-        circleMap.set(key, {
-          circle_id: c.circle_id,
-          name: c.name.trim().normalize('NFC'),
-          description: c.description || '',
-          taluk: 'ಇಂಡಿ',
-          district: 'ವಿಜಯಪುರ',
-          pincode: '',
-          circle_in_charge: '',
-          contact_no: '',
-          villages: [],
-          village_count: c.village_count || 0,
-          shareholder_count: 0,
-          total_shares: 0
-        });
-      }
-    });
-
-    // 3. Dynamically aggregate all unique circles from mockShareholders
+    // 2. Map shareholders: identify their place and attribute them to the circle
+    const villageCounts = new Map();
     for (let i = 0; i < mockShareholders.length; i++) {
       const s = mockShareholders[i];
-      const rawCircle = (s.circle || s.circle_name || '').trim().normalize('NFC');
+      const rawPlace = (s.place || s.village_name || '').trim().normalize('NFC');
+      const plKey = rawPlace.toLowerCase();
+
+      // Connect shareholder to circle: directly or via place lookup in circle directory
+      let rawCircle = (s.circle || s.circle_name || '').trim().normalize('NFC');
+      if ((!rawCircle || rawCircle === 'ಇತರೆ') && placeToCircle.has(plKey)) {
+        rawCircle = placeToCircle.get(plKey);
+      }
       if (!rawCircle) continue;
+
       const key = rawCircle.toLowerCase();
       const shares = parseInt(s.number_of_shares) || 1;
-      const rawPlace = (s.place || s.village_name || '').trim().normalize('NFC');
 
       if (!circleVillagesMap.has(key)) {
         circleVillagesMap.set(key, new Set());
       }
-      if (rawPlace) circleVillagesMap.get(key).add(rawPlace);
+      if (rawPlace) {
+        circleVillagesMap.get(key).add(rawPlace);
+        villageCounts.set(plKey, (villageCounts.get(plKey) || 0) + 1);
+      }
 
       if (circleMap.has(key)) {
         const item = circleMap.get(key);
@@ -947,8 +1027,8 @@ export const ApiService = {
           circle_id: s.circle_id || `CIR-${String(circleMap.size + 1).padStart(3, '0')}`,
           name: rawCircle,
           description: `${rawCircle} ವಲಯ (Zone)`,
-          taluk: s.taluk || 'ಇಂಡಿ',
-          district: s.district || 'ವಿಜಯಪುರ',
+          taluk: s.taluk || '',
+          district: s.district || '',
           pincode: s.pin_code || '',
           circle_in_charge: '',
           contact_no: '',
@@ -965,6 +1045,10 @@ export const ApiService = {
         const arr = Array.from(circleVillagesMap.get(key)).sort((a, b) => a.localeCompare(b, 'kn'));
         item.villages = arr;
         item.village_count = arr.length;
+        item.villagesWithCount = arr.map(v => ({
+          name: v,
+          count: villageCounts.get(v.toLowerCase()) || 0
+        }));
       }
     });
 
@@ -996,7 +1080,28 @@ export const ApiService = {
       const tq = taluk.trim().toLowerCase().normalize('NFC');
       filtered = filtered.filter(item => (item.taluk || '').trim().toLowerCase().normalize('NFC') === tq);
     }
-    return { success: true, data: filtered, total: filtered.length };
+
+    // Connect shareholder counts for each Address (Place)
+    const placeCountMap = new Map();
+    const placeSharesMap = new Map();
+    mockShareholders.forEach(s => {
+      const pl = (s.place || s.village_name || '').trim().toLowerCase().normalize('NFC');
+      if (pl) {
+        placeCountMap.set(pl, (placeCountMap.get(pl) || 0) + 1);
+        placeSharesMap.set(pl, (placeSharesMap.get(pl) || 0) + (parseInt(s.number_of_shares) || 1));
+      }
+    });
+
+    const enriched = filtered.map(item => {
+      const k = (item.address || '').trim().toLowerCase().normalize('NFC');
+      return {
+        ...item,
+        shareholder_count: placeCountMap.get(k) || 0,
+        total_shares: placeSharesMap.get(k) || 0
+      };
+    });
+
+    return { success: true, data: enriched, total: enriched.length };
   },
 
   async addCircleDirectoryBulk(records) {
@@ -1019,8 +1124,8 @@ export const ApiService = {
         id: existing ? existing.id : nextId++,
         address: rawAddr,
         circle_name: (r.circle_name || r.circle || 'ಇತರೆ').trim().normalize('NFC'),
-        taluk: (r.taluk || 'ಇಂಡಿ').trim().normalize('NFC'),
-        district: (r.district || 'ವಿಜಯಪುರ').trim().normalize('NFC'),
+        taluk: (r.taluk || '').trim().normalize('NFC'),
+        district: (r.district || '').trim().normalize('NFC'),
         pincode: (r.pincode || r.pin_code || '').trim(),
         circle_in_charge: (r.circle_in_charge || r.in_charge || '').trim().normalize('NFC'),
         contact_no: (r.contact_no || r.mobile_no || r.contact || '').trim()
@@ -1031,24 +1136,49 @@ export const ApiService = {
     mockCircleDirectory = Array.from(dirMap.values());
     await saveCircleDirectoryToDB(mockCircleDirectory);
 
-    // Auto-enrich shareholders if their circle/taluk/pincode is missing
+    // Auto-enrich existing shareholders whose Place matches Address from this Circle Directory
     let shUpdated = false;
     for (let i = 0; i < mockShareholders.length; i++) {
       const s = mockShareholders[i];
       const plKey = (s.place || s.village_name || '').trim().toLowerCase().normalize('NFC');
-      if (dirMap.has(plKey)) {
-        const match = dirMap.get(plKey);
-        if (!s.circle || s.circle === 'ಇತರೆ') {
+      const addrKey = (s.address || '').trim().toLowerCase().normalize('NFC');
+      let match = dirMap.get(plKey);
+      if (!match && plKey) {
+        for (const [k, v] of dirMap.entries()) {
+          if (plKey === k || plKey.startsWith(k) || k.startsWith(plKey) || plKey.includes(k) || k.includes(plKey)) {
+            match = v;
+            break;
+          }
+        }
+      }
+      if (!match && addrKey) {
+        for (const [k, v] of dirMap.entries()) {
+          if (addrKey === k || addrKey.includes(k)) {
+            match = v;
+            if (!s.place) {
+              s.place = v.address;
+              s.village_name = v.address;
+            }
+            break;
+          }
+        }
+      }
+      if (match) {
+        if (match.circle_name && s.circle !== match.circle_name) {
           s.circle = match.circle_name;
           s.circle_name = match.circle_name;
           shUpdated = true;
         }
-        if (!s.pin_code && match.pincode) {
-          s.pin_code = match.pincode;
+        if (match.taluk && (!s.taluk || s.taluk === 'ಇಂಡಿ' || s.taluk !== match.taluk)) {
+          s.taluk = match.taluk;
           shUpdated = true;
         }
-        if ((!s.taluk || s.taluk === 'ಇಂಡಿ') && match.taluk) {
-          s.taluk = match.taluk;
+        if (match.district && (!s.district || s.district === 'ವಿಜಯಪುರ' || s.district !== match.district)) {
+          s.district = match.district;
+          shUpdated = true;
+        }
+        if (match.pincode && (!s.pin_code || s.pin_code === '586 117' || s.pin_code !== match.pincode)) {
+          s.pin_code = match.pincode;
           shUpdated = true;
         }
       }

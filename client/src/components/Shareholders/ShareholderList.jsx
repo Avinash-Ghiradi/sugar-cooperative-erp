@@ -195,11 +195,11 @@ export default function ShareholderList() {
           address: getVal(cAddr),
           nagara: getVal(cNagara),
           road: getVal(cRoad),
-          place: getVal(cPlace) || 'ಬಳ್ಳೊಳ್ಳಿ',
-          taluk: getVal(cTaluk) || 'ಇಂಡಿ',
-          district: getVal(cDist) || 'ವಿಜಯಪುರ',
-          pin_code: getVal(cPin) || '586 117',
-          circle: getVal(cCircle) || 'ಇಂಡಿ',
+          place: getVal(cPlace) || '',
+          taluk: getVal(cTaluk) || '',
+          district: getVal(cDist) || '',
+          pin_code: getVal(cPin) || '',
+          circle: getVal(cCircle) || '',
           member_type: getVal(cMemberType) || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
           relationship: getVal(cRel) || 'ಸ್ವಂತ (Self)',
           tharava_date: getVal(cTharavaDate) || '10/Aug/1982',
@@ -358,8 +358,8 @@ export default function ShareholderList() {
       `"${s.nagara || ''}"`,
       `"${s.road || ''}"`,
       `"${s.place || s.village_name || ''}"`,
-      `"${s.taluk || 'ಇಂಡಿ'}"`,
-      `"${s.district || 'ವಿಜಯಪುರ'}"`,
+      `"${s.taluk || ''}"`,
+      `"${s.district || ''}"`,
       `"${s.pin_code || ''}"`,
       `"${s.circle || s.circle_name || ''}"`,
       `"${s.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)'}"`,
@@ -432,8 +432,8 @@ export default function ShareholderList() {
       tableHtml += `<td>${s.nagara || ''}</td>`;
       tableHtml += `<td>${s.road || ''}</td>`;
       tableHtml += `<td>${s.place || s.village_name || ''}</td>`;
-      tableHtml += `<td>${s.taluk || 'ಇಂಡಿ'}</td>`;
-      tableHtml += `<td>${s.district || 'ವಿಜಯಪುರ'}</td>`;
+      tableHtml += `<td>${s.taluk || ''}</td>`;
+      tableHtml += `<td>${s.district || ''}</td>`;
       tableHtml += `<td>${s.pin_code || ''}</td>`;
       tableHtml += `<td>${s.circle || s.circle_name || ''}</td>`;
       tableHtml += `<td>${s.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)'}</td>`;
