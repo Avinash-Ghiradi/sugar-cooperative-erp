@@ -106,7 +106,7 @@ export default function VargavaneTransferModal({
   const loadVillages = async () => {
     try {
       const res = await ApiService.getVillages();
-      if (res && res.data) setVillages(res.data);
+      if (res && res.data) setVillages([...res.data].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn')));
     } catch (e) {}
   };
 

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
   Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle,
-  History, GitMerge
+  History, GitMerge, ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
 import ShareholderForm from './ShareholderForm';
@@ -18,13 +18,15 @@ export default function ShareholderList() {
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(true);
 
-  // Filters
+  // Filters & Sorting
   const [search, setSearch] = useState('');
   const [selectedVillage, setSelectedVillage] = useState('');
   const [selectedCircle, setSelectedCircle] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedBook, setSelectedBook] = useState('');
   const [selectedCast, setSelectedCast] = useState('');
+  const [sortBy, setSortBy] = useState(''); // 'place', 'circle', 'address', 'name', 'share_no'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
   const [viewMode, setViewMode] = useState('ledger'); // 'ledger' (38 columns) or 'summary'
 
   // Options
@@ -46,23 +48,21 @@ export default function ShareholderList() {
   const [uploadFileName, setUploadFileName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [autoMergeOnImport, setAutoMergeOnImport] = useState(true);
-  const [selectedShareIds, setSelectedShareIds] = useState([]);
 
-  const toggleSelectRow = (id) => {
-    setSelectedShareIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
-
-  const toggleSelectAllPage = () => {
-    const pageIds = shareholders.map(s => s.id);
-    const allSelected = pageIds.length > 0 && pageIds.every(id => selectedShareIds.includes(id));
-    if (allSelected) {
-      setSelectedShareIds(prev => prev.filter(id => !pageIds.includes(id)));
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      if (sortOrder === 'asc') {
+        setSortOrder('desc');
+      } else {
+        setSortBy('');
+        setSortOrder('asc');
+      }
     } else {
-      setSelectedShareIds(prev => Array.from(new Set([...prev, ...pageIds])));
+      setSortBy(field);
+      setSortOrder('asc');
     }
   };
+
   const uploadInputRef = React.useRef(null);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function ShareholderList() {
 
   useEffect(() => {
     fetchShareholders(1);
-  }, [search, selectedVillage, selectedCircle, selectedStatus, selectedBook, selectedCast]);
+  }, [search, selectedVillage, selectedCircle, selectedStatus, selectedBook, selectedCast, sortBy, sortOrder]);
 
   // CSV Line Parser handling quotes and commas
   const parseCsvLine = (line) => {
@@ -328,10 +328,16 @@ export default function ShareholderList() {
 
   const loadMasters = async () => {
     const vRes = await ApiService.getVillages();
-    if (vRes && vRes.data) setVillages(vRes.data);
+    if (vRes && vRes.data) {
+      const sortedVillages = [...vRes.data].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn'));
+      setVillages(sortedVillages);
+    }
 
     const cRes = await ApiService.getCircles();
-    if (cRes && cRes.data) setCircles(cRes.data);
+    if (cRes && cRes.data) {
+      const sortedCircles = [...cRes.data].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn'));
+      setCircles(sortedCircles);
+    }
 
     const bRes = await ApiService.getBooks();
     if (bRes && bRes.data) setBookList(bRes.data);
@@ -357,7 +363,9 @@ export default function ShareholderList() {
       circle_id: selectedCircle,
       status: selectedStatus,
       book_no: selectedBook,
-      schedule_cast: selectedCast
+      schedule_cast: selectedCast,
+      sortBy,
+      sortOrder
     });
 
     if (res && res.success) {
@@ -665,8 +673,8 @@ export default function ShareholderList() {
         </div>
       </div>
 
-      {/* Multi-Field Search & Statutory Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+      {/* Multi-Field Search, Statutory Filter & Alphabetical Sort Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
         {/* Search */}
         <div className="sm:col-span-2 lg:col-span-2 relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -703,7 +711,7 @@ export default function ShareholderList() {
           ))}
         </select>
 
-        {/* Place / Village Filter */}
+        {/* Place / Village Filter (Alphabetical order) */}
         <select
           value={selectedVillage}
           onChange={(e) => setSelectedVillage(e.target.value)}
@@ -717,7 +725,7 @@ export default function ShareholderList() {
           ))}
         </select>
 
-        {/* Circle Filter */}
+        {/* Circle Filter (Alphabetical order) */}
         <select
           value={selectedCircle}
           onChange={(e) => setSelectedCircle(e.target.value)}
@@ -730,6 +738,33 @@ export default function ShareholderList() {
             </option>
           ))}
         </select>
+
+        {/* Sort By Filter (Places, Circles, Addresses, Names in Alphabetical Order) */}
+        <div className="flex items-center gap-1">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all"
+            title="Sort alphabetically (ಅಕಾರಾದಿ ಕ್ರಮ)"
+          >
+            <option value="">ಕ್ರಮಬದ್ಧ ವಿಂಗಡಣೆ (Default)</option>
+            <option value="place">ಸ್ಥಳ / ಗ್ರಾಮ (Place: ಅ-ಹ / A-Z)</option>
+            <option value="circle">ವಲಯ / ಸರ್ಕಲ್ (Circle: ಅ-ಹ / A-Z)</option>
+            <option value="address">ವಿಳಾಸ (Address: ಅ-ಹ / A-Z)</option>
+            <option value="name">ಹೆಸರು (Name: ಅ-ಹ / A-Z)</option>
+            <option value="share_no">ಷೇರು ಸಂಖ್ಯೆ (Share No)</option>
+          </select>
+          {sortBy && (
+            <button
+              type="button"
+              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+              className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-emerald-400 text-xs transition-colors flex-shrink-0 cursor-pointer"
+              title={sortOrder === 'asc' ? 'Ascending (ಆರೋಹಣ ಕ್ರಮ: ಅ-ಹ)' : 'Descending (ಅವರೋಹಣ ಕ್ರಮ: ಹ-ಅ)'}
+            >
+              {sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
+            </button>
+          )}
+        </div>
 
         {/* Status Filter */}
         <select
@@ -778,20 +813,37 @@ export default function ShareholderList() {
             <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
               <thead className="bg-slate-900 border-b border-slate-800 text-slate-300 font-bold text-[11px] sticky top-0 z-20 shadow-md">
                 <tr className="border-b border-slate-800">
-                  <th className="py-3.5 px-2 bg-slate-900 sticky left-0 z-30 text-center w-10">
-                    <input
-                      type="checkbox"
-                      checked={shareholders.length > 0 && shareholders.every(s => selectedShareIds.includes(s.id))}
-                      onChange={toggleSelectAllPage}
-                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 bg-slate-950 border-slate-700 cursor-pointer"
-                      title="ಪ್ರಸ್ತುತ ಪುಟದ ಎಲ್ಲಾ ಷೇರುಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ"
-                    />
-                  </th>
-                  <th className="py-3.5 px-2 bg-slate-900 sticky left-10 z-30 shadow-r">Actions</th>
-                  <th className="py-3.5 px-3 bg-slate-900 sticky left-[100px] z-30 border-r border-slate-800">Book. No</th>
+                  <th className="py-3.5 px-3 bg-slate-900 sticky left-0 z-30 shadow-r">Actions</th>
+                  <th className="py-3.5 px-3 bg-slate-900 sticky left-[90px] z-30 border-r border-slate-800">Book. No</th>
                   <th className="py-3.5 px-3 text-center">Sl. No</th>
-                  <th className="py-3.5 px-3 font-mono text-emerald-400">Share No</th>
-                  <th className="py-3.5 px-4 font-bold text-slate-100 min-w-[200px]">Share Holder Name (ಷೇರುದಾರರ ಹೆಸರು)</th>
+                  <th
+                    className="py-3.5 px-3 font-mono text-emerald-400 cursor-pointer select-none hover:text-emerald-300 transition-colors"
+                    onClick={() => handleSort('share_no')}
+                    title="Click to sort by Share No"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Share No</span>
+                      {sortBy === 'share_no' ? (
+                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-400" /> : <ArrowDown className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 text-slate-600" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    className="py-3.5 px-4 font-bold text-slate-100 min-w-[200px] cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('name')}
+                    title="Click to sort alphabetically by Shareholder Name (ಅಕಾರಾದಿ ಕ್ರಮ)"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Share Holder Name (ಷೇರುದಾರರ ಹೆಸರು)</span>
+                      {sortBy === 'name' ? (
+                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-400" /> : <ArrowDown className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 text-slate-600" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3.5 px-2 text-center">Gender</th>
                   <th className="py-3.5 px-3 font-mono">Aadhaar Card No</th>
                   <th className="py-3.5 px-3">Reg. Date</th>
@@ -803,14 +855,53 @@ export default function ShareholderList() {
                   <th className="py-3.5 px-3 text-right font-bold text-amber-400">Total Amount</th>
                   <th className="py-3.5 px-2 text-center font-bold text-emerald-400">No. of Shares</th>
                   <th className="py-3.5 px-3 text-center">Schedule Cast / ವರ್ಗ</th>
-                  <th className="py-3.5 px-4 min-w-[180px]">Address (ವಿಳಾಸ)</th>
+                  <th
+                    className="py-3.5 px-4 min-w-[180px] cursor-pointer select-none hover:text-emerald-300 transition-colors"
+                    onClick={() => handleSort('address')}
+                    title="Click to sort alphabetically by Address (ವಿಳಾಸ: ಅ-ಹ)"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Address (ವಿಳಾಸ)</span>
+                      {sortBy === 'address' ? (
+                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-400" /> : <ArrowDown className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 text-slate-600" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3.5 px-3">Nagara</th>
                   <th className="py-3.5 px-3">Road</th>
-                  <th className="py-3.5 px-3 font-bold text-slate-100">Place (ಸ್ಥಳ/ಗ್ರಾಮ)</th>
+                  <th
+                    className="py-3.5 px-3 font-bold text-slate-100 cursor-pointer select-none hover:text-emerald-300 transition-colors"
+                    onClick={() => handleSort('place')}
+                    title="Click to sort alphabetically by Place (ಸ್ಥಳ: ಅ-ಹ)"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Place (ಸ್ಥಳ/ಗ್ರಾಮ)</span>
+                      {sortBy === 'place' ? (
+                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-400" /> : <ArrowDown className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 text-slate-600" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3.5 px-3">Taluk</th>
                   <th className="py-3.5 px-3">District</th>
                   <th className="py-3.5 px-3">Pin Code</th>
-                  <th className="py-3.5 px-3">Circle</th>
+                  <th
+                    className="py-3.5 px-3 cursor-pointer select-none hover:text-emerald-300 transition-colors"
+                    onClick={() => handleSort('circle')}
+                    title="Click to sort alphabetically by Circle (ವಲಯ: ಅ-ಹ)"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Circle</span>
+                      {sortBy === 'circle' ? (
+                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-400" /> : <ArrowDown className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 text-slate-600" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3.5 px-3">Member Type</th>
                   <th className="py-3.5 px-3">Relationship</th>
                   <th className="py-3.5 px-3">Tharava Date</th>
@@ -827,19 +918,9 @@ export default function ShareholderList() {
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-200">
                 {shareholders.map((sh, idx) => (
-                  <tr key={sh.id || idx} className={`hover:bg-slate-900/80 transition-colors group ${selectedShareIds.includes(sh.id) ? 'bg-amber-950/30' : ''}`}>
-                    {/* Row Checkbox Column */}
-                    <td className="py-2.5 px-2 bg-slate-950 group-hover:bg-slate-900 sticky left-0 z-10 text-center w-10">
-                      <input
-                        type="checkbox"
-                        checked={selectedShareIds.includes(sh.id)}
-                        onChange={() => toggleSelectRow(sh.id)}
-                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 bg-slate-950 border-slate-700 cursor-pointer"
-                      />
-                    </td>
-
+                  <tr key={sh.id || idx} className="hover:bg-slate-900/80 transition-colors group">
                     {/* Fixed Action Buttons Column */}
-                    <td className="py-2.5 px-2 bg-slate-950 group-hover:bg-slate-900 sticky left-10 z-10">
+                    <td className="py-2.5 px-3 bg-slate-950 group-hover:bg-slate-900 sticky left-0 z-10 shadow-r">
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => {

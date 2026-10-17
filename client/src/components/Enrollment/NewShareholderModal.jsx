@@ -81,6 +81,14 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
       });
     }
     setActiveTab('member');
+
+    const loadVillages = async () => {
+      const vRes = await ApiService.getVillages();
+      if (vRes && vRes.data) {
+        setVillageSuggestions([...vRes.data].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn')));
+      }
+    };
+    loadVillages();
   }, [editRecord, isOpen]);
 
   // Handle Share count change -> Auto-calculate Share Amount & Admission Fee
@@ -325,11 +333,19 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                     <input
                       type="text"
                       required
+                      list="new-sh-places-list"
                       value={formData.place}
                       onChange={(e) => handlePlaceChange(e.target.value)}
                       placeholder="ಉದಾ: ಚಣೆಗಾಂವ / ಗೋಡಿಹಾಳ"
                       className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none"
                     />
+                    <datalist id="new-sh-places-list">
+                      {villageSuggestions.map(v => (
+                        <option key={v.village_id || v.name} value={v.name}>
+                          {v.name} {v.taluk ? `(${v.taluk})` : ''}
+                        </option>
+                      ))}
+                    </datalist>
                   </div>
 
                   {/* Taluk */}

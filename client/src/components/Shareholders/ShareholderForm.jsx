@@ -97,10 +97,14 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
 
   const loadMasters = async () => {
     const vRes = await ApiService.getVillages();
-    if (vRes && vRes.data) setVillages(vRes.data);
+    if (vRes && vRes.data) {
+      setVillages([...vRes.data].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn')));
+    }
 
     const cRes = await ApiService.getCircles();
-    if (cRes && cRes.data) setCircles(cRes.data);
+    if (cRes && cRes.data) {
+      setCircles([...cRes.data].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn')));
+    }
   };
 
   const handlePlaceChange = (placeName) => {
@@ -430,11 +434,19 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                 <input
                   type="text"
                   required
+                  list="sh-form-places-list"
                   placeholder="e.g. ಬಳ್ಳೊಳ್ಳಿ, ಜೇವೂರ, ಚಡಚಣ, ಅಥರ್ಗಾ..."
                   value={formData.place}
                   onChange={(e) => handlePlaceChange(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-300 font-bold outline-none focus:border-emerald-500"
                 />
+                <datalist id="sh-form-places-list">
+                  {villages.map(v => (
+                    <option key={v.village_id || v.name} value={v.name}>
+                      {v.name} {v.taluk ? `(${v.taluk})` : ''}
+                    </option>
+                  ))}
+                </datalist>
               </div>
 
               <div>

@@ -288,7 +288,7 @@ export default function CircleMaster() {
       (c.circle_in_charge || '').toLowerCase().normalize('NFC').includes(q) ||
       (c.taluk || '').toLowerCase().normalize('NFC').includes(q) ||
       (c.villages || []).some(v => v.toLowerCase().normalize('NFC').includes(q));
-  });
+  }).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn'));
 
   const filteredDirectory = directory.filter(d => {
     if (selectedCircleFilter && (d.circle_name || '').trim().toLowerCase().normalize('NFC') !== selectedCircleFilter.toLowerCase().normalize('NFC')) {
@@ -304,12 +304,12 @@ export default function CircleMaster() {
       (d.taluk || '').toLowerCase().normalize('NFC').includes(q) ||
       (d.circle_in_charge || '').toLowerCase().normalize('NFC').includes(q) ||
       (d.pincode || '').includes(q);
-  });
+  }).sort((a, b) => (a.address || '').localeCompare(b.address || '', 'kn'));
 
   const totalPages = Math.max(1, Math.ceil(filteredDirectory.length / pageSize));
   const paginatedDirectory = filteredDirectory.slice((page - 1) * pageSize, page * pageSize);
 
-  const distinctTaluks = Array.from(new Set(directory.map(d => d.taluk).filter(Boolean))).sort();
+  const distinctTaluks = Array.from(new Set(directory.map(d => d.taluk).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'kn'));
 
   return (
     <div className="space-y-6">

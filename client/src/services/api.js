@@ -501,9 +501,9 @@ export const ApiService = {
     };
   },
 
-  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '' }) {
+  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', sortBy = '', sortOrder = 'asc' }) {
     await ensureDBReady();
-    const apiRes = await fetchApi(`/shareholders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&village_id=${village_id}&circle_id=${circle_id}&status=${status}&book_no=${book_no}&schedule_cast=${encodeURIComponent(schedule_cast)}`);
+    const apiRes = await fetchApi(`/shareholders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&village_id=${village_id}&circle_id=${circle_id}&status=${status}&book_no=${book_no}&schedule_cast=${encodeURIComponent(schedule_cast)}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
     if (apiRes && apiRes.success) return apiRes;
 
     let filtered = mockShareholders;
@@ -561,6 +561,38 @@ export const ApiService = {
     if (schedule_cast) {
       const scq = schedule_cast.trim().toLowerCase().normalize('NFC');
       filtered = filtered.filter(s => (s.schedule_cast || '').trim().toLowerCase().normalize('NFC') === scq);
+    }
+
+    if (sortBy) {
+      const dir = sortOrder === 'desc' ? -1 : 1;
+      filtered = [...filtered].sort((a, b) => {
+        if (sortBy === 'place' || sortBy === 'village') {
+          const valA = (a.place || a.village_name || '').trim();
+          const valB = (b.place || b.village_name || '').trim();
+          return dir * valA.localeCompare(valB, 'kn');
+        }
+        if (sortBy === 'circle') {
+          const valA = (a.circle || a.circle_name || '').trim();
+          const valB = (b.circle || b.circle_name || '').trim();
+          return dir * valA.localeCompare(valB, 'kn');
+        }
+        if (sortBy === 'address') {
+          const valA = (a.address || '').trim();
+          const valB = (b.address || '').trim();
+          return dir * valA.localeCompare(valB, 'kn');
+        }
+        if (sortBy === 'name') {
+          const valA = (a.shareholder_name || a.name || '').trim();
+          const valB = (b.shareholder_name || b.name || '').trim();
+          return dir * valA.localeCompare(valB, 'kn');
+        }
+        if (sortBy === 'share_no') {
+          const numA = parseInt(String(a.share_no || a.share_number || '').replace(/\D/g, '')) || 0;
+          const numB = parseInt(String(b.share_no || b.share_number || '').replace(/\D/g, '')) || 0;
+          return dir * (numA - numB);
+        }
+        return 0;
+      });
     }
 
     const total = filtered.length;
@@ -2226,7 +2258,7 @@ export const ApiService = {
 
     const list = Array.from(placeMap.values())
       .filter(v => v.shareholder_count > 0 || mockShareholders.length === 0 || mockCircleDirectory.length > 0)
-      .sort((a, b) => b.shareholder_count - a.shareholder_count || a.name.localeCompare(b.name, 'kn'));
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn'));
 
     return { success: true, data: list };
   },
@@ -2365,7 +2397,7 @@ export const ApiService = {
       .sort((a, b) => {
         if (a.name === 'Post' && b.name !== 'Post') return 1;
         if (b.name === 'Post' && a.name !== 'Post') return -1;
-        return b.shareholder_count - a.shareholder_count || b.village_count - a.village_count || a.name.localeCompare(b.name, 'kn');
+        return (a.name || '').localeCompare(b.name || '', 'kn');
       });
 
     return { success: true, data: list };
@@ -2412,7 +2444,7 @@ export const ApiService = {
         shareholder_count: placeCountMap.get(k) || 0,
         total_shares: placeSharesMap.get(k) || 0
       };
-    });
+    }).sort((a, b) => (a.address || '').localeCompare(b.address || '', 'kn'));
 
     return { success: true, data: enriched, total: enriched.length };
   },

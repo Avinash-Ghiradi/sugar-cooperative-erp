@@ -27,7 +27,7 @@ export default function VillageMaster() {
       (v.taluk || '').toLowerCase().includes(q) ||
       (v.circle_name || '').toLowerCase().includes(q) ||
       (v.village_id || '').toLowerCase().includes(q);
-  });
+  }).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn'));
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
