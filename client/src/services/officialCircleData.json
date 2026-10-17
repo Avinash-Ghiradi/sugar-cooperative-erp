@@ -1,0 +1,3572 @@
+[
+  {
+    "id": 1,
+    "address": "ಅಗರಖೇಡ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 2,
+    "address": "ಅಗಸನಾಳ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 3,
+    "address": "ಅಂಜುಟಿಗಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 4,
+    "address": "ಅಣಚಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 5,
+    "address": "ಅಥರ್ಗಾ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 6,
+    "address": "ಅಪಜಲಪೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 7,
+    "address": "ಅರಕೇರಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 8,
+    "address": "ಅರ್ಜನಾಳ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 9,
+    "address": "ಅರ್ಜುಣಗಿ ಕೆ ಡಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 10,
+    "address": "ಅರ್ಜುಣಗಿ ಬಿ ಕೆ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 11,
+    "address": "ಅಲಹಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 12,
+    "address": "ಅಲಿಯಾಬಾದ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 13,
+    "address": "ಅಸಂತಾಪೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 14,
+    "address": "ಅಸ್ಕಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 15,
+    "address": "ಅಹೀರಸಂಗ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 16,
+    "address": "ಆಲಗೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 17,
+    "address": "ಆಲಮಟ್ಟಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 18,
+    "address": "ಆಲಮೇಲ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 19,
+    "address": "ಆಸಂಗಿಹಾಳ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 20,
+    "address": "ಆಹೇರಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 21,
+    "address": "ಆಳೂರ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 22,
+    "address": "ಆಳೂರ ಎಲ್ ಟಿ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 23,
+    "address": "ಇಂಗಳಗಿ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 24,
+    "address": "ಇಂಗಳಗಿ ಬಿ ಬಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 25,
+    "address": "ಇಂಚಗೇರಿ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 26,
+    "address": "ಇಂಚಗೇರಿ ಎಲ್ ಟಿ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 27,
+    "address": "ಇಟಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 28,
+    "address": "ಇಂಡಿ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 29,
+    "address": "ಇಂಡಿ ಎಲ್ ಟಿ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 30,
+    "address": "ಇಂಡಿ ಡಿಗಿಭಾವಿ ಎಲ್ ಟಿ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 31,
+    "address": "ಇಂಡಿ ಮಧುರನಗರ ಎಲ್ ಟಿ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 32,
+    "address": "ಇಂಡಿ ರೇಲ್ವೆಸ್ಟೆಶನ್",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 33,
+    "address": "ಇಬ್ರಾಹಿಂಪೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 34,
+    "address": "ಇಲಕಲ್",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 35,
+    "address": "ಉಕ್ಕಲಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 36,
+    "address": "ಉಚಿತನಾವದಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 37,
+    "address": "ಉಮರಜ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 38,
+    "address": "ಉಮರಾಣಿ",
+    "circle_name": "ಕೆರೂರ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 39,
+    "address": "ಏಳಗಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 40,
+    "address": "ಏಳಗಿ ಪಿ ಹೆಚ್",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 41,
+    "address": "ಓತಿಹಾಳ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 42,
+    "address": "ಕಕ್ಕಳಮೇಲಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 43,
+    "address": "ಕಗ್ಗೋಡ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 44,
+    "address": "ಕಂಚನಾಳ",
+    "circle_name": "ಕೆರೂರ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 45,
+    "address": "ಕಡಕೋಳ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 46,
+    "address": "ಕಡಣಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 47,
+    "address": "ಕಡ್ಲೆವಾಡ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 48,
+    "address": "ಕಡ್ಲೆವಾಡ ಪಿಎ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 49,
+    "address": "ಕಣ್ಣ ಗುಡ್ಡಿಹಾಳ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 50,
+    "address": "ಕಥೇವಾಡ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 51,
+    "address": "ಕನಕನಾಳ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 52,
+    "address": "ಕನಮಡಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 53,
+    "address": "ಕನ್ನೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 54,
+    "address": "ಕನ್ನೋಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 55,
+    "address": "ಕಪನಿಂಬರಗಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 56,
+    "address": "ಕರವಿನಾಳ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 57,
+    "address": "ಕರೂಟಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 58,
+    "address": "ಕಲಕೇರಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 59,
+    "address": "ಕಲಹಳ್ಳಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 60,
+    "address": "ಕಾಖಂಡಕಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 61,
+    "address": "ಕಾತ್ರಾಳ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 62,
+    "address": "ಕಿಲಾಡೋಣ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 63,
+    "address": "ಕುಬಕಡ್ಡಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 64,
+    "address": "ಕುಮಟೆ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 65,
+    "address": "ಕುಮಶಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 66,
+    "address": "ಕುಮಸಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 67,
+    "address": "ಕುರಬತ್ತಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 68,
+    "address": "ಕುಳೇಕುಮಟಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 69,
+    "address": "ಕೂಡಗಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 70,
+    "address": "ಕೂಡಗಿ ಎಲ್ ಟಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 71,
+    "address": "ಕೆಂಗನಾಳ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 72,
+    "address": "ಕೆರುಟಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 73,
+    "address": "ಕೆರುಟಗಿ ಎಲ್ ಟಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 74,
+    "address": "ಕೆರೂರ",
+    "circle_name": "ಕೆರೂರ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 75,
+    "address": "ಕೆಸರಟ್ಟಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 76,
+    "address": "ಕೆಸರಾಳ ಎಲ್ ಟಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 77,
+    "address": "ಕೆಸರಾಳ ತಾಂಡಾ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 78,
+    "address": "ಕೊಕಟನೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 79,
+    "address": "ಕೊಂಕಣಗಾಂವ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 80,
+    "address": "ಕೊಟ್ನಾಳ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 81,
+    "address": "ಕೊಟ್ಯಾಳ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 82,
+    "address": "ಕೊಂಡಗೂಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 83,
+    "address": "ಕೊಲ್ಹಾರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 84,
+    "address": "ಕೊಳೂರಗಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 85,
+    "address": "ಕೋರವಾರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 86,
+    "address": "ಕೋರಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 87,
+    "address": "ಕೋರೆಗಾಂವ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 88,
+    "address": "ಕ್ಯಾತನಕೇರಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 89,
+    "address": "ಖಾನಾಪೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 90,
+    "address": "ಖೇಡಗಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 91,
+    "address": "ಖೈನೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 92,
+    "address": "ಗಂಗನಳ್ಳಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 93,
+    "address": "ಗಣವಲಗಾ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 94,
+    "address": "ಗಣಿಹಾರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 95,
+    "address": "ಗದ್ಯಾಳ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 96,
+    "address": "ಗಬಸಾವಳಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 97,
+    "address": "ಗುಡ್ಡಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 98,
+    "address": "ಗುಣಕಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 99,
+    "address": "ಗುತ್ತರಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 100,
+    "address": "ಗುಂದಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 101,
+    "address": "ಗುಂದವಾನ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 102,
+    "address": "ಗುಬ್ಬೇವಾಡ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 103,
+    "address": "ಗುಲಬರ್ಗಾ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 104,
+    "address": "ಗುಳೇದಗುಡ್ಡ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 105,
+    "address": "ಗೊರನಾಳ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 106,
+    "address": "ಗೊರವಗುಂಡಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 107,
+    "address": "ಗೊಲಗೇರಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 108,
+    "address": "ಗೊಳಸಾರ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 109,
+    "address": "ಗೋಟ್ಯಾಳ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 110,
+    "address": "ಗೋಡಿಹಾಳ",
+    "circle_name": "ಕೆರೂರ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 111,
+    "address": "ಗೋರನಾಳ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 112,
+    "address": "ಗೋಲಗೆರಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 113,
+    "address": "ಗೋವಿಂದಪೂರ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 114,
+    "address": "ಗೋಳಸಾರ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 115,
+    "address": "ಘತ್ತರಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 116,
+    "address": "ಚಟ್ಟರಕಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 117,
+    "address": "ಚಟ್ನಳ್ಳಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 118,
+    "address": "ಚಡಚಣ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 119,
+    "address": "ಚಣೇಗಾಂವ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 120,
+    "address": "ಚವಡಿಹಾಳ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 121,
+    "address": "ಚಾಂದಕವಟೆ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 122,
+    "address": "ಚಿಕ್ಕಬೇವನೂರ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 123,
+    "address": "ಚಿಕ್ಕಮಣ್ಣೂರ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 124,
+    "address": "ಚಿಕ್ಕರೂಗಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 125,
+    "address": "ಚಿಕ್ಕಸಿಂದಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 126,
+    "address": "ಚಿಮ್ಮಡ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 127,
+    "address": "ಚೋರಗಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 128,
+    "address": "ಜಂಬಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 129,
+    "address": "ಜಮಖಂಡಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 130,
+    "address": "ಜಾಲವಾದ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 131,
+    "address": "ಜಿಗಜೀವಣಗಿ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 132,
+    "address": "ಜೀರಂಕಲಗಿ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 133,
+    "address": "ಜೇವೂರ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 134,
+    "address": "ಝಳಕಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 135,
+    "address": "ಟಾಕಳಿ",
+    "circle_name": "ಕೆರೂರ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 136,
+    "address": "ಡಂಬಳ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 137,
+    "address": "ಢವಳಾರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 138,
+    "address": "ತಂಗಡಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 139,
+    "address": "ತಡವಲಗಾ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 140,
+    "address": "ತದ್ದೇವಾಡಿ",
+    "circle_name": "ಕೆರೂರ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 141,
+    "address": "ತಳೆವಾಡ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 142,
+    "address": "ತಾಂಬಾ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 143,
+    "address": "ತಾಂಬಾ ಎಲ್ ಟಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 144,
+    "address": "ತಾರಾಪೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 145,
+    "address": "ತಾವರಖೇಡ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 146,
+    "address": "ತಾವರಗೇರಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 147,
+    "address": "ತಾಳಿಕೋಟ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 148,
+    "address": "ತಿಕೋಟಾ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 149,
+    "address": "ತಿಡಗುಂದಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 150,
+    "address": "ತುಮಕೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 151,
+    "address": "ತುರನಕೇರಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 152,
+    "address": "ತೆಗ್ಗಿಹಳ್ಳಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 153,
+    "address": "ತೆನಹಳ್ಳಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 154,
+    "address": "ತೇರದಾಳ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 155,
+    "address": "ದಸೂರ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 156,
+    "address": "ದಾವಣಗೇರೆ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 157,
+    "address": "ದಿಂಡವಾರ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 158,
+    "address": "ದೆಗಿನಾಳ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 159,
+    "address": "ದೇವಣಗಾಂವ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 160,
+    "address": "ದೇವರಗೆಣ್ಣೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 161,
+    "address": "ದೇವರನಾವದಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 162,
+    "address": "ದೇವರನಿಂಬರಗಿ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 163,
+    "address": "ದೇವರಹಿಪ್ಪರಗಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 164,
+    "address": "ದೇವೂರ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 165,
+    "address": "ದೇಸುಣಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 166,
+    "address": "ಧಾರವಾಡ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 167,
+    "address": "ಧುಮಕನಾಳ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 168,
+    "address": "ಧೂಳಖೇಡ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 169,
+    "address": "ನಂದಗಾಂವ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 170,
+    "address": "ನಂದಗೇರಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 171,
+    "address": "ನಂದರಗಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 172,
+    "address": "ನಂದ್ರಾಳ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 173,
+    "address": "ನಾಗಠಾಣ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 174,
+    "address": "ನಾಗನೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 175,
+    "address": "ನಾಗರಹಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 176,
+    "address": "ನಾಗಾಂವಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 177,
+    "address": "ನಾಗಾಂವಿ ಕೆ ಡಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 178,
+    "address": "ನಾಗಾಂವಿ ಬಿ ಕೆ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 179,
+    "address": "ನಾದ ಕೆ ಡಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 180,
+    "address": "ನಾದ ಬಿ ಕೆ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 181,
+    "address": "ನಾಲತವಾಡ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 182,
+    "address": "ನಾವದಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 183,
+    "address": "ನಿಡಗುಂದಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 184,
+    "address": "ನಿಂಬರಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 185,
+    "address": "ನಿಂಬಾಳ ಕೆ ಡಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 186,
+    "address": "ನಿಂಬಾಳ ಬಿ ಕೆ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 187,
+    "address": "ನಿವಾಳಖೇಡ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 188,
+    "address": "ನೀರಲಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 189,
+    "address": "ನೀವರಗಿ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 190,
+    "address": "ಪಡಗಾನೂರ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 191,
+    "address": "ಪಡನೂರ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 192,
+    "address": "ಪುರದಾಳ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 193,
+    "address": "ಬಂಕಲಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 194,
+    "address": "ಬಗಲೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 195,
+    "address": "ಬಟಗೇರಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 196,
+    "address": "ಬಂಟನೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 197,
+    "address": "ಬಂಥನಾಳ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 198,
+    "address": "ಬಂದಾಳ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 199,
+    "address": "ಬನ್ನಟ್ಟಿ ಪಿ ಟಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 200,
+    "address": "ಬನ್ನಹಟ್ಟಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 201,
+    "address": "ಬಬಲಾದ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 202,
+    "address": "ಬಬಲೇಶ್ವರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 203,
+    "address": "ಬಮ್ಮನಜೋಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 204,
+    "address": "ಬಮ್ಮನಹಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 205,
+    "address": "ಬರಗುಡಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 206,
+    "address": "ಬರಟಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 207,
+    "address": "ಬರಡೋಲ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 208,
+    "address": "ಬರೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 209,
+    "address": "ಬಸನಾಳ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 210,
+    "address": "ಬಸವನ ಬಾಗೇವಾಡಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 211,
+    "address": "ಬಸವನಹಟ್ಟಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 212,
+    "address": "ಬಳಗಾನೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 213,
+    "address": "ಬಳುಂಡಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 214,
+    "address": "ಬಳ್ಳೊಳ್ಳಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 215,
+    "address": "ಬಾಗಲಕೋಟ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 216,
+    "address": "ಬಿಂಜಲಭಾವಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 217,
+    "address": "ಬಿಜ್ಜರಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 218,
+    "address": "ಬೀಳಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 219,
+    "address": "ಬೂದಿಹಾಳ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 220,
+    "address": "ಬೂದಿಹಾಳ ಪಿ ಟಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 221,
+    "address": "ಬೂಯ್ಯಾರ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 222,
+    "address": "ಬೆಕಿನಾಳ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 223,
+    "address": "ಬೆಂಗಳೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 224,
+    "address": "ಬೆನಕನಹಳ್ಳಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 225,
+    "address": "ಬೆನಕೊಟಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 226,
+    "address": "ಬೆವೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 227,
+    "address": "ಬೆಳಗಾಂವಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 228,
+    "address": "ಬೇಲೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 229,
+    "address": "ಬೊಳೆಗಾಂವ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 230,
+    "address": "ಬೋರಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 231,
+    "address": "ಬ್ಯಾಕೋಡ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 232,
+    "address": "ಬ್ಯಾಡಗಿಹಾಳ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 233,
+    "address": "ಬ್ರಹ್ಮದೇವರಮಡು",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 234,
+    "address": "ಭಂಟನೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 235,
+    "address": "ಭತಗುಣಕಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 236,
+    "address": "ಭೈರುಣಗಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 237,
+    "address": "ಮಖಣಾಪೂರ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 238,
+    "address": "ಮಂಗಳೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 239,
+    "address": "ಮಡ್ಡಿಮಣ್ಣೂರ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 240,
+    "address": "ಮಡ್ನಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 241,
+    "address": "ಮಣಂಕಲಗಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 242,
+    "address": "ಮಣ್ಣೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 243,
+    "address": "ಮದರಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 244,
+    "address": "ಮಂದ್ರುಪ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 245,
+    "address": "ಮನಗೂಳಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 246,
+    "address": "ಮನ್ನಾಪೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 247,
+    "address": "ಮರಗೂರ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 248,
+    "address": "ಮಲಘಾಣ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 249,
+    "address": "ಮಲ್ಕನ ದೇವರ ಹಟ್ಟಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 250,
+    "address": "ಮಸಳಿ ಕೆ ಡಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 251,
+    "address": "ಮಸಳಿ ಬಿ ಕೆ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 252,
+    "address": "ಮಾಗಣಗೇರಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 253,
+    "address": "ಮಾಡಬಾಳ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 254,
+    "address": "ಮಾಡ್ಯಾಳ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 255,
+    "address": "ಮಾರ್ಸನಹಳ್ಳಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 256,
+    "address": "ಮಾವಿನಹಳ್ಳಿ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 257,
+    "address": "ಮಿಂಚನಾಳ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 258,
+    "address": "ಮಿರಗಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 259,
+    "address": "ಮುದ್ದೇಬಿಹಾಳ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 260,
+    "address": "ಮುರಡಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 261,
+    "address": "ಮುಳವಾಡ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 262,
+    "address": "ಮುಳಸಾವಳಗಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 263,
+    "address": "ಮೈಲಾರ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 264,
+    "address": "ಮೈಸೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 265,
+    "address": "ಮೋರಟಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 266,
+    "address": "ಯಂಕಂಚಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 267,
+    "address": "ಯರಗಲ್",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 268,
+    "address": "ಯರಗಲ್ ಬಿ ಕ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 269,
+    "address": "ಯಲಗೋಡ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 270,
+    "address": "ಯಾಳವಾರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 271,
+    "address": "ರಬಕವಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 272,
+    "address": "ರಾಜನಾಳ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 273,
+    "address": "ರಾಮತಿರ್ಥ ಎಲ್ ಟಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 274,
+    "address": "ರಾಮನಹಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 275,
+    "address": "ರಾಮಪೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 276,
+    "address": "ರಾಮಪೂರ ಪಿ ಎ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 277,
+    "address": "ರೇವತಗಾಂವ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 278,
+    "address": "ರೊರಟ್ಟಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 279,
+    "address": "ರೋಡಗಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 280,
+    "address": "ಲಚ್ಯಾಣ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 281,
+    "address": "ಲಾಳಸಂಗಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 282,
+    "address": "ಲಿಂಗದಳ್ಳಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 283,
+    "address": "ಲಿಂಗಾಪೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 284,
+    "address": "ಲೋಣಿ ಕೆ ಡಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 285,
+    "address": "ಲೋಣಿ ಬಿ ಕೆ",
+    "circle_name": "ಕೆರೂರ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 286,
+    "address": "ವಣಕಿಹಾಳ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 287,
+    "address": "ವರ್ಕಾನಳ್ಳಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 288,
+    "address": "ವಾಡೆ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 289,
+    "address": "ವಿಜಯಪುರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 290,
+    "address": "ವಿಭೂತಿಹಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 291,
+    "address": "ಶಂಬೇವಾಡ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 292,
+    "address": "ಶಿಗಣಾಪೂರ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 293,
+    "address": "ಶಿಂಗನಳ್ಳಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 294,
+    "address": "ಶಿರಕನಹಳ್ಳಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 295,
+    "address": "ಶಿರಗೂರ ಇನಾಂ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 296,
+    "address": "ಶಿರಗೂರ ಖಾಲ್ಸಾ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 297,
+    "address": "ಶಿರಡೋಣ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 298,
+    "address": "ಶಿರನಾಳ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 299,
+    "address": "ಶಿರಶ್ಯಾಡ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 300,
+    "address": "ಶಿರಸಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 301,
+    "address": "ಶಿರೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 302,
+    "address": "ಶಿವಣಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 303,
+    "address": "ಶಿವಪೂರ ಕೆ ಡಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 304,
+    "address": "ಶಿವಪೂರ ಬಿಕೆ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 305,
+    "address": "ಶೇಷಗಿರಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 306,
+    "address": "ಸಂಗೋಗಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 307,
+    "address": "ಸಾತಪೂರ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 308,
+    "address": "ಸಾತಲಗಾಂವ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 309,
+    "address": "ಸಾತಲಗಾಂವ ಪಿ ಐ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 310,
+    "address": "ಸಾತಲಗಾಂವ ಪಿ ಬಿ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 311,
+    "address": "ಸಾತಿಹಾಳ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 312,
+    "address": "ಸಾರವಾಡ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 313,
+    "address": "ಸಾಲೋಟಗಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 314,
+    "address": "ಸಾವಳಸಂಗ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 315,
+    "address": "ಸಾಸಾಬಾಳ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 316,
+    "address": "ಸಾಸ್ತಾನ (ಉಡಪಿ ತಾಲೂಕ, ದ.ಕ.)",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 317,
+    "address": "ಸಿಂದಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 318,
+    "address": "ಸುಂಗಠಾಣ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 319,
+    "address": "ಸುರಗಿಹಳ್ಳಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 320,
+    "address": "ಸೊನಕನಹಳ್ಳಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 321,
+    "address": "ಸೊನ್ನ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 322,
+    "address": "ಸೊನ್ನಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 323,
+    "address": "ಸೋಮಜಾಳ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 324,
+    "address": "ಸೋಮಪುರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 325,
+    "address": "ಸೋಲಾಪೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 326,
+    "address": "ಹಂಗರಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 327,
+    "address": "ಹಂಚನಾಳ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 328,
+    "address": "ಹಚ್ಯಾಳ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 329,
+    "address": "ಹಂಜಗಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 330,
+    "address": "ಹಡಲಸಂಗ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 331,
+    "address": "ಹತ್ತಳ್ಳಿ",
+    "circle_name": "ಕೆರೂರ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 332,
+    "address": "ಹಂದಿಗನೂರ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 333,
+    "address": "ಹರನಾಳ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 334,
+    "address": "ಹಲಗಲಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 335,
+    "address": "ಹಲಸಂಗಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 336,
+    "address": "ಹವಳಗಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 337,
+    "address": "ಹಳಗುಣಕಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 338,
+    "address": "ಹಾಲಹಳ್ಳಿ",
+    "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586204",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 339,
+    "address": "ಹಾವಿನಾಳ",
+    "circle_name": "ಕೆರೂರ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 340,
+    "address": "ಹಾಳಗುಂಡಕನಾಳ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 341,
+    "address": "ಹಿಕ್ಕಣಗುತ್ತಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 342,
+    "address": "ಹಿಂಗಣಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 343,
+    "address": "ಹಿಟ್ನಳ್ಳಿ",
+    "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 344,
+    "address": "ಹಿರೇಬೇವನೂರ",
+    "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 345,
+    "address": "ಹಿರೇಮಸಳಿ",
+    "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586217",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 346,
+    "address": "ಹಿರೇರೂಗಿ",
+    "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+    "taluk": "ಇಂಡಿ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586209",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 347,
+    "address": "ಹೀರೆ ಮಣ್ಣೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 348,
+    "address": "ಹುನಗುಂದ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 349,
+    "address": "ಹುಬನೂರ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 350,
+    "address": "ಹುಬ್ಬಳ್ಳಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 351,
+    "address": "ಹೂವಿನಹಳ್ಳಿ",
+    "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 352,
+    "address": "ಹೊನಗನಹಳ್ಳಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 353,
+    "address": "ಹೊನ್ನಳ್ಳಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 354,
+    "address": "ಹೊನ್ನುಟಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 355,
+    "address": "ಹೊರ್ತಿ",
+    "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "586207",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 356,
+    "address": "ಹೊಳೆ ಹಂಗರಗಿ",
+    "circle_name": "Post",
+    "taluk": "",
+    "district": "",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  },
+  {
+    "id": 357,
+    "address": "ಹೋಳಿಸಂಖ",
+    "circle_name": "ಕೆರೂರ",
+    "taluk": "ಚಡಚಣ",
+    "district": "ವಿಜಯಪುರ",
+    "pincode": "",
+    "circle_in_charge": "",
+    "contact_no": ""
+  }
+]

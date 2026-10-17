@@ -1,5 +1,6 @@
 // Data Service Layer supporting both backend REST API and clean client-side storage
-// All mock data removed. Operates on real user records with full 38-column statutory support.
+// Official 357-Village Circle Directory mapping provided by user
+import officialCircleData from './officialCircleData.json';
 
 const API_BASE = '/api';
 
@@ -116,7 +117,7 @@ async function loadCircleDirectoryFromDB() {
   try {
     const db = await openERPDB();
     if (!db || !db.objectStoreNames.contains(CIRCLE_STORE)) {
-      return loadStoredData(STORAGE_KEY_CIRCLE_DIR, []);
+      return loadStoredData(STORAGE_KEY_CIRCLE_DIR, officialCircleData);
     }
     return new Promise((resolve) => {
       const tx = db.transaction([CIRCLE_STORE], 'readonly');
@@ -124,22 +125,20 @@ async function loadCircleDirectoryFromDB() {
       const req = store.getAll();
       req.onsuccess = () => {
         const res = req.result || [];
-        // If the only records in IndexedDB are the legacy mock items, discard and clear them
-        if (res.length === 26 && res[0]?.address === 'ಅಗರಖೇಡ') {
+        // If empty or legacy mock, initialize with official 357 records
+        if (!res || res.length === 0 || (res.length === 26 && res[0]?.address === 'ಅಗರಖೇಡ')) {
           try {
-            const clearTx = db.transaction([CIRCLE_STORE], 'readwrite');
-            clearTx.objectStore(CIRCLE_STORE).clear();
+            saveCircleDirectoryToDB(officialCircleData);
           } catch (e) {}
-          resolve([]);
+          resolve(officialCircleData);
           return;
         }
-        if (res && res.length > 0) resolve(res);
-        else resolve(loadStoredData(STORAGE_KEY_CIRCLE_DIR, []));
+        resolve(res);
       };
-      req.onerror = () => resolve(loadStoredData(STORAGE_KEY_CIRCLE_DIR, []));
+      req.onerror = () => resolve(loadStoredData(STORAGE_KEY_CIRCLE_DIR, officialCircleData));
     });
   } catch (err) {
-    return loadStoredData(STORAGE_KEY_CIRCLE_DIR, []);
+    return loadStoredData(STORAGE_KEY_CIRCLE_DIR, officialCircleData);
   }
 }
 
@@ -158,10 +157,10 @@ async function clearIndexedDB(includeCircles = true) {
   } catch (e) {}
 }
 
-// Initial Official Circle & Village Directory mapping (Empty initial state - 100% clean)
-export const initialCircleDirectory = [];
+// Initial Official Circle & Village Directory mapping (357 villages across 9 circles)
+export const initialCircleDirectory = officialCircleData;
 
-export let mockCircleDirectory = loadStoredData(STORAGE_KEY_CIRCLE_DIR, []);
+export let mockCircleDirectory = loadStoredData(STORAGE_KEY_CIRCLE_DIR, officialCircleData);
 
 // Circles Master (Empty initial state - 100% clean)
 export const mockCircles = [];
@@ -1049,11 +1048,29 @@ export const ApiService = {
           name: v,
           count: villageCounts.get(v.toLowerCase()) || 0
         }));
+        item.villagesWithDetails = arr.map(v => {
+          const vKey = v.toLowerCase().normalize('NFC');
+          const detail = mockCircleDirectory.find(d => (d.address || '').trim().toLowerCase().normalize('NFC') === vKey);
+          return {
+            name: v,
+            address: v,
+            taluk: detail?.taluk || item.taluk || '',
+            district: detail?.district || item.district || '',
+            pincode: detail?.pincode || '',
+            circle_in_charge: detail?.circle_in_charge || item.circle_in_charge || '',
+            contact_no: detail?.contact_no || item.contact_no || '',
+            shareholder_count: villageCounts.get(vKey) || 0
+          };
+        });
       }
     });
 
     const list = Array.from(circleMap.values())
-      .sort((a, b) => b.shareholder_count - a.shareholder_count || b.village_count - a.village_count || a.name.localeCompare(b.name, 'kn'));
+      .sort((a, b) => {
+        if (a.name === 'Post' && b.name !== 'Post') return 1;
+        if (b.name === 'Post' && a.name !== 'Post') return -1;
+        return b.shareholder_count - a.shareholder_count || b.village_count - a.village_count || a.name.localeCompare(b.name, 'kn');
+      });
 
     return { success: true, data: list };
   },
@@ -1191,6 +1208,13 @@ export const ApiService = {
   },
 
   async resetCircleDirectory() {
+    mockCircleDirectory = [...officialCircleData];
+    saveStoredData(STORAGE_KEY_CIRCLE_DIR, mockCircleDirectory);
+    await saveCircleDirectoryToDB(mockCircleDirectory);
+    return { success: true, count: mockCircleDirectory.length };
+  },
+
+  async clearCircleDirectory() {
     mockCircleDirectory = [];
     saveStoredData(STORAGE_KEY_CIRCLE_DIR, []);
     await saveCircleDirectoryToDB([]);

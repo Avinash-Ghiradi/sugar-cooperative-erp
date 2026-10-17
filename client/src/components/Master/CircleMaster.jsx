@@ -13,10 +13,11 @@ export default function CircleMaster() {
   const [circles, setCircles] = useState([]);
   const [directory, setDirectory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('circles'); // 'circles' or 'directory'
+  const [activeTab, setActiveTab] = useState('circle-wise'); // 'circle-wise', 'directory', or 'circles'
   const [search, setSearch] = useState('');
   const [selectedCircleFilter, setSelectedCircleFilter] = useState('');
   const [selectedTalukFilter, setSelectedTalukFilter] = useState('');
+  const [expandedCircles, setExpandedCircles] = useState(new Set());
   const [expandedCircle, setExpandedCircle] = useState(null);
 
   // Pagination for directory view
@@ -40,9 +41,29 @@ export default function CircleMaster() {
       ApiService.getCircles(),
       ApiService.getCircleDirectory()
     ]);
-    if (cRes && cRes.data) setCircles(cRes.data);
+    if (cRes && cRes.data) {
+      setCircles(cRes.data);
+      setExpandedCircles(new Set(cRes.data.map(c => c.name)));
+    }
     if (dRes && dRes.data) setDirectory(dRes.data);
     setLoading(false);
+  };
+
+  const toggleCircle = (circleName) => {
+    setExpandedCircles(prev => {
+      const next = new Set(prev);
+      if (next.has(circleName)) next.delete(circleName);
+      else next.add(circleName);
+      return next;
+    });
+  };
+
+  const toggleAllCircles = () => {
+    if (expandedCircles.size === filteredCircles.length) {
+      setExpandedCircles(new Set());
+    } else {
+      setExpandedCircles(new Set(filteredCircles.map(c => c.name)));
+    }
   };
 
   // Parse Excel / CSV files with the 7 headers:
@@ -255,6 +276,12 @@ export default function CircleMaster() {
 
   // Filtered views
   const filteredCircles = circles.filter(c => {
+    if (selectedCircleFilter && (c.name || '').trim().toLowerCase().normalize('NFC') !== selectedCircleFilter.toLowerCase().normalize('NFC')) {
+      return false;
+    }
+    if (selectedTalukFilter && (c.taluk || '').trim().toLowerCase().normalize('NFC') !== selectedTalukFilter.toLowerCase().normalize('NFC')) {
+      return false;
+    }
     if (!search) return true;
     const q = search.trim().toLowerCase().normalize('NFC');
     return (c.name || '').toLowerCase().normalize('NFC').includes(q) ||
@@ -371,26 +398,39 @@ export default function CircleMaster() {
       {/* Tab Switcher & Filter Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
         {/* View Mode Tabs */}
-        <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
           <button
-            onClick={() => setActiveTab('circles')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeTab === 'circles'
+            onClick={() => setActiveTab('circle-wise')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeTab === 'circle-wise'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            By Circles ({circles.length} ಸರ್ಕಲ್‌ಗಳು)
+            <Layers className="w-3.5 h-3.5" />
+            <span>Circle-wise List (ವಲಯವಾರು ಪಟ್ಟಿ - {circles.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('directory')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
               activeTab === 'directory'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            All Addresses & Villages ({directory.length} ಸ್ಥಳಗಳು)
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>All Directory ({directory.length} ಸ್ಥಳಗಳು)</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('circles')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeTab === 'circles'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Circle Cards</span>
           </button>
         </div>
 
@@ -400,38 +440,34 @@ export default function CircleMaster() {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder={activeTab === 'circles' ? 'Search Circle, Village, In-charge...' : 'Search Address, Circle, Taluk, Pin...'}
+              placeholder="Search Circle, Village, Address, Taluk, Pin..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 outline-none"
             />
           </div>
 
-          {activeTab === 'directory' && (
-            <>
-              <select
-                value={selectedCircleFilter}
-                onChange={(e) => { setSelectedCircleFilter(e.target.value); setPage(1); }}
-                className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
-              >
-                <option value="">All Circles ({circles.length})</option>
-                {circles.map(c => (
-                  <option key={c.name} value={c.name}>{c.name}</option>
-                ))}
-              </select>
+          <select
+            value={selectedCircleFilter}
+            onChange={(e) => { setSelectedCircleFilter(e.target.value); setPage(1); }}
+            className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
+          >
+            <option value="">All Circles ({circles.length})</option>
+            {circles.map(c => (
+              <option key={c.name} value={c.name}>{c.name}</option>
+            ))}
+          </select>
 
-              <select
-                value={selectedTalukFilter}
-                onChange={(e) => { setSelectedTalukFilter(e.target.value); setPage(1); }}
-                className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
-              >
-                <option value="">All Taluks ({distinctTaluks.length})</option>
-                {distinctTaluks.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </>
-          )}
+          <select
+            value={selectedTalukFilter}
+            onChange={(e) => { setSelectedTalukFilter(e.target.value); setPage(1); }}
+            className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
+          >
+            <option value="">All Taluks ({distinctTaluks.length})</option>
+            {distinctTaluks.map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -440,8 +476,170 @@ export default function CircleMaster() {
         <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2">
           <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" /> Loading administrative circles...
         </div>
+      ) : activeTab === 'circle-wise' ? (
+        /* View 1: Circle-wise Grouped List (ವಲಯವಾರು ಗ್ರಾಮಗಳ ಪಟ್ಟಿ) */
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="text-xs text-slate-400 flex items-center gap-2">
+              <span className="font-semibold text-slate-200">
+                {filteredCircles.length} Circles (ವಲಯಗಳು)
+              </span>
+              <span>•</span>
+              <span className="text-emerald-400 font-mono font-semibold">
+                {filteredCircles.reduce((acc, c) => acc + (c.village_count || (c.villages || []).length), 0)} Mapped Villages (ಒಳಪಟ್ಟ ಗ್ರಾಮಗಳು)
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={toggleAllCircles}
+              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 shadow-sm cursor-pointer"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>{expandedCircles.size === filteredCircles.length ? 'Collapse All (ಎಲ್ಲ ಮುಚ್ಚಿ)' : 'Expand All (ಎಲ್ಲ ತೆರೆಯಿರಿ)'}</span>
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {filteredCircles.map((c) => {
+              const isExpanded = expandedCircles.has(c.name);
+              const villagesList = c.villagesWithDetails || (c.villages || []).map(v => ({
+                name: typeof v === 'string' ? v : v.name,
+                address: typeof v === 'string' ? v : v.name,
+                taluk: c.taluk,
+                district: c.district,
+                pincode: c.pincode,
+                shareholder_count: 0
+              }));
+
+              const q = search.trim().toLowerCase().normalize('NFC');
+              const matchingVillages = q
+                ? villagesList.filter(v =>
+                    v.name.toLowerCase().normalize('NFC').includes(q) ||
+                    (v.taluk || '').toLowerCase().normalize('NFC').includes(q) ||
+                    (v.district || '').toLowerCase().normalize('NFC').includes(q) ||
+                    (v.pincode || '').includes(q)
+                  )
+                : villagesList;
+
+              if (q && matchingVillages.length === 0 && !c.name.toLowerCase().normalize('NFC').includes(q)) return null;
+
+              return (
+                <div
+                  key={c.circle_id || c.name}
+                  className="bg-slate-950/80 border border-slate-800 hover:border-slate-700 rounded-2xl overflow-hidden shadow-lg transition-all"
+                >
+                  {/* Circle Header Bar */}
+                  <div
+                    onClick={() => toggleCircle(c.name)}
+                    className="p-4 bg-gradient-to-r from-slate-900 via-slate-900/60 to-slate-950 hover:bg-slate-900 cursor-pointer flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 transition-colors select-none"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+                        <MapPin className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800/60">
+                            {c.circle_id}
+                          </span>
+                          <h2 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                            {c.name}
+                          </h2>
+                          {c.taluk && (
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              (ತಾ: {c.taluk}{c.district ? `, ಜಿ: ${c.district}` : ''})
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {c.description || `${c.name} ವ್ಯಾಪ್ತಿಯ ಗ್ರಾಮಗಳು ಮತ್ತು ಸ್ಥಳಗಳು`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-xl bg-slate-900 text-teal-300 border border-teal-800/40 text-xs font-semibold font-mono flex items-center gap-1">
+                        <Layers className="w-3.5 h-3.5 text-teal-400" />
+                        {c.village_count || matchingVillages.length} Villages (ಗ್ರಾಮಗಳು)
+                      </span>
+
+                      {(c.shareholder_count || 0) > 0 && (
+                        <span className="px-2.5 py-1 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold font-mono flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" />
+                          {c.shareholder_count.toLocaleString()} Shareholders
+                        </span>
+                      )}
+
+                      <div className="p-1 rounded-lg text-slate-400 bg-slate-900/80 ml-1">
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Village Table within this Circle */}
+                  {isExpanded && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-slate-900/90 border-b border-slate-800 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                            <th className="py-2.5 px-4 w-12 font-mono">#</th>
+                            <th className="py-2.5 px-4">Address (ಗ್ರಾಮ / ಸ್ಥಳ)</th>
+                            <th className="py-2.5 px-4">Taluk (ತಾಲೂಕು)</th>
+                            <th className="py-2.5 px-4">District (ಜಿಲ್ಲೆ)</th>
+                            <th className="py-2.5 px-4">Pincode (ಪಿನ್‌ಕೋಡ್)</th>
+                            <th className="py-2.5 px-4 text-center">Shareholders (ಷೇರುದಾರರು)</th>
+                            <th className="py-2.5 px-4">Circle In-charge</th>
+                            <th className="py-2.5 px-4">Contact No</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/50 text-slate-300">
+                          {matchingVillages.map((v, vIdx) => (
+                            <tr key={v.name || vIdx} className="hover:bg-slate-900/40 transition-colors">
+                              <td className="py-2 px-4 font-mono text-slate-500 text-[10px]">
+                                {vIdx + 1}
+                              </td>
+                              <td className="py-2 px-4 font-semibold text-slate-100 flex items-center gap-1.5">
+                                <MapPin className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                                <span>{v.name}</span>
+                              </td>
+                              <td className="py-2 px-4 text-slate-300">{v.taluk || c.taluk || '—'}</td>
+                              <td className="py-2 px-4 text-slate-400">{v.district || c.district || '—'}</td>
+                              <td className="py-2 px-4 font-mono text-slate-300">{v.pincode || c.pincode || '—'}</td>
+                              <td className="py-2 px-4 text-center">
+                                {(v.shareholder_count || 0) > 0 ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold font-mono">
+                                    <Users className="w-3 h-3" /> {v.shareholder_count.toLocaleString()}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-500 font-mono text-[11px]">—</span>
+                                )}
+                              </td>
+                              <td className="py-2 px-4 text-slate-300 text-[11px]">
+                                {v.circle_in_charge || c.circle_in_charge || '—'}
+                              </td>
+                              <td className="py-2 px-4 font-mono text-teal-400 text-[11px]">
+                                {v.contact_no || c.contact_no || '—'}
+                              </td>
+                            </tr>
+                          ))}
+                          {matchingVillages.length === 0 && (
+                            <tr>
+                              <td colSpan="8" className="py-6 text-center text-slate-400">
+                                No villages found in this circle matching your search.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       ) : activeTab === 'circles' ? (
-        /* View 1: Circles Grid */
+        /* View 2: Circles Grid */
         filteredCircles.length === 0 ? (
           <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-12 text-center space-y-4">
             <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
