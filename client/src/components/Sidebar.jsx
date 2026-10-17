@@ -3,12 +3,13 @@ import { useAuth, ROLE_PERMISSIONS } from '../context/AuthContext';
 import {
   LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert,
-  Settings, LogOut, Upload, ArrowRightLeft
+  Settings, LogOut, Upload, ArrowRightLeft, UserPlus
 } from 'lucide-react';
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'shareholders', label: 'Shareholders', icon: Users },
+  { id: 'enrollment', label: 'New Enrollment (ಹೊಸ ನೋಂದಣಿ)', icon: UserPlus },
   { id: 'import_export', label: 'Upload Excel (ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)', icon: FileSpreadsheet },
   { id: 'transactions', label: 'Transactions', icon: CreditCard },
   { id: 'attendance', label: 'Attendance', icon: CalendarCheck },

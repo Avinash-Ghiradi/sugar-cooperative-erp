@@ -3,7 +3,7 @@ import { ApiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   Users, UserCheck, UserX, Coins, Building2, MapPin, FileCheck2, Clock,
-  CreditCard, CalendarCheck, Package, Briefcase, Download, Filter, RefreshCw, BookOpen, Layers, ArrowRightLeft
+  CreditCard, CalendarCheck, Package, Briefcase, Download, Filter, RefreshCw, BookOpen, Layers, ArrowRightLeft, UserPlus
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid
@@ -44,13 +44,14 @@ export default function Dashboard() {
 
   const cardItems = [
     { title: 'Total Shareholders', value: stats.totalShareholders.toLocaleString(), icon: Users, color: 'emerald', link: 'shareholders' },
+    { title: 'New Enrollments (ಹೊಸ ನೋಂದಣಿ)', value: (stats.totalEnrollments || 0).toLocaleString(), icon: UserPlus, color: 'teal', link: 'enrollment' },
     { title: 'Active Shareholders', value: stats.activeShareholders.toLocaleString(), icon: UserCheck, color: 'teal', link: 'shareholders' },
-    { title: 'Inactive Shareholders', value: stats.inactiveShareholders.toLocaleString(), icon: UserX, color: 'rose', link: 'shareholders' },
     { title: 'Total Shares', value: stats.totalShares.toLocaleString(), icon: Coins, color: 'amber', link: 'shareholders' },
     { title: 'Total Villages / Places', value: stats.totalVillages.toLocaleString(), icon: Building2, color: 'blue', link: 'villages' },
     { title: 'Total Circles', value: stats.totalCircles.toLocaleString(), icon: MapPin, color: 'indigo', link: 'circles' },
     { title: 'Total Books (Ledgers)', value: (stats.totalBooks || 0).toLocaleString(), icon: BookOpen, color: 'sky', link: 'shareholders' },
     { title: 'Schedule Cast / ವರ್ಗ', value: stats.totalShareholders > 0 ? (stats.topCategory || `${stats.totalCategories || 0} Classes`) : '0 Classes', icon: Layers, color: 'purple', link: 'shareholders' },
+    { title: 'Enrollment Capital', value: `₹ ${(stats.totalEnrollmentAmount || 0).toLocaleString()}`, icon: Coins, color: 'emerald', link: 'enrollment' },
     { title: 'Pending Varasa', value: stats.pendingVarasa.toLocaleString(), icon: Clock, color: 'amber', link: 'varasa' },
     { title: 'Completed Varasa', value: stats.completedVarasa.toLocaleString(), icon: FileCheck2, color: 'emerald', link: 'varasa' },
     { title: 'Vargavane (ವರ್ಗಾವಣೆ)', value: (stats.totalVargavane || 0).toLocaleString(), icon: ArrowRightLeft, color: 'cyan', link: 'vargavane' },
@@ -58,7 +59,6 @@ export default function Dashboard() {
     { title: 'Today\'s Transactions', value: stats.todayTx.toLocaleString(), icon: CreditCard, color: 'purple', link: 'transactions' },
     { title: 'Sugar Allotted (kg)', value: `${stats.totalSugarAlloted.toLocaleString()} kg`, icon: Package, color: 'teal', link: 'sugar_allotment' },
     { title: 'Cooperative Staff', value: (stats.totalEmployees || 0).toLocaleString(), icon: Briefcase, color: 'indigo', link: 'hr' },
-    { title: 'Total Transfers (ವ/ವ)', value: ((stats.completedVarasa || 0) + (stats.totalVargavane || 0)).toLocaleString(), icon: ArrowRightLeft, color: 'emerald', link: 'vargavane' },
   ];
 
   return (

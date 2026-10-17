@@ -9,6 +9,7 @@ import AttendanceModule from './components/Attendance/AttendanceModule';
 import SugarAllotmentModule from './components/SugarAllotment/SugarAllotmentModule';
 import VarasaTransferModule from './components/Varasa/VarasaTransferModule';
 import VargavaneTransferModule from './components/Vargavane/VargavaneTransferModule';
+import NewShareholderModule from './components/Enrollment/NewShareholderModule';
 import VillageMaster from './components/Master/VillageMaster';
 import CircleMaster from './components/Master/CircleMaster';
 import ReportsModule from './components/Reports/ReportsModule';
@@ -110,6 +111,7 @@ function AppContent() {
     switch (activeModule) {
       case 'dashboard': return <Dashboard />;
       case 'shareholders': return <ShareholderList />;
+      case 'enrollment': return <NewShareholderModule />;
       case 'transactions': return <TransactionsModule />;
       case 'attendance': return <AttendanceModule />;
       case 'sugar_allotment': return <SugarAllotmentModule />;

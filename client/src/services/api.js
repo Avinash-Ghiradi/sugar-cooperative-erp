@@ -9,6 +9,7 @@ const STORAGE_KEY_TX = 'sugar_erp_clean_tx_v3';
 const STORAGE_KEY_SA = 'sugar_erp_clean_allotments_v3';
 const STORAGE_KEY_VT = 'sugar_erp_clean_varasa_v3';
 const STORAGE_KEY_VG = 'sugar_erp_clean_vargavane_v3';
+const STORAGE_KEY_ENROLLMENT = 'sugar_erp_clean_enrollment_v1';
 const STORAGE_KEY_EMP = 'sugar_erp_clean_emp_v3';
 const STORAGE_KEY_LOGS = 'sugar_erp_clean_logs_v3';
 
@@ -563,6 +564,67 @@ if (!mockVargavaneTransfers || mockVargavaneTransfers.length === 0) {
   mockVargavaneTransfers = initialVargavaneTransfers;
   saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
 }
+
+export const initialNewEnrollments = [
+  {
+    id: 1,
+    sl_no: 1,
+    enrollment_id: 'ENR-2022-001',
+    date: '23-03-22',
+    full_name: 'ಧೋಳೇಶ ಧನಸಿಂಗ ಚವ್ಹಾಣ',
+    place: 'ಚಣೆಗಾಂವ',
+    taluk: 'ಚಡಚಣ',
+    dist: 'ವಿಜಯಪುರ',
+    share_amount: 24000,
+    admission_fee: 570,
+    total_amount: 24570,
+    receipt_no: '',
+    no_shares: 1,
+    category: 'ಡ ವರ್ಗ',
+    tharava_date: '10-08-22',
+    tharava_no: '05(8)',
+    share_no: '',
+    aadhaar_no: '',
+    mobile_no: '',
+    photo: '',
+    signature: '',
+    thumb_impression: '',
+    approval_status: 'Board Approved (ಠರಾವು ಮಂಜೂರು)',
+    created_at: '2022-03-23T10:00:00.000Z'
+  },
+  {
+    id: 2,
+    sl_no: 2,
+    enrollment_id: 'ENR-2022-002',
+    date: '24-03-22',
+    full_name: 'ಮುರಳಿಧರ ಬಿಠ್ಠಲರಾವ್ ಕುಲಕರ್ಣಿ',
+    place: 'ಗೋಡಿಹಾಳ',
+    taluk: 'ಚಡಚಣ',
+    dist: 'ವಿಜಯಪುರ',
+    share_amount: 48000,
+    admission_fee: 1140,
+    total_amount: 49140,
+    receipt_no: '390',
+    no_shares: 2,
+    category: 'ಅ ವರ್ಗ',
+    tharava_date: '10-08-22',
+    tharava_no: '05(8)',
+    share_no: '',
+    aadhaar_no: '',
+    mobile_no: '',
+    photo: '',
+    signature: '',
+    thumb_impression: '',
+    approval_status: 'Board Approved (ಠರಾವು ಮಂಜೂರು)',
+    created_at: '2022-03-24T10:00:00.000Z'
+  }
+];
+
+let mockEnrollments = loadStoredData(STORAGE_KEY_ENROLLMENT, initialNewEnrollments);
+if (!mockEnrollments || mockEnrollments.length === 0) {
+  mockEnrollments = initialNewEnrollments;
+  saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+}
 let mockEmployees = loadStoredData(STORAGE_KEY_EMP, []);
 let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
 
@@ -704,6 +766,10 @@ export const ApiService = {
         totalVargavane: mockVargavaneTransfers.length,
         pendingVargavane: mockVargavaneTransfers.filter(v => v.approval_status !== 'Completed').length,
         completedVargavane: mockVargavaneTransfers.filter(v => v.approval_status === 'Completed').length,
+        totalEnrollments: mockEnrollments.length,
+        totalEnrollmentShares: mockEnrollments.reduce((acc, e) => acc + (parseInt(e.no_shares) || 1), 0),
+        totalEnrollmentAmount: mockEnrollments.reduce((acc, e) => acc + (parseFloat(e.total_amount) || 0), 0),
+        approvedEnrollments: mockEnrollments.filter(e => (e.approval_status || '').includes('Approved') || (e.approval_status || '').includes('Issued')).length,
         todayTx: mockTransactions.length,
         todayAttendance: 0,
         totalSugarAlloted: mockSugarAllotments.reduce((acc, a) => acc + (parseFloat(a.issued_quantity_kg) || 0), 0),
@@ -1603,6 +1669,278 @@ export const ApiService = {
 
     mockVargavaneTransfers = [...items, ...mockVargavaneTransfers];
     saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+    return { success: true, count: items.length };
+  },
+
+  // ==========================================
+  // NEW SHAREHOLDER ENROLLMENT (ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ)
+  // ==========================================
+  async getEnrollments({ search = '', category = '', status = '', page = 1, limit = 20 } = {}) {
+    await ensureDBReady();
+    let filtered = mockEnrollments;
+
+    if (search) {
+      const q = search.trim().toLowerCase().normalize('NFC');
+      filtered = filtered.filter(item => {
+        const name = (item.full_name || '').toLowerCase().normalize('NFC');
+        const place = (item.place || '').toLowerCase().normalize('NFC');
+        const taluk = (item.taluk || '').toLowerCase().normalize('NFC');
+        const dist = (item.dist || '').toLowerCase().normalize('NFC');
+        const shareNo = String(item.share_no || '');
+        const rcpt = String(item.receipt_no || '');
+        const tharavaNo = String(item.tharava_no || '').toLowerCase();
+        const aadh = (item.aadhaar_no || '').replace(/\s/g, '');
+        const mob = (item.mobile_no || '');
+        const cleanQ = q.replace(/\s/g, '');
+
+        return name.includes(q) ||
+          place.includes(q) ||
+          taluk.includes(q) ||
+          dist.includes(q) ||
+          shareNo.includes(q) ||
+          rcpt.includes(q) ||
+          tharavaNo.includes(q) ||
+          (cleanQ.length > 2 && aadh.includes(cleanQ)) ||
+          mob.includes(q);
+      });
+    }
+
+    if (category && category !== 'All') {
+      const catKey = category.trim().normalize('NFC');
+      filtered = filtered.filter(item => (item.category || '').normalize('NFC') === catKey);
+    }
+
+    if (status && status !== 'All') {
+      filtered = filtered.filter(item => (item.approval_status || '').toLowerCase().includes(status.toLowerCase()));
+    }
+
+    const total = filtered.length;
+    const startIndex = (page - 1) * limit;
+    const paginated = filtered.slice(startIndex, startIndex + limit);
+
+    const stats = {
+      totalEnrolled: mockEnrollments.length,
+      totalShares: mockEnrollments.reduce((acc, e) => acc + (parseInt(e.no_shares) || 1), 0),
+      totalShareCapital: mockEnrollments.reduce((acc, e) => acc + (parseFloat(e.share_amount) || 0), 0),
+      totalAdmissionFees: mockEnrollments.reduce((acc, e) => acc + (parseFloat(e.admission_fee) || 0), 0),
+      totalAmountCollected: mockEnrollments.reduce((acc, e) => acc + (parseFloat(e.total_amount) || 0), 0),
+      boardApprovedCount: mockEnrollments.filter(e => (e.approval_status || '').includes('Approved')).length,
+      sharesIssuedCount: mockEnrollments.filter(e => (e.approval_status || '').includes('Issued')).length,
+    };
+
+    return {
+      success: true,
+      data: paginated,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+      stats
+    };
+  },
+
+  async addEnrollment(data) {
+    await ensureDBReady();
+    const nextId = mockEnrollments.reduce((m, e) => Math.max(m, parseInt(e.id) || 0), 0) + 1;
+    const nextSl = mockEnrollments.reduce((m, e) => Math.max(m, parseInt(e.sl_no) || 0), 0) + 1;
+    const year = new Date().getFullYear();
+
+    const noShares = parseInt(data.no_shares) || 1;
+    const shareAmount = parseFloat(data.share_amount) !== undefined && !isNaN(parseFloat(data.share_amount))
+      ? parseFloat(data.share_amount)
+      : (noShares * 24000);
+    const admissionFee = parseFloat(data.admission_fee) !== undefined && !isNaN(parseFloat(data.admission_fee))
+      ? parseFloat(data.admission_fee)
+      : (noShares * 570);
+    const totalAmount = parseFloat(data.total_amount) !== undefined && !isNaN(parseFloat(data.total_amount))
+      ? parseFloat(data.total_amount)
+      : (shareAmount + admissionFee);
+
+    const newE = {
+      id: nextId,
+      sl_no: nextSl,
+      enrollment_id: `ENR-${year}-${String(nextId).padStart(3, '0')}`,
+      date: data.date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
+      full_name: (data.full_name || '').normalize('NFC'),
+      place: (data.place || '').normalize('NFC'),
+      taluk: (data.taluk || 'ಚಡಚಣ').normalize('NFC'),
+      dist: (data.dist || 'ವಿಜಯಪುರ').normalize('NFC'),
+      share_amount: shareAmount,
+      admission_fee: admissionFee,
+      total_amount: totalAmount,
+      receipt_no: String(data.receipt_no || ''),
+      no_shares: noShares,
+      category: data.category || 'ಅ ವರ್ಗ',
+      tharava_date: data.tharava_date || '',
+      tharava_no: data.tharava_no || '',
+      share_no: String(data.share_no || ''),
+      aadhaar_no: data.aadhaar_no || '',
+      mobile_no: data.mobile_no || '',
+      photo: data.photo || '',
+      signature: data.signature || '',
+      thumb_impression: data.thumb_impression || '',
+      bank_name: data.bank_name || '',
+      bank_account: data.bank_account || '',
+      ifsc_code: data.ifsc_code || '',
+      approval_status: data.approval_status || 'Application Submitted',
+      remarks: data.remarks || '',
+      created_at: new Date().toISOString()
+    };
+
+    mockEnrollments.unshift(newE);
+    saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+    return { success: true, enrollment_id: newE.enrollment_id, data: newE };
+  },
+
+  async updateEnrollment(idOrEnrollmentId, data) {
+    await ensureDBReady();
+    const idx = mockEnrollments.findIndex(e => String(e.id) === String(idOrEnrollmentId) || e.enrollment_id === idOrEnrollmentId);
+    if (idx !== -1) {
+      const existing = mockEnrollments[idx];
+      const noShares = data.no_shares !== undefined ? (parseInt(data.no_shares) || 1) : existing.no_shares;
+      const shareAmount = data.share_amount !== undefined ? parseFloat(data.share_amount) : existing.share_amount;
+      const admissionFee = data.admission_fee !== undefined ? parseFloat(data.admission_fee) : existing.admission_fee;
+      const totalAmount = data.total_amount !== undefined ? parseFloat(data.total_amount) : (shareAmount + admissionFee);
+
+      mockEnrollments[idx] = {
+        ...existing,
+        ...data,
+        no_shares: noShares,
+        share_amount: shareAmount,
+        admission_fee: admissionFee,
+        total_amount: totalAmount
+      };
+      saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+      return { success: true, data: mockEnrollments[idx] };
+    }
+    return { success: false, message: 'Record not found' };
+  },
+
+  async deleteEnrollment(idOrEnrollmentId) {
+    await ensureDBReady();
+    const idx = mockEnrollments.findIndex(e => String(e.id) === String(idOrEnrollmentId) || e.enrollment_id === idOrEnrollmentId);
+    if (idx !== -1) {
+      mockEnrollments.splice(idx, 1);
+      saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+      return { success: true };
+    }
+    return { success: false, message: 'Record not found' };
+  },
+
+  async updateEnrollmentStatus(idOrEnrollmentId, approval_status, extra = {}) {
+    await ensureDBReady();
+    const item = mockEnrollments.find(e => String(e.id) === String(idOrEnrollmentId) || e.enrollment_id === idOrEnrollmentId);
+    if (item) {
+      item.approval_status = approval_status;
+      if (extra.share_no !== undefined) item.share_no = String(extra.share_no);
+      if (extra.tharava_no !== undefined) item.tharava_no = extra.tharava_no;
+      if (extra.tharava_date !== undefined) item.tharava_date = extra.tharava_date;
+      saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+      return { success: true, data: item };
+    }
+    return { success: false, message: 'Record not found' };
+  },
+
+  async promoteEnrollmentToShareholder(idOrEnrollmentId, shareNo) {
+    await ensureDBReady();
+    const item = mockEnrollments.find(e => String(e.id) === String(idOrEnrollmentId) || e.enrollment_id === idOrEnrollmentId);
+    if (!item) return { success: false, message: 'Enrollment record not found' };
+
+    const assignedShareNo = String(shareNo || item.share_no || '').trim();
+    if (!assignedShareNo) {
+      return { success: false, message: 'Please assign an official Share Certificate Number' };
+    }
+
+    // Check if share_number already exists in master database
+    const existingSh = mockShareholders.find(s => String(s.share_number || s.share_no) === assignedShareNo);
+    if (existingSh) {
+      return { success: false, message: `Share No ${assignedShareNo} is already assigned to ${existingSh.shareholder_name}` };
+    }
+
+    // Auto resolve circle
+    const resolvedCircle = this.resolveCircleForPlace(item.place);
+
+    const nextId = mockShareholders.reduce((m, s) => Math.max(m, parseInt(s.id) || 0), 0) + 1;
+    const newMember = {
+      id: nextId,
+      share_number: assignedShareNo,
+      share_no: assignedShareNo,
+      shareholder_name: item.full_name,
+      place: item.place,
+      village_name: item.place,
+      taluk: item.taluk || resolvedCircle.taluk || 'ಚಡಚಣ',
+      district: item.dist || resolvedCircle.district || 'ವಿಜಯಪುರ',
+      circle: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
+      circle_name: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
+      number_of_shares: parseInt(item.no_shares) || 1,
+      schedule_cast: item.category || 'ಅ - ವರ್ಗ',
+      status: 'Active',
+      mobile_number: item.mobile_no || '',
+      aadhaar_number: item.aadhaar_no || '',
+      photo: item.photo || '',
+      signature: item.signature || '',
+      thumb_impression: item.thumb_impression || '',
+      date_of_joining: item.date || new Date().toLocaleDateString('en-GB'),
+      book_no: item.tharava_no ? `ಠರಾವು-${item.tharava_no}` : 'BOOK-NEW',
+      notes: `ಹೊಸ ನೋಂದಣಿ ಸಂಖ್ಯೆ: ${item.enrollment_id}, ರಶೀದಿ ನಂ: ${item.receipt_no || '—'}`
+    };
+
+    mockShareholders.unshift(newMember);
+    await saveToIndexedDB(mockShareholders);
+
+    // Update enrollment status
+    item.share_no = assignedShareNo;
+    item.approval_status = 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)';
+    saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+
+    return { success: true, share_no: assignedShareNo, shareholder: newMember };
+  },
+
+  async addEnrollmentsBulk(records) {
+    await ensureDBReady();
+    if (!Array.isArray(records) || records.length === 0) return { success: true, count: 0 };
+    let maxId = mockEnrollments.reduce((m, e) => Math.max(m, parseInt(e.id) || 0), 0);
+    let maxSl = mockEnrollments.reduce((m, e) => Math.max(m, parseInt(e.sl_no) || 0), 0);
+    const year = new Date().getFullYear();
+
+    const items = records.map((r, i) => {
+      const id = maxId + i + 1;
+      const sl = r.sl_no ? parseInt(r.sl_no) : (maxSl + i + 1);
+      const noShares = parseInt(r.no_shares || r['No. Shares'] || r.no_of_shares) || 1;
+      const shareAmt = parseFloat(r.share_amount || r['Share amount']) || (noShares * 24000);
+      const fee = parseFloat(r.admission_fee || r['Admission Fee'] || r.fee) || (noShares * 570);
+      const totAmt = parseFloat(r.total_amount || r['Total Amount']) || (shareAmt + fee);
+
+      return {
+        id,
+        sl_no: sl,
+        enrollment_id: r.enrollment_id || `ENR-${year}-${String(id).padStart(3, '0')}`,
+        date: r.date || r.Date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
+        full_name: (r.full_name || r['Full Name'] || '').normalize('NFC'),
+        place: (r.place || r.Place || '').normalize('NFC'),
+        taluk: (r.taluk || r.Taluk || 'ಚಡಚಣ').normalize('NFC'),
+        dist: (r.dist || r.Dist || r.district || 'ವಿಜಯಪುರ').normalize('NFC'),
+        share_amount: shareAmt,
+        admission_fee: fee,
+        total_amount: totAmt,
+        receipt_no: String(r.receipt_no || r['Reciept No'] || r['Receipt No'] || ''),
+        no_shares: noShares,
+        category: r.category || r.Category || 'ಅ ವರ್ಗ',
+        tharava_date: r.tharava_date || r['Tharava Date'] || '',
+        tharava_no: r.tharava_no || r['Tharava No'] || '',
+        share_no: String(r.share_no || r['Share No'] || ''),
+        aadhaar_no: r.aadhaar_no || '',
+        mobile_no: r.mobile_no || '',
+        photo: r.photo || '',
+        signature: r.signature || '',
+        thumb_impression: r.thumb_impression || '',
+        approval_status: r.approval_status || (r.share_no ? 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)' : 'Board Approved (ಠರಾವು ಮಂಜೂರು)'),
+        created_at: new Date().toISOString()
+      };
+    });
+
+    mockEnrollments = [...items, ...mockEnrollments];
+    saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
     return { success: true, count: items.length };
   },
 
