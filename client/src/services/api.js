@@ -38,6 +38,39 @@ function saveStoredData(key, data) {
   } catch (e) {}
 }
 
+// Helper: Determine if a shareholder record genuinely has a 2nd installment
+export function hasSecondInstallment(sh) {
+  if (!sh) return false;
+  const amt2 = parseFloat(sh.amount) || 0;
+  const rec2 = String(sh.reciept || '').trim();
+  const rec1 = String(sh.receipt_no || '').trim();
+  const amt1 = parseFloat(sh.receipt_amount) || 0;
+  const totAmt = parseFloat(sh.total_amount) || 0;
+
+  // If amt2 is 0 or empty, and rec2 is empty or '—'
+  if (amt2 <= 0 && (!rec2 || rec2 === '—' || rec2 === '-')) {
+    return false;
+  }
+
+  // If rec2 is identical to rec1 AND amt2 is identical to amt1 AND totAmt <= amt1
+  // (legacy duplicate fallback), it is NOT a second installment!
+  if (rec2 === rec1 && amt2 === amt1 && totAmt <= amt1) {
+    return false;
+  }
+
+  // If amount2 is positive and total amount exceeds receipt_amount
+  if (amt2 > 0 && totAmt > amt1) {
+    return true;
+  }
+
+  // If there is a distinct positive amount or distinct receipt number
+  if (amt2 > 0 && rec2 && rec2 !== '—' && rec2 !== rec1) {
+    return true;
+  }
+
+  return false;
+}
+
 // Zero-dependency IndexedDB storage for massive datasets (17k - 100k+ records)
 const DB_NAME = 'SugarCooperativeERP_DB_v2';
 const DB_VERSION = 2;
@@ -274,6 +307,14 @@ export function ensureDBReady() {
                 s.pin_code = m.pincode;
                 modified = true;
               }
+            }
+
+            // Clean up artificial duplicate 2nd installments:
+            if (s.reciept && s.reciept === s.receipt_no && parseFloat(s.amount) === parseFloat(s.receipt_amount) && parseFloat(s.total_amount) <= parseFloat(s.receipt_amount)) {
+              s.reciept = '';
+              s.amount = 0;
+              s.date = '';
+              modified = true;
             }
           });
           if (modified) {
@@ -889,9 +930,9 @@ export const ApiService = {
         registration_date: data.reg_date || nowStr,
         receipt_no: receiptNo,
         receipt_amount: receiptAmt,
-        date: data.date || data.reg_date || nowStr,
-        reciept: data.reciept || receiptNo,
-        amount: parseFloat(data.amount) || receiptAmt,
+        date: data.date || '',
+        reciept: (data.reciept && String(data.reciept).trim() !== String(receiptNo).trim()) ? String(data.reciept).trim() : (parseFloat(data.amount) > 0 && totalAmt > receiptAmt ? String(data.reciept || '') : ''),
+        amount: (parseFloat(data.amount) > 0 && (String(data.reciept).trim() !== String(receiptNo).trim() || totalAmt > receiptAmt)) ? parseFloat(data.amount) : 0,
         total_amount: totalAmt,
         number_of_shares: numShares,
         share_value: totalAmt,
@@ -999,9 +1040,9 @@ export const ApiService = {
       registration_date: data.reg_date || nowStr,
       receipt_no: data.receipt_no || String(nextId),
       receipt_amount: parseFloat(data.receipt_amount) || 2000,
-      date: data.date || data.reg_date || nowStr,
-      reciept: data.reciept || data.receipt_no || String(nextId),
-      amount: parseFloat(data.amount) || parseFloat(data.receipt_amount) || 2000,
+      date: data.date || '',
+      reciept: (data.reciept && String(data.reciept).trim() !== String(data.receipt_no || '').trim()) ? String(data.reciept).trim() : (parseFloat(data.amount) > 0 && parseFloat(data.total_amount) > (parseFloat(data.receipt_amount) || 0) ? String(data.reciept || '') : ''),
+      amount: (parseFloat(data.amount) > 0 && (String(data.reciept).trim() !== String(data.receipt_no || '').trim() || parseFloat(data.total_amount) > (parseFloat(data.receipt_amount) || 0))) ? parseFloat(data.amount) : 0,
       total_amount: parseFloat(data.total_amount) || (parseFloat(data.number_of_shares) || 1) * 2000,
       number_of_shares: parseInt(data.number_of_shares) || 1,
       share_value: parseFloat(data.total_amount) || (parseFloat(data.number_of_shares) || 1) * 2000,

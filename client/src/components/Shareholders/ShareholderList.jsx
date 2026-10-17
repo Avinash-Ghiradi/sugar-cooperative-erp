@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { ApiService } from '../../services/api';
+import { ApiService, hasSecondInstallment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
@@ -213,10 +213,10 @@ export default function ShareholderList() {
           reg_date: getVal(cRegDate) || '10/Aug/1982',
           receipt_no: getVal(cReceiptNo) || String(i),
           receipt_amount: parseFloat(getVal(cReceiptAmt)) || 2000,
-          date: getVal(cDate) || getVal(cRegDate) || '10/Aug/1982',
-          reciept: getVal(cReciept) || getVal(cReceiptNo) || '',
-          amount: parseFloat(getVal(cAmt)) || 2000,
-          total_amount: parseFloat(getVal(cTotalAmt)) || parseFloat(getVal(cAmt)) || 2000,
+          date: getVal(cDate) || '',
+          reciept: getVal(cReciept) || '',
+          amount: parseFloat(getVal(cAmt)) || 0,
+          total_amount: parseFloat(getVal(cTotalAmt)) || (parseFloat(getVal(cReceiptAmt)) || 0) + (parseFloat(getVal(cAmt)) || 0) || 2000,
           number_of_shares: parseInt(getVal(cShares)) || 1,
           schedule_cast: getVal(cCast) || 'ಅ - ವರ್ಗ',
           address: getVal(cAddr),
@@ -1007,16 +1007,22 @@ export default function ShareholderList() {
                     <td className="py-2.5 px-2 text-center font-mono text-slate-300">{sh.receipt_no || sh.id}</td>
 
                     {/* 9. Receipt Amount */}
-                    <td className="py-2.5 px-3 text-right font-mono font-medium">₹ {(sh.receipt_amount || 2000).toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-medium">₹ {(sh.receipt_amount || sh.total_amount || 2000).toLocaleString()}</td>
 
-                    {/* 10. Date */}
-                    <td className="py-2.5 px-3 text-slate-400">{sh.date || sh.reg_date || sh.registration_date}</td>
+                    {/* 10. Date (2nd Installment Date) */}
+                    <td className="py-2.5 px-3 text-slate-400">
+                      {hasSecondInstallment(sh) ? (sh.date || '—') : '—'}
+                    </td>
 
-                    {/* 11. Reciept */}
-                    <td className="py-2.5 px-2 text-center font-mono text-slate-400">{sh.reciept || sh.receipt_no || ''}</td>
+                    {/* 11. Reciept (2nd Installment Receipt No) */}
+                    <td className="py-2.5 px-2 text-center font-mono text-slate-400">
+                      {hasSecondInstallment(sh) ? (sh.reciept || '—') : '—'}
+                    </td>
 
-                    {/* 12. Amount */}
-                    <td className="py-2.5 px-3 text-right font-mono">₹ {(sh.amount || sh.receipt_amount || 2000).toLocaleString()}</td>
+                    {/* 12. Amount (2nd Installment Amount) */}
+                    <td className="py-2.5 px-3 text-right font-mono text-slate-400">
+                      {hasSecondInstallment(sh) ? `₹ ${(parseFloat(sh.amount) || 0).toLocaleString()}` : '—'}
+                    </td>
 
                     {/* 13. Total Amount */}
                     <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-400">

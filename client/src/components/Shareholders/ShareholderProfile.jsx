@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService } from '../../services/api';
+import { ApiService, hasSecondInstallment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   User, Coins, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
@@ -153,16 +153,33 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                 <h3 className="font-semibold text-slate-200 text-sm border-b border-slate-800 pb-2 flex items-center gap-2">
                   <Coins className="w-4 h-4 text-amber-400" /> Share Capital & Receipt Details
                 </h3>
-                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Total Share Amount:</span><span className="text-amber-400 font-bold text-sm">₹ {(sh.total_amount || sh.share_value || 2000).toLocaleString()}</span></div>
-                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Receipt No:</span><span className="text-slate-200 font-mono">{sh.receipt_no || sh.id}</span></div>
-                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Receipt Amount:</span><span className="text-slate-100 font-mono">₹ {(sh.receipt_amount || sh.amount || 2000).toLocaleString()}</span></div>
-                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Receipt Date:</span><span className="text-slate-200">{sh.date || sh.reg_date || sh.registration_date}</span></div>
-                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Registration Date:</span><span className="text-slate-200">{sh.reg_date || sh.registration_date}</span></div>
+                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Total Share Amount (ಒಟ್ಟು ಮೊತ್ತ):</span><span className="text-amber-400 font-bold text-sm font-mono">₹ {(sh.total_amount || sh.share_value || 2000).toLocaleString()}</span></div>
+                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">1st Receipt No (1ನೇ ರಶೀದಿ ನಂ):</span><span className="text-slate-200 font-mono font-semibold">#{sh.receipt_no || sh.id}</span></div>
+                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">1st Installment (1ನೇ ಕಂತು ಜಮೆ):</span><span className="text-emerald-400 font-mono font-bold">₹ {(sh.receipt_amount || sh.total_amount || 2000).toLocaleString()}</span></div>
+                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Registration Date (ದಿನಾಂಕ):</span><span className="text-slate-200">{sh.reg_date || sh.registration_date}</span></div>
+                {hasSecondInstallment(sh) && (
+                  <>
+                    <div className="flex justify-between py-1 border-b border-slate-800/40 bg-amber-950/20 px-2 rounded-lg">
+                      <span className="text-amber-400 font-medium">2nd Receipt No (2ನೇ ರಶೀದಿ ನಂ):</span>
+                      <span className="text-amber-300 font-mono font-bold">#{sh.reciept}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-800/40 bg-amber-950/20 px-2 rounded-lg">
+                      <span className="text-amber-400 font-medium">2nd Installment (2ನೇ ಕಂತು ಜಮೆ):</span>
+                      <span className="text-amber-300 font-mono font-bold">₹ {Number(sh.amount).toLocaleString()}</span>
+                    </div>
+                    {sh.date && (
+                      <div className="flex justify-between py-1 border-b border-slate-800/40 bg-amber-950/20 px-2 rounded-lg">
+                        <span className="text-slate-400">2nd Installment Date (2ನೇ ಕಂತಿನ ದಿನಾಂಕ):</span>
+                        <span className="text-slate-200">{sh.date}</span>
+                      </div>
+                    )}
+                  </>
+                )}
                 <div className="flex justify-between py-1"><span className="text-slate-400">Cooperative Status:</span><span className="text-emerald-400 font-bold">{sh.status || 'Active'}</span></div>
               </div>
 
               {/* Merged Share Certificates & Multiple Amounts Section */}
-              {(sh.is_merged || (sh.merged_holdings && sh.merged_holdings.length > 0) || (sh.amount > 0 && sh.reciept)) && (
+              {(sh.is_merged || (sh.merged_holdings && sh.merged_holdings.length > 0) || hasSecondInstallment(sh)) && (
                 <div className="md:col-span-2 bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-amber-950/20 border border-amber-500/30 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                     <h3 className="font-semibold text-slate-100 text-sm flex items-center gap-2">
@@ -170,7 +187,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                       ಬಹು-ಶೇರುಗಳು & ಪಾವತಿ ವಿವರಗಳು (Merged Share Holdings & Installments)
                     </h3>
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-700/60 font-mono">
-                      {sh.merged_holdings ? `${sh.merged_holdings.length} Certificates Merged` : 'Multiple Installments'}
+                      {sh.merged_holdings && sh.merged_holdings.length > 0 ? `${sh.merged_holdings.length} Certificates Merged` : '2 Installments (2 ಕಂತುಗಳು)'}
                     </span>
                   </div>
 
@@ -193,22 +210,24 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl space-y-1">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">1ನೇ ಕಂತು / ರಶೀದಿ (1st Installment)</span>
+                        <span className="text-[10px] uppercase font-bold text-emerald-400">1ನೇ ಕಂತು / ರಶೀದಿ (1st Installment)</span>
                         <div className="flex items-center justify-between">
                           <span className="text-slate-300">ರಶೀದಿ #{sh.receipt_no || '—'}</span>
-                          <span className="font-mono font-bold text-emerald-400">₹ {Number(sh.receipt_amount || 0).toLocaleString()}</span>
+                          <span className="font-mono font-bold text-emerald-400">₹ {Number(sh.receipt_amount || sh.total_amount || 0).toLocaleString()}</span>
                         </div>
-                        <div className="text-[10px] text-slate-500">{sh.date || sh.reg_date}</div>
+                        <div className="text-[10px] text-slate-500">{sh.reg_date || sh.date}</div>
                       </div>
 
-                      <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl space-y-1">
-                        <span className="text-[10px] uppercase font-bold text-amber-400">2ನೇ ಕಂತು / ರಶೀದಿ (2nd Installment)</span>
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-300">ರಶೀದಿ #{sh.reciept || '—'}</span>
-                          <span className="font-mono font-bold text-amber-400">₹ {Number(sh.amount || 0).toLocaleString()}</span>
+                      {hasSecondInstallment(sh) && (
+                        <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl space-y-1">
+                          <span className="text-[10px] uppercase font-bold text-amber-400">2ನೇ ಕಂತು / ರಶೀದಿ (2nd Installment)</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-300">ರಶೀದಿ #{sh.reciept}</span>
+                            <span className="font-mono font-bold text-amber-400">₹ {Number(sh.amount || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-500">{sh.date || '—'}</div>
                         </div>
-                        <div className="text-[10px] text-slate-500">{sh.date || sh.reg_date}</div>
-                      </div>
+                      )}
                     </div>
                   )}
 

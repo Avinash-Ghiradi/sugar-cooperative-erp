@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService } from '../../services/api';
+import { ApiService, hasSecondInstallment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   X, Save, Plus, Printer, Contact, AlertTriangle, BookOpen, MapPin,
@@ -48,6 +48,9 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
   const [circles, setCircles] = useState([]);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const hasInitial2nd = initialData ? hasSecondInstallment(initialData) : false;
+  const [showSecondInstallment, setShowSecondInstallment] = useState(hasInitial2nd);
+
   const [formData, setFormData] = useState({
     // 38 Official Statutory Cooperative Columns:
     book_no: initialData?.book_no || 'B.No: 1',
@@ -59,9 +62,9 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     reg_date: initialData?.reg_date || initialData?.registration_date || new Date().toLocaleDateString('en-GB'),
     receipt_no: initialData?.receipt_no || String(Math.floor(Math.random() * 9000) + 100),
     receipt_amount: initialData?.receipt_amount || 2000,
-    date: initialData?.date || initialData?.reg_date || new Date().toLocaleDateString('en-GB'),
-    reciept: initialData?.reciept || initialData?.receipt_no || '',
-    amount: initialData?.amount || 2000,
+    date: hasInitial2nd ? (initialData?.date || '') : '',
+    reciept: hasInitial2nd ? (initialData?.reciept || '') : '',
+    amount: hasInitial2nd ? (initialData?.amount || '') : '',
     total_amount: initialData?.total_amount || 2000,
     number_of_shares: initialData?.number_of_shares || 1,
     schedule_cast: initialData?.schedule_cast || 'ಅ - ವರ್ಗ',
@@ -182,9 +185,16 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
       return;
     }
 
+    const submissionData = {
+      ...formData,
+      reciept: showSecondInstallment ? String(formData.reciept || '').trim() : '',
+      amount: showSecondInstallment ? (parseFloat(formData.amount) || 0) : 0,
+      date: showSecondInstallment ? String(formData.date || '').trim() : ''
+    };
+
     if (initialData) {
       const shId = initialData.id || initialData.shareholder_id;
-      const res = await ApiService.updateShareholder(shId, formData);
+      const res = await ApiService.updateShareholder(shId, submissionData);
       if (res && res.success) {
         showToast(`Updated shareholder record for ${formData.shareholder_name}`);
         if (onSaveSuccess) onSaveSuccess(res.data);
@@ -192,10 +202,11 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
         setErrorMsg(res?.message || 'Failed to update shareholder.');
       }
     } else {
-      const res = await ApiService.addShareholder(formData);
+      const res = await ApiService.addShareholder(submissionData);
       if (res && res.success) {
         showToast(`Shareholder ${formData.shareholder_name} saved successfully!`);
         if (saveAndNew) {
+          setShowSecondInstallment(false);
           setFormData(prev => ({
             ...prev,
             sl_no: parseInt(prev.sl_no) + 1,
@@ -209,6 +220,9 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
             photo_updated: 'No',
             signature_updated: 'No',
             thumb_updated: 'No',
+            reciept: '',
+            amount: '',
+            date: '',
             nominee_name: '',
             nominee_aadhaar_no: '',
             nominee_mobile_no: '',
@@ -335,24 +349,83 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Receipt No</label>
+                <label className="block text-slate-400 mb-1 font-medium">1ನೇ ಕಂತು ರಶೀದಿ ಸಂ. (Receipt No)</label>
                 <input
                   type="text"
                   value={formData.receipt_no}
-                  onChange={(e) => setFormData({ ...formData, receipt_no: e.target.value, reciept: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, receipt_no: e.target.value })}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Receipt Amount (₹)</label>
+                <label className="block text-slate-400 mb-1 font-medium">1ನೇ ಕಂತು ಮೊತ್ತ (Receipt Amount ₹)</label>
                 <input
                   type="number"
                   value={formData.receipt_amount}
-                  onChange={(e) => setFormData({ ...formData, receipt_amount: parseFloat(e.target.value) || 0, amount: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, receipt_amount: parseFloat(e.target.value) || 0 })}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
                 />
               </div>
+            </div>
+
+            {/* Optional 2nd Installment Toggle & Fields */}
+            <div className="pt-3 mt-2 border-t border-slate-800/80">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-300">2ನೇ ಕಂತು / ರಶೀದಿ (2nd Installment - ಐಚ್ಛಿಕ)</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !showSecondInstallment;
+                    setShowSecondInstallment(next);
+                    if (!next) {
+                      setFormData(prev => ({ ...prev, reciept: '', amount: '', date: '' }));
+                    }
+                  }}
+                  className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
+                    showSecondInstallment
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200'
+                  }`}
+                >
+                  {showSecondInstallment ? '✓ 2ನೇ ಕಂತು ಸಕ್ರಿಯವಾಗಿದೆ (Remove)' : '+ 2ನೇ ಕಂತು ಸೇರಿಸಿ (Add)'}
+                </button>
+              </div>
+
+              {showSecondInstallment && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1 font-medium text-xs">2ನೇ ಕಂತು ರಶೀದಿ ಸಂ. (2nd Receipt No)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 5421"
+                      value={formData.reciept}
+                      onChange={(e) => setFormData({ ...formData, reciept: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono text-sm outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1 font-medium text-xs">2ನೇ ಕಂತು ಮೊತ್ತ (2nd Amount ₹)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 1000"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 text-sm outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1 font-medium text-xs">2ನೇ ಕಂತು ದಿನಾಂಕ (2nd Date)</label>
+                    <input
+                      type="text"
+                      placeholder="DD/MM/YYYY"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 text-sm outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
