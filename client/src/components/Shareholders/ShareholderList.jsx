@@ -46,6 +46,23 @@ export default function ShareholderList() {
   const [uploadFileName, setUploadFileName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [autoMergeOnImport, setAutoMergeOnImport] = useState(true);
+  const [selectedShareIds, setSelectedShareIds] = useState([]);
+
+  const toggleSelectRow = (id) => {
+    setSelectedShareIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = () => {
+    const pageIds = shareholders.map(s => s.id);
+    const allSelected = pageIds.length > 0 && pageIds.every(id => selectedShareIds.includes(id));
+    if (allSelected) {
+      setSelectedShareIds(prev => prev.filter(id => !pageIds.includes(id)));
+    } else {
+      setSelectedShareIds(prev => Array.from(new Set([...prev, ...pageIds])));
+    }
+  };
   const uploadInputRef = React.useRef(null);
 
   useEffect(() => {

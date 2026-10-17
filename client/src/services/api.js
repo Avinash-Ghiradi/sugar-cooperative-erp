@@ -7,11 +7,20 @@ const API_BASE = '/api';
 const STORAGE_KEY_SH = 'sugar_erp_clean_shareholders_v3';
 const STORAGE_KEY_TX = 'sugar_erp_clean_tx_v3';
 const STORAGE_KEY_SA = 'sugar_erp_clean_allotments_v3';
-const STORAGE_KEY_VT = 'sugar_erp_clean_varasa_v3';
-const STORAGE_KEY_VG = 'sugar_erp_clean_vargavane_v3';
-const STORAGE_KEY_ENROLLMENT = 'sugar_erp_clean_enrollment_v1';
+const STORAGE_KEY_VT = 'sugar_erp_clean_varasa_v4';
+const STORAGE_KEY_VG = 'sugar_erp_clean_vargavane_v4';
+const STORAGE_KEY_ENROLLMENT = 'sugar_erp_clean_enrollment_v2';
 const STORAGE_KEY_EMP = 'sugar_erp_clean_emp_v3';
 const STORAGE_KEY_LOGS = 'sugar_erp_clean_logs_v3';
+
+// Clear legacy mock cache keys
+try {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('sugar_erp_clean_varasa_v3');
+    localStorage.removeItem('sugar_erp_clean_vargavane_v3');
+    localStorage.removeItem('sugar_erp_clean_enrollment_v1');
+  }
+} catch (e) {}
 
 function loadStoredData(key, fallback = []) {
   try {
@@ -304,327 +313,16 @@ if (typeof window !== 'undefined') {
   ensureDBReady();
 }
 
-export const initialVarasaTransfers = [
-  {
-    id: 1,
-    sl_no: 1,
-    transfer_id: 'VAR-2022-001',
-    varasa_member: 'ಶಂಕರಗೌಡ ಮಲ್ಲಪ್ಪ ತಾರಾಪೂರ',
-    heir_name: 'ಶಂಕರಗೌಡ ಮಲ್ಲಪ್ಪ ತಾರಾಪೂರ',
-    heir_place: 'ಅಥರ್ಗಾ',
-    heir_taluk: 'ಇಂಡಿ',
-    heir_district: 'ವಿಜಯಪುರ',
-    heir_relationship: 'ಮಗ',
-    heir_age: '',
-    heir_mobile: '9901661920',
-    heir_aadhaar: '',
-    heir_photo: '',
-    shareholder_name: 'ಮಲ್ಲಪ್ಪ ಈರಣ್ಣ ತಾರಾಪೂರ',
-    existing_shareholder_name: 'ಮಲ್ಲಪ್ಪ ಈರಣ್ಣ ತಾರಾಪೂರ',
-    shareholder_place: 'ಅಥರ್ಗಾ',
-    shareholder_taluk: 'ಇಂಡಿ',
-    shareholder_district: 'ವಿಜಯಪುರ',
-    shareholder_relationship: 'ತಂದೆ',
-    dod: '05/11/2021',
-    share_no: '10006',
-    existing_share_number: '10006',
-    category: 'ಅ - ವರ್ಗ',
-    no_of_shares: 1,
-    existing_shares: 1,
-    fees: 570,
-    receipt_no: '816',
-    receipt_date: '05-11-2022',
-    approval_status: 'Completed',
-    documents_verified: 'Verified',
-    application_date: '05-11-2022',
-    remarks: 'ಮರಣ ಪ್ರಮಾಣ ಪತ್ರ ಹಾಗೂ ವಾರಸುದಾರರ ಪ್ರಮಾಣ ಪತ್ರ ಲಗತ್ತಿಸಲಾಗಿದೆ.'
-  },
-  {
-    id: 2,
-    sl_no: 2,
-    transfer_id: 'VAR-2022-002',
-    varasa_member: 'ಸುರೇಶ ಗಂಗಾಧರ ಖೊಬ್ರಾಸಿ',
-    heir_name: 'ಸುರೇಶ ಗಂಗಾಧರ ಖೊಬ್ರಾಸಿ',
-    heir_place: 'ಇಂಚಗೇರಿ ಬೊಳೆಗಾಂವ > ಬಳ್ಳೊಳ್ಳಿ',
-    heir_taluk: 'ಇಂಡಿ',
-    heir_district: 'ವಿಜಯಪುರ',
-    heir_relationship: 'ಬೊಮ್ಮಣ್ಣ',
-    heir_age: '42',
-    heir_mobile: '9481000000',
-    heir_aadhaar: '2288 3046 0600',
-    heir_photo: '',
-    shareholder_name: 'ಬಸಪ್ಪ ಜಾಲಪ್ಪರಾಯ ಖೊಬ್ರಾಸಿ',
-    existing_shareholder_name: 'ಬಸಪ್ಪ ಜಾಲಪ್ಪರಾಯ ಖೊಬ್ರಾಸಿ',
-    shareholder_place: 'ಇಂಚಗೇರಿ',
-    shareholder_taluk: 'ಇಂಡಿ',
-    shareholder_district: 'ವಿಜಯಪುರ',
-    shareholder_relationship: 'ಅಜ್ಜ',
-    dod: '01/05/2000',
-    share_no: '3494',
-    existing_share_number: '3494',
-    category: 'ಅ - ವರ್ಗ',
-    no_of_shares: 1,
-    existing_shares: 1,
-    fees: 570,
-    receipt_no: '817',
-    receipt_date: '05-11-2022',
-    approval_status: 'Completed',
-    documents_verified: 'Verified',
-    application_date: '05-11-2022',
-    remarks: 'ಅಜ್ಜ ತೀರಿಕೊಂಡ ನಂತರ ಮೊಮ್ಮಗನ ಹೆಸರಿಗೆ ಶೇರು ವರ್ಗಾವಣೆ.'
-  },
-  {
-    id: 3,
-    sl_no: 3,
-    transfer_id: 'VAR-2022-003',
-    varasa_member: 'ಶ್ರೀಮತಿ ಅಂಬಿಕಾದೇವಿ ಗುರುಶಾಂತ ಕುರಟಿಕೋಟಿ',
-    heir_name: 'ಶ್ರೀಮತಿ ಅಂಬಿಕಾದೇವಿ ಗುರುಶಾಂತ ಕುರಟಿಕೋಟಿ',
-    heir_place: 'ಬಾಗಲಕೋಟ',
-    heir_taluk: 'ಬನಹಟ್ಟಿ',
-    heir_district: 'ವಿಜಯಪುರ',
-    heir_relationship: 'ಪತ್ನಿ',
-    heir_age: '47',
-    heir_mobile: '9021738554',
-    heir_aadhaar: '6812 1184 9589',
-    heir_photo: '',
-    shareholder_name: 'ಗುರುಶಾಂತ ಶಿವಲಿಂಗ ಕುರಟಿಕೋಟಿ',
-    existing_shareholder_name: 'ಗುರುಶಾಂತ ಶಿವಲಿಂಗ ಕುರಟಿಕೋಟಿ',
-    shareholder_place: 'ಬಾಗಲಕೋಟ',
-    shareholder_taluk: 'ಬನಹಟ್ಟಿ',
-    shareholder_district: 'ವಿಜಯಪುರ',
-    shareholder_relationship: 'ಪತಿ',
-    dod: '20/07/2018',
-    share_no: '2496',
-    existing_share_number: '2496',
-    category: 'ಅ - ವರ್ಗ',
-    no_of_shares: 4,
-    existing_shares: 4,
-    fees: 570,
-    receipt_no: '819',
-    receipt_date: '08-11-2022',
-    approval_status: 'Approved',
-    documents_verified: 'Verified',
-    application_date: '08-11-2022',
-    remarks: 'ಪತಿಯ ನಿಧನದ ನಂತರ ಪತ್ನಿಯ ಹೆಸರಿಗೆ ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ.'
-  },
-  {
-    id: 4,
-    sl_no: 4,
-    transfer_id: 'VAR-2022-004',
-    varasa_member: 'ಶ್ರೀ ಸೈಪನ್ನ ಚಂದ್ರಪ್ಪಾ ಕಲೇಶ್ವರ',
-    heir_name: 'ಶ್ರೀ ಸೈಪನ್ನ ಚಂದ್ರಪ್ಪಾ ಕಲೇಶ್ವರ',
-    heir_place: 'ಇಂಚಗೇರಿ ಬೊಳೆಗಾಂವ > ಬಳ್ಳೊಳ್ಳಿ',
-    heir_taluk: 'ಇಂಡಿ',
-    heir_district: 'ವಿಜಯಪುರ',
-    heir_relationship: 'ಮಗ',
-    heir_age: '35',
-    heir_mobile: '9972258194',
-    heir_aadhaar: '2265 6941 1426',
-    heir_photo: '',
-    shareholder_name: 'ಶ್ರೀ ಚಂದ್ರಪ್ಪಾ ಸೈಪನ್ನ ಕಲೇಶ್ವರ',
-    existing_shareholder_name: 'ಶ್ರೀ ಚಂದ್ರಪ್ಪಾ ಸೈಪನ್ನ ಕಲೇಶ್ವರ',
-    shareholder_place: 'ಇಂಚಗೇರಿ',
-    shareholder_taluk: 'ಇಂಡಿ',
-    shareholder_district: 'ವಿಜಯಪುರ',
-    shareholder_relationship: 'ತಂದೆ',
-    dod: '14/11/2009',
-    share_no: '8151',
-    existing_share_number: '8151',
-    category: 'ಅ - ವರ್ಗ',
-    no_of_shares: 1,
-    existing_shares: 1,
-    fees: 570,
-    receipt_no: '823',
-    receipt_date: '19-11-2022',
-    approval_status: 'Under Verification',
-    documents_verified: 'Pending',
-    application_date: '19-11-2022',
-    remarks: 'ದಾಖಲಾತಿಗಳ ಪರಿಶೀಲನೆ ಪ್ರಕ್ರಿಯೆಯಲ್ಲಿದೆ.'
-  }
-];
-
+export const initialVarasaTransfers = [];
 let mockTransactions = loadStoredData(STORAGE_KEY_TX, []);
 let mockSugarAllotments = loadStoredData(STORAGE_KEY_SA, []);
-let mockVarasaTransfers = loadStoredData(STORAGE_KEY_VT, initialVarasaTransfers);
-if (!mockVarasaTransfers || mockVarasaTransfers.length === 0) {
-  mockVarasaTransfers = initialVarasaTransfers;
-  saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
-}
+let mockVarasaTransfers = loadStoredData(STORAGE_KEY_VT, []);
 
-export const initialVargavaneTransfers = [
-  {
-    id: 1,
-    sl_no: 1,
-    transfer_id: 'VGN-2024-001',
-    // 1. Transferor Shareholder
-    transferor_name: 'ಶ್ರೀಮತಿ ಕಸ್ತೂರಿಬಾಯಿ ಗದ್ದೆಪ್ಪ ಕುಂಬಾರ',
-    shareholder_name: 'ಶ್ರೀಮತಿ ಕಸ್ತೂರಿಬಾಯಿ ಗದ್ದೆಪ್ಪ ಕುಂಬಾರ',
-    transferor_place: 'ಅಹಿರಸಂಗ',
-    transferor_taluk: 'ಇಂಡಿ',
-    transferor_district: 'ವಿಜಯಪುರ',
-    transferor_relationship: 'ತಾಯಿ',
-    transferor_age: '',
-    transferor_aadhaar: '3892 6622 2757',
-    transferor_mobile: '',
-    // 2. Transferee (Vargavane Madikolluvaru)
-    transferee_name: 'ಶ್ರೀ ರಾಜಶೇಖರ ಗದ್ದೆಪ್ಪ ಕುಂಬಾರ',
-    transferee_place: 'ಅಹಿರಸಂಗ',
-    transferee_taluk: 'ಇಂಡಿ',
-    transferee_district: 'ವಿಜಯಪುರ',
-    transferee_relationship: 'ಮಗ',
-    transferee_aadhaar: '4269 5069 6182',
-    transferee_mobile: '9632668696',
-    transferee_photo: '',
-    // Share & Fee Details
-    share_no: '157',
-    category: 'ಅ - ವರ್ಗ',
-    no_of_shares: 2,
-    fees: 570,
-    receipt_no: '591',
-    receipt_date: '01-06-2024',
-    approval_status: 'Completed',
-    documents_verified: 'Verified',
-    application_date: '01-06-2024',
-    remarks: 'ತಾಯಿಯಿಂದ ಮಗನಿಗೆ ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ.'
-  },
-  {
-    id: 2,
-    sl_no: 2,
-    transfer_id: 'VGN-2024-002',
-    // 1. Transferor Shareholder
-    transferor_name: 'ಶ್ರೀ ಈರಪ್ಪ ಮಲ್ಲಪ್ಪ ಬಂಟ್ರೇ',
-    shareholder_name: 'ಶ್ರೀ ಈರಪ್ಪ ಮಲ್ಲಪ್ಪ ಬಂಟ್ರೇ',
-    transferor_place: 'ನಾಟೇಕಾರಗಾಂವ ಕೆ ಆಂಡ್‌',
-    transferor_taluk: 'ಇಂಡಿ',
-    transferor_district: 'ವಿಜಯಪುರ',
-    transferor_relationship: 'ತಂದೆ',
-    transferor_age: '',
-    transferor_aadhaar: '8703 1269 4835',
-    transferor_mobile: '',
-    // 2. Transferee (Vargavane Madikolluvaru)
-    transferee_name: 'ಶ್ರೀ ರೇವಣಸಿದ್ದ ಈರಪ್ಪ ಭಂಡಾರೆ',
-    transferee_place: 'ನಾಟೇಕಾರಗಾಂವ',
-    transferee_taluk: 'ಇಂಡಿ',
-    transferee_district: 'ವಿಜಯಪುರ',
-    transferee_relationship: 'ಮಗ',
-    transferee_aadhaar: '4420 4882 2014',
-    transferee_mobile: '7022153017',
-    transferee_photo: '',
-    // Share & Fee Details
-    share_no: '13453',
-    category: 'ಅ - ವರ್ಗ',
-    no_of_shares: 1,
-    fees: 570,
-    receipt_no: '592',
-    receipt_date: '13-06-2024',
-    approval_status: 'Completed',
-    documents_verified: 'Verified',
-    application_date: '13-06-2024',
-    remarks: 'ತಂದೆಯಿಂದ ಮಗನಿಗೆ ಶೇರು ವರ್ಗಾವಣೆ ನಮೂನೆ.'
-  },
-  {
-    id: 3,
-    sl_no: 3,
-    transfer_id: 'VGN-2024-003',
-    // 1. Transferor Shareholder
-    transferor_name: 'ಶ್ರೀಮತಿ ಕಮಲಾಬಾಯಿ ಶಿವಾಜಿ ಕಾಂಬಳೆ',
-    shareholder_name: 'ಶ್ರೀಮತಿ ಕಮಲಾಬಾಯಿ ಶಿವಾಜಿ ಕಾಂಬಳೆ',
-    transferor_place: 'ಹಳ್ಳಿಹಾಳ',
-    transferor_taluk: 'ಚಡಚಣ',
-    transferor_district: 'ವಿಜಯಪುರ',
-    transferor_relationship: 'ತಾಯಿ',
-    transferor_age: '',
-    transferor_aadhaar: '6905 1126 5971',
-    transferor_mobile: '',
-    // 2. Transferee (Vargavane Madikolluvaru)
-    transferee_name: 'ಶ್ರೀ ಲಕ್ಷ್ಮಣಸಿಂಗ ಶಿವಾಜಿ ಪಾಟೀಲ',
-    transferee_place: 'ಹಳ್ಳಿಹಾಳ',
-    transferee_taluk: 'ಚಡಚಣ',
-    transferee_district: 'ವಿಜಯಪುರ',
-    transferee_relationship: 'ಮಗ',
-    transferee_aadhaar: '5000 4439 5939',
-    transferee_mobile: '9060809296',
-    transferee_photo: '',
-    // Share & Fee Details
-    share_no: '5294',
-    category: 'ಅ - ವರ್ಗ',
-    no_of_shares: 3,
-    fees: 570,
-    receipt_no: '598',
-    receipt_date: '22-07-2024',
-    approval_status: 'Completed',
-    documents_verified: 'Verified',
-    application_date: '22-07-2024',
-    remarks: 'ತಾಯಿಯಿಂದ ಮಗನಿಗೆ 3 ಶೇರುಗಳ ನೇರ ವರ್ಗಾವಣೆ.'
-  }
-];
+export const initialVargavaneTransfers = [];
+let mockVargavaneTransfers = loadStoredData(STORAGE_KEY_VG, []);
 
-let mockVargavaneTransfers = loadStoredData(STORAGE_KEY_VG, initialVargavaneTransfers);
-if (!mockVargavaneTransfers || mockVargavaneTransfers.length === 0) {
-  mockVargavaneTransfers = initialVargavaneTransfers;
-  saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
-}
-
-export const initialNewEnrollments = [
-  {
-    id: 1,
-    sl_no: 1,
-    enrollment_id: 'ENR-2022-001',
-    date: '23-03-22',
-    full_name: 'ಧೋಳೇಶ ಧನಸಿಂಗ ಚವ್ಹಾಣ',
-    place: 'ಚಣೆಗಾಂವ',
-    taluk: 'ಚಡಚಣ',
-    dist: 'ವಿಜಯಪುರ',
-    share_amount: 24000,
-    admission_fee: 570,
-    total_amount: 24570,
-    receipt_no: '',
-    no_shares: 1,
-    category: 'ಡ ವರ್ಗ',
-    tharava_date: '10-08-22',
-    tharava_no: '05(8)',
-    share_no: '',
-    aadhaar_no: '',
-    mobile_no: '',
-    photo: '',
-    signature: '',
-    thumb_impression: '',
-    approval_status: 'Board Approved (ಠರಾವು ಮಂಜೂರು)',
-    created_at: '2022-03-23T10:00:00.000Z'
-  },
-  {
-    id: 2,
-    sl_no: 2,
-    enrollment_id: 'ENR-2022-002',
-    date: '24-03-22',
-    full_name: 'ಮುರಳಿಧರ ಬಿಠ್ಠಲರಾವ್ ಕುಲಕರ್ಣಿ',
-    place: 'ಗೋಡಿಹಾಳ',
-    taluk: 'ಚಡಚಣ',
-    dist: 'ವಿಜಯಪುರ',
-    share_amount: 48000,
-    admission_fee: 1140,
-    total_amount: 49140,
-    receipt_no: '390',
-    no_shares: 2,
-    category: 'ಅ ವರ್ಗ',
-    tharava_date: '10-08-22',
-    tharava_no: '05(8)',
-    share_no: '',
-    aadhaar_no: '',
-    mobile_no: '',
-    photo: '',
-    signature: '',
-    thumb_impression: '',
-    approval_status: 'Board Approved (ಠರಾವು ಮಂಜೂರು)',
-    created_at: '2022-03-24T10:00:00.000Z'
-  }
-];
-
-let mockEnrollments = loadStoredData(STORAGE_KEY_ENROLLMENT, initialNewEnrollments);
-if (!mockEnrollments || mockEnrollments.length === 0) {
-  mockEnrollments = initialNewEnrollments;
-  saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
-}
+export const initialNewEnrollments = [];
+let mockEnrollments = loadStoredData(STORAGE_KEY_ENROLLMENT, []);
 let mockEmployees = loadStoredData(STORAGE_KEY_EMP, []);
 let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
 
@@ -3172,5 +2870,239 @@ export const ApiService = {
       totalCapitalCombined,
       remainingMasterCount: mockShareholders.length
     };
+  },
+
+  async searchShareholdersByShareNo(query = '') {
+    await ensureDBReady();
+    if (!query || !query.trim()) return { success: true, data: [] };
+    const q = query.trim().toLowerCase().normalize('NFC');
+    const results = [];
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const s = mockShareholders[i];
+      const sNo = String(s.share_no || s.share_number || '').trim();
+      const sName = (s.shareholder_name || s.name || '').trim().toLowerCase().normalize('NFC');
+      const sPlace = (s.place || s.village_name || '').trim().toLowerCase().normalize('NFC');
+      
+      const allNos = Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
+        ? s.all_share_numbers.map(n => String(n).trim()) 
+        : sNo.split(',').map(n => n.trim()).filter(Boolean);
+
+      const matchShareNo = allNos.some(num => num.toLowerCase() === q || num.toLowerCase().startsWith(q));
+      const matchName = sName.includes(q);
+      const matchPlace = sPlace.includes(q);
+
+      if (matchShareNo || matchName || matchPlace) {
+        results.push({
+          id: s.id,
+          share_no: s.share_no || s.share_number,
+          all_share_numbers: allNos,
+          shareholder_name: s.shareholder_name || s.name,
+          place: s.place || s.village_name,
+          taluk: s.taluk,
+          circle: s.circle,
+          number_of_shares: parseInt(s.number_of_shares) || 1,
+          total_amount: parseFloat(s.total_amount) || 2000,
+          receipt_amount: parseFloat(s.receipt_amount) || 0,
+          amount: parseFloat(s.amount) || 0,
+          receipt_no: s.receipt_no || '',
+          reciept: s.reciept || '',
+          book_no: s.book_no || 'B.No: 1',
+          reg_date: s.reg_date || s.date || '',
+          schedule_cast: s.schedule_cast || 'ಅ - ವರ್ಗ',
+          aadhaar_card_no: s.aadhaar_card_no || '',
+          mobile_no: s.mobile_no || s.mobile || '',
+          is_merged: !!s.is_merged
+        });
+        if (results.length >= 30) break;
+      }
+    }
+    return { success: true, data: results };
+  },
+
+  async mergeSharesByShareNumbers({ shareNumbers = [], primaryShareNo = null, adminUser = 'Admin' }) {
+    await ensureDBReady();
+    if (!Array.isArray(shareNumbers) || shareNumbers.length < 2) {
+      return { success: false, message: 'ವಿಲೀನಗೊಳಿಸಲು ಕನಿಷ್ಠ 2 ಷೇರು ಸಂಖ್ಯೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ (Please select at least 2 share numbers to merge).' };
+    }
+
+    const cleanTargets = shareNumbers.map(n => String(n).trim()).filter(Boolean);
+    if (cleanTargets.length < 2) {
+      return { success: false, message: 'ಮಾನ್ಯ ಷೇರು ಸಂಖ್ಯೆಗಳನ್ನು ಒದಗಿಸಿ (Invalid share numbers).' };
+    }
+
+    // Find all matching shareholder records from live DB
+    const matchingRecords = [];
+    const matchedIds = new Set();
+
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const s = mockShareholders[i];
+      const sNo = String(s.share_no || s.share_number || '').trim();
+      const allNos = Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
+        ? s.all_share_numbers.map(n => String(n).trim())
+        : sNo.split(',').map(n => n.trim()).filter(Boolean);
+
+      const matchesTarget = cleanTargets.some(target => 
+        allNos.some(num => num.toLowerCase() === target.toLowerCase()) ||
+        String(s.id) === String(target) ||
+        sNo.toLowerCase() === target.toLowerCase()
+      );
+
+      if (matchesTarget && !matchedIds.has(s.id)) {
+        matchedIds.add(s.id);
+        matchingRecords.push(s);
+      }
+    }
+
+    if (matchingRecords.length < 2) {
+      return { 
+        success: false, 
+        message: `ಕೇವಲ ${matchingRecords.length} ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿವೆ. ವಿಲೀನಗೊಳಿಸಲು ಕನಿಷ್ಠ 2 ಪ್ರತ್ಯೇಕ ಷೇರುದಾರರ ಖಾತೆಗಳು ಅಗತ್ಯವಿದೆ.` 
+      };
+    }
+
+    // Determine primary record
+    let primary = matchingRecords[0];
+    if (primaryShareNo) {
+      const foundPrimary = matchingRecords.find(r => {
+        const rNo = String(r.share_no || r.share_number || '').trim();
+        const allNos = Array.isArray(r.all_share_numbers) ? r.all_share_numbers.map(n => String(n).trim()) : rNo.split(',').map(n => n.trim());
+        return allNos.includes(String(primaryShareNo).trim()) || String(r.id) === String(primaryShareNo);
+      });
+      if (foundPrimary) primary = foundPrimary;
+    }
+
+    const secondaries = matchingRecords.filter(r => r.id !== primary.id);
+
+    // Consolidate shares, amounts, and share numbers
+    let combinedShares = 0;
+    let combinedTotalAmt = 0;
+    let combinedReceiptAmt = 0;
+    let combinedInstallmentAmt = 0;
+    const allShareNos = [];
+    const allReceipts = [];
+    const mergedHoldings = [];
+
+    matchingRecords.forEach(item => {
+      const sAmt1 = parseFloat(item.receipt_amount) || 0;
+      const sAmt2 = parseFloat(item.amount) || 0;
+      const sTot = parseFloat(item.total_amount) || (sAmt1 + sAmt2) || 2000;
+      const sCount = parseInt(item.number_of_shares) || (sTot ? Math.max(1, Math.floor(sTot / 2000)) : 1);
+
+      combinedShares += sCount;
+      combinedTotalAmt += sTot;
+      combinedReceiptAmt += sAmt1;
+      combinedInstallmentAmt += sAmt2;
+
+      // Extract all share numbers
+      const itemNos = Array.isArray(item.all_share_numbers) && item.all_share_numbers.length > 0
+        ? item.all_share_numbers.map(n => String(n).trim())
+        : String(item.share_no || item.share_number || '').split(',').map(n => n.trim()).filter(Boolean);
+
+      itemNos.forEach(num => {
+        if (!allShareNos.includes(num)) allShareNos.push(num);
+      });
+
+      if (item.receipt_no && !allReceipts.includes(item.receipt_no)) allReceipts.push(item.receipt_no);
+      if (item.reciept && !allReceipts.includes(item.reciept)) allReceipts.push(item.reciept);
+
+      if (Array.isArray(item.merged_holdings) && item.merged_holdings.length > 0) {
+        mergedHoldings.push(...item.merged_holdings);
+      } else {
+        mergedHoldings.push({
+          id: item.id,
+          share_no: item.share_no || item.share_number,
+          shares: sCount,
+          amount: sTot,
+          receipt_no: item.receipt_no || item.reciept || '—',
+          receipt_date: item.reg_date || item.date || '—',
+          book_no: item.book_no || 'B.No: 1',
+          reciept_2: item.reciept || '',
+          amount_2: sAmt2 || 0,
+          date_2: item.date || '',
+          place: item.place,
+          taluk: item.taluk
+        });
+      }
+    });
+
+    // Update primary record
+    primary.number_of_shares = combinedShares;
+    primary.total_amount = combinedTotalAmt;
+    primary.share_value = combinedTotalAmt;
+    primary.share_no = allShareNos.join(', ');
+    primary.share_number = allShareNos.join(', ');
+    primary.primary_share_no = allShareNos[0];
+    primary.all_share_numbers = allShareNos;
+    primary.all_receipt_numbers = allReceipts;
+    primary.receipt_amount = combinedReceiptAmt || (mergedHoldings[0]?.amount || 0);
+    primary.amount = combinedInstallmentAmt || (mergedHoldings[1]?.amount || 0);
+    primary.multiple_amounts = true;
+    primary.is_merged = true;
+    primary.merged_holdings = mergedHoldings;
+
+    // Fill missing KYC from secondaries
+    secondaries.forEach(sec => {
+      if (!primary.mobile_no && (sec.mobile_no || sec.mobile)) {
+        primary.mobile_no = sec.mobile_no || sec.mobile;
+        primary.mobile = primary.mobile_no;
+      }
+      if (!primary.aadhaar_card_no && (sec.aadhaar_card_no || sec.aadhaar_ref)) {
+        primary.aadhaar_card_no = sec.aadhaar_card_no || sec.aadhaar_ref;
+        primary.aadhaar_ref = primary.aadhaar_card_no;
+      }
+      if (!primary.nominee_name && sec.nominee_name) {
+        primary.nominee_name = sec.nominee_name;
+        primary.nominee_aadhaar_no = sec.nominee_aadhaar_no;
+        primary.nominee_mobile_no = sec.nominee_mobile_no;
+        primary.nominee_address = sec.nominee_address;
+      }
+    });
+
+    // Audit History
+    if (!Array.isArray(primary.audit_history)) primary.audit_history = [];
+    primary.audit_history.unshift({
+      id: `AUD-MERGE-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toISOString(),
+      performed_by: adminUser || 'Admin',
+      type: 'MERGE_SHARES_BY_SELECTION',
+      title: 'ಆಯ್ಕೆಮಾಡಿದ ಷೇರುಗಳ ಅಧಿಕೃತ ವಿಲೀನ (Shares Merged by Selection)',
+      description: `ಆಯ್ಕೆಮಾಡಿದ ಷೇರು ಸಂಖ್ಯೆಗಳು #${allShareNos.join(', #')} ಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ವಿಲೀನಗೊಳಿಸಿ ಏಕೀಕೃತ ಮಾಸ್ಟರ್ ಖಾತೆಯಾಗಿ (ಒಟ್ಟು ${combinedShares} ಷೇರುಗಳು, ₹${combinedTotalAmt.toLocaleString()}) ನವೀಕರಿಸಲಾಗಿದೆ.`,
+      details: {
+        merged_share_nos: allShareNos,
+        total_shares: combinedShares,
+        total_amount: combinedTotalAmt,
+        primary_record_id: primary.id,
+        primary_name: primary.shareholder_name || primary.name,
+        records_merged: matchingRecords.map(r => ({
+          id: r.id,
+          share_no: r.share_no,
+          name: r.shareholder_name || r.name,
+          place: r.place,
+          shares: r.number_of_shares,
+          amount: r.total_amount
+        })),
+        approved_by: adminUser
+      }
+    });
+
+    // Remove secondary IDs from mockShareholders
+    const secondaryIds = new Set(secondaries.map(s => s.id));
+    mockShareholders = mockShareholders.filter(s => !secondaryIds.has(s.id));
+
+    // Save to IndexedDB
+    await saveToIndexedDB(mockShareholders);
+
+    return {
+      success: true,
+      mergedRecord: primary,
+      combinedShareNumbers: allShareNos,
+      combinedShareNoStr: allShareNos.join(', '),
+      combinedShares,
+      combinedTotalAmt,
+      removedCount: secondaries.length,
+      remainingCount: mockShareholders.length,
+      message: `ಷೇರು ಸಂಖ್ಯೆಗಳು #${allShareNos.join(', #')} ಯಶಸ್ವಿಯಾಗಿ ವಿಲೀನಗೊಂಡಿವೆ!`
+    };
   }
+
 };
