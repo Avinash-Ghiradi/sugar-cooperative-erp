@@ -517,22 +517,21 @@ export default function OfficialShareholderIDCard({
               </div>
 
               {/* Statutory Member Details Grid */}
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[8.5px] py-1 border-b border-slate-300">
+              <div className="grid grid-cols-2 gap-x-2.5 gap-y-1 text-[8.8px] py-1 border-b border-slate-300">
                 <div>• ಪುಸ್ತಕ ಸಂ (Book): <strong className="font-mono text-emerald-900">{sh.book_no || 'B.No: 1'}</strong></div>
-                <div>• ಕ್ರಮ ಸಂ (Sl No): <strong className="font-mono">{sh.sl_no || '—'}</strong></div>
+                <div>• ಸದಸ್ಯರ ಪ್ರಕಾರ (Member Type): <strong className="text-emerald-900">{sh.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ'}</strong></div>
                 <div>• ವರ್ಗ (Class): <strong className="text-emerald-800">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</strong></div>
-                <div>• ಷೇರುಗಳ ಸಂಖ್ಯೆ: <strong>{sharesCount}</strong> (₹ {(sh.total_amount || 2000).toLocaleString()})</div>
+                <div>• ಷೇರುಗಳ ಸಂಖ್ಯೆ: <strong className="font-mono text-slate-900">{sharesCount}</strong></div>
                 <div>• ನೋಂದಣಿ ದಿನಾಂಕ: <span className="font-mono">{sh.reg_date || sh.registration_date || '—'}</span></div>
                 <div>• ಮಂಡಳಿ ಠರಾವು: <span className="font-mono">{sh.tharava_no || 'TR-01/1982'}</span></div>
                 <div>• ಸದಸ್ಯರ ಆಧಾರ್: <span className="font-mono">{sh.aadhaar_card_no || sh.aadhaar_ref || '—'}</span></div>
                 <div>• ಮೊಬೈಲ್: <span className="font-mono">{sh.mobile_no || sh.mobile || '—'}</span></div>
-                <div className="col-span-2 truncate">• ನಾಮಿನಿ ಹೆಸರು: <strong className="text-slate-900">{sh.nominee_name || '—'}</strong> ({sh.nominee_aadhaar_no || '—'})</div>
               </div>
 
               {/* Statutory Rules / ಸೂಚನೆಗಳು */}
-              <div className="text-[7.2px] text-slate-700 space-y-0.5 py-0.5">
-                <div className="font-bold text-slate-900 text-[7.8px]">ಮುಖ್ಯ ಸೂಚನೆಗಳು:</div>
-                <div>1. ವಾರ್ಷಿಕ ಮಹಾಸಭೆ ಹಾಗೂ ಕಾರ್ಖಾನೆಯ ಸಭೆಗಳಿಗೆ ಹಾಜರಾಗಲು ಈ ಚೀಟಿ ಕಡ್ಡಾಯ.</div>
+              <div className="text-[7.6px] text-slate-700 space-y-0.5 py-0.5">
+                <div className="font-bold text-slate-900 text-[8.2px]">ಮುಖ್ಯ ಸೂಚನೆಗಳು:</div>
+                <div>1. ವಾರ್ಷಿಕ ಮಹಾಸಭೆ, ಕಾರ್ಖಾನೆ ಚುಣಾವಣೆ ಮತ್ತು ಕಾರ್ಖಾನೆಯ ಸಭೆಗಳಿಗೆ ಹಾಜರಾಗಲು ಈ ಚೀಟಿ ಕಡ್ಡಾಯವಾಗಿದೆ.</div>
                 <div>2. ಕಬ್ಬು ಪೂರೈಕೆ, ತೂಕದ ಬಿಲ್ಲು ಪಾವತಿ ಮತ್ತು ಸಕ್ಕರೆ ಕೋಟಾ ಪಡೆಯಲು ಹಾಜರುಪಡಿಸತಕ್ಕದ್ದು.</div>
                 <div>3. ಈ ಚೀಟಿ ಕಳೆದುಹೋದಲ್ಲಿ ತಕ್ಷಣವೇ ಕಾರ್ಖಾನೆಯ ಆಡಳಿತ ಕಚೇರಿಗೆ ತಿಳಿಸತಕ್ಕದ್ದು.</div>
               </div>
