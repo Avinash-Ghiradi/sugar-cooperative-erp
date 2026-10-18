@@ -28,7 +28,7 @@ export default function IDCardGenerator() {
   const [loading, setLoading] = useState(true);
   const [previewCard, setPreviewCard] = useState(null);
   const [showReferenceSample, setShowReferenceSample] = useState(false);
-  const [printLayout, setPrintLayout] = useState('pvc'); // 'pvc' (single) or 'a4' (sheet)
+  const [printLayout, setPrintLayout] = useState('a4'); // 'a4' (sheet) or 'pvc' (single)
 
   // Custom ID Card Upload Settings (Logo, Background & MD Signature)
   const [customSettings, setCustomSettings] = useState(getCustomIdCardSettings());
@@ -79,7 +79,7 @@ export default function IDCardGenerator() {
     if (res && res.data) {
       setShareholders(res.data);
       if (selectedCards.length === 0 && res.data.length > 0) {
-        setSelectedCards(res.data.slice(0, 4));
+        setSelectedCards([res.data[0]]); // Default to 1 selected member
       }
     }
     setLoading(false);
@@ -100,7 +100,16 @@ export default function IDCardGenerator() {
   };
 
   const handlePrint = () => {
+    if (selectedCards.length === 0) {
+      alert('ದಯವಿಟ್ಟು ಮುದ್ರಿಸಲು ಕನಿಷ್ಠ 1 ಶೇರುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Please select at least 1 shareholder to print)');
+      return;
+    }
     window.print();
+  };
+
+  const handlePrintSingle = (sh) => {
+    setSelectedCards([sh]);
+    setTimeout(() => window.print(), 80);
   };
 
   // Upload Factory Logo Handler
@@ -201,6 +210,12 @@ export default function IDCardGenerator() {
       {/* Print Stylesheet Injection */}
       <style>{`
         @media print {
+          @page {
+            ${printLayout === 'a4'
+              ? 'size: A4 portrait; margin: 10mm 12mm;'
+              : 'size: 85.6mm 54mm; margin: 0;'
+            }
+          }
           body, html {
             background: white !important;
             color: black !important;
@@ -210,12 +225,17 @@ export default function IDCardGenerator() {
             print-color-adjust: exact !important;
             font-family: 'Anek Kannada', 'Aneka Kannada', 'Noto Sans Kannada', sans-serif !important;
           }
-          .no-print {
+          .no-print, header, nav, aside {
             display: none !important;
+            visibility: hidden !important;
           }
+          /* CR80 Physical Dimensions: 85.6mm x 54mm */
           .id-card-print-single {
             width: 85.6mm !important;
             height: 54mm !important;
+            max-width: 85.6mm !important;
+            max-height: 54mm !important;
+            box-sizing: border-box !important;
             page-break-inside: avoid !important;
             box-shadow: none !important;
             margin: 0 !important;
@@ -223,30 +243,50 @@ export default function IDCardGenerator() {
             overflow: hidden !important;
             position: relative !important;
             display: inline-block !important;
+            vertical-align: top !important;
           }
           .id-card-print-single .id-card-container-outer {
-            width: 85.6mm !important;
-            height: 54mm !important;
-            max-width: 85.6mm !important;
-            max-height: 54mm !important;
-            box-sizing: border-box !important;
-            transform: none !important;
+            width: 372px !important;
+            height: 238px !important;
+            min-width: 372px !important;
+            min-height: 238px !important;
+            transform: scale(0.86) !important;
+            transform-origin: 0 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           .id-card-page-break {
             page-break-after: always !important;
             break-after: page !important;
           }
-          .id-card-print-sheet {
-            display: grid !important;
-            grid-template-columns: repeat(2, 85.6mm) !important;
-            gap: 5mm !important;
+          /* A4 Layout Styles */
+          .id-card-a4-sheet {
+            display: block !important;
+            width: 100% !important;
+            max-width: 186mm !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+          }
+          .id-card-a4-pairs-container {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 6mm !important;
+            align-items: center !important;
+          }
+          .id-card-a4-member-pair {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 6mm !important;
             justify-content: center !important;
-            padding: 8mm !important;
+            align-items: center !important;
             page-break-inside: avoid !important;
           }
-          .id-card-print-sheet .id-card-print-single {
-            page-break-after: auto !important;
-            break-after: auto !important;
+          .id-card-a4-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, 85.6mm) !important;
+            gap: 6mm !important;
+            justify-content: center !important;
+            page-break-inside: avoid !important;
           }
           .id-card-print-pvc-list {
             display: block !important;
@@ -305,6 +345,33 @@ export default function IDCardGenerator() {
             <ImageIcon className="w-3.5 h-3.5" />
             {showReferenceSample ? 'Hide Sample Reference' : 'Compare with Sample Photo'}
           </button>
+
+          {/* Print Layout Format Toggle (A4 Sheet vs CR80 PVC Card) */}
+          <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+            <span className="text-[10px] text-slate-400 font-semibold px-2 uppercase tracking-wider hidden lg:inline">ಫಾರ್ಮ್ಯಾಟ್:</span>
+            <button
+              onClick={() => setPrintLayout('a4')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                printLayout === 'a4'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="A4 Sheet (Prints Front & Back side-by-side on A4 paper)"
+            >
+              A4 ಹಾಳೆ (A4 Sheet)
+            </button>
+            <button
+              onClick={() => setPrintLayout('pvc')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                printLayout === 'pvc'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="CR80 Plastic Card Printer (Separate cards)"
+            >
+              PVC ಕಾರ್ಡ್ (CR80)
+            </button>
+          </div>
 
           {/* Print Sides Toggle (Both Sides / Front Only / Back Only) */}
           <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
@@ -485,14 +552,14 @@ export default function IDCardGenerator() {
 
           {/* Print Layout Mode */}
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-400">Layout:</span>
+            <span className="text-slate-400">Layout (ಫಾರ್ಮ್ಯಾಟ್):</span>
             <select
               value={printLayout}
               onChange={(e) => setPrintLayout(e.target.value)}
               className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 outline-none text-xs"
             >
-              <option value="pvc">CR80 Plastic Card Format (Single)</option>
-              <option value="a4">A4 Sheet (8 Cards per Sheet)</option>
+              <option value="a4">A4 Sheet (ಹಾಳೆಯ ಮುದ್ರಣ)</option>
+              <option value="pvc">CR80 Plastic Card Format (PVC ಕಾರ್ಡ್)</option>
             </select>
           </div>
         </div>
@@ -538,106 +605,178 @@ export default function IDCardGenerator() {
         </div>
       </div>
 
-      {/* Cards Workbench Grid */}
-      {loading ? (
-        <div className="p-12 text-center text-slate-400 space-y-2">
-          <RefreshCw className="w-6 h-6 animate-spin text-emerald-400 mx-auto" />
-          <p className="text-xs">Loading shareholder records for ID card generation...</p>
-        </div>
-      ) : shareholders.length === 0 ? (
-        <div className="p-12 text-center bg-slate-950/60 border border-slate-800 rounded-2xl space-y-2">
-          <p className="text-sm font-semibold text-slate-300">No shareholders found matching the search criteria.</p>
-          <p className="text-xs text-slate-500">Try adjusting your filters or search keywords.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 id-card-grid">
-          {shareholders.map((sh, idx) => {
-            const selected = isSelected(sh);
-            return (
-              <div
-                key={sh.id || idx}
-                className={`p-3 rounded-2xl border transition-all relative group flex flex-col items-center ${
-                  selected
-                    ? 'bg-emerald-950/20 border-emerald-500/60 shadow-lg shadow-emerald-950/40'
-                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                {/* Selection Overlay & Card Actions */}
-                <div className="w-full flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80 no-print text-xs">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selected}
-                      onChange={() => toggleSelectCard(sh)}
-                      className="w-4 h-4 accent-emerald-500 rounded cursor-pointer"
-                    />
-                    <span className={`font-semibold ${selected ? 'text-emerald-400' : 'text-slate-400'}`}>
-                      Share #{sh.share_no || sh.share_number}
-                    </span>
-                  </label>
+      {/* Cards Workbench Grid (ON-SCREEN ONLY - Hidden in Print) */}
+      <div className="no-print">
+        {loading ? (
+          <div className="p-12 text-center text-slate-400 space-y-2">
+            <RefreshCw className="w-6 h-6 animate-spin text-emerald-400 mx-auto" />
+            <p className="text-xs">Loading shareholder records for ID card generation...</p>
+          </div>
+        ) : shareholders.length === 0 ? (
+          <div className="p-12 text-center bg-slate-950/60 border border-slate-800 rounded-2xl space-y-2">
+            <p className="text-sm font-semibold text-slate-300">No shareholders found matching the search criteria.</p>
+            <p className="text-xs text-slate-500">Try adjusting your filters or search keywords.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {shareholders.map((sh, idx) => {
+              const selected = isSelected(sh);
+              return (
+                <div
+                  key={sh.id || idx}
+                  className={`p-3 rounded-2xl border transition-all relative group flex flex-col items-center ${
+                    selected
+                      ? 'bg-emerald-950/20 border-emerald-500/60 shadow-lg shadow-emerald-950/40'
+                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  {/* Selection Overlay & Card Actions */}
+                  <div className="w-full flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80 text-xs">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleSelectCard(sh)}
+                        className="w-4 h-4 accent-emerald-500 rounded cursor-pointer"
+                      />
+                      <span className={`font-semibold ${selected ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        Share #{sh.share_no || sh.share_number}
+                      </span>
+                    </label>
 
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => setPreviewCard(sh)}
-                      title="Enlarge & Print Single"
-                      className="p-1 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-slate-800 transition-colors cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handlePrintSingle(sh)}
+                        title="Print this card directly"
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-emerald-400 hover:text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-800/60 text-[11px] font-semibold transition-colors cursor-pointer"
+                      >
+                        <Printer className="w-3 h-3" />
+                        <span>ಮುದ್ರಣ</span>
+                      </button>
+
+                      <button
+                        onClick={() => setPreviewCard(sh)}
+                        title="Enlarge & Inspect Preview"
+                        className="p-1 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Render the Exact Official ID Card */}
+                  <div className="cursor-pointer" onClick={() => toggleSelectCard(sh)}>
+                    <OfficialShareholderIDCard
+                      shareholder={sh}
+                      side={cardSide}
+                      showSeal={showSeal}
+                      customLogo={customSettings.customLogo}
+                      customBackground={customSettings.customBackground}
+                      customMdSignature={customSettings.customMdSignature}
+                      hideHeader={customSettings.hideHeader}
+                      showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                      scale={0.96}
+                    />
                   </div>
                 </div>
-
-                {/* Render the Exact Official ID Card */}
-                <div className="cursor-pointer" onClick={() => toggleSelectCard(sh)}>
-                  <OfficialShareholderIDCard
-                    shareholder={sh}
-                    side={cardSide}
-                    showSeal={showSeal}
-                    customLogo={customSettings.customLogo}
-                    customBackground={customSettings.customBackground}
-                    customMdSignature={customSettings.customMdSignature}
-                    hideHeader={customSettings.hideHeader}
-                    showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-                    scale={0.96}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* HIDDEN PRINT-ONLY CONTAINER (for window.print()) */}
-      <div className={`hidden print:block ${printLayout === 'a4' ? 'id-card-print-sheet' : 'id-card-print-pvc-list'}`}>
-        {(selectedCards.length > 0 ? selectedCards : shareholders).map((sh, idx) => {
-          const sidesToRender = [];
-          if (printSides === 'both') {
-            sidesToRender.push('Front', 'Back');
-          } else if (printSides === 'front') {
-            sidesToRender.push('Front');
-          } else {
-            sidesToRender.push('Back');
+      <div className="hidden print:block printable-area">
+        {(() => {
+          const cardsToPrint = selectedCards.length > 0 ? selectedCards : (previewCard ? [previewCard] : []);
+          if (cardsToPrint.length === 0) return null;
+
+          if (printLayout === 'a4') {
+            return (
+              <div className="id-card-a4-sheet">
+                {printSides === 'both' ? (
+                  <div className="id-card-a4-pairs-container">
+                    {cardsToPrint.map((sh, idx) => (
+                      <div key={`a4-pair-${sh.id || idx}`} className="id-card-a4-member-pair">
+                        <div className="id-card-print-single">
+                          <OfficialShareholderIDCard
+                            shareholder={sh}
+                            side="Front"
+                            showSeal={showSeal}
+                            customLogo={customSettings.customLogo}
+                            customBackground={customSettings.customBackground}
+                            customMdSignature={customSettings.customMdSignature}
+                            hideHeader={customSettings.hideHeader}
+                            showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                            scale={1}
+                          />
+                        </div>
+                        <div className="id-card-print-single">
+                          <OfficialShareholderIDCard
+                            shareholder={sh}
+                            side="Back"
+                            showSeal={showSeal}
+                            customLogo={customSettings.customLogo}
+                            customBackground={customSettings.customBackground}
+                            customMdSignature={customSettings.customMdSignature}
+                            hideHeader={customSettings.hideHeader}
+                            showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                            scale={1}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="id-card-a4-grid">
+                    {cardsToPrint.map((sh, idx) => (
+                      <div key={`a4-single-${sh.id || idx}`} className="id-card-print-single">
+                        <OfficialShareholderIDCard
+                          shareholder={sh}
+                          side={printSides === 'front' ? 'Front' : 'Back'}
+                          showSeal={showSeal}
+                          customLogo={customSettings.customLogo}
+                          customBackground={customSettings.customBackground}
+                          customMdSignature={customSettings.customMdSignature}
+                          hideHeader={customSettings.hideHeader}
+                          showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                          scale={1}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
           }
 
-          return sidesToRender.map((sideName) => (
-            <div
-              key={`print-${sh.id || idx}-${sideName}`}
-              className={`id-card-print-single ${printLayout === 'pvc' ? 'id-card-page-break' : 'mb-4'}`}
-            >
-              <OfficialShareholderIDCard
-                shareholder={sh}
-                side={sideName}
-                showSeal={showSeal}
-                customLogo={customSettings.customLogo}
-                customBackground={customSettings.customBackground}
-                customMdSignature={customSettings.customMdSignature}
-                hideHeader={customSettings.hideHeader}
-                showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-                scale={1}
-              />
+          // PVC Mode (Single Card CR80)
+          return (
+            <div className="id-card-print-pvc-list">
+              {cardsToPrint.map((sh, idx) => {
+                const sides = printSides === 'both' ? ['Front', 'Back'] : [printSides === 'front' ? 'Front' : 'Back'];
+                return sides.map((sideName) => (
+                  <div
+                    key={`pvc-${sh.id || idx}-${sideName}`}
+                    className="id-card-print-single id-card-page-break"
+                  >
+                    <OfficialShareholderIDCard
+                      shareholder={sh}
+                      side={sideName}
+                      showSeal={showSeal}
+                      customLogo={customSettings.customLogo}
+                      customBackground={customSettings.customBackground}
+                      customMdSignature={customSettings.customMdSignature}
+                      hideHeader={customSettings.hideHeader}
+                      showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                      scale={1}
+                    />
+                  </div>
+                ));
+              })}
             </div>
-          ));
-        })}
+          );
+        })()}
       </div>
 
       {/* CUSTOMIZATION & UPLOAD MODAL (Logo, Background & MD Signature) */}

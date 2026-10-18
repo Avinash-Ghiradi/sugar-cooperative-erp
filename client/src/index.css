@@ -36,14 +36,14 @@
   background: #475569;
 }
 
-/* Print CSS Media Query for ID Cards & ERP Reports */
 @media print {
   body {
     background: white !important;
     color: black !important;
   }
-  .no-print {
+  .no-print, header, nav, aside {
     display: none !important;
+    visibility: hidden !important;
   }
   .print-only {
     display: block !important;
@@ -54,15 +54,6 @@
     top: 0;
     width: 100%;
     margin: 0;
-    padding: 20px;
-  }
-  .id-card-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 15px !important;
-  }
-  @page {
-    size: A4 portrait;
-    margin: 15mm;
+    padding: 10px;
   }
 }
