@@ -159,7 +159,7 @@ export default function DataImportExport() {
         const cPin = findCol(['pin code', 'pincode', 'ಪಿನ್'], 21);
         const cCircle = findCol(['circle', 'ವಲಯ', 'ಸರ್ಕಲ್'], 22);
         const cMemberType = findCol(['member type', 'member', 'ಸದಸ್ಯ'], 23);
-        const cRel = findCol(['relationship', 'ಸಂಬಂಧ'], 24);
+        const cRel = findCol(['ownership', 'ಸ್ವಾಮ್ಯತ್ವ', 'ಒಡೆತನ', 'relationship', 'ಸಂಬಂಧ'], 24);
         const cTharavaDate = findCol(['tharava date', 'ಠರಾವು ದಿನಾಂಕ'], 25);
         const cTharavaNo = findCol(['tharava no', 'tharava', 'ಠರಾವು ನಂ'], 26);
         const cMobile = findCol(['mobile', 'phone', 'ಮೊಬೈಲ್'], 27);
@@ -219,6 +219,7 @@ export default function DataImportExport() {
             pin_code: circleInfo?.pincode || getVal(cPin) || '',
             circle: resolvedCircle, // STRICT RULE: Do not consider circle column from shareholder list. Derived strictly from place.
             member_type: getMemberTypeByCategory(getVal(cCast), getVal(cMemberType)),
+            ownership: getVal(cRel) || 'ಸ್ವಂತ (Self)',
             relationship: getVal(cRel) || 'ಸ್ವಂತ (Self)',
             tharava_date: getVal(cTharavaDate) || '10/Aug/1982',
             tharava_no: getVal(cTharavaNo) || `TR-${i}/1982`,
@@ -356,7 +357,7 @@ export default function DataImportExport() {
         'Book. No', 'Sl. No', 'Share No', 'Share Holder Name', 'Gender', 'Aadhaar Card No',
         'Reg. Date', 'Receipt No', 'Receipt Amount', 'Date', 'Reciept', 'Amount', 'Total Amount',
         'No. of Shares', 'Schedule Cast', 'Address', 'Nagara', 'Road', 'Place', 'Taluk', 'District',
-        'Pin Code', 'Circle', 'Member Type', 'Relationship', 'Tharava Date', 'Tharava No',
+        'Pin Code', 'Circle', 'Member Type', 'Ownership', 'Tharava Date', 'Tharava No',
         'Mobile No', 'Photo URL', 'Signature URL', 'Thumb URL', 'Photo Updated', 'Signature Updated',
         'Thumb Updated', 'Nominee Name', 'Nominee Aadhaar No', 'Nominee Mobile No', 'Nominee Address'
       ];

@@ -790,7 +790,7 @@ export default function VargavaneTransferModule() {
                 <div className="space-y-2 border-r pr-3 border-slate-200">
                   <h3 className="font-bold text-slate-950 border-b pb-1 text-[11px]">1. ಮೂಲ ಶೇರುದಾರರ ವಿವರಗಳು (Transferor)</h3>
                   <div><span className="text-slate-600">ಹೆಸರು:</span> <strong className="text-slate-900">{printSlipTransfer.transferor_name || printSlipTransfer.shareholder_name}</strong></div>
-                  <div><span className="text-slate-600">ಸಂಬಂಧ:</span> <strong>{printSlipTransfer.transferor_relationship || 'ಸ್ವಂತ'}</strong></div>
+                  <div><span className="text-slate-600">ಸ್ವಾಮ್ಯತ್ವ (Ownership):</span> <strong>{printSlipTransfer.transferor_relationship || 'ಸ್ವಂತ (Self)'}</strong></div>
                   <div><span className="text-slate-600">ಆಧಾರ್ ಸಂಖ್ಯೆ:</span> <strong>{printSlipTransfer.transferor_aadhaar || '—'}</strong></div>
                   <div><span className="text-slate-600">ಸ್ಥಳ / ತಾಲ್ಲೂಕು:</span> <strong>{printSlipTransfer.transferor_place}, {printSlipTransfer.transferor_taluk}</strong></div>
                 </div>
@@ -798,7 +798,7 @@ export default function VargavaneTransferModule() {
                 <div className="space-y-2">
                   <h3 className="font-bold text-slate-950 border-b pb-1 text-[11px]">2. ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು (Transferee)</h3>
                   <div><span className="text-slate-600">ಹೆಸರು:</span> <strong className="text-slate-900">{printSlipTransfer.transferee_name}</strong></div>
-                  <div><span className="text-slate-600">ಸಂಬಂಧ:</span> <strong>{printSlipTransfer.transferee_relationship || 'ಮಗ'}</strong></div>
+                  <div><span className="text-slate-600">ಸ್ವಾಮ್ಯತ್ವ (Ownership):</span> <strong>ವಾರಸದಾರರು ({printSlipTransfer.transferee_relationship || 'ಮಗ'})</strong></div>
                   <div><span className="text-slate-600">ಮೊಬೈಲ್:</span> <strong>{printSlipTransfer.transferee_mobile || '—'}</strong></div>
                   <div><span className="text-slate-600">ಆಧಾರ್ ಸಂಖ್ಯೆ:</span> <strong>{printSlipTransfer.transferee_aadhaar || '—'}</strong></div>
                   <div><span className="text-slate-600">ಸ್ಥಳ / ತಾಲ್ಲೂಕು:</span> <strong>{printSlipTransfer.transferee_place}, {printSlipTransfer.transferee_taluk}</strong></div>

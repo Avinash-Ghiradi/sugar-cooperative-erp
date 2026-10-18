@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService, hasSecondInstallment, getMemberTypeByCategory } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   X, Save, Plus, Printer, Contact, AlertTriangle, BookOpen, MapPin,
@@ -77,7 +77,8 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     pin_code: initialData?.pin_code || '586 117',
     circle: initialData?.circle || initialData?.circle_name || 'ಇಂಡಿ',
     member_type: getMemberTypeByCategory(initialData?.schedule_cast, initialData?.member_type),
-    relationship: initialData?.relationship || 'ಸ್ವಂತ (Self)',
+    ownership: getShareholderOwnership(initialData),
+    relationship: getShareholderOwnership(initialData),
     tharava_date: initialData?.tharava_date || initialData?.reg_date || new Date().toLocaleDateString('en-GB'),
     tharava_no: initialData?.tharava_no || `TR-${Math.floor(Math.random() * 50) + 1}/1982`,
     mobile_no: initialData?.mobile_no || initialData?.mobile || '',
@@ -647,13 +648,26 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Relationship (ಸಂಬಂಧ)</label>
+                <label className="block text-slate-400 mb-1 font-medium">Ownership / ಸ್ವಾಮ್ಯತ್ವ (ಒಡೆತನ)</label>
                 <input
                   type="text"
-                  value={formData.relationship}
-                  onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
+                  list="ownership-type-suggestions"
+                  placeholder="ಉದಾ: ಸ್ವಂತ, ವಾರಸದಾರರು (ಮಗ), ವಾರಸದಾರರು (ಪತ್ನಿ)..."
+                  value={formData.ownership || formData.relationship}
+                  onChange={(e) => setFormData({ ...formData, ownership: e.target.value, relationship: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-semibold outline-none focus:border-emerald-500"
                 />
+                <datalist id="ownership-type-suggestions">
+                  <option value="ಸ್ವಂತ (Self)" />
+                  <option value="ವಾರಸದಾರರು (ಮಗ)" />
+                  <option value="ವಾರಸದಾರರು (ಮಗಳು)" />
+                  <option value="ವಾರಸದಾರರು (ಪತ್ನಿ)" />
+                  <option value="ವಾರಸದಾರರು (ಪತಿ)" />
+                  <option value="ವಾರಸದಾರರು (ತಾಯಿ)" />
+                  <option value="ವಾರಸದಾರರು (ತಂದೆ)" />
+                  <option value="ವಾರಸದಾರರು (ಸಹೋದರ)" />
+                  <option value="ವಾರಸದಾರರು" />
+                </datalist>
               </div>
             </div>
           </div>

@@ -789,7 +789,7 @@ export default function VarasaTransferModule() {
                 <div className="space-y-2 border-r pr-3 border-slate-200">
                   <h3 className="font-bold text-slate-950 border-b pb-1 text-[11px]">1. ವಾರಸುದಾರರ ವಿವರಗಳು (Legal Heir)</h3>
                   <div><span className="text-slate-600">ಹೆಸರು:</span> <strong className="text-slate-900">{printSlipTransfer.varasa_member || printSlipTransfer.heir_name}</strong></div>
-                  <div><span className="text-slate-600">ಸಂಬಂಧ:</span> <strong>{printSlipTransfer.heir_relationship}</strong> {printSlipTransfer.heir_age ? `(${printSlipTransfer.heir_age} yrs)` : ''}</div>
+                  <div><span className="text-slate-600">ಸ್ವಾಮ್ಯತ್ವ (Ownership):</span> <strong>ವಾರಸದಾರರು ({printSlipTransfer.heir_relationship || 'ಮಗ'})</strong> {printSlipTransfer.heir_age ? `(${printSlipTransfer.heir_age} yrs)` : ''}</div>
                   <div><span className="text-slate-600">ಮೊಬೈಲ್:</span> <strong>{printSlipTransfer.heir_mobile || '—'}</strong></div>
                   <div><span className="text-slate-600">ಸ್ಥಳ / ತಾಲ್ಲೂಕು:</span> <strong>{printSlipTransfer.heir_place}, {printSlipTransfer.heir_taluk}</strong></div>
                 </div>

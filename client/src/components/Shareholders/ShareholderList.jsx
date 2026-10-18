@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { ApiService, hasSecondInstallment, getMemberTypeByCategory } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
@@ -171,7 +171,7 @@ export default function ShareholderList() {
       const cPin = findCol(['pin code', 'pincode', 'ಪಿನ್'], 21);
       const cCircle = findCol(['circle', 'ವಲಯ', 'ಸರ್ಕಲ್'], 22);
       const cMemberType = findCol(['member type', 'member', 'ಸದಸ್ಯ'], 23);
-      const cRel = findCol(['relationship', 'ಸಂಬಂಧ'], 24);
+      const cRel = findCol(['ownership', 'ಸ್ವಾಮ್ಯತ್ವ', 'ಒಡೆತನ', 'relationship', 'ಸಂಬಂಧ'], 24);
       const cTharavaDate = findCol(['tharava date', 'ಠರಾವು ದಿನಾಂಕ'], 25);
       const cTharavaNo = findCol(['tharava no', 'tharava', 'ಠರಾವು ನಂ'], 26);
       const cMobile = findCol(['mobile', 'phone', 'ಮೊಬೈಲ್'], 27);
@@ -228,6 +228,7 @@ export default function ShareholderList() {
           pin_code: circleInfo?.pincode || getVal(cPin) || '',
           circle: resolvedCircle, // STRICT RULE: Do not consider circle column from shareholder list. Derived strictly from place.
           member_type: getMemberTypeByCategory(getVal(cCast), getVal(cMemberType)),
+          ownership: getVal(cRel) || 'ಸ್ವಂತ (Self)',
           relationship: getVal(cRel) || 'ಸ್ವಂತ (Self)',
           tharava_date: getVal(cTharavaDate) || '10/Aug/1982',
           tharava_no: getVal(cTharavaNo) || `TR-${i}/1982`,
@@ -279,7 +280,7 @@ export default function ShareholderList() {
       'Book. No', 'Sl. No', 'Share No', 'Share Holder Name', 'Gender', 'Aadhaar Card No',
       'Reg. Date', 'Receipt No', 'Receipt Amount', 'Date', 'Reciept', 'Amount', 'Total Amount',
       'No. of Shares', 'Schedule Cast', 'Address', 'Nagara', 'Road', 'Place', 'Taluk', 'District',
-      'Pin Code', 'Circle', 'Member Type', 'Relationship', 'Tharava Date', 'Tharava No',
+      'Pin Code', 'Circle', 'Member Type', 'Ownership', 'Tharava Date', 'Tharava No',
       'Mobile No', 'Photo URL', 'Signature URL', 'Thumb URL', 'Photo Updated', 'Signature Updated',
       'Thumb Updated', 'Nominee Name', 'Nominee Aadhaar No', 'Nominee Mobile No', 'Nominee Address'
     ];
@@ -387,7 +388,7 @@ export default function ShareholderList() {
       'Book. No', 'Sl. No', 'Share No', 'Share Holder Name', 'Gender', 'Aadhaar Card No',
       'Reg. Date', 'Receipt No', 'Receipt Amount', 'Date', 'Reciept', 'Amount', 'Total Amount',
       'No. of Shares', 'Schedule Cast', 'Address', 'Nagara', 'Road', 'Place', 'Taluk', 'District',
-      'Pin Code', 'Circle', 'Member Type', 'Relationship', 'Tharava Date', 'Tharava No',
+      'Pin Code', 'Circle', 'Member Type', 'Ownership', 'Tharava Date', 'Tharava No',
       'Mobile No', 'Photo URL', 'Signature URL', 'Thumb URL', 'Photo Updated', 'Signature Updated',
       'Thumb Updated', 'Nominee Name', 'Nominee Aadhaar No', 'Nominee Mobile No', 'Nominee Address'
     ];
@@ -417,7 +418,7 @@ export default function ShareholderList() {
       `"${s.pin_code || ''}"`,
       `"${s.circle || s.circle_name || ''}"`,
       `"${getMemberTypeByCategory(s.schedule_cast, s.member_type)}"`,
-      `"${s.relationship || 'ಸ್ವಂತ (Self)'}"`,
+      `"${getShareholderOwnership(s)}"`,
       `"${s.tharava_date || ''}"`,
       `"${s.tharava_no || ''}"`,
       `"${s.mobile_no || s.mobile || ''}"`,
@@ -452,7 +453,7 @@ export default function ShareholderList() {
       'Book. No', 'Sl. No', 'Share No', 'Share Holder Name', 'Gender', 'Aadhaar Card No',
       'Reg. Date', 'Receipt No', 'Receipt Amount', 'Date', 'Reciept', 'Amount', 'Total Amount',
       'No. of Shares', 'Schedule Cast', 'Address', 'Nagara', 'Road', 'Place', 'Taluk', 'District',
-      'Pin Code', 'Circle', 'Member Type', 'Relationship', 'Tharava Date', 'Tharava No',
+      'Pin Code', 'Circle', 'Member Type', 'Ownership', 'Tharava Date', 'Tharava No',
       'Mobile No', 'Photo URL', 'Signature URL', 'Thumb URL', 'Photo Updated', 'Signature Updated',
       'Thumb Updated', 'Nominee Name', 'Nominee Aadhaar No', 'Nominee Mobile No', 'Nominee Address'
     ];
@@ -491,7 +492,7 @@ export default function ShareholderList() {
       tableHtml += `<td>${s.pin_code || ''}</td>`;
       tableHtml += `<td>${s.circle || s.circle_name || ''}</td>`;
       tableHtml += `<td>${getMemberTypeByCategory(s.schedule_cast, s.member_type)}</td>`;
-      tableHtml += `<td>${s.relationship || 'ಸ್ವಂತ (Self)'}</td>`;
+      tableHtml += `<td>${getShareholderOwnership(s)}</td>`;
       tableHtml += `<td>${s.tharava_date || ''}</td>`;
       tableHtml += `<td>${s.tharava_no || ''}</td>`;
       tableHtml += `<td>${s.mobile_no || s.mobile || ''}</td>`;
@@ -903,7 +904,7 @@ export default function ShareholderList() {
                     </div>
                   </th>
                   <th className="py-3.5 px-3">Member Type</th>
-                  <th className="py-3.5 px-3">Relationship</th>
+                  <th className="py-3.5 px-3">Ownership (ಸ್ವಾಮ್ಯತ್ವ)</th>
                   <th className="py-3.5 px-3">Tharava Date</th>
                   <th className="py-3.5 px-3">Tharava No</th>
                   <th className="py-3.5 px-3 font-mono text-emerald-400">Mobile No</th>
@@ -1069,8 +1070,8 @@ export default function ShareholderList() {
                     {/* 24. Member Type */}
                     <td className="py-2.5 px-3 text-slate-300">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</td>
 
-                    {/* 25. Relationship */}
-                    <td className="py-2.5 px-3 text-slate-400">{sh.relationship || 'ಸ್ವಂತ'}</td>
+                    {/* 25. Ownership */}
+                    <td className="py-2.5 px-3 font-medium text-emerald-400">{getShareholderOwnership(sh)}</td>
 
                     {/* 26. Tharava Date */}
                     <td className="py-2.5 px-3 text-slate-400">{sh.tharava_date || '—'}</td>

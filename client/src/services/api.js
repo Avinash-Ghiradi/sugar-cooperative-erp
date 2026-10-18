@@ -417,6 +417,69 @@ let mockEmployees = loadStoredData(STORAGE_KEY_EMP, []);
 let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
 let mockMergeRequests = loadStoredData(STORAGE_KEY_MERGE_REQ, []);
 
+// Helper: Resolve Shareholder Ownership (ಸ್ವಾಮ್ಯತ್ವ / ಒಡೆತನ)
+// Rule:
+//   Default / Original Shareholder -> 'ಸ್ವಂತ (Self)'
+//   If shareholder takes / applied / approved for Varasa or Vargavane transfer:
+//     -> 'ವಾರಸದಾರರು (ಮಗ)' / 'ವಾರಸದಾರರು (' + relation + ')'
+export function getShareholderOwnership(sh, varasaList = null, vargavaneList = null) {
+  if (!sh) return 'ಸ್ವಂತ (Self)';
+
+  const rawOwn = String(sh.ownership || sh.relationship || '').trim();
+
+  // If already explicitly marked as heir/transfer (e.g. contains 'ವಾರಸ' or 'ವರ್ಗಾವಣೆ')
+  if (rawOwn && (rawOwn.includes('ವಾರಸ') || rawOwn.includes('ವರ್ಗಾವಣೆ'))) {
+    return rawOwn;
+  }
+
+  // If user entered a non-default custom relation
+  if (rawOwn && !rawOwn.toLowerCase().includes('self') && !rawOwn.includes('ಸ್ವಂತ') && rawOwn !== '—' && rawOwn !== '-') {
+    return rawOwn;
+  }
+
+  const vTrans = varasaList || mockVarasaTransfers || [];
+  const vgTrans = vargavaneList || mockVargavaneTransfers || [];
+
+  const shNo = String(sh.share_no || sh.share_number || '').trim();
+  const shId = String(sh.shareholder_id || '').trim();
+  const shName = String(sh.shareholder_name || sh.name || '').trim().toLowerCase().normalize('NFC');
+
+  // Check Varasa transfers for this shareholder
+  if (Array.isArray(vTrans) && vTrans.length > 0 && (shNo || shId || shName)) {
+    const vMatch = vTrans.find(v => {
+      const vShareNo = String(v.share_no || v.existing_share_number || '').trim();
+      const vShId = String(v.existing_shareholder_id || '').trim();
+      const vHeirName = String(v.varasa_member || v.heir_name || '').trim().toLowerCase().normalize('NFC');
+      const matchesShare = (shNo && vShareNo && shNo === vShareNo) || (shId && vShId && shId === vShId);
+      const isHeir = vHeirName && shName && (vHeirName === shName || shName.includes(vHeirName) || vHeirName.includes(shName));
+      return matchesShare || isHeir;
+    });
+
+    if (vMatch) {
+      const rel = (vMatch.heir_relationship || 'ಮಗ').trim();
+      return `ವಾರಸದಾರರು (${rel})`;
+    }
+  }
+
+  // Check Vargavane transfers for this shareholder
+  if (Array.isArray(vgTrans) && vgTrans.length > 0 && (shNo || shId || shName)) {
+    const vgMatch = vgTrans.find(vg => {
+      const vgShareNo = String(vg.share_no || '').trim();
+      const vgTeeName = String(vg.transferee_name || '').trim().toLowerCase().normalize('NFC');
+      const matchesShare = shNo && vgShareNo && shNo === vgShareNo;
+      const isTransferee = vgTeeName && shName && (vgTeeName === shName || shName.includes(vgTeeName) || vgTeeName.includes(shName));
+      return matchesShare || isTransferee;
+    });
+
+    if (vgMatch) {
+      const rel = (vgMatch.transferee_relationship || 'ಮಗ').trim();
+      return `ವಾರಸದಾರರು (${rel})`;
+    }
+  }
+
+  return rawOwn || 'ಸ್ವಂತ (Self)';
+}
+
 // Helper API execution with auto backend failover
 async function fetchApi(endpoint, options = {}) {
   // On static hosts like GitHub Pages, immediately bypass network to eliminate 404 delays
@@ -685,10 +748,15 @@ export const ApiService = {
     }
 
     const total = filtered.length;
-    const paginated = filtered.slice((page - 1) * limit, page * limit).map(s => ({
-      ...s,
-      member_type: getMemberTypeByCategory(s.schedule_cast, s.member_type)
-    }));
+    const paginated = filtered.slice((page - 1) * limit, page * limit).map(s => {
+      const own = getShareholderOwnership(s);
+      return {
+        ...s,
+        ownership: own,
+        relationship: own,
+        member_type: getMemberTypeByCategory(s.schedule_cast, s.member_type)
+      };
+    });
 
     return {
       success: true,
@@ -894,6 +962,8 @@ export const ApiService = {
       success: true,
       shareholder: {
         ...sh,
+        ownership: getShareholderOwnership(sh),
+        relationship: getShareholderOwnership(sh),
         member_type: getMemberTypeByCategory(sh.schedule_cast, sh.member_type)
       },
       history: {
@@ -1004,7 +1074,8 @@ export const ApiService = {
         circle_name: finalCircle,
         circle_id: data.circle_id || '',
         member_type: getMemberTypeByCategory(data.schedule_cast, data.member_type),
-        relationship: (data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
+        ownership: (data.ownership || data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
+        relationship: (data.ownership || data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
         tharava_date: data.tharava_date || data.reg_date || nowStr,
         tharava_no: data.tharava_no || `TR-${currentId}/2026`,
         mobile_no: data.mobile_no || data.mobile || '',
@@ -1114,7 +1185,8 @@ export const ApiService = {
       circle_name: finalCircle,
       circle_id: data.circle_id || '',
       member_type: getMemberTypeByCategory(data.schedule_cast, data.member_type),
-      relationship: (data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
+      ownership: (data.ownership || data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
+      relationship: (data.ownership || data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
       tharava_date: data.tharava_date || data.reg_date || nowStr,
       tharava_no: data.tharava_no || `TR-${nextId}/2026`,
       mobile_no: data.mobile_no || data.mobile || '',
@@ -1406,6 +1478,19 @@ export const ApiService = {
     };
     mockVarasaTransfers.unshift(newV);
     saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+
+    // If linked to existing shareholder, update ownership to ವಾರಸದಾರರು (ಸಂಬಂಧ)
+    const targetShareNo = String(data.share_no || data.existing_share_number || '').trim();
+    const targetSh = (data.existing_shareholder_id ? mockShareholders.find(s => s.shareholder_id === data.existing_shareholder_id) : null) ||
+      (targetShareNo ? mockShareholders.find(s => String(s.share_no || s.share_number || '').trim() === targetShareNo) : null);
+    if (targetSh) {
+      const rel = (data.heir_relationship || 'ಮಗ').trim();
+      const own = `ವಾರಸದಾರರು (${rel})`;
+      targetSh.ownership = own;
+      targetSh.relationship = own;
+      saveToIndexedDB(mockShareholders).catch(() => {});
+    }
+
     return { success: true, transfer_id: newV.transfer_id, data: newV };
   },
 
@@ -1593,6 +1678,18 @@ export const ApiService = {
     };
     mockVargavaneTransfers.unshift(newV);
     saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+
+    // If linked to existing shareholder, update ownership to ವಾರಸದಾರರು (ಸಂಬಂಧ)
+    const targetShareNo = String(data.share_no || '').trim();
+    const targetSh = targetShareNo ? mockShareholders.find(s => String(s.share_no || s.share_number || '').trim() === targetShareNo) : null;
+    if (targetSh) {
+      const rel = (data.transferee_relationship || 'ಮಗ').trim();
+      const own = `ವಾರಸದಾರರು (${rel})`;
+      targetSh.ownership = own;
+      targetSh.relationship = own;
+      saveToIndexedDB(mockShareholders).catch(() => {});
+    }
+
     return { success: true, transfer_id: newV.transfer_id, data: newV };
   },
 
@@ -2015,6 +2112,10 @@ export const ApiService = {
         sh.photo = item.heir_photo;
         sh.photo_url = item.heir_photo;
       }
+      const ownRel = (item.heir_relationship || 'ಮಗ').trim();
+      const own = `ವಾರಸದಾರರು (${ownRel})`;
+      sh.ownership = own;
+      sh.relationship = own;
       sh.notes = `ವಾರಸು ವರ್ಗಾವಣೆ: ${prevHolderName} (ನಿಧನ: ${item.dod || '—'}) ಇವರ ವಾರಸುದಾರರಾದ ${newHeirName} (${item.heir_relationship || 'ವಾರಸುದಾರರು'}) ಇವರಿಗೆ ವರ್ಗಾಯಿಸಲಾಗಿದೆ. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`;
 
       await saveToIndexedDB(mockShareholders);
@@ -2026,6 +2127,8 @@ export const ApiService = {
         if (mid > maxId) maxId = mid;
       }
       const nextId = maxId + 1;
+      const ownRel = (item.heir_relationship || 'ಮಗ').trim();
+      const own = `ವಾರಸದಾರರು (${ownRel})`;
       const createdSh = {
         id: nextId,
         share_number: targetShareNo || String(nextId),
@@ -2042,6 +2145,8 @@ export const ApiService = {
         number_of_shares: parseInt(item.no_of_shares) || 1,
         schedule_cast: item.category || 'ಅ - ವರ್ಗ',
         status: 'Active',
+        ownership: own,
+        relationship: own,
         mobile_number: item.heir_mobile || '',
         aadhaar_number: item.heir_aadhaar || '',
         photo: item.heir_photo || '',
@@ -2143,6 +2248,10 @@ export const ApiService = {
         sh.photo = item.transferee_photo;
         sh.photo_url = item.transferee_photo;
       }
+      const ownRel = (item.transferee_relationship || 'ಮಗ').trim();
+      const own = `ವಾರಸದಾರರು (${ownRel})`;
+      sh.ownership = own;
+      sh.relationship = own;
       sh.notes = `ವರ್ಗಾವಣೆ: ${prevHolderName} ಇವರಿಂದ ${newTransfereeName} (${item.transferee_relationship || 'ವರ್ಗಾವಣೆ'}) ಇವರಿಗೆ ವರ್ಗಾಯಿಸಲಾಗಿದೆ. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`;
 
       await saveToIndexedDB(mockShareholders);
@@ -2154,6 +2263,8 @@ export const ApiService = {
         if (mid > maxId) maxId = mid;
       }
       const nextId = maxId + 1;
+      const ownRel = (item.transferee_relationship || 'ಮಗ').trim();
+      const own = `ವಾರಸದಾರರು (${ownRel})`;
       const createdSh = {
         id: nextId,
         share_number: targetShareNo || String(nextId),
@@ -2170,6 +2281,8 @@ export const ApiService = {
         number_of_shares: parseInt(item.no_of_shares) || 1,
         schedule_cast: item.category || 'ಅ - ವರ್ಗ',
         status: 'Active',
+        ownership: own,
+        relationship: own,
         mobile_number: item.transferee_mobile || '',
         aadhaar_number: item.transferee_aadhaar || '',
         photo: item.transferee_photo || '',

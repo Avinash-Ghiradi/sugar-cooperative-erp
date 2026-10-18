@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService, hasSecondInstallment, getMemberTypeByCategory } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import OfficialShareholderIDCard from '../IDCards/OfficialShareholderIDCard';
 import {
@@ -372,7 +372,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex justify-between py-1.5 border-b border-slate-800/40"><span className="text-slate-400">Tharava No (ಠರಾವು ನಂ.):</span><span className="text-sky-400 font-mono font-bold">{sh.tharava_no || 'TR-01/1982'}</span></div>
                   <div className="flex justify-between py-1.5 border-b border-slate-800/40"><span className="text-slate-400">Tharava Date (ಠರಾವು ದಿನಾಂಕ):</span><span className="text-slate-200 font-semibold">{sh.tharava_date || sh.reg_date}</span></div>
-                  <div className="flex justify-between py-1.5 border-b border-slate-800/40"><span className="text-slate-400">Relationship (ಸಂಬಂಧ):</span><span className="text-slate-200">{sh.relationship || 'ಸ್ವಂತ (Self)'}</span></div>
+                  <div className="flex justify-between py-1.5 border-b border-slate-800/40"><span className="text-slate-400">Ownership (ಸ್ವಾಮ್ಯತ್ವ / ಒಡೆತನ):</span><span className="text-emerald-400 font-semibold">{getShareholderOwnership(sh)}</span></div>
                   <div className="flex justify-between py-1.5 border-b border-slate-800/40"><span className="text-slate-400">Registration Date:</span><span className="text-slate-200">{sh.reg_date || sh.registration_date}</span></div>
                 </div>
                 <div className="p-3 bg-slate-950 rounded-xl text-slate-300 text-[11px] leading-relaxed mt-2">
