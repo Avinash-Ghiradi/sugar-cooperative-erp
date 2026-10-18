@@ -25,6 +25,7 @@ export default function VargavaneTransferModule() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFileName, setUploadFileName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [importAsCompleted, setImportAsCompleted] = useState(true);
   const [adminApproveModal, setAdminApproveModal] = useState({ open: false, transfer: null, remarks: '' });
   const uploadFileInputRef = useRef(null);
 
@@ -257,6 +258,7 @@ export default function VargavaneTransferModule() {
       const cFees = findCol(['9. fees', 'fees', 'ಶುಲ್ಕ'], 19);
       const cReceiptNo = findCol(['10. rec', 'receipt', 'ರಶೀದಿ'], 20);
       const cReceiptDate = findCol(['11. rp. d', 'receipt date', 'ದಿನಾಂಕ'], 21);
+      const cStatus = findCol(['status', 'approval', 'ಸ್ಥಿತಿ', 'ಮಂಜೂರಾತಿ'], -1);
 
       const parsedRecords = [];
       for (let i = 1; i < rawRows.length; i++) {
@@ -268,6 +270,20 @@ export default function VargavaneTransferModule() {
         const torName = getVal(cTorName);
         const teeName = getVal(cTeeName);
         if (!torName && !teeName) continue;
+
+        const fileStatus = getVal(cStatus);
+        let resolvedStatus = 'Completed';
+        if (fileStatus) {
+          if (fileStatus.toLowerCase().includes('rec') || fileStatus.includes('ಸ್ವೀಕರಿಸಲಾಗಿದೆ')) {
+            resolvedStatus = 'Application Received';
+          } else if (fileStatus.toLowerCase().includes('ver') || fileStatus.includes('ಪರಿಶೀಲನೆ')) {
+            resolvedStatus = 'Under Verification';
+          } else {
+            resolvedStatus = 'Completed';
+          }
+        } else {
+          resolvedStatus = importAsCompleted ? 'Completed' : 'Application Received';
+        }
 
         parsedRecords.push({
           sl_no: parseInt(getVal(cSl)) || i,
@@ -293,13 +309,13 @@ export default function VargavaneTransferModule() {
           fees: parseFloat(getVal(cFees)) || 570,
           receipt_no: getVal(cReceiptNo) || String(500 + i),
           receipt_date: getVal(cReceiptDate) || new Date().toLocaleDateString('en-GB'),
-          approval_status: 'Completed'
+          approval_status: resolvedStatus
         });
       }
 
       if (parsedRecords.length > 0) {
         await ApiService.addVargavaneTransfersBulk(parsedRecords);
-        showToast(`Successfully imported ${parsedRecords.length} Vargavane transfer records!`);
+        showToast(`ಯಶಸ್ವಿಯಾಗಿ ${parsedRecords.length} ವರ್ಗಾವಣೆ ದಾಖಲೆಗಳನ್ನು ಆಮದು ಮಾಡಲಾಗಿದೆ (${importAsCompleted ? 'ಪೂರ್ಣಗೊಂಡಿದೆ / ಸ್ವಾಮ್ಯತ್ವ ನವೀಕರಿಸಲಾಗಿದೆ' : 'ಅರ್ಜಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ'})!`);
         setShowUploadModal(false);
         loadTransfers();
       } else {
@@ -717,6 +733,41 @@ export default function VargavaneTransferModule() {
             <p className="text-xs text-slate-300 leading-relaxed">
               Upload your official 22-column Vargavane transfer spreadsheet (.xlsx / .xls / .csv). Columns with Kannada headers are automatically parsed.
             </p>
+
+            {/* Import Mode Selector: Already Done vs New Application */}
+            <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+              <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">ದಾಖಲೆಗಳ ಪ್ರಕಾರ (Import Mode):</span>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setImportAsCompleted(true)}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    importAsCompleted
+                      ? 'bg-sky-500/20 border-sky-500 text-sky-300 font-bold shadow-sm'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-semibold text-[11px]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" /> ಈಗಾಗಲೇ ಪೂರ್ಣಗೊಂಡಿದೆ
+                  </div>
+                  <div className="text-[9.5px] text-sky-400/80 mt-1">Completed & Auto-sync Ownership to ವಾರಸದಾರರು</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportAsCompleted(false)}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    !importAsCompleted
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold shadow-sm'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-semibold text-[11px]">
+                    <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> ಹೊಸ ಅರ್ಜಿಗಳು
+                  </div>
+                  <div className="text-[9.5px] text-emerald-400/80 mt-1">Application Received (Pending Approval)</div>
+                </button>
+              </div>
+            </div>
 
             <div
               onClick={() => uploadFileInputRef.current?.click()}

@@ -24,6 +24,7 @@ export default function VarasaTransferModule() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFileName, setUploadFileName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [importAsCompleted, setImportAsCompleted] = useState(true);
   const [adminApproveModal, setAdminApproveModal] = useState({ open: false, transfer: null, remarks: '' });
   const uploadFileInputRef = useRef(null);
 
@@ -253,6 +254,7 @@ export default function VarasaTransferModule() {
       const cFees = findCol(['fees', 'fee', 'ಶುಲ್ಕ'], 19);
       const cReceiptNo = findCol(['receipt no', 'ರಶೀದಿ'], 20);
       const cReceiptDate = findCol(['rp. date', 'receipt date', 'ದಿನಾಂಕ'], 21);
+      const cStatus = findCol(['status', 'approval', 'ಸ್ಥಿತಿ', 'ಮಂಜೂರಾತಿ'], -1);
 
       const parsedRecords = [];
       for (let i = 1; i < rawRows.length; i++) {
@@ -264,6 +266,20 @@ export default function VarasaTransferModule() {
         const vName = getVal(cVMember);
         const shName = getVal(cShName);
         if (!vName && !shName) continue;
+
+        const fileStatus = getVal(cStatus);
+        let resolvedStatus = 'Approved';
+        if (fileStatus) {
+          if (fileStatus.toLowerCase().includes('rec') || fileStatus.includes('ಸ್ವೀಕರಿಸಲಾಗಿದೆ')) {
+            resolvedStatus = 'Application Received';
+          } else if (fileStatus.toLowerCase().includes('ver') || fileStatus.includes('ಪರಿಶೀಲನೆ')) {
+            resolvedStatus = 'Under Verification';
+          } else {
+            resolvedStatus = 'Approved';
+          }
+        } else {
+          resolvedStatus = importAsCompleted ? 'Approved' : 'Application Received';
+        }
 
         parsedRecords.push({
           sl_no: parseInt(getVal(cSl)) || i,
@@ -290,13 +306,13 @@ export default function VarasaTransferModule() {
           fees: parseFloat(getVal(cFees)) || 570,
           receipt_no: getVal(cReceiptNo) || String(800 + i),
           receipt_date: getVal(cReceiptDate) || new Date().toLocaleDateString('en-GB'),
-          approval_status: 'Application Received'
+          approval_status: resolvedStatus
         });
       }
 
       if (parsedRecords.length > 0) {
         await ApiService.addVarasaTransfersBulk(parsedRecords);
-        showToast(`Successfully imported ${parsedRecords.length} Varasa transfer applications!`);
+        showToast(`ಯಶಸ್ವಿಯಾಗಿ ${parsedRecords.length} ವಾರಸು ದಾಖಲೆಗಳನ್ನು ಆಮದು ಮಾಡಲಾಗಿದೆ (${importAsCompleted ? 'ಮಂಜೂರಾಗಿದೆ / ಸ್ವಾಮ್ಯತ್ವ ನವೀಕರಿಸಲಾಗಿದೆ' : 'ಅರ್ಜಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ'})!`);
         setShowUploadModal(false);
         loadTransfers();
       } else {
@@ -716,6 +732,41 @@ export default function VarasaTransferModule() {
             <p className="text-xs text-slate-300 leading-relaxed">
               Upload your official 22-column Varasa transfer spreadsheet (.xlsx / .xls / .csv). Columns with Kannada headers are automatically parsed.
             </p>
+
+            {/* Import Mode Selector: Already Done vs New Application */}
+            <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+              <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">ದಾಖಲೆಗಳ ಪ್ರಕಾರ (Import Mode):</span>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setImportAsCompleted(true)}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    importAsCompleted
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold shadow-sm'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-semibold text-[11px]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> ಈಗಾಗಲೇ ಪೂರ್ಣಗೊಂಡಿದೆ
+                  </div>
+                  <div className="text-[9.5px] text-emerald-400/80 mt-1">Approved & Auto-sync Ownership to ವಾರಸದಾರರು</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportAsCompleted(false)}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    !importAsCompleted
+                      ? 'bg-sky-500/20 border-sky-500 text-sky-300 font-bold shadow-sm'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-semibold text-[11px]">
+                    <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" /> ಹೊಸ ಅರ್ಜಿಗಳು
+                  </div>
+                  <div className="text-[9.5px] text-sky-400/80 mt-1">Application Received (Pending Approval)</div>
+                </button>
+              </div>
+            </div>
 
             <div
               onClick={() => uploadFileInputRef.current?.click()}

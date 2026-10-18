@@ -1578,6 +1578,25 @@ export const ApiService = {
 
     mockVarasaTransfers = [...items, ...mockVarasaTransfers];
     saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+
+    // Sync already approved/completed records to shareholder registry
+    items.forEach(r => {
+      if (['Approved', 'Completed'].includes(r.approval_status)) {
+        const sNo = String(r.share_no || r.existing_share_number || '').trim();
+        const sh = mockShareholders.find(s => String(s.share_no || s.share_number || '').trim() === sNo);
+        if (sh) {
+          const rel = (r.heir_relationship || 'ಮಗ').trim();
+          const own = `ವಾರಸದಾರರು (${rel})`;
+          sh.ownership = own;
+          sh.relationship = own;
+          if (r.heir_name) {
+            sh.notes = `ವಾರಸು ವರ್ಗಾವಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ: ${r.shareholder_name || 'ಮೂಲ ಶೇರುದಾರರು'} ➔ ವಾರಸುದಾರರು: ${r.heir_name} (${rel}).`;
+          }
+        }
+      }
+    });
+    saveToIndexedDB(mockShareholders).catch(() => {});
+
     return { success: true, count: items.length };
   },
 
@@ -1772,6 +1791,25 @@ export const ApiService = {
 
     mockVargavaneTransfers = [...items, ...mockVargavaneTransfers];
     saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+
+    // Sync already completed records to shareholder registry
+    items.forEach(r => {
+      if (['Approved', 'Completed'].includes(r.approval_status)) {
+        const sNo = String(r.share_no || '').trim();
+        const sh = mockShareholders.find(s => String(s.share_no || s.share_number || '').trim() === sNo);
+        if (sh) {
+          const rel = (r.transferee_relationship || 'ಮಗ').trim();
+          const own = `ವಾರಸದಾರರು (${rel})`;
+          sh.ownership = own;
+          sh.relationship = own;
+          if (r.transferee_name) {
+            sh.notes = `ವರ್ಗಾವಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ: ${r.transferor_name || 'ಮೂಲ ಶೇರುದಾರರು'} ➔ ${r.transferee_name} (${rel}).`;
+          }
+        }
+      }
+    });
+    saveToIndexedDB(mockShareholders).catch(() => {});
+
     return { success: true, count: items.length };
   },
 
