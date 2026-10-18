@@ -450,6 +450,21 @@ export default function IDCardGenerator() {
             {showSeal ? 'ಅಧಿಕೃತ ಮೊಹರು (Seal: ON)' : 'Seal: OFF'}
           </button>
 
+          {/* Refresh / Cache Invalidate Button */}
+          <button
+            onClick={() => {
+              if (window.caches) {
+                caches.keys().then(names => Promise.all(names.map(name => caches.delete(name))));
+              }
+              window.location.reload(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            title="Refresh to latest card design (ಬ್ರೌಸರ್ ಸಂಗ್ರಹ ತೆರವುಗೊಳಿಸಿ ನವೀಕರಿಸಿ)"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">ನವೀಕರಿಸಿ</span>
+          </button>
+
           {/* Print Button */}
           <button
             onClick={handlePrint}
