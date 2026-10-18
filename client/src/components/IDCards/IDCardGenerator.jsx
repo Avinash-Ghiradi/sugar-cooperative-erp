@@ -18,6 +18,7 @@ export default function IDCardGenerator() {
   const [shareholders, setShareholders] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
   const [cardSide, setCardSide] = useState('Front'); // 'Front' or 'Back'
+  const [printSides, setPrintSides] = useState('both'); // 'both' (Front & Back), 'front', 'back'
   const [showSeal, setShowSeal] = useState(true);
   const [search, setSearch] = useState('');
   const [circleFilter, setCircleFilter] = useState('');
@@ -212,19 +213,45 @@ export default function IDCardGenerator() {
           .no-print {
             display: none !important;
           }
-          .id-card-print-sheet {
-            display: grid !important;
-            grid-template-columns: repeat(2, 85.6mm) !important;
-            gap: 6mm !important;
-            justify-content: center !important;
-            padding: 10mm !important;
-            page-break-after: always !important;
-          }
           .id-card-print-single {
             width: 85.6mm !important;
             height: 54mm !important;
             page-break-inside: avoid !important;
             box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            position: relative !important;
+            display: inline-block !important;
+          }
+          .id-card-print-single .id-card-container-outer {
+            width: 85.6mm !important;
+            height: 54mm !important;
+            max-width: 85.6mm !important;
+            max-height: 54mm !important;
+            box-sizing: border-box !important;
+            transform: none !important;
+          }
+          .id-card-page-break {
+            page-break-after: always !important;
+            break-after: page !important;
+          }
+          .id-card-print-sheet {
+            display: grid !important;
+            grid-template-columns: repeat(2, 85.6mm) !important;
+            gap: 5mm !important;
+            justify-content: center !important;
+            padding: 8mm !important;
+            page-break-inside: avoid !important;
+          }
+          .id-card-print-sheet .id-card-print-single {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+          .id-card-print-pvc-list {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
         }
       `}</style>
@@ -279,27 +306,66 @@ export default function IDCardGenerator() {
             {showReferenceSample ? 'Hide Sample Reference' : 'Compare with Sample Photo'}
           </button>
 
-          {/* Front / Back Toggle */}
+          {/* Print Sides Toggle (Both Sides / Front Only / Back Only) */}
           <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+            <span className="text-[10px] text-slate-400 font-semibold px-2 uppercase tracking-wider hidden lg:inline">ಮುದ್ರಣ:</span>
             <button
-              onClick={() => setCardSide('Front')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                cardSide === 'Front'
+              onClick={() => setPrintSides('both')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                printSides === 'both'
                   ? 'bg-emerald-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
+              title="Print Both Pages (Front and Back on 2 pages)"
             >
-              ಮುಂಭಾಗ (Front)
+              ಎರಡೂ ಬದಿಗಳು (Both Sides)
+            </button>
+            <button
+              onClick={() => setPrintSides('front')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                printSides === 'front'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Print Front page only"
+            >
+              ಮುಂಭಾಗ
+            </button>
+            <button
+              onClick={() => setPrintSides('back')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                printSides === 'back'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Print Back page only"
+            >
+              ಹಿಂಬದಿ
+            </button>
+          </div>
+
+          {/* Screen Preview Side Toggle */}
+          <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+            <span className="text-[10px] text-slate-400 font-semibold px-2 uppercase tracking-wider hidden lg:inline">ವೀಕ್ಷಣೆ:</span>
+            <button
+              onClick={() => setCardSide('Front')}
+              className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                cardSide === 'Front'
+                  ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/50'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ಮುಂಭಾಗ
             </button>
             <button
               onClick={() => setCardSide('Back')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                 cardSide === 'Back'
-                  ? 'bg-emerald-600 text-white shadow'
+                  ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/50'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              ಹಿಂಬದಿ (Back)
+              ಹಿಂಬದಿ
             </button>
           </div>
 
@@ -322,8 +388,9 @@ export default function IDCardGenerator() {
             onClick={handlePrint}
             disabled={selectedCards.length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+            title={`Print ${selectedCards.length} Cards (${printSides === 'both' ? 'Both Pages: Front & Back' : printSides === 'front' ? 'Front Side Only' : 'Back Side Only'})`}
           >
-            <Printer className="w-4 h-4" /> ಮುದ್ರಣ ({selectedCards.length} Cards)
+            <Printer className="w-4 h-4" /> ಮುದ್ರಣ ({selectedCards.length} Cards • {printSides === 'both' ? 'ಎರಡೂ ಬದಿಗಳು' : printSides === 'front' ? 'ಮುಂಭಾಗ' : 'ಹಿಂಬದಿ'})
           </button>
         </div>
       </div>
@@ -541,22 +608,36 @@ export default function IDCardGenerator() {
       )}
 
       {/* HIDDEN PRINT-ONLY CONTAINER (for window.print()) */}
-      <div className="hidden print:block id-card-print-sheet">
-        {(selectedCards.length > 0 ? selectedCards : shareholders).map((sh, idx) => (
-          <div key={`print-${sh.id || idx}`} className="id-card-print-single mb-4">
-            <OfficialShareholderIDCard
-              shareholder={sh}
-              side={cardSide}
-              showSeal={showSeal}
-              customLogo={customSettings.customLogo}
-              customBackground={customSettings.customBackground}
-              customMdSignature={customSettings.customMdSignature}
-              hideHeader={customSettings.hideHeader}
-              showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-              scale={1}
-            />
-          </div>
-        ))}
+      <div className={`hidden print:block ${printLayout === 'a4' ? 'id-card-print-sheet' : 'id-card-print-pvc-list'}`}>
+        {(selectedCards.length > 0 ? selectedCards : shareholders).map((sh, idx) => {
+          const sidesToRender = [];
+          if (printSides === 'both') {
+            sidesToRender.push('Front', 'Back');
+          } else if (printSides === 'front') {
+            sidesToRender.push('Front');
+          } else {
+            sidesToRender.push('Back');
+          }
+
+          return sidesToRender.map((sideName) => (
+            <div
+              key={`print-${sh.id || idx}-${sideName}`}
+              className={`id-card-print-single ${printLayout === 'pvc' ? 'id-card-page-break' : 'mb-4'}`}
+            >
+              <OfficialShareholderIDCard
+                shareholder={sh}
+                side={sideName}
+                showSeal={showSeal}
+                customLogo={customSettings.customLogo}
+                customBackground={customSettings.customBackground}
+                customMdSignature={customSettings.customMdSignature}
+                hideHeader={customSettings.hideHeader}
+                showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                scale={1}
+              />
+            </div>
+          ));
+        })}
       </div>
 
       {/* CUSTOMIZATION & UPLOAD MODAL (Logo, Background & MD Signature) */}
@@ -915,20 +996,39 @@ export default function IDCardGenerator() {
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-800">
               <span className="text-[11px] text-slate-400">
-                Statutory Plastic PVC Card Format (85.6mm x 54mm)
+                CR80 Plastic PVC Card (85.6mm × 54mm)
               </span>
 
-              <button
-                onClick={() => {
-                  setSelectedCards([previewCard]);
-                  setTimeout(() => window.print(), 100);
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
-              >
-                <Printer className="w-4 h-4" /> ಈ ಗುರುತಿನ ಚೀಟಿ ಮುದ್ರಿಸಿ (Print This Card)
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrintSides(cardSide === 'Front' ? 'front' : 'back');
+                    setSelectedCards([previewCard]);
+                    setTimeout(() => window.print(), 100);
+                  }}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+                  title={`Print ${cardSide} side only`}
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  {cardSide === 'Front' ? 'ಮುಂಭಾಗ ಮಾತ್ರ' : 'ಹಿಂಬದಿ ಮಾತ್ರ'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrintSides('both');
+                    setSelectedCards([previewCard]);
+                    setTimeout(() => window.print(), 100);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+                  title="Print Page 1: Front and Page 2: Back"
+                >
+                  <Printer className="w-4 h-4" /> ಎರಡೂ ಬದಿಗಳನ್ನು ಮುದ್ರಿಸಿ (Print Both Pages)
+                </button>
+              </div>
             </div>
           </div>
         </div>
