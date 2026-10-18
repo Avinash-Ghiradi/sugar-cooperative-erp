@@ -16,7 +16,7 @@ export default function Navbar({ onMenuToggle }) {
         </button>
 
         <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
-          <span className="font-semibold text-slate-200">Chhatrapati Sugar Cooperative ERP</span>
+          <span className="font-semibold text-slate-200">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204</span>
           <span>•</span>
           <span className="text-emerald-400 font-medium flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5" /> Statutory Ledger Online

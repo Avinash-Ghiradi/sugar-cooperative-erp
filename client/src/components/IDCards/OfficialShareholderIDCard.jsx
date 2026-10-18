@@ -7,6 +7,7 @@ export function getCustomIdCardSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_ID_SETTINGS);
     return raw ? JSON.parse(raw) : {
+      customLogo: '',
       customBackground: '',
       customMdSignature: '',
       hideHeader: false,
@@ -15,6 +16,7 @@ export function getCustomIdCardSettings() {
     };
   } catch (e) {
     return {
+      customLogo: '',
       customBackground: '',
       customMdSignature: '',
       hideHeader: false,
@@ -40,6 +42,39 @@ export function resetCustomIdCardSettings() {
       window.dispatchEvent(new Event('id_card_settings_updated'));
     }
   } catch (e) {}
+}
+
+// Client-side helper to compress and optimize uploaded logo image
+export function compressLogoImage(file, maxWidth = 400, maxHeight = 400) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve('');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(event.target.result);
+      img.src = event.target.result;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
 }
 
 // Client-side helper to make MD signature transparent (removes white paper background)
@@ -141,9 +176,9 @@ export function OfficialSocietySeal({ className = "w-20 h-20" }) {
       <circle cx="100" cy="100" r="63" fill="none" stroke="#581c87" strokeWidth="1.8" opacity="0.85" />
 
       {/* Top Arc Text: Factory Name */}
-      <text fill="#581c87" fontSize="13.5" fontWeight="900" opacity="0.9" letterSpacing="0.5" style={{ fontFamily: "'Anek Kannada', 'Aneka Kannada', sans-serif" }}>
+      <text fill="#581c87" fontSize="13" fontWeight="900" opacity="0.9" letterSpacing="0.3" style={{ fontFamily: "'Anek Kannada', 'Aneka Kannada', sans-serif" }}>
         <textPath href="#topArcPath" startOffset="50%" textAnchor="middle">
-          ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ.
+          ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.
         </textPath>
       </text>
 
@@ -154,14 +189,14 @@ export function OfficialSocietySeal({ className = "w-20 h-20" }) {
       {/* Bottom Arc Text: Chadachan • Vijayapura */}
       <text fill="#581c87" fontSize="11" fontWeight="800" opacity="0.88" letterSpacing="1" style={{ fontFamily: "'Anek Kannada', 'Aneka Kannada', sans-serif" }}>
         <textPath href="#bottomArcPath" startOffset="50%" textAnchor="middle">
-          ತಾ॥ ಚಡಚಣ • ಜಿ॥ ವಿಜಯಪುರ
+          ತಾ|| ಚಡಚಣ • ಜಿ|| ವಿಜಯಪುರ
         </textPath>
       </text>
 
-      {/* Center Box / Text: ಮರೂರ */}
-      <rect x="52" y="83" width="96" height="34" rx="4" fill="none" stroke="#581c87" strokeWidth="1.2" strokeDasharray="3,1" opacity="0.7" />
-      <text x="100" y="107" fill="#581c87" fontSize="21" fontWeight="900" textAnchor="middle" letterSpacing="3" opacity="0.95" style={{ fontFamily: "'Anek Kannada', 'Aneka Kannada', sans-serif" }}>
-        ಮರೂರ
+      {/* Center Box / Text: ಮರಗೂರ */}
+      <rect x="50" y="83" width="100" height="34" rx="4" fill="none" stroke="#581c87" strokeWidth="1.2" strokeDasharray="3,1" opacity="0.7" />
+      <text x="100" y="107" fill="#581c87" fontSize="20" fontWeight="900" textAnchor="middle" letterSpacing="2.5" opacity="0.95" style={{ fontFamily: "'Anek Kannada', 'Aneka Kannada', sans-serif" }}>
+        ಮರಗೂರ
       </text>
     </svg>
   );
@@ -197,6 +232,7 @@ export default function OfficialShareholderIDCard({
   side = 'Front',
   showSeal = true,
   scale = 1,
+  customLogo,
   customBackground,
   customMdSignature,
   hideHeader,
@@ -223,6 +259,7 @@ export default function OfficialShareholderIDCard({
   const districtName = sh.district || 'ವಿಜಯಪುರ';
 
   // Effective settings prioritizing props over persisted settings
+  const effectiveLogo = customLogo !== undefined ? customLogo : globalSettings.customLogo;
   const effectiveBg = customBackground !== undefined ? customBackground : globalSettings.customBackground;
   const effectiveMdSig = customMdSignature !== undefined ? customMdSignature : globalSettings.customMdSignature;
   const effectiveHideHeader = hideHeader !== undefined ? hideHeader : globalSettings.hideHeader;
@@ -273,10 +310,10 @@ export default function OfficialShareholderIDCard({
               {!effectiveHideHeader ? (
                 <>
                   <div className="relative z-10 bg-gradient-to-r from-[#0d6b2c] via-[#15803d] to-[#0a5c24] text-white px-2 py-1.5 flex items-center gap-2 border-b-2 border-[#166534] shadow-sm">
-                    {/* BSSKN Logo on left */}
+                    {/* Factory Logo on left (Custom uploaded or official default) */}
                     <div className="w-9 h-10 shrink-0 flex items-center justify-center">
                       <img
-                        src="/id_assets/bsskn_logo.png"
+                        src={effectiveLogo || '/id_assets/bsskn_logo.png'}
                         alt="BSSKN Logo"
                         className="w-full h-full object-contain filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
                         onError={(e) => {
@@ -289,13 +326,13 @@ export default function OfficialShareholderIDCard({
                       </div>
                     </div>
 
-                    {/* Society Name & Address in Google Anek Kannada */}
+                    {/* Society Official Name & Address in Google Anek Kannada */}
                     <div className="flex-1 text-center pr-2" style={kannadaFontStyle}>
-                      <h2 className="font-extrabold text-[12.5px] leading-tight tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-                        ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ.
+                      <h2 className="font-extrabold text-[12px] leading-tight tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                        ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.,
                       </h2>
-                      <p className="font-bold text-[9.5px] leading-tight text-white/95 mt-0.5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
-                        ಮರೂರ 586 204 ತಾ॥ ಚಡಚಣ ಜಿ॥ ವಿಜಯಪುರ
+                      <p className="font-bold text-[9px] leading-tight text-white/95 mt-0.5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
+                        ಮರಗೂರ - 586204, ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ.
                       </p>
                     </div>
                   </div>
@@ -459,13 +496,13 @@ export default function OfficialShareholderIDCard({
           ) : (
             /* BACK VIEW */
             <div className="w-full h-full p-2.5 flex flex-col justify-between text-slate-900 bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0]" style={kannadaFontStyle}>
-              {/* Header */}
+              {/* Header in Kannada & English */}
               <div className="border-b-2 border-emerald-700 pb-1 text-center">
-                <h3 className="font-black text-[11px] text-emerald-900 leading-tight">
-                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ. ಮರೂರ
+                <h3 className="font-black text-[10.5px] text-emerald-900 leading-tight">
+                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204
                 </h3>
-                <p className="text-[8px] font-bold text-slate-600">
-                  ತಾ॥ ಚಡಚಣ ಜಿ॥ ವಿಜಯಪುರ • ಶಾಸನಬದ್ಧ ಸದಸ್ಯರ ಗುರುತಿನ ಚೀಟಿ (ಹಿಂಬದಿ)
+                <p className="text-[7.5px] font-bold text-slate-600 mt-0.5">
+                  Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204, Tq|| Chadachan, Dist|| Vijayapur
                 </p>
               </div>
 

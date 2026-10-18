@@ -785,7 +785,7 @@ export const ApiService = {
         date: sh.date_of_joining || sh.admission_date || 'ಮೂಲ ಸದಸ್ಯತ್ವ',
         type: 'INITIAL_MEMBERSHIP',
         title: 'ಮೂಲ ಸದಸ್ಯತ್ವ ನೋಂದಣಿ (Original Statutory Membership)',
-        description: `ಶ್ರೀ ಛತ್ರಪತಿ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆಯ ಅಧಿಕೃತ ಶೇರುದಾರರಾಗಿ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿದ್ದಾರೆ. ಶೇರು ನಂ: #${shNo}, ಶೇರುಗಳು: ${sh.number_of_shares || 1}, ವರ್ಗ: ${sh.schedule_cast || 'ಅ - ವರ್ಗ'}, ಪುಸ್ತಕ ನಂ: ${sh.book_no || '1'}.`,
+        description: `ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204 ಅಧಿಕೃತ ಶೇರುದಾರರಾಗಿ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿದ್ದಾರೆ. ಶೇರು ನಂ: #${shNo}, ಶೇರುಗಳು: ${sh.number_of_shares || 1}, ವರ್ಗ: ${sh.schedule_cast || 'ಅ - ವರ್ಗ'}, ಪುಸ್ತಕ ನಂ: ${sh.book_no || '1'}.`,
         performed_by: 'Authorized Secretary / Admin',
         details: {
           share_no: shNo,

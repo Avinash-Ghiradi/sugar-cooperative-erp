@@ -831,10 +831,10 @@ export default function NewShareholderModule() {
               {/* Header */}
               <div className="text-center border-b-2 border-slate-800 pb-3 space-y-1">
                 <h2 className="text-base font-extrabold text-slate-900 tracking-wide">
-                  ಶ್ರೀ ಛತ್ರಪತಿ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಚಡಚಣ
+                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204
                 </h2>
                 <p className="text-[11px] text-slate-700 font-medium">
-                  ತಾಲೂಕು: ಚಡಚಣ, ಜಿಲ್ಲೆ: ವಿಜಯಪುರ, ಕರ್ನಾಟಕ - 586 117
+                  ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ. | Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204, Tq|| Chadachan, Dist|| Vijayapur
                 </p>
                 <div className="inline-block mt-1 px-3 py-0.5 rounded-full bg-slate-900 text-white font-bold text-[11px]">
                   ಹೊಸ ಶೇರುದಾರರ ಪ್ರವೇಶ ರಶೀದಿ ಮತ್ತು ಠರಾವು ನಮೂನೆ (New Shareholder Admission Receipt)

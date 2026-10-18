@@ -90,8 +90,8 @@ export default function ReportsModule() {
         {/* Printable Official Header */}
         <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-extrabold text-emerald-400 tracking-wide">Chhatrapati Sugar Cooperative Society Ltd.</h2>
-            <p className="text-xs text-slate-300">Reg No: CS-SUGAR-1978-8842 • District Cooperative Complex</p>
+            <h2 className="text-lg font-extrabold text-emerald-400 tracking-wide">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204</h2>
+            <p className="text-xs text-slate-300">Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204, Tq|| Chadachan, Dist|| Vijayapur</p>
             <p className="text-[11px] text-slate-400 font-semibold uppercase mt-1">
               OFFICIAL AUDIT REPORT: {reportTypes.find(r => r.id === selectedReport)?.label}
             </p>

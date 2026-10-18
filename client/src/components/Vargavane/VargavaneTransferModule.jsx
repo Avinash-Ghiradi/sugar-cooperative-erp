@@ -774,7 +774,7 @@ export default function VargavaneTransferModule() {
             <div id="printable-vargavane-slip" className="bg-white text-slate-900 p-6 rounded-2xl shadow-inner space-y-5 text-xs font-sans border-2 border-slate-300">
               <div className="text-center border-b-2 border-slate-900 pb-3">
                 <h1 className="text-base font-extrabold text-slate-900 tracking-wide">
-                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ
+                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204, ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ.
                 </h1>
                 <h2 className="text-xs font-semibold text-slate-700">
                   ವರ್ಗಾವಣೆ ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ ಪಾವತಿ ರಶೀದಿ (Vargavane Share Transfer Slip)

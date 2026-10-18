@@ -5,7 +5,8 @@ import OfficialShareholderIDCard, {
   saveCustomIdCardSettings,
   resetCustomIdCardSettings,
   makeSignatureTransparent,
-  compressBackgroundImage
+  compressBackgroundImage,
+  compressLogoImage
 } from './OfficialShareholderIDCard';
 import {
   Contact, Printer, Search, RefreshCw, CheckCircle2, ShieldCheck,
@@ -28,12 +29,13 @@ export default function IDCardGenerator() {
   const [showReferenceSample, setShowReferenceSample] = useState(false);
   const [printLayout, setPrintLayout] = useState('pvc'); // 'pvc' (single) or 'a4' (sheet)
 
-  // Custom ID Card Upload Settings (Background & MD Signature)
+  // Custom ID Card Upload Settings (Logo, Background & MD Signature)
   const [customSettings, setCustomSettings] = useState(getCustomIdCardSettings());
   const [showCustomizerModal, setShowCustomizerModal] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
 
+  const logoFileInputRef = useRef(null);
   const bgFileInputRef = useRef(null);
   const sigFileInputRef = useRef(null);
 
@@ -100,6 +102,34 @@ export default function IDCardGenerator() {
     window.print();
   };
 
+  // Upload Factory Logo Handler
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadLoading(true);
+    try {
+      const dataUrl = await compressLogoImage(file, 400, 400);
+      const newSettings = { ...customSettings, customLogo: dataUrl };
+      setCustomSettings(newSettings);
+      saveCustomIdCardSettings(newSettings);
+      setUploadSuccessMsg('ಕಾರ್ಖಾನೆಯ ಲೋಗೋ ಅಪ್ಲೋಡ್ ಮಾಡಲಾಗಿದೆ (Factory logo uploaded and applied successfully)!');
+      setTimeout(() => setUploadSuccessMsg(''), 4000);
+    } catch (err) {
+      alert('Failed to process logo image: ' + err.message);
+    } finally {
+      setUploadLoading(false);
+      if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+    }
+  };
+
+  const handleResetLogo = () => {
+    const newSettings = { ...customSettings, customLogo: '' };
+    setCustomSettings(newSettings);
+    saveCustomIdCardSettings(newSettings);
+    setUploadSuccessMsg('ಮೂಲ ಅಧಿಕೃತ ಕಾರ್ಖಾನೆ ಲೋಗೋ ಮರುಸ್ಥಾಪಿಸಲಾಗಿದೆ (Restored default official factory logo).');
+    setTimeout(() => setUploadSuccessMsg(''), 3000);
+  };
+
   // Upload Background Image Handler
   const handleBackgroundUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -163,7 +193,7 @@ export default function IDCardGenerator() {
     setTimeout(() => setUploadSuccessMsg(''), 3000);
   };
 
-  const hasCustomizations = !!(customSettings.customBackground || customSettings.customMdSignature || customSettings.hideHeader || !customSettings.showSugarcaneWatermark);
+  const hasCustomizations = !!(customSettings.customLogo || customSettings.customBackground || customSettings.customMdSignature || customSettings.hideHeader || !customSettings.showSugarcaneWatermark);
 
   return (
     <div className="space-y-6" style={{ fontFamily: "'Anek Kannada', 'Aneka Kannada', 'Noto Sans Kannada', sans-serif" }}>
@@ -214,7 +244,7 @@ export default function IDCardGenerator() {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ. ಮರೂರ (ತಾ॥ ಚಡಚಣ ಜಿ॥ ವಿಜಯಪುರ) • Plastic PVC & A4 Sheet ID Generation
+            ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204, ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ. | Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204, Tq|| Chadachan, Dist|| Vijayapur
           </p>
         </div>
 
@@ -227,10 +257,10 @@ export default function IDCardGenerator() {
                 ? 'bg-emerald-600/25 text-emerald-300 border-emerald-500/60 hover:bg-emerald-600/35 shadow-sm'
                 : 'bg-slate-900 text-slate-300 border-slate-800 hover:text-white hover:bg-slate-800'
             }`}
-            title="Upload Custom Card Background or MD Signature"
+            title="Upload Custom Card Logo, Background or MD Signature"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
-            <span>ಹಿನ್ನೆಲೆ & MD ಸಹಿ ಅಪ್ಲೋಡ್</span>
+            <span>ಲೋಗೋ, ಹಿನ್ನೆಲೆ & MD ಸಹಿ</span>
             {hasCustomizations && (
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             )}
@@ -349,6 +379,11 @@ export default function IDCardGenerator() {
                     shareholder={shareholders[0]}
                     side={cardSide}
                     showSeal={showSeal}
+                    customLogo={customSettings.customLogo}
+                    customBackground={customSettings.customBackground}
+                    customMdSignature={customSettings.customMdSignature}
+                    hideHeader={customSettings.hideHeader}
+                    showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
                     scale={1}
                   />
                 )}
@@ -491,6 +526,11 @@ export default function IDCardGenerator() {
                     shareholder={sh}
                     side={cardSide}
                     showSeal={showSeal}
+                    customLogo={customSettings.customLogo}
+                    customBackground={customSettings.customBackground}
+                    customMdSignature={customSettings.customMdSignature}
+                    hideHeader={customSettings.hideHeader}
+                    showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
                     scale={0.96}
                   />
                 </div>
@@ -508,30 +548,35 @@ export default function IDCardGenerator() {
               shareholder={sh}
               side={cardSide}
               showSeal={showSeal}
+              customLogo={customSettings.customLogo}
+              customBackground={customSettings.customBackground}
+              customMdSignature={customSettings.customMdSignature}
+              hideHeader={customSettings.hideHeader}
+              showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
               scale={1}
             />
           </div>
         ))}
       </div>
 
-      {/* CUSTOMIZATION & UPLOAD MODAL (Background & MD Signature) */}
+      {/* CUSTOMIZATION & UPLOAD MODAL (Logo, Background & MD Signature) */}
       {showCustomizerModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto no-print">
-          <div className="bg-slate-950 border border-slate-800 w-full max-w-3xl rounded-3xl p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+          <div className="bg-slate-950 border border-slate-800 w-full max-w-5xl rounded-3xl p-6 shadow-2xl space-y-5 max-h-[94vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-slate-800 pb-3">
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-slate-100 text-base flex items-center gap-2">
                     <SlidersHorizontal className="w-5 h-5 text-emerald-400" />
-                    ಕಾರ್ಡ್ ಹಿನ್ನೆಲೆ & MD ಸಹಿ ಕಸ್ಟಮೈಸೇಶನ್ (Background & MD Signature)
+                    ಕಾರ್ಡ್ ಲೋಗೋ, ಹಿನ್ನೆಲೆ & MD ಸಹಿ ಕಸ್ಟಮೈಸೇಶನ್ (Logo, Background & MD Signature)
                   </h3>
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
                     Custom Uploads
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
-                  Upload custom background artwork for the front of the ID card and signature of the Managing Director (ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು).
+                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204, ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ. | Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204, Tq|| Chadachan, Dist|| Vijayapur
                 </p>
               </div>
 
@@ -543,163 +588,232 @@ export default function IDCardGenerator() {
               </button>
             </div>
 
-            {/* Upload Options Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Upload Options Grid: 3-column Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
-              {/* SECTION 1: Front Page Background Image Upload */}
-              <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-xs text-slate-200 flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-emerald-400" /> 1. ಕಾರ್ಡ್ ಮುಂಭಾಗದ ಹಿನ್ನೆಲೆ (Front Background)
-                  </h4>
-                  {customSettings.customBackground && (
-                    <button
-                      onClick={handleResetBackground}
-                      className="text-[10px] text-rose-400 hover:underline flex items-center gap-1 font-semibold"
-                    >
-                      <Trash2 className="w-3 h-3" /> Reset Default
-                    </button>
-                  )}
-                </div>
+              {/* SECTION 1: Factory Logo Upload */}
+              <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-xs text-slate-200 flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-emerald-400" /> 1. ಕಾರ್ಖಾನೆ ಲೋಗೋ (Factory Logo)
+                    </h4>
+                    {customSettings.customLogo && (
+                      <button
+                        onClick={handleResetLogo}
+                        className="text-[10px] text-rose-400 hover:underline flex items-center gap-1 font-semibold"
+                      >
+                        <Trash2 className="w-3 h-3" /> Reset
+                      </button>
+                    )}
+                  </div>
 
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Upload your society's custom pre-printed card design, template, or custom graphics (PNG, JPG, WebP).
-                </p>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Upload official factory emblem/logo (PNG with transparency recommended, JPG, WebP).
+                  </p>
 
-                {/* Thumbnail Preview */}
-                <div className="w-full h-32 rounded-xl border border-slate-700 overflow-hidden bg-slate-950 flex items-center justify-center relative shadow-inner">
-                  {customSettings.customBackground ? (
-                    <img
-                      src={customSettings.customBackground}
-                      alt="Custom Background Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="text-center p-3 text-slate-500">
-                      <ImageIcon className="w-8 h-8 mx-auto text-slate-600 mb-1" />
-                      <span className="text-[11px] font-medium text-slate-400 block">Default Official Factory Mint & Sugarcane Graphic</span>
-                    </div>
-                  )}
+                  {/* Thumbnail Preview */}
+                  <div className="w-full h-32 rounded-xl border border-slate-700 bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)] bg-[size:16px_16px] bg-slate-950 flex flex-col items-center justify-center relative p-2 shadow-inner">
+                    {customSettings.customLogo ? (
+                      <>
+                        <img
+                          src={customSettings.customLogo}
+                          alt="Custom Factory Logo Preview"
+                          className="max-h-20 max-w-full object-contain filter drop-shadow-md"
+                        />
+                        <span className="text-[10px] text-emerald-400 font-semibold mt-1">✓ Custom Logo Active</span>
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src="/id_assets/bsskn_logo.png"
+                          alt="Default Official Factory Logo"
+                          className="max-h-20 max-w-full object-contain filter drop-shadow-md"
+                        />
+                        <span className="text-[10px] text-slate-400 mt-1">Default BSSKN Logo</span>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Upload Button */}
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/jpg"
-                  ref={bgFileInputRef}
-                  onChange={handleBackgroundUpload}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  disabled={uploadLoading}
-                  onClick={() => bgFileInputRef.current?.click()}
-                  className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700 transition-all cursor-pointer"
-                >
-                  <Upload className="w-4 h-4 text-emerald-400" />
-                  {customSettings.customBackground ? 'Change Background Image' : '+ Upload Background Image (ಹಿನ್ನೆಲೆ ಅಪ್ಲೋಡ್)'}
-                </button>
-
-                {/* Extra Options for Pre-printed cards */}
-                <div className="pt-2 border-t border-slate-800/80 space-y-2 text-xs">
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={customSettings.hideHeader}
-                      onChange={(e) => {
-                        const newSettings = { ...customSettings, hideHeader: e.target.checked };
-                        setCustomSettings(newSettings);
-                        saveCustomIdCardSettings(newSettings);
-                      }}
-                      className="w-3.5 h-3.5 accent-emerald-500 rounded"
-                    />
-                    <span className="text-[11px]">
-                      Hide Society Header Bar (ಚಿತ್ರದಲ್ಲೇ ಹೆಡರ್ ಮುದ್ರಿತವಾಗಿದ್ದರೆ)
-                    </span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={customSettings.showSugarcaneWatermark}
-                      onChange={(e) => {
-                        const newSettings = { ...customSettings, showSugarcaneWatermark: e.target.checked };
-                        setCustomSettings(newSettings);
-                        saveCustomIdCardSettings(newSettings);
-                      }}
-                      className="w-3.5 h-3.5 accent-emerald-500 rounded"
-                    />
-                    <span className="text-[11px]">
-                      Show Sugarcane Watermark (ಕಬ್ಬಿನ ಗಿಡದ ವಾಟರ್‌ಮಾರ್ಕ್)
-                    </span>
-                  </label>
+                <div className="pt-2">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    ref={logoFileInputRef}
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    disabled={uploadLoading}
+                    onClick={() => logoFileInputRef.current?.click()}
+                    className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700 transition-all cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4 text-emerald-400" />
+                    {customSettings.customLogo ? 'Change Factory Logo' : '+ Upload Logo (ಲೋಗೋ ಅಪ್ಲೋಡ್)'}
+                  </button>
                 </div>
               </div>
 
-              {/* SECTION 2: Managing Director (MD) Signature Upload */}
-              <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-xs text-slate-200 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-emerald-400" /> 2. ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರ ಸಹಿ (MD Signature)
-                  </h4>
-                  {customSettings.customMdSignature && (
-                    <button
-                      onClick={handleResetMdSignature}
-                      className="text-[10px] text-rose-400 hover:underline flex items-center gap-1 font-semibold"
-                    >
-                      <Trash2 className="w-3 h-3" /> Reset Default
-                    </button>
-                  )}
+              {/* SECTION 2: Front Page Background Image Upload */}
+              <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-xs text-slate-200 flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-emerald-400" /> 2. ಮುಂಭಾಗದ ಹಿನ್ನೆಲೆ (Background)
+                    </h4>
+                    {customSettings.customBackground && (
+                      <button
+                        onClick={handleResetBackground}
+                        className="text-[10px] text-rose-400 hover:underline flex items-center gap-1 font-semibold"
+                      >
+                        <Trash2 className="w-3 h-3" /> Reset
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Upload pre-printed card design, template, or custom graphics (PNG, JPG, WebP).
+                  </p>
+
+                  {/* Thumbnail Preview */}
+                  <div className="w-full h-32 rounded-xl border border-slate-700 overflow-hidden bg-slate-950 flex items-center justify-center relative shadow-inner">
+                    {customSettings.customBackground ? (
+                      <img
+                        src={customSettings.customBackground}
+                        alt="Custom Background Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center p-3 text-slate-500">
+                        <ImageIcon className="w-7 h-7 mx-auto text-slate-600 mb-1" />
+                        <span className="text-[10px] font-medium text-slate-400 block">Default Mint & Sugarcane Graphic</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Upload official signature image. Photos/scans on white paper will <strong>automatically have their white background removed into transparent ink</strong>!
-                </p>
+                {/* Upload Button & Options */}
+                <div className="space-y-2 pt-2">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    ref={bgFileInputRef}
+                    onChange={handleBackgroundUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    disabled={uploadLoading}
+                    onClick={() => bgFileInputRef.current?.click()}
+                    className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700 transition-all cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4 text-emerald-400" />
+                    {customSettings.customBackground ? 'Change Background' : '+ Upload Background'}
+                  </button>
 
-                {/* Signature Preview */}
-                <div className="w-full h-32 rounded-xl border border-slate-700 bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)] bg-[size:16px_16px] bg-slate-950 flex flex-col items-center justify-center relative p-3">
-                  {customSettings.customMdSignature ? (
-                    <>
-                      <img
-                        src={customSettings.customMdSignature}
-                        alt="Custom MD Signature Preview"
-                        className="max-h-16 max-w-full object-contain filter drop-shadow-sm"
+                  <div className="pt-2 border-t border-slate-800/80 space-y-1.5 text-xs">
+                    <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={customSettings.hideHeader}
+                        onChange={(e) => {
+                          const newSettings = { ...customSettings, hideHeader: e.target.checked };
+                          setCustomSettings(newSettings);
+                          saveCustomIdCardSettings(newSettings);
+                        }}
+                        className="w-3.5 h-3.5 accent-emerald-500 rounded"
                       />
-                      <span className="text-[10px] text-emerald-400 font-semibold mt-1">✓ Custom MD Signature Active</span>
-                    </>
-                  ) : (
-                    <>
-                      <img
-                        src="/id_assets/md_signature_transparent.png"
-                        alt="Default MD Signature"
-                        className="max-h-16 max-w-full object-contain"
+                      <span className="text-[10.5px]">
+                        Hide Header Bar (ಹೆಡರ್ ಮುಚ್ಚು)
+                      </span>
+                    </label>
+
+                    <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={customSettings.showSugarcaneWatermark}
+                        onChange={(e) => {
+                          const newSettings = { ...customSettings, showSugarcaneWatermark: e.target.checked };
+                          setCustomSettings(newSettings);
+                          saveCustomIdCardSettings(newSettings);
+                        }}
+                        className="w-3.5 h-3.5 accent-emerald-500 rounded"
                       />
-                      <span className="text-[10px] text-slate-400 mt-1">Default Official MD Signature (Green Ink)</span>
-                    </>
-                  )}
+                      <span className="text-[10.5px]">
+                        Sugarcane Watermark (ಕಬ್ಬಿನ ಚಿತ್ರ)
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: Managing Director (MD) Signature Upload */}
+              <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-xs text-slate-200 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-emerald-400" /> 3. MD ಸಹಿ (MD Signature)
+                    </h4>
+                    {customSettings.customMdSignature && (
+                      <button
+                        onClick={handleResetMdSignature}
+                        className="text-[10px] text-rose-400 hover:underline flex items-center gap-1 font-semibold"
+                      >
+                        <Trash2 className="w-3 h-3" /> Reset
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Paper scans/photos <strong>automatically converted into transparent ink</strong>!
+                  </p>
+
+                  {/* Signature Preview */}
+                  <div className="w-full h-32 rounded-xl border border-slate-700 bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)] bg-[size:16px_16px] bg-slate-950 flex flex-col items-center justify-center relative p-3">
+                    {customSettings.customMdSignature ? (
+                      <>
+                        <img
+                          src={customSettings.customMdSignature}
+                          alt="Custom MD Signature Preview"
+                          className="max-h-16 max-w-full object-contain filter drop-shadow-sm"
+                        />
+                        <span className="text-[10px] text-emerald-400 font-semibold mt-1">✓ Custom MD Signature Active</span>
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src="/id_assets/md_signature_transparent.png"
+                          alt="Default MD Signature"
+                          className="max-h-16 max-w-full object-contain"
+                        />
+                        <span className="text-[10px] text-slate-400 mt-1">Default Official MD Signature</span>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Upload Button */}
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/jpg"
-                  ref={sigFileInputRef}
-                  onChange={handleMdSignatureUpload}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  disabled={uploadLoading}
-                  onClick={() => sigFileInputRef.current?.click()}
-                  className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700 transition-all cursor-pointer"
-                >
-                  <Upload className="w-4 h-4 text-emerald-400" />
-                  {customSettings.customMdSignature ? 'Change MD Signature' : '+ Upload MD Signature (MD ಸಹಿ ಅಪ್ಲೋಡ್)'}
-                </button>
-
-                <p className="text-[10.5px] text-slate-400 italic pt-1">
-                  💡 Tip: You can photograph or scan the MD's signature directly on paper. Our system automatically makes it transparent.
-                </p>
+                <div className="pt-2">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    ref={sigFileInputRef}
+                    onChange={handleMdSignatureUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    disabled={uploadLoading}
+                    onClick={() => sigFileInputRef.current?.click()}
+                    className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700 transition-all cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4 text-emerald-400" />
+                    {customSettings.customMdSignature ? 'Change MD Signature' : '+ Upload Signature (MD ಸಹಿ)'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -720,6 +834,7 @@ export default function IDCardGenerator() {
                     shareholder={shareholders[0]}
                     side="Front"
                     showSeal={showSeal}
+                    customLogo={customSettings.customLogo}
                     customBackground={customSettings.customBackground}
                     customMdSignature={customSettings.customMdSignature}
                     hideHeader={customSettings.hideHeader}
@@ -790,6 +905,11 @@ export default function IDCardGenerator() {
                 shareholder={previewCard}
                 side={cardSide}
                 showSeal={showSeal}
+                customLogo={customSettings.customLogo}
+                customBackground={customSettings.customBackground}
+                customMdSignature={customSettings.customMdSignature}
+                hideHeader={customSettings.hideHeader}
+                showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
                 scale={1.2}
               />
             </div>

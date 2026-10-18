@@ -269,7 +269,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                     ಅಧಿಕೃತ ಸದಸ್ಯರ ಗುರುತಿನ ಚೀಟಿ (Official Statutory ID Card)
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ. ಮರೂರ • CR80 Plastic PVC Plastic Card & Print Layout
+                    ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204, ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ. • CR80 Plastic PVC Plastic Card & Print Layout
                   </p>
                 </div>
 

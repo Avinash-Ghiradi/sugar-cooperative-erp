@@ -7,11 +7,11 @@ export default function SettingsModule() {
   const { showToast } = useAuth();
   const [showResetModal, setShowResetModal] = useState(false);
   const [form, setForm] = useState({
-    org_name: 'Chhatrapati Sugar Cooperative Society Ltd.',
-    org_reg_no: 'CS-SUGAR-1978-8842',
-    org_address: 'Sugar Mill Road, District Cooperative Complex',
-    org_phone: '+91 231 2548900',
-    org_email: 'info@sugarcooperative.org',
+    org_name: 'ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ. / Shree Bheemashankar Co-operative Sugar Factory',
+    org_reg_no: 'BSSKN-MARGUR-586204',
+    org_address: 'ಮರಗೂರ - 586204, ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ / Margur - 586204, Tq|| Chadachan, Dist|| Vijayapur',
+    org_phone: '+91 8359 254800',
+    org_email: 'info@bheemashankarsugar.com',
     crushing_season: '2025-2026',
     sugar_quota_per_share: '15'
   });

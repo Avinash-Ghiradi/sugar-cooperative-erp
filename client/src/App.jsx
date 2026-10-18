@@ -33,11 +33,11 @@ function AppContent() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 mx-auto flex items-center justify-center text-slate-950 font-black text-xl shadow-lg">
-              CS
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 mx-auto flex items-center justify-center text-slate-950 font-black text-sm shadow-lg">
+              BSSKN
             </div>
-            <h1 className="text-xl font-bold text-slate-100">Chhatrapati Sugar Cooperative</h1>
-            <p className="text-xs text-slate-400">Shareholder ERP & Administration Portal</p>
+            <h1 className="text-base font-bold text-slate-100">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.</h1>
+            <p className="text-xs text-slate-400">Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204</p>
           </div>
 
           <form

@@ -34,12 +34,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       {/* Header / Logo */}
       <div className="h-16 flex items-center px-4 border-b border-slate-800 bg-slate-900/50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-emerald-500/20">
-            CS
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20">
+            BSSKN
           </div>
-          <div>
-            <h1 className="font-bold text-sm text-slate-100 leading-tight">Chhatrapati Sugar</h1>
-            <p className="text-[10px] text-emerald-400 uppercase tracking-widest font-semibold">Cooperative ERP v2.5</p>
+          <div className="overflow-hidden">
+            <h1 className="font-bold text-xs text-slate-100 leading-tight truncate">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ</h1>
+            <p className="text-[10px] text-emerald-400 font-semibold truncate">ಮರಗೂರ - 586204 • Margur</p>
           </div>
         </div>
       </div>

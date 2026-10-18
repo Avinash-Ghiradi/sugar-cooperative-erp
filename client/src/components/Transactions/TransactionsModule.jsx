@@ -219,8 +219,8 @@ export default function TransactionsModule() {
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-center justify-center p-4">
           <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 printable-area">
             <div className="text-center border-b pb-3">
-              <h2 className="font-extrabold text-base text-emerald-800">Chhatrapati Sugar Cooperative Ltd.</h2>
-              <p className="text-[10px] text-slate-600">OFFICIAL TRANSACTION PAYMENT RECEIPT</p>
+              <h2 className="font-extrabold text-sm text-emerald-800">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204</h2>
+              <p className="text-[10px] text-slate-600">Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204</p>
             </div>
 
             <div className="text-xs space-y-2 font-mono">
