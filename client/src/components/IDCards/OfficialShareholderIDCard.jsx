@@ -360,25 +360,15 @@ export default function OfficialShareholderIDCard({
 
               {/* MIDDLE CONTENT: Sub-Header + Details & Photo */}
               <div className="flex-1 min-h-0 flex flex-col justify-between px-2.5 pt-0.5 pb-0.5 relative z-10" style={kannadaFontStyle}>
-                {/* 2. SUB-HEADER: Ownership on Left-Side Above Corner + Center Badge */}
+                {/* 2. SUB-HEADER: ID Card No (Left) + Center Badge + Ownership (Top-Right Above Corner) */}
                 <div className="flex items-center justify-between">
-                  {/* Left Side Above Corner: Ownership (ಸ್ವಾಮ್ಯತ್ವ) & ID Card No */}
-                  <div className="flex flex-col items-start leading-tight">
-                    <div className="flex items-center gap-1">
-                      <span className="font-extrabold text-[8.5px] text-[#14532d] whitespace-nowrap">
-                        ಸ್ವಾಮ್ಯತ್ವ (Ownership):
-                      </span>
-                      <span className="font-black text-[8.5px] text-emerald-950 bg-emerald-100/90 border border-emerald-600/50 px-1 py-0.2 rounded shadow-xs">
-                        {ownership}
-                      </span>
-                    </div>
-                    <span className="text-[7px] font-bold text-slate-700 tracking-tight font-mono mt-0.5">
-                      ID Card N: 2025-26/02/{shareNo}
-                    </span>
-                  </div>
+                  {/* Left Side: ID Card No */}
+                  <span className="text-[7.5px] font-bold text-slate-800 tracking-tight font-mono">
+                    ID Card N: 2025-26/02/{shareNo}
+                  </span>
 
                   {/* Center Badge: ಗುರುತಿನ ಚೀಟಿ */}
-                  <div className="text-center mr-6">
+                  <div className="text-center">
                     <div className="bg-[#e8f5e9]/95 border border-[#2e7d32] rounded px-2.5 py-0.5 shadow-sm inline-block">
                       <span className="font-black text-[10.5px] text-[#14532d] leading-none tracking-wider">
                         ಗುರುತಿನ ಚೀಟಿ
@@ -392,7 +382,12 @@ export default function OfficialShareholderIDCard({
                     </div>
                   </div>
 
-                  <div className="w-6"></div>
+                  {/* Top-Right Above Corner: Just Ownership value (e.g. "ಸ್ವಂತ (Self)" / "ವಾರಸದಾರರು (ಮಗ)") */}
+                  <div className="text-right">
+                    <span className="font-black text-[8.5px] text-emerald-950 bg-emerald-100/90 border border-emerald-600/50 px-1.5 py-0.5 rounded shadow-xs inline-block">
+                      {ownership}
+                    </span>
+                  </div>
                 </div>
 
                 {/* 3. CARD BODY: Member Info (Left) + Photo & Seal (Right) */}
