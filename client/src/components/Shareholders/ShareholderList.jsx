@@ -812,108 +812,110 @@ export default function ShareholderList() {
         ) : (
           <div className="overflow-x-auto max-h-[72vh]">
             <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
-              <thead className="bg-slate-900 border-b border-slate-800 text-slate-300 font-bold text-[11px] sticky top-0 z-20 shadow-md">
-                <tr className="border-b border-slate-800">
-                  <th className="py-3.5 px-3 bg-slate-900 sticky left-0 z-30 shadow-r">Actions</th>
-                  <th className="py-3.5 px-3 bg-slate-900 sticky left-[90px] z-30 border-r border-slate-800">Book. No</th>
-                  <th className="py-3.5 px-3 text-center">Sl. No</th>
+              <thead className="bg-emerald-800 border-b-2 border-emerald-400 text-white font-bold text-[11.5px] sticky top-0 z-20 shadow-lg select-none">
+                <tr className="border-b border-emerald-700/80">
+                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-0 z-30 shadow-r border-r border-emerald-700/60">Actions</th>
+                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-[90px] z-30 border-r-2 border-emerald-400/80 shadow-r">Book. No</th>
+                  <th className="py-3.5 px-3 text-center border-r border-emerald-700/40">Sl. No</th>
                   <th
-                    className="py-3.5 px-3 font-mono text-emerald-400 cursor-pointer select-none hover:text-emerald-300 transition-colors"
+                    className="py-3.5 px-3 font-mono text-amber-300 cursor-pointer select-none hover:text-white transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('share_no')}
                     title="Click to sort by Share No"
                   >
                     <div className="flex items-center gap-1">
                       <span>Share No</span>
                       {sortBy === 'share_no' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-400" /> : <ArrowDown className="w-3 h-3 text-emerald-400" />
+                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-300" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-300" />
                       ) : (
-                        <ArrowUpDown className="w-3 h-3 text-slate-600" />
+                        <ArrowUpDown className="w-3.5 h-3.5 text-emerald-300/70" />
                       )}
                     </div>
                   </th>
                   <th
-                    className="py-3.5 px-4 font-bold text-slate-100 min-w-[200px] cursor-pointer select-none hover:text-white transition-colors"
+                    className="py-3.5 px-4 font-bold text-white min-w-[200px] cursor-pointer select-none hover:text-amber-200 transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('name')}
                     title="Click to sort alphabetically by Shareholder Name (ಅಕಾರಾದಿ ಕ್ರಮ)"
                   >
                     <div className="flex items-center gap-1">
                       <span>Share Holder Name (ಷೇರುದಾರರ ಹೆಸರು)</span>
                       {sortBy === 'name' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-400" /> : <ArrowDown className="w-3 h-3 text-emerald-400" />
+                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-300" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-300" />
                       ) : (
-                        <ArrowUpDown className="w-3 h-3 text-slate-600" />
+                        <ArrowUpDown className="w-3.5 h-3.5 text-emerald-300/70" />
                       )}
                     </div>
                   </th>
-                  <th className="py-3.5 px-2 text-center">Gender</th>
-                  <th className="py-3.5 px-3 font-mono">Aadhaar Card No</th>
-                  <th className="py-3.5 px-3">Reg. Date</th>
-                  <th className="py-3.5 px-2 text-center">Receipt No</th>
-                  <th className="py-3.5 px-3 text-right">Receipt Amount</th>
-                  <th className="py-3.5 px-3">Date</th>
-                  <th className="py-3.5 px-2 text-center">Reciept</th>
-                  <th className="py-3.5 px-3 text-right">Amount</th>
-                  <th className="py-3.5 px-3 text-right font-bold text-amber-400">Total Amount</th>
-                  <th className="py-3.5 px-2 text-center font-bold text-emerald-400">No. of Shares</th>
-                  <th className="py-3.5 px-3 text-center">Schedule Cast / ವರ್ಗ</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Gender</th>
+                  <th className="py-3.5 px-3 font-mono border-r border-emerald-700/40">Aadhaar Card No</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Reg. Date</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Receipt No</th>
+                  <th className="py-3.5 px-3 text-right border-r border-emerald-700/40">Receipt Amount</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Date</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Reciept</th>
+                  <th className="py-3.5 px-3 text-right border-r border-emerald-700/40">Amount</th>
+                  <th className="py-3.5 px-3 text-right font-bold text-amber-300 border-r border-emerald-700/40">Total Amount</th>
+                  <th className="py-3.5 px-2 text-center font-bold text-emerald-200 border-r border-emerald-700/40">No. of Shares</th>
+                  <th className="py-3.5 px-3 text-center border-r border-emerald-700/40">Schedule Cast / ವರ್ಗ</th>
                   <th
-                    className="py-3.5 px-4 min-w-[180px] cursor-pointer select-none hover:text-emerald-300 transition-colors"
+                    className="py-3.5 px-4 min-w-[180px] cursor-pointer select-none hover:text-amber-200 transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('address')}
                     title="Click to sort alphabetically by Address (ವಿಳಾಸ: ಅ-ಹ)"
                   >
                     <div className="flex items-center gap-1">
                       <span>Address (ವಿಳಾಸ)</span>
                       {sortBy === 'address' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-400" /> : <ArrowDown className="w-3 h-3 text-emerald-400" />
+                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-300" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-300" />
                       ) : (
-                        <ArrowUpDown className="w-3 h-3 text-slate-600" />
+                        <ArrowUpDown className="w-3.5 h-3.5 text-emerald-300/70" />
                       )}
                     </div>
                   </th>
-                  <th className="py-3.5 px-3">Nagara</th>
-                  <th className="py-3.5 px-3">Road</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Nagara</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Road</th>
                   <th
-                    className="py-3.5 px-3 font-bold text-slate-100 cursor-pointer select-none hover:text-emerald-300 transition-colors"
+                    className="py-3.5 px-3 font-bold text-white cursor-pointer select-none hover:text-amber-200 transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('place')}
                     title="Click to sort alphabetically by Place (ಸ್ಥಳ: ಅ-ಹ)"
                   >
                     <div className="flex items-center gap-1">
                       <span>Place (ಸ್ಥಳ/ಗ್ರಾಮ)</span>
                       {sortBy === 'place' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-400" /> : <ArrowDown className="w-3 h-3 text-emerald-400" />
+                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-300" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-300" />
                       ) : (
-                        <ArrowUpDown className="w-3 h-3 text-slate-600" />
+                        <ArrowUpDown className="w-3.5 h-3.5 text-emerald-300/70" />
                       )}
                     </div>
                   </th>
-                  <th className="py-3.5 px-3">Taluk</th>
-                  <th className="py-3.5 px-3">District</th>
-                  <th className="py-3.5 px-3">Pin Code</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Taluk</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">District</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Pin Code</th>
                   <th
-                    className="py-3.5 px-3 cursor-pointer select-none hover:text-emerald-300 transition-colors"
+                    className="py-3.5 px-3 cursor-pointer select-none hover:text-amber-200 transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('circle')}
                     title="Click to sort alphabetically by Circle (ವಲಯ: ಅ-ಹ)"
                   >
                     <div className="flex items-center gap-1">
                       <span>Circle</span>
                       {sortBy === 'circle' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-emerald-400" /> : <ArrowDown className="w-3 h-3 text-emerald-400" />
+                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-300" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-300" />
                       ) : (
-                        <ArrowUpDown className="w-3 h-3 text-slate-600" />
+                        <ArrowUpDown className="w-3.5 h-3.5 text-emerald-300/70" />
                       )}
                     </div>
                   </th>
-                  <th className="py-3.5 px-3">Member Type</th>
-                  <th className="py-3.5 px-3">Ownership (ಸ್ವಾಮ್ಯತ್ವ)</th>
-                  <th className="py-3.5 px-3">Tharava Date</th>
-                  <th className="py-3.5 px-3">Tharava No</th>
-                  <th className="py-3.5 px-3 font-mono text-emerald-400">Mobile No</th>
-                  <th className="py-3.5 px-2 text-center">Photo Upd.</th>
-                  <th className="py-3.5 px-2 text-center">Sign Upd.</th>
-                  <th className="py-3.5 px-2 text-center">Thumb Upd.</th>
-                  <th className="py-3.5 px-4 min-w-[160px]">Nominee Name</th>
-                  <th className="py-3.5 px-3 font-mono">Nominee Aadhaar</th>
-                  <th className="py-3.5 px-3 font-mono">Nominee Mobile</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Member Type</th>
+                  <th className="py-3.5 px-3 font-extrabold text-amber-300 bg-emerald-950/80 border-r-2 border-l-2 border-emerald-400 shadow-inner">
+                    Ownership (ಸ್ವಾಮ್ಯತ್ವ)
+                  </th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Tharava Date</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Tharava No</th>
+                  <th className="py-3.5 px-3 font-mono text-emerald-200 border-r border-emerald-700/40">Mobile No</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Photo Upd.</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Sign Upd.</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Thumb Upd.</th>
+                  <th className="py-3.5 px-4 min-w-[160px] border-r border-emerald-700/40">Nominee Name</th>
+                  <th className="py-3.5 px-3 font-mono border-r border-emerald-700/40">Nominee Aadhaar</th>
+                  <th className="py-3.5 px-3 font-mono border-r border-emerald-700/40">Nominee Mobile</th>
                   <th className="py-3.5 px-4 min-w-[180px]">Nominee Address</th>
                 </tr>
               </thead>

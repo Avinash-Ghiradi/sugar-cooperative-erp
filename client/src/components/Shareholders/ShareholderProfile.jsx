@@ -393,7 +393,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                   <div className="flex justify-between py-1.5 border-b border-slate-800/40"><span className="text-slate-400">Nominee Name (ನಾಮಿನಿ ಹೆಸರು):</span><span className="text-slate-100 font-bold">{sh.nominee_name || '—'}</span></div>
                   <div className="flex justify-between py-1.5 border-b border-slate-800/40"><span className="text-slate-400">Nominee Aadhaar No:</span><span className="text-slate-200 font-mono">{sh.nominee_aadhaar_no || '—'}</span></div>
                   <div className="flex justify-between py-1.5 border-b border-slate-800/40"><span className="text-slate-400">Nominee Mobile No:</span><span className="text-emerald-400 font-mono font-semibold">{sh.nominee_mobile_no || '—'}</span></div>
-                  <div className="flex justify-between py-1.5 border-b border-slate-800/40"><span className="text-slate-400">Relationship to Member:</span><span className="text-slate-200">{sh.relationship || 'ಸ್ವಂತ/ಕುಟುಂಬ'}</span></div>
+                  <div className="flex justify-between py-1.5 border-b border-slate-800/40"><span className="text-slate-400">Nominee Relation (ನಾಮಿನಿ ಸಂಬಂಧ):</span><span className="text-slate-200">{sh.nominee_relationship || sh.relationship || 'ಸ್ವಂತ/ಕುಟುಂಬ'}</span></div>
                 </div>
                 <div className="py-2"><span className="text-slate-400 block mb-1">Nominee Postal Address:</span><p className="text-slate-200 bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">{sh.nominee_address || '—'}</p></div>
               </div>

@@ -489,20 +489,20 @@ export default function VargavaneTransferModule() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs whitespace-nowrap">
-              <thead className="bg-slate-900/90 border-b border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+              <thead className="bg-emerald-800 border-b-2 border-emerald-400 text-white uppercase font-bold text-[10.5px] tracking-wider">
                 <tr>
-                  <th className="py-3.5 px-3 text-center">Sl.</th>
-                  <th className="py-3.5 px-4">1. Share Holder (ಮೂಲ ಶೇರುದಾರರು)</th>
-                  <th className="py-3.5 px-3">1.1-1.3 Place & Taluk</th>
-                  <th className="py-3.5 px-3">1.4 Rel / 1.6 Aadhaar</th>
-                  <th className="py-3.5 px-4">2. Vargavane Madikolluvaru (ವರ್ಗಾವಣೆದಾರರು)</th>
-                  <th className="py-3.5 px-3">2.1-2.3 Transferee Location</th>
-                  <th className="py-3.5 px-3">2.4 Rel / 2.6 Mobile</th>
-                  <th className="py-3.5 px-3">5. Share No</th>
-                  <th className="py-3.5 px-3">6. Category / Shares</th>
-                  <th className="py-3.5 px-3">Fee & 10. Receipt</th>
-                  <th className="py-3.5 px-3 text-center">Workflow Status</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th className="py-3 px-3 text-center border-r border-emerald-700/40">Sl.</th>
+                  <th className="py-3 px-4 border-r border-emerald-700/40">1. Share Holder (ಮೂಲ ಶೇರುದಾರರು)</th>
+                  <th className="py-3 px-3 border-r border-emerald-700/40">1.1-1.3 Place & Taluk</th>
+                  <th className="py-3 px-3 border-r border-emerald-700/40 text-amber-300">1.4 Ownership / 1.6 Aadhaar</th>
+                  <th className="py-3 px-4 border-r border-emerald-700/40">2. Vargavane Madikolluvaru (ವರ್ಗಾವಣೆದಾರರು)</th>
+                  <th className="py-3 px-3 border-r border-emerald-700/40">2.1-2.3 Transferee Location</th>
+                  <th className="py-3 px-3 border-r border-emerald-700/40 text-amber-300 font-extrabold">2.4 Ownership / 2.6 Mobile</th>
+                  <th className="py-3 px-3 border-r border-emerald-700/40 text-amber-300">5. Share No</th>
+                  <th className="py-3 px-3 border-r border-emerald-700/40">6. Category / Shares</th>
+                  <th className="py-3 px-3 border-r border-emerald-700/40">Fee & 10. Receipt</th>
+                  <th className="py-3 px-3 text-center border-r border-emerald-700/40">Workflow Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-200">
