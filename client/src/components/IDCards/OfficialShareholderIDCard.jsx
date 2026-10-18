@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getMemberTypeByCategory } from '../../services/api';
+import { getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
 
 const STORAGE_KEY_ID_SETTINGS = 'sugar_erp_id_card_custom_settings_v1';
 
@@ -269,6 +269,7 @@ export default function OfficialShareholderIDCard({
   const placeName = sh.place || sh.village_name || 'ಅಥರ್ಗಾ';
   const talukName = sh.taluk || 'ಇಂಡಿ';
   const districtName = sh.district || 'ವಿಜಯಪುರ';
+  const ownership = getShareholderOwnership(sh);
 
   // Effective settings prioritizing props over persisted settings
   const effectiveLogo = customLogo !== undefined ? customLogo : globalSettings.customLogo;
@@ -359,11 +360,22 @@ export default function OfficialShareholderIDCard({
 
               {/* MIDDLE CONTENT: Sub-Header + Details & Photo */}
               <div className="flex-1 min-h-0 flex flex-col justify-between px-2.5 pt-0.5 pb-0.5 relative z-10" style={kannadaFontStyle}>
-                {/* 2. SUB-HEADER: ID Card No & Center Badge */}
+                {/* 2. SUB-HEADER: Ownership on Left-Side Above Corner + Center Badge */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[7.5px] font-bold text-slate-800 tracking-tight font-mono">
-                    ID Card N: 2025-26/02/{shareNo}
-                  </span>
+                  {/* Left Side Above Corner: Ownership (ಸ್ವಾಮ್ಯತ್ವ) & ID Card No */}
+                  <div className="flex flex-col items-start leading-tight">
+                    <div className="flex items-center gap-1">
+                      <span className="font-extrabold text-[8.5px] text-[#14532d] whitespace-nowrap">
+                        ಸ್ವಾಮ್ಯತ್ವ (Ownership):
+                      </span>
+                      <span className="font-black text-[8.5px] text-emerald-950 bg-emerald-100/90 border border-emerald-600/50 px-1 py-0.2 rounded shadow-xs">
+                        {ownership}
+                      </span>
+                    </div>
+                    <span className="text-[7px] font-bold text-slate-700 tracking-tight font-mono mt-0.5">
+                      ID Card N: 2025-26/02/{shareNo}
+                    </span>
+                  </div>
 
                   {/* Center Badge: ಗುರುತಿನ ಚೀಟಿ */}
                   <div className="text-center mr-6">
