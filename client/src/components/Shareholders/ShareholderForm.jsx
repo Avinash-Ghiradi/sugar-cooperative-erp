@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService, hasSecondInstallment } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   X, Save, Plus, Printer, Contact, AlertTriangle, BookOpen, MapPin,
@@ -76,7 +76,7 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     district: initialData?.district || 'ವಿಜಯಪುರ',
     pin_code: initialData?.pin_code || '586 117',
     circle: initialData?.circle || initialData?.circle_name || 'ಇಂಡಿ',
-    member_type: initialData?.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
+    member_type: getMemberTypeByCategory(initialData?.schedule_cast, initialData?.member_type),
     relationship: initialData?.relationship || 'ಸ್ವಂತ (Self)',
     tharava_date: initialData?.tharava_date || initialData?.reg_date || new Date().toLocaleDateString('en-GB'),
     tharava_no: initialData?.tharava_no || `TR-${Math.floor(Math.random() * 50) + 1}/1982`,
@@ -313,13 +313,20 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                 <label className="block text-slate-400 mb-1 font-medium">Schedule Cast / ವರ್ಗ *</label>
                 <select
                   value={formData.schedule_cast}
-                  onChange={(e) => setFormData({ ...formData, schedule_cast: e.target.value })}
+                  onChange={(e) => {
+                    const sc = e.target.value;
+                    setFormData({
+                      ...formData,
+                      schedule_cast: sc,
+                      member_type: getMemberTypeByCategory(sc)
+                    });
+                  }}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-semibold outline-none focus:border-emerald-500"
                 >
-                  <option value="ಅ - ವರ್ಗ">ಅ - ವರ್ಗ (Class A)</option>
-                  <option value="ಬ - ವರ್ಗ">ಬ - ವರ್ಗ (Class B)</option>
+                  <option value="ಅ - ವರ್ಗ">ಅ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Class A)</option>
+                  <option value="ಬ - ವರ್ಗ">ಬ - ವರ್ಗ : ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ (Class B)</option>
                   <option value="ಕ - ವರ್ಗ">ಕ - ವರ್ಗ (Class C)</option>
-                  <option value="ಡ - ವರ್ಗ">ಡ - ವರ್ಗ (Class D)</option>
+                  <option value="ಡ - ವರ್ಗ">ಡ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ (Class D)</option>
                 </select>
               </div>
             </div>
@@ -630,12 +637,12 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Member Type</label>
+                <label className="block text-slate-400 mb-1 font-medium">Member Type (ಸದಸ್ಯರ ಪ್ರಕಾರ)</label>
                 <input
                   type="text"
                   value={formData.member_type}
                   onChange={(e) => setFormData({ ...formData, member_type: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-semibold outline-none focus:border-emerald-500"
                 />
               </div>
 

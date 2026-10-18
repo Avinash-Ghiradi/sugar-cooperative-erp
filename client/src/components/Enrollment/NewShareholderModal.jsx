@@ -414,10 +414,10 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none cursor-pointer font-medium"
                     >
-                      <option value="ಅ ವರ್ಗ">ಅ ವರ್ಗ (General / Class A)</option>
-                      <option value="ಬ ವರ್ಗ">ಬ ವರ್ಗ (Small Farmers / Class B)</option>
-                      <option value="ಕ ವರ್ಗ">ಕ ವರ್ಗ (Cooperative Soc / Class C)</option>
-                      <option value="ಡ ವರ್ಗ">ಡ ವರ್ಗ (SC / ST / Reserved / Class D)</option>
+                      <option value="ಅ ವರ್ಗ">ಅ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Class A)</option>
+                      <option value="ಬ ವರ್ಗ">ಬ - ವರ್ಗ : ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ (Class B)</option>
+                      <option value="ಕ ವರ್ಗ">ಕ - ವರ್ಗ (Class C)</option>
+                      <option value="ಡ ವರ್ಗ">ಡ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ (Class D)</option>
                     </select>
                   </div>
                 </div>

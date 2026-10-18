@@ -387,10 +387,10 @@ export default function NewShareholderModule() {
               className="bg-transparent text-slate-200 outline-none cursor-pointer"
             >
               <option value="All">ಎಲ್ಲ ವರ್ಗಗಳು (All Categories)</option>
-              <option value="ಅ ವರ್ಗ">ಅ ವರ್ಗ (Class A)</option>
-              <option value="ಬ ವರ್ಗ">ಬ ವರ್ಗ (Class B)</option>
-              <option value="ಕ ವರ್ಗ">ಕ ವರ್ಗ (Class C)</option>
-              <option value="ಡ ವರ್ಗ">ಡ ವರ್ಗ (Class D)</option>
+              <option value="ಅ ವರ್ಗ">ಅ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Class A)</option>
+              <option value="ಬ ವರ್ಗ">ಬ - ವರ್ಗ : ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ (Class B)</option>
+              <option value="ಕ ವರ್ಗ">ಕ - ವರ್ಗ (Class C)</option>
+              <option value="ಡ ವರ್ಗ">ಡ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ (Class D)</option>
             </select>
           </div>
 

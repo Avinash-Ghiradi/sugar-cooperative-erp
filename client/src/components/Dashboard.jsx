@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService } from '../services/api';
+import { ApiService, getMemberTypeByCategory } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   Users, UserCheck, UserX, Coins, Building2, MapPin, FileCheck2, Clock,
@@ -193,6 +193,9 @@ export default function Dashboard() {
                     <td className="py-2.5 px-3 font-semibold text-slate-100 flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                       <span>{row.category}</span>
+                      <span className="text-[10px] font-normal text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-1.5 py-0.5 rounded">
+                        {getMemberTypeByCategory(row.category)}
+                      </span>
                     </td>
                     <td className="py-2.5 px-3 text-right font-medium text-emerald-400">
                       {row.count.toLocaleString()}

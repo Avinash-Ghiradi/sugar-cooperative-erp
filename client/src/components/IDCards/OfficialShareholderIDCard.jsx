@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getMemberTypeByCategory } from '../../services/api';
 
 const STORAGE_KEY_ID_SETTINGS = 'sugar_erp_id_card_custom_settings_v1';
 
@@ -148,16 +149,27 @@ export function compressBackgroundImage(file, maxWidth = 1200, maxHeight = 800, 
   });
 }
 
-// Extract class letter from schedule_cast (e.g. 'ಅ - ವರ್ಗ' -> 'ಅ')
-function getClassLetter(sc) {
+// Extract class letter from schedule_cast (e.g. 'ಅ - ವರ್ಗ' -> 'ಅ', 'ಡ - ವರ್ಗ' -> 'ಡ', 'ಬ - ವರ್ಗ' -> 'ಬ')
+export function getClassLetter(sc) {
   if (!sc) return 'ಅ';
   const str = String(sc).trim();
-  if (str.includes('ಅ')) return 'ಅ';
+  // Check Kannada characters first
+  if (str.includes('ಡ')) return 'ಡ';
   if (str.includes('ಬ')) return 'ಬ';
   if (str.includes('ಕ')) return 'ಕ';
-  if (str.includes('ಡ')) return 'ಡ';
+  if (str.includes('ಅ')) return 'ಅ';
+
+  // Check English / Latin Class designations with word boundary
+  if (/\b(class\s*d|category\s*d|d\s*class)\b/i.test(str) || /^[-\s]*d[-\s]*$/i.test(str)) return 'ಡ';
+  if (/\b(class\s*b|category\s*b|b\s*class)\b/i.test(str) || /^[-\s]*b[-\s]*$/i.test(str)) return 'ಬ';
+  if (/\b(class\s*c|category\s*c|c\s*class)\b/i.test(str) || /^[-\s]*c[-\s]*$/i.test(str)) return 'ಕ';
+  if (/\b(class\s*a|category\s*a|a\s*class)\b/i.test(str) || /^[-\s]*a[-\s]*$/i.test(str)) return 'ಅ';
+
   return str.charAt(0) || 'ಅ';
 }
+
+// Re-export getMemberTypeByCategory
+export { getMemberTypeByCategory };
 
 // Crisp Vector Cooperative Rubber Stamp (Official Seal)
 export function OfficialSocietySeal({ className = "w-20 h-20" }) {
@@ -519,7 +531,7 @@ export default function OfficialShareholderIDCard({
               {/* Statutory Member Details Grid */}
               <div className="grid grid-cols-2 gap-x-2.5 gap-y-1 text-[8.8px] py-1 border-b border-slate-300">
                 <div>• ಪುಸ್ತಕ ಸಂ (Book): <strong className="font-mono text-emerald-900">{sh.book_no || 'B.No: 1'}</strong></div>
-                <div>• ಸದಸ್ಯರ ಪ್ರಕಾರ (Member Type): <strong className="text-emerald-900">{sh.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ'}</strong></div>
+                <div>• ಸದಸ್ಯರ ಪ್ರಕಾರ (Member Type): <strong className="text-emerald-900">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</strong></div>
                 <div>• ವರ್ಗ (Class): <strong className="text-emerald-800">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</strong></div>
                 <div>• ಷೇರುಗಳ ಸಂಖ್ಯೆ: <strong className="font-mono text-slate-900">{sharesCount}</strong></div>
                 <div>• ನೋಂದಣಿ ದಿನಾಂಕ: <span className="font-mono">{sh.reg_date || sh.registration_date || '—'}</span></div>

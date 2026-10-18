@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService, hasSecondInstallment } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import OfficialShareholderIDCard from '../IDCards/OfficialShareholderIDCard';
 import {
@@ -161,7 +161,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Share No:</span><span className="text-emerald-400 font-bold font-mono text-sm">{sh.share_no || sh.share_number}</span></div>
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">No. of Shares:</span><span className="text-slate-100 font-bold">{sh.number_of_shares || 1} Shares</span></div>
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Schedule Cast / Class:</span><span className="text-emerald-400 font-semibold">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</span></div>
-                <div className="flex justify-between py-1"><span className="text-slate-400">Member Type:</span><span className="text-slate-200">{sh.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)'}</span></div>
+                <div className="flex justify-between py-1"><span className="text-slate-400">Member Type (ಸದಸ್ಯರ ಪ್ರಕಾರ):</span><span className="text-slate-200 font-medium">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</span></div>
               </div>
 
               <div className="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">

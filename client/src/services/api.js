@@ -71,6 +71,54 @@ export function hasSecondInstallment(sh) {
   return false;
 }
 
+// Helper: Map Category (ವರ್ಗ / Class / schedule_cast) to Member Type (ಸದಸ್ಯರ ಪ್ರಕಾರ)
+// Rule:
+//   ಅ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ
+//   ಡ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ
+//   ಬ - ವರ್ಗ : ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ
+export function getMemberTypeByCategory(category, explicitType = null) {
+  const cat = String(category || '').trim().normalize('NFC').toLowerCase();
+
+  // 1. Exact Kannada category matching
+  if (cat.includes('ಡ')) {
+    return 'ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ';
+  }
+  if (cat.includes('ಬ')) {
+    return 'ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ';
+  }
+  if (cat.includes('ಅ')) {
+    return 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ';
+  }
+
+  // 2. English / Latin Class matching using regex boundary
+  if (/\b(class\s*d|category\s*d|d\s*class)\b/i.test(cat) || /^[-\s]*d[-\s]*$/i.test(cat)) {
+    return 'ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ';
+  }
+  if (/\b(class\s*b|category\s*b|b\s*class)\b/i.test(cat) || /^[-\s]*b[-\s]*$/i.test(cat)) {
+    return 'ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ';
+  }
+  if (/\b(class\s*a|category\s*a|a\s*class)\b/i.test(cat) || /^[-\s]*a[-\s]*$/i.test(cat)) {
+    return 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ';
+  }
+
+  // 3. If explicitType is provided and already mapped to one of the official types:
+  if (explicitType && typeof explicitType === 'string' && explicitType.trim() && explicitType !== '—') {
+    const t = explicitType.trim().toLowerCase();
+    if (t.includes('ಬೆಳೆಗಾರಲ್ಲದ') || t.includes('non-grower') || t.includes('non grower')) {
+      return 'ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ';
+    }
+    if (t.includes('ಸಹಕಾರ') || t.includes('ಸಂಘ') || t.includes('society') || t.includes('institution')) {
+      return 'ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ';
+    }
+    if (t.includes('ಬೆಳೆಗಾರ') || t.includes('grower')) {
+      return 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ';
+    }
+  }
+
+  // Default statutory fallback for cooperative sugar factory
+  return 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ';
+}
+
 // Zero-dependency IndexedDB storage for massive datasets (17k - 100k+ records)
 const DB_NAME = 'SugarCooperativeERP_DB_v2';
 const DB_VERSION = 2;
@@ -637,7 +685,10 @@ export const ApiService = {
     }
 
     const total = filtered.length;
-    const paginated = filtered.slice((page - 1) * limit, page * limit);
+    const paginated = filtered.slice((page - 1) * limit, page * limit).map(s => ({
+      ...s,
+      member_type: getMemberTypeByCategory(s.schedule_cast, s.member_type)
+    }));
 
     return {
       success: true,
@@ -841,7 +892,10 @@ export const ApiService = {
 
     return {
       success: true,
-      shareholder: sh,
+      shareholder: {
+        ...sh,
+        member_type: getMemberTypeByCategory(sh.schedule_cast, sh.member_type)
+      },
       history: {
         transactions: txs,
         sugarAllotments: allotments,
@@ -949,7 +1003,7 @@ export const ApiService = {
         circle: finalCircle,
         circle_name: finalCircle,
         circle_id: data.circle_id || '',
-        member_type: (data.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
+        member_type: getMemberTypeByCategory(data.schedule_cast, data.member_type),
         relationship: (data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
         tharava_date: data.tharava_date || data.reg_date || nowStr,
         tharava_no: data.tharava_no || `TR-${currentId}/2026`,
@@ -1059,7 +1113,7 @@ export const ApiService = {
       circle: finalCircle,
       circle_name: finalCircle,
       circle_id: data.circle_id || '',
-      member_type: (data.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)').normalize('NFC'),
+      member_type: getMemberTypeByCategory(data.schedule_cast, data.member_type),
       relationship: (data.relationship || 'ಸ್ವಂತ (Self)').normalize('NFC'),
       tharava_date: data.tharava_date || data.reg_date || nowStr,
       tharava_no: data.tharava_no || `TR-${nextId}/2026`,

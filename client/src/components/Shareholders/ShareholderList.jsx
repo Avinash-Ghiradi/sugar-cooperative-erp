@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { ApiService, hasSecondInstallment } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
@@ -227,7 +227,7 @@ export default function ShareholderList() {
           district: circleInfo?.district || getVal(cDist) || '',
           pin_code: circleInfo?.pincode || getVal(cPin) || '',
           circle: resolvedCircle, // STRICT RULE: Do not consider circle column from shareholder list. Derived strictly from place.
-          member_type: getVal(cMemberType) || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
+          member_type: getMemberTypeByCategory(getVal(cCast), getVal(cMemberType)),
           relationship: getVal(cRel) || 'ಸ್ವಂತ (Self)',
           tharava_date: getVal(cTharavaDate) || '10/Aug/1982',
           tharava_no: getVal(cTharavaNo) || `TR-${i}/1982`,
@@ -416,7 +416,7 @@ export default function ShareholderList() {
       `"${s.district || ''}"`,
       `"${s.pin_code || ''}"`,
       `"${s.circle || s.circle_name || ''}"`,
-      `"${s.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)'}"`,
+      `"${getMemberTypeByCategory(s.schedule_cast, s.member_type)}"`,
       `"${s.relationship || 'ಸ್ವಂತ (Self)'}"`,
       `"${s.tharava_date || ''}"`,
       `"${s.tharava_no || ''}"`,
@@ -490,7 +490,7 @@ export default function ShareholderList() {
       tableHtml += `<td>${s.district || ''}</td>`;
       tableHtml += `<td>${s.pin_code || ''}</td>`;
       tableHtml += `<td>${s.circle || s.circle_name || ''}</td>`;
-      tableHtml += `<td>${s.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)'}</td>`;
+      tableHtml += `<td>${getMemberTypeByCategory(s.schedule_cast, s.member_type)}</td>`;
       tableHtml += `<td>${s.relationship || 'ಸ್ವಂತ (Self)'}</td>`;
       tableHtml += `<td>${s.tharava_date || ''}</td>`;
       tableHtml += `<td>${s.tharava_no || ''}</td>`;
@@ -1067,7 +1067,7 @@ export default function ShareholderList() {
                     <td className="py-2.5 px-3 text-slate-300">{sh.circle || sh.circle_name}</td>
 
                     {/* 24. Member Type */}
-                    <td className="py-2.5 px-3 text-slate-300">{sh.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ'}</td>
+                    <td className="py-2.5 px-3 text-slate-300">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</td>
 
                     {/* 25. Relationship */}
                     <td className="py-2.5 px-3 text-slate-400">{sh.relationship || 'ಸ್ವಂತ'}</td>
