@@ -6,6 +6,10 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["'Anek Kannada'", "'Aneka Kannada'", 'Inter', "'Noto Sans Kannada'", 'sans-serif'],
+        kannada: ["'Anek Kannada'", "'Aneka Kannada'", "'Noto Sans Kannada'", 'sans-serif'],
+      },
       colors: {
         coop: {
           50: '#f0fdf4',

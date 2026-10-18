@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Anek+Kannada:wght@100..800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,18 +6,18 @@
 @layer base {
   body {
     @apply bg-slate-900 text-slate-100 min-h-screen;
-    font-family: 'Inter', 'Noto Sans Kannada', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Tunga', 'Kedage', 'Mallige', sans-serif;
+    font-family: 'Anek Kannada', 'Aneka Kannada', 'Inter', 'Noto Sans Kannada', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Tunga', 'Kedage', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  input, select, textarea, button, table {
-    font-family: 'Inter', 'Noto Sans Kannada', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Tunga', 'Kedage', 'Mallige', sans-serif;
+  input, select, textarea, button, table, td, th, h1, h2, h3, h4, h5, h6, label, p, span, div {
+    font-family: 'Anek Kannada', 'Aneka Kannada', 'Inter', 'Noto Sans Kannada', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Tunga', 'Kedage', sans-serif;
   }
 }
 
 .font-kannada {
-  font-family: 'Noto Sans Kannada', 'Tunga', 'Kedage', 'Mallige', sans-serif !important;
+  font-family: 'Anek Kannada', 'Aneka Kannada', 'Noto Sans Kannada', 'Tunga', 'Kedage', 'Mallige', sans-serif !important;
 }
 
 /* Custom Scrollbars */

@@ -1,4 +1,117 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+
+const STORAGE_KEY_ID_SETTINGS = 'sugar_erp_id_card_custom_settings_v1';
+
+// Default Card Customization Settings
+export function getCustomIdCardSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ID_SETTINGS);
+    return raw ? JSON.parse(raw) : {
+      customBackground: '',
+      customMdSignature: '',
+      hideHeader: false,
+      showSugarcaneWatermark: true,
+      backgroundOpacity: 1
+    };
+  } catch (e) {
+    return {
+      customBackground: '',
+      customMdSignature: '',
+      hideHeader: false,
+      showSugarcaneWatermark: true,
+      backgroundOpacity: 1
+    };
+  }
+}
+
+export function saveCustomIdCardSettings(settings) {
+  try {
+    localStorage.setItem(STORAGE_KEY_ID_SETTINGS, JSON.stringify(settings));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('id_card_settings_updated'));
+    }
+  } catch (e) {}
+}
+
+export function resetCustomIdCardSettings() {
+  try {
+    localStorage.removeItem(STORAGE_KEY_ID_SETTINGS);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('id_card_settings_updated'));
+    }
+  } catch (e) {}
+}
+
+// Client-side helper to make MD signature transparent (removes white paper background)
+export function makeSignatureTransparent(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve('');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, img.width, img.height);
+        const data = imgData.data;
+        // Make light / white background pixels transparent
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          if (r > 210 && g > 210 && b > 210) {
+            data[i + 3] = 0; // Transparent
+          } else if (r > 180 && g > 180 && b > 180) {
+            const brightness = (r + g + b) / 3;
+            data[i + 3] = Math.max(0, 255 - (brightness - 180) * 8);
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(event.target.result);
+      img.src = event.target.result;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
+
+// Client-side helper to compress and optimize uploaded background image
+export function compressBackgroundImage(file, maxWidth = 1200, maxHeight = 800, quality = 0.9) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve('');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(event.target.result);
+      img.src = event.target.result;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
 
 // Extract class letter from schedule_cast (e.g. 'ಅ - ವರ್ಗ' -> 'ಅ')
 function getClassLetter(sc) {
@@ -28,7 +141,7 @@ export function OfficialSocietySeal({ className = "w-20 h-20" }) {
       <circle cx="100" cy="100" r="63" fill="none" stroke="#581c87" strokeWidth="1.8" opacity="0.85" />
 
       {/* Top Arc Text: Factory Name */}
-      <text fill="#581c87" fontSize="13.5" fontWeight="900" opacity="0.9" letterSpacing="0.5">
+      <text fill="#581c87" fontSize="13.5" fontWeight="900" opacity="0.9" letterSpacing="0.5" style={{ fontFamily: "'Anek Kannada', 'Aneka Kannada', sans-serif" }}>
         <textPath href="#topArcPath" startOffset="50%" textAnchor="middle">
           ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ.
         </textPath>
@@ -39,7 +152,7 @@ export function OfficialSocietySeal({ className = "w-20 h-20" }) {
       <text x="169" y="104" fill="#581c87" fontSize="13" fontWeight="bold" opacity="0.9">★</text>
 
       {/* Bottom Arc Text: Chadachan • Vijayapura */}
-      <text fill="#581c87" fontSize="11" fontWeight="800" opacity="0.88" letterSpacing="1">
+      <text fill="#581c87" fontSize="11" fontWeight="800" opacity="0.88" letterSpacing="1" style={{ fontFamily: "'Anek Kannada', 'Aneka Kannada', sans-serif" }}>
         <textPath href="#bottomArcPath" startOffset="50%" textAnchor="middle">
           ತಾ॥ ಚಡಚಣ • ಜಿ॥ ವಿಜಯಪುರ
         </textPath>
@@ -47,7 +160,7 @@ export function OfficialSocietySeal({ className = "w-20 h-20" }) {
 
       {/* Center Box / Text: ಮರೂರ */}
       <rect x="52" y="83" width="96" height="34" rx="4" fill="none" stroke="#581c87" strokeWidth="1.2" strokeDasharray="3,1" opacity="0.7" />
-      <text x="100" y="107" fill="#581c87" fontSize="21" fontWeight="900" textAnchor="middle" letterSpacing="3" opacity="0.95">
+      <text x="100" y="107" fill="#581c87" fontSize="21" fontWeight="900" textAnchor="middle" letterSpacing="3" opacity="0.95" style={{ fontFamily: "'Anek Kannada', 'Aneka Kannada', sans-serif" }}>
         ಮರೂರ
       </text>
     </svg>
@@ -84,8 +197,22 @@ export default function OfficialShareholderIDCard({
   side = 'Front',
   showSeal = true,
   scale = 1,
+  customBackground,
+  customMdSignature,
+  hideHeader,
+  showSugarcaneWatermark,
   onFlip
 }) {
+  const [globalSettings, setGlobalSettings] = useState(getCustomIdCardSettings());
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setGlobalSettings(getCustomIdCardSettings());
+    };
+    window.addEventListener('id_card_settings_updated', handleUpdate);
+    return () => window.removeEventListener('id_card_settings_updated', handleUpdate);
+  }, []);
+
   const sh = shareholder || {};
   const classLetter = getClassLetter(sh.schedule_cast);
   const sharesCount = sh.number_of_shares || 1;
@@ -95,13 +222,26 @@ export default function OfficialShareholderIDCard({
   const talukName = sh.taluk || 'ಇಂಡಿ';
   const districtName = sh.district || 'ವಿಜಯಪುರ';
 
+  // Effective settings prioritizing props over persisted settings
+  const effectiveBg = customBackground !== undefined ? customBackground : globalSettings.customBackground;
+  const effectiveMdSig = customMdSignature !== undefined ? customMdSignature : globalSettings.customMdSignature;
+  const effectiveHideHeader = hideHeader !== undefined ? hideHeader : globalSettings.hideHeader;
+  const effectiveShowWatermark = showSugarcaneWatermark !== undefined ? showSugarcaneWatermark : globalSettings.showSugarcaneWatermark;
+  const bgOpacity = globalSettings.backgroundOpacity !== undefined ? globalSettings.backgroundOpacity : 1;
+
+  // Google Font 'Anek Kannada' / 'Aneka Kannada' applied uniformly
+  const kannadaFontStyle = {
+    fontFamily: "'Anek Kannada', 'Aneka Kannada', 'Noto Sans Kannada', sans-serif"
+  };
+
   return (
     <div
       className="relative select-none transition-all duration-300"
       style={{
         width: `${372 * scale}px`,
         height: `${238 * scale}px`,
-        transformOrigin: 'top left'
+        transformOrigin: 'top left',
+        ...kannadaFontStyle
       }}
     >
       {/* Outer Card with Double Green Borders matching official plastic ID card */}
@@ -112,54 +252,72 @@ export default function OfficialShareholderIDCard({
           {/* FRONT VIEW */}
           {side === 'Front' ? (
             <>
-              {/* Sugarcane stalks watermark on left */}
-              <div className="absolute left-0 bottom-0 pointer-events-none z-0">
-                <SugarcaneWatermark className="w-9 h-40" />
-              </div>
+              {/* Custom Uploaded Background for Front Page (if provided) */}
+              {effectiveBg && (
+                <img
+                  src={effectiveBg}
+                  alt="Custom ID Background"
+                  className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+                  style={{ opacity: bgOpacity }}
+                />
+              )}
 
-              {/* 1. TOP HEADER BAR */}
-              <div className="relative z-10 bg-gradient-to-r from-[#0d6b2c] via-[#15803d] to-[#0a5c24] text-white px-2 py-1.5 flex items-center gap-2 border-b-2 border-[#166534] shadow-sm">
-                {/* BSSKN Logo on left */}
-                <div className="w-9 h-10 shrink-0 flex items-center justify-center">
-                  <img
-                    src="/id_assets/bsskn_logo.png"
-                    alt="BSSKN Logo"
-                    className="w-full h-full object-contain filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
-                    onError={(e) => {
-                      // Fallback if image asset fails to load
-                      e.target.style.display = 'none';
-                      if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                  <div className="hidden w-8 h-8 rounded-full bg-amber-400 text-emerald-950 font-black text-[9px] items-center justify-center">
-                    BSSKN
+              {/* Sugarcane stalks watermark on left (rendered if enabled and no full cover background, or if toggled on) */}
+              {effectiveShowWatermark && (
+                <div className="absolute left-0 bottom-0 pointer-events-none z-0">
+                  <SugarcaneWatermark className="w-9 h-40" />
+                </div>
+              )}
+
+              {/* 1. TOP HEADER BAR (Can be toggled off if background already has printed header) */}
+              {!effectiveHideHeader ? (
+                <>
+                  <div className="relative z-10 bg-gradient-to-r from-[#0d6b2c] via-[#15803d] to-[#0a5c24] text-white px-2 py-1.5 flex items-center gap-2 border-b-2 border-[#166534] shadow-sm">
+                    {/* BSSKN Logo on left */}
+                    <div className="w-9 h-10 shrink-0 flex items-center justify-center">
+                      <img
+                        src="/id_assets/bsskn_logo.png"
+                        alt="BSSKN Logo"
+                        className="w-full h-full object-contain filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="hidden w-8 h-8 rounded-full bg-amber-400 text-emerald-950 font-black text-[9px] items-center justify-center">
+                        BSSKN
+                      </div>
+                    </div>
+
+                    {/* Society Name & Address in Google Anek Kannada */}
+                    <div className="flex-1 text-center pr-2" style={kannadaFontStyle}>
+                      <h2 className="font-extrabold text-[12.5px] leading-tight tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                        ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ.
+                      </h2>
+                      <p className="font-bold text-[9.5px] leading-tight text-white/95 mt-0.5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
+                        ಮರೂರ 586 204 ತಾ॥ ಚಡಚಣ ಜಿ॥ ವಿಜಯಪುರ
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                {/* Society Name & Address in Kannada */}
-                <div className="flex-1 text-center pr-2">
-                  <h2 className="font-extrabold text-[12.5px] leading-tight tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] font-sans">
-                    ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ, ನಿ.
-                  </h2>
-                  <p className="font-bold text-[9.5px] leading-tight text-white/95 mt-0.5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
-                    ಮರೂರ 586 204 ತಾ॥ ಚಡಚಣ ಜಿ॥ ವಿಜಯಪುರ
-                  </p>
-                </div>
-              </div>
-
-              {/* Header double-line accent */}
-              <div className="h-[2px] bg-gradient-to-r from-emerald-600 via-lime-400 to-emerald-600 border-b border-[#166534]"></div>
+                  {/* Header double-line accent */}
+                  <div className="h-[2px] bg-gradient-to-r from-emerald-600 via-lime-400 to-emerald-600 border-b border-[#166534]"></div>
+                </>
+              ) : (
+                /* Spacer when header is pre-printed on the custom background */
+                <div className="h-11 w-full relative z-10"></div>
+              )}
 
               {/* 2. SUB-HEADER: ID Card No & Center Badge */}
-              <div className="relative z-10 px-3 pt-1 flex items-center justify-between">
+              <div className="relative z-10 px-3 pt-1 flex items-center justify-between" style={kannadaFontStyle}>
                 <span className="text-[8px] font-bold text-slate-800 tracking-tight font-mono">
                   ID Card N: 2025-26/02/{shareNo}
                 </span>
 
                 {/* Center Badge: ಗುರುತಿನ ಚೀಟಿ */}
                 <div className="text-center mr-8">
-                  <div className="bg-[#e8f5e9] border border-[#2e7d32] rounded-md px-3 py-0.5 shadow-sm inline-block">
-                    <span className="font-black text-[11.5px] text-[#14532d] leading-none tracking-wider font-sans">
+                  <div className="bg-[#e8f5e9]/95 border border-[#2e7d32] rounded-md px-3 py-0.5 shadow-sm inline-block">
+                    <span className="font-black text-[11.5px] text-[#14532d] leading-none tracking-wider">
                       ಗುರುತಿನ ಚೀಟಿ
                     </span>
                   </div>
@@ -175,8 +333,8 @@ export default function OfficialShareholderIDCard({
               </div>
 
               {/* 3. CARD BODY: Member Info (Left) + Photo & Seal (Right) */}
-              <div className="relative z-10 px-3 py-0.5 flex items-start justify-between gap-2 flex-1">
-                {/* Left: Shareholder Information */}
+              <div className="relative z-10 px-3 py-0.5 flex items-start justify-between gap-2 flex-1" style={kannadaFontStyle}>
+                {/* Left: Shareholder Information in Google Anek Kannada */}
                 <div className="space-y-1 text-slate-950 flex-1 pt-1">
                   {/* Line 1: ಶೇರು ನಂ */}
                   <div className="flex text-[11px] leading-tight font-bold items-baseline">
@@ -223,7 +381,7 @@ export default function OfficialShareholderIDCard({
                         <svg className="w-8 h-8 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                         </svg>
-                        <span className="text-[7px] font-bold text-slate-600 mt-1 uppercase">ಭಾವಚಿತ್ರ</span>
+                        <span className="text-[7px] font-bold text-slate-600 mt-1 uppercase" style={kannadaFontStyle}>ಭಾವಚಿತ್ರ</span>
                       </div>
                     )}
                   </div>
@@ -241,7 +399,7 @@ export default function OfficialShareholderIDCard({
               </div>
 
               {/* 4. BOTTOM ROW: Signatures */}
-              <div className="relative z-10 px-4 pb-1.5 pt-0.5 flex items-end justify-between">
+              <div className="relative z-10 px-4 pb-1.5 pt-0.5 flex items-end justify-between" style={kannadaFontStyle}>
                 {/* Left: Member Signature */}
                 <div className="text-center w-28">
                   <div className="h-6 flex items-center justify-center">
@@ -268,18 +426,26 @@ export default function OfficialShareholderIDCard({
                   </div>
                 </div>
 
-                {/* Right: Managing Director Signature */}
+                {/* Right: Managing Director Signature (Custom uploaded or official default) */}
                 <div className="text-center w-32">
                   <div className="h-6 flex items-center justify-center">
-                    <img
-                      src="/id_assets/md_signature_transparent.png"
-                      alt="MD Signature"
-                      className="max-h-6 max-w-[85px] object-contain"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
+                    {effectiveMdSig ? (
+                      <img
+                        src={effectiveMdSig}
+                        alt="MD Signature"
+                        className="max-h-6 max-w-[85px] object-contain mx-auto"
+                      />
+                    ) : (
+                      <img
+                        src="/id_assets/md_signature_transparent.png"
+                        alt="MD Signature"
+                        className="max-h-6 max-w-[85px] object-contain mx-auto"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                    )}
                     <span className="hidden font-serif italic text-emerald-700 font-bold text-xs">
                       MD Signature
                     </span>
@@ -292,7 +458,7 @@ export default function OfficialShareholderIDCard({
             </>
           ) : (
             /* BACK VIEW */
-            <div className="w-full h-full p-2.5 flex flex-col justify-between text-slate-900 bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0]">
+            <div className="w-full h-full p-2.5 flex flex-col justify-between text-slate-900 bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0]" style={kannadaFontStyle}>
               {/* Header */}
               <div className="border-b-2 border-emerald-700 pb-1 text-center">
                 <h3 className="font-black text-[11px] text-emerald-900 leading-tight">

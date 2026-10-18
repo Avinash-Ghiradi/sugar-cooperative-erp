@@ -6,7 +6,7 @@ import {
   User, Coins, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   X, Printer, Contact, CheckCircle2, ShieldCheck, MapPin, Phone, Building2,
   BookOpen, FileText, Fingerprint, Users2, History, ArrowRightLeft, Stamp,
-  Clock, ArrowRight, Award, GitMerge
+  Clock, ArrowRight, Award, GitMerge, SlidersHorizontal
 } from 'lucide-react';
 
 export default function ShareholderProfile({ shareholderId, onClose, initialTab = 'ledger' }) {
@@ -307,6 +307,17 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                     className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer"
                   >
                     <Printer className="w-3.5 h-3.5" /> Print Card
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onClose();
+                      setActiveModule('id_cards');
+                    }}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer transition-colors"
+                    title="Open Full ID Card Generator & Uploads"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" /> ಹಿನ್ನೆಲೆ/MD ಸಹಿ
                   </button>
                 </div>
               </div>
