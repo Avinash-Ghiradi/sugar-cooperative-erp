@@ -309,9 +309,9 @@ export default function OfficialShareholderIDCard({
               {/* 1. TOP HEADER BAR (Can be toggled off if background already has printed header) */}
               {!effectiveHideHeader ? (
                 <>
-                  <div className="shrink-0 relative z-10 bg-gradient-to-r from-[#0d6b2c] via-[#15803d] to-[#0a5c24] text-white px-2 py-1 flex items-center gap-2 border-b border-[#166534] shadow-sm">
+                  <div className="shrink-0 relative z-10 bg-gradient-to-r from-[#0d6b2c] via-[#15803d] to-[#0a5c24] text-white px-2.5 py-1 flex items-center gap-2 border-b border-[#166534] shadow-sm">
                     {/* Factory Logo on left (Custom uploaded or official default) */}
-                    <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+                    <div className="w-[42px] h-[42px] shrink-0 flex items-center justify-center p-0.5 bg-white/10 rounded-full border border-white/20">
                       <img
                         src={effectiveLogo || '/id_assets/bsskn_logo.png'}
                         alt="BSSKN Logo"
@@ -321,17 +321,17 @@ export default function OfficialShareholderIDCard({
                           if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
                         }}
                       />
-                      <div className="hidden w-7 h-7 rounded-full bg-amber-400 text-emerald-950 font-black text-[8px] items-center justify-center">
+                      <div className="hidden w-8 h-8 rounded-full bg-amber-400 text-emerald-950 font-black text-[9px] items-center justify-center">
                         BSSKN
                       </div>
                     </div>
 
                     {/* Society Official Name & Address in Google Anek Kannada */}
                     <div className="flex-1 text-center pr-1" style={kannadaFontStyle}>
-                      <h2 className="font-extrabold text-[11px] leading-tight tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                      <h2 className="font-black text-[13px] leading-tight tracking-normal text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
                         ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.,
                       </h2>
-                      <p className="font-bold text-[8.5px] leading-tight text-white/95 mt-0.5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
+                      <p className="font-extrabold text-[10px] leading-tight text-white mt-0.5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
                         ಮರಗೂರ - 586204, ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ.
                       </p>
                     </div>
@@ -342,7 +342,7 @@ export default function OfficialShareholderIDCard({
                 </>
               ) : (
                 /* Spacer when header is pre-printed on the custom background */
-                <div className="h-9 w-full shrink-0 relative z-10"></div>
+                <div className="h-11 w-full shrink-0 relative z-10"></div>
               )}
 
               {/* MIDDLE CONTENT: Sub-Header + Details & Photo */}
@@ -373,35 +373,42 @@ export default function OfficialShareholderIDCard({
 
                 {/* 3. CARD BODY: Member Info (Left) + Photo & Seal (Right) */}
                 <div className="flex items-center justify-between gap-1.5 my-auto">
-                  {/* Left: Shareholder Information in Google Anek Kannada */}
-                  <div className="space-y-0.5 text-slate-950 flex-1">
-                    {/* Line 1: ಶೇರು ನಂ */}
-                    <div className="flex text-[10.5px] leading-tight font-bold items-baseline">
-                      <span className="w-16 shrink-0 text-slate-900 font-extrabold">ಶೇರು ನಂ</span>
-                      <span className="font-extrabold text-[11px] text-slate-950">
-                        : {shareNo} (“{classLetter}” – {sharesCount})
+                  {/* Left: Shareholder Information with Perfect 3-Column Alignment in Google Anek Kannada */}
+                  <div className="flex-1 min-w-0 pr-1">
+                    <div className="grid grid-cols-[auto_auto_1fr] items-baseline gap-x-1.5 gap-y-0.5 text-slate-950">
+                      {/* Line 1: ಶೇರು ನಂ */}
+                      <span className="font-extrabold text-[11px] text-slate-900 whitespace-nowrap">
+                        ಶೇರು ನಂ
                       </span>
-                    </div>
-
-                    {/* Line 2: ಸದಸ್ಯರ ಹೆಸರು */}
-                    <div className="flex text-[10.5px] leading-tight font-bold items-baseline">
-                      <span className="w-16 shrink-0 text-slate-900 font-extrabold">ಸದಸ್ಯರ ಹೆಸರು</span>
-                      <span className="font-black text-[11px] text-slate-950 truncate max-w-[170px]" title={memberName}>
-                        : {memberName}
+                      <span className="font-extrabold text-[11px] text-slate-900">:</span>
+                      <span className="font-black text-[11.5px] text-slate-950 truncate">
+                        {shareNo} <span className="text-[10px] font-bold text-slate-700">(“{classLetter}” – {sharesCount})</span>
                       </span>
-                    </div>
 
-                    {/* Line 3: ಸ್ಥಳ */}
-                    <div className="flex text-[10.5px] leading-tight font-bold items-baseline">
-                      <span className="w-16 shrink-0 text-slate-900 font-extrabold">ಸ್ಥಳ</span>
-                      <span className="font-extrabold text-[10.5px] text-slate-950">
-                        : ಸಾ॥ {placeName}
+                      {/* Line 2: ಸದಸ್ಯರ ಹೆಸರು */}
+                      <span className="font-extrabold text-[11px] text-slate-900 whitespace-nowrap">
+                        ಸದಸ್ಯರ ಹೆಸರು
                       </span>
-                    </div>
+                      <span className="font-extrabold text-[11px] text-slate-900">:</span>
+                      <span className="font-black text-[11.5px] text-slate-950 truncate" title={memberName}>
+                        {memberName}
+                      </span>
 
-                    {/* Line 4: ತಾಲ್ಲೂಕು & ಜಿಲ್ಲೆ (Indented under village name) */}
-                    <div className="text-[10px] font-extrabold text-slate-950 pl-[64px] leading-tight">
-                      ತಾ॥ {talukName} ಜಿ॥ {districtName}
+                      {/* Line 3: ಸ್ಥಳ */}
+                      <span className="font-extrabold text-[11px] text-slate-900 whitespace-nowrap">
+                        ಸ್ಥಳ
+                      </span>
+                      <span className="font-extrabold text-[11px] text-slate-900">:</span>
+                      <span className="font-extrabold text-[11px] text-slate-950 truncate">
+                        ಸಾ॥ {placeName}
+                      </span>
+
+                      {/* Line 4: ತಾಲ್ಲೂಕು & ಜಿಲ್ಲೆ (Indented directly under village name in column 3) */}
+                      <span></span>
+                      <span></span>
+                      <span className="font-extrabold text-[10px] text-slate-900 leading-tight">
+                        ತಾ॥ {talukName} ಜಿ॥ {districtName}
+                      </span>
                     </div>
                   </div>
 
@@ -501,10 +508,10 @@ export default function OfficialShareholderIDCard({
             <div className="w-full h-full p-2.5 flex flex-col justify-between text-slate-900 bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0]" style={kannadaFontStyle}>
               {/* Header in Kannada & English */}
               <div className="border-b-2 border-emerald-700 pb-1 text-center">
-                <h3 className="font-black text-[10.5px] text-emerald-900 leading-tight">
+                <h3 className="font-black text-[11.5px] text-emerald-900 leading-tight">
                   ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204
                 </h3>
-                <p className="text-[7.5px] font-bold text-slate-600 mt-0.5">
+                <p className="text-[8px] font-bold text-slate-600 mt-0.5">
                   Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204, Tq|| Chadachan, Dist|| Vijayapur
                 </p>
               </div>
