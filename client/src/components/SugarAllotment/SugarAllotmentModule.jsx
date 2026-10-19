@@ -58,6 +58,42 @@ export default function SugarAllotmentModule() {
   // Active Filter Applied State (filtered list displayed in table)
   const [filteredShareholders, setFilteredShareholders] = useState([]);
 
+  // --- COLUMN SORTING & FILTERING STATE ---
+  const [sortColumn, setSortColumn] = useState('share_no'); // default sort by share number
+  const [sortDirection, setSortDirection] = useState('asc'); // 'asc' | 'desc' | null
+
+  // Column-specific filter values
+  const [columnFilters, setColumnFilters] = useState({
+    share_no: '',
+    name: '',
+    surname: '',
+    address: '',
+    category: '',
+    share_qty: '',
+    member_type: ''
+  });
+
+  // Toggle inline column filter row
+  const [showColumnFilterRow, setShowColumnFilterRow] = useState(false);
+
+  // Active column menu popover
+  const [activeColumnMenu, setActiveColumnMenu] = useState(null);
+  const columnMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (columnMenuRef.current && !columnMenuRef.current.contains(e.target)) {
+        setActiveColumnMenu(null);
+      }
+    };
+    if (activeColumnMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeColumnMenu]);
+
   // In-line edits state: Map of id -> { member_type, mobile_no, remarks }
   const [editedRows, setEditedRows] = useState({});
 
@@ -270,6 +306,192 @@ export default function SugarAllotmentModule() {
     showToast(`ಫಿಲ್ಟರ್ ಅನ್ವಯಿಸಲಾಗಿದೆ: ${result.length.toLocaleString()} ಶೇರುದಾರರು ಕಂಡುಬಂದಿದ್ದಾರೆ`);
   };
 
+  const distinctCategories = useMemo(() => {
+    const set = new Set(CATEGORY_OPTIONS);
+    allShareholders.forEach(s => {
+      const c = (s.schedule_cast || '').trim();
+      if (c) set.add(c);
+    });
+    return Array.from(set).filter(Boolean);
+  }, [allShareholders]);
+
+  const distinctMemberTypes = useMemo(() => {
+    const set = new Set(MEMBER_TYPE_OPTIONS);
+    allShareholders.forEach(s => {
+      const mt = (s.member_type || s.status || '').trim();
+      if (mt) set.add(mt);
+    });
+    return Array.from(set).filter(Boolean);
+  }, [allShareholders]);
+
+  const distinctShareQtys = useMemo(() => {
+    const set = new Set();
+    allShareholders.forEach(s => {
+      const q = parseInt(s.number_of_shares, 10);
+      if (!isNaN(q) && q > 0) set.add(q);
+    });
+    if (set.size === 0) [1, 2, 3, 4, 5, 10].forEach(q => set.add(q));
+    return Array.from(set).sort((a, b) => a - b);
+  }, [allShareholders]);
+
+  const hasActiveColumnFilters = useMemo(() => {
+    return Boolean(
+      columnFilters.share_no.trim() ||
+      columnFilters.name.trim() ||
+      columnFilters.surname.trim() ||
+      columnFilters.address.trim() ||
+      columnFilters.category ||
+      columnFilters.share_qty ||
+      columnFilters.member_type
+    );
+  }, [columnFilters]);
+
+  const handleClearColumnFilters = () => {
+    setColumnFilters({
+      share_no: '',
+      name: '',
+      surname: '',
+      address: '',
+      category: '',
+      share_qty: '',
+      member_type: ''
+    });
+    setActiveColumnMenu(null);
+    showToast('ಕಾಲಮ್ ಫಿಲ್ಟರ್‌ಗಳನ್ನು ತೆರವುಗೊಳಿಸಲಾಗಿದೆ');
+  };
+
+  const getColumnName = (colKey) => {
+    switch (colKey) {
+      case 'share_no': return 'ಶೇರ್ ಸಂಖ್ಯೆ';
+      case 'name': return 'ಹೆಸರು';
+      case 'surname': return 'ಉಪನಾಮ';
+      case 'address': return 'ವಿಳಾಸ';
+      case 'category': return 'ವರ್ಗ';
+      case 'share_qty': return 'ಶೇರ್ ಪ್ರಮಾಣ';
+      case 'member_type': return 'ಸದಸ್ಯರ ಪ್ರಕಾರ';
+      default: return '';
+    }
+  };
+
+  const handleColumnSort = (colKey) => {
+    if (sortColumn === colKey) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+        showToast(`${getColumnName(colKey)}: ಹೆಚ್ಚಿನಿಂದ ಕಡಿಮೆಗೆ (Descending)`);
+      } else if (sortDirection === 'desc') {
+        setSortDirection(null);
+        setSortColumn(null);
+        showToast(`${getColumnName(colKey)}: ಸಾರ್ಟಿಂಗ್ ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ`);
+      } else {
+        setSortDirection('asc');
+        showToast(`${getColumnName(colKey)}: ಕಡಿಮೆಯಿಂದ ಹೆಚ್ಚಿಗೆ (Ascending)`);
+      }
+    } else {
+      setSortColumn(colKey);
+      setSortDirection('asc');
+      showToast(`${getColumnName(colKey)}: ಕಡಿಮೆಯಿಂದ ಹೆಚ್ಚಿಗೆ (Ascending)`);
+    }
+  };
+
+  // Combined processed shareholders (top filters + column filters + column sorting)
+  const processedShareholders = useMemo(() => {
+    let list = [...filteredShareholders];
+
+    // 1. Column filters
+    if (columnFilters.share_no.trim()) {
+      const q = columnFilters.share_no.trim().toLowerCase();
+      list = list.filter(s => {
+        const sno = String(s.share_no || s.share_number || '').toLowerCase();
+        return sno.includes(q);
+      });
+    }
+
+    if (columnFilters.name.trim()) {
+      const q = columnFilters.name.trim().toLowerCase().normalize('NFC');
+      list = list.filter(s => {
+        const name = String(s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
+        return name.includes(q);
+      });
+    }
+
+    if (columnFilters.surname.trim()) {
+      const q = columnFilters.surname.trim().toLowerCase().normalize('NFC');
+      list = list.filter(s => {
+        const sn = getSurname(s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
+        return sn.includes(q);
+      });
+    }
+
+    if (columnFilters.address.trim()) {
+      const q = columnFilters.address.trim().toLowerCase().normalize('NFC');
+      list = list.filter(s => {
+        const p = String(s.place || s.village_name || s.address || '').toLowerCase().normalize('NFC');
+        return p.includes(q);
+      });
+    }
+
+    if (columnFilters.category) {
+      list = list.filter(s => {
+        const c = String(s.schedule_cast || 'ಅ - ವರ್ಗ').trim();
+        return c === columnFilters.category;
+      });
+    }
+
+    if (columnFilters.share_qty) {
+      const targetQty = parseInt(columnFilters.share_qty, 10);
+      list = list.filter(s => {
+        const q = parseInt(s.number_of_shares, 10) || 1;
+        return q === targetQty;
+      });
+    }
+
+    if (columnFilters.member_type) {
+      list = list.filter(s => {
+        const mt = String(editedRows[s.id]?.member_type !== undefined ? editedRows[s.id].member_type : (s.member_type || s.status || '-')).trim();
+        return mt === columnFilters.member_type;
+      });
+    }
+
+    // 2. Column Sorting
+    if (sortColumn && sortDirection) {
+      list.sort((a, b) => {
+        let cmp = 0;
+        if (sortColumn === 'share_no') {
+          const numA = parseInt(String(a.share_no || a.share_number || '').replace(/\D/g, ''), 10) || 0;
+          const numB = parseInt(String(b.share_no || b.share_number || '').replace(/\D/g, ''), 10) || 0;
+          cmp = numA - numB;
+        } else if (sortColumn === 'name') {
+          const nameA = String(a.shareholder_name || a.name || '');
+          const nameB = String(b.shareholder_name || b.name || '');
+          cmp = nameA.localeCompare(nameB, 'kn');
+        } else if (sortColumn === 'surname') {
+          const snA = getSurname(a.shareholder_name || a.name || '');
+          const snB = getSurname(b.shareholder_name || b.name || '');
+          cmp = snA.localeCompare(snB, 'kn');
+        } else if (sortColumn === 'address') {
+          const adA = String(a.place || a.village_name || a.address || '');
+          const adB = String(b.place || b.village_name || b.address || '');
+          cmp = adA.localeCompare(adB, 'kn');
+        } else if (sortColumn === 'category') {
+          const catA = String(a.schedule_cast || 'ಅ - ವರ್ಗ');
+          const catB = String(b.schedule_cast || 'ಅ - ವರ್ಗ');
+          cmp = catA.localeCompare(catB, 'kn');
+        } else if (sortColumn === 'share_qty') {
+          const qA = parseInt(a.number_of_shares, 10) || 1;
+          const qB = parseInt(b.number_of_shares, 10) || 1;
+          cmp = qA - qB;
+        } else if (sortColumn === 'member_type') {
+          const mtA = String(editedRows[a.id]?.member_type !== undefined ? editedRows[a.id].member_type : (a.member_type || a.status || '-'));
+          const mtB = String(editedRows[b.id]?.member_type !== undefined ? editedRows[b.id].member_type : (b.member_type || b.status || '-'));
+          cmp = mtA.localeCompare(mtB, 'kn');
+        }
+        return sortDirection === 'asc' ? cmp : -cmp;
+      });
+    }
+
+    return list;
+  }, [filteredShareholders, columnFilters, sortColumn, sortDirection, editedRows]);
+
   // Reset all filters
   const handleClearFilters = () => {
     setSearchShareOrName('');
@@ -281,6 +503,18 @@ export default function SugarAllotmentModule() {
     setSelectedCircle('');
     setPlaceFilterQuery('');
     setSelectedPlaces(new Set());
+    setColumnFilters({
+      share_no: '',
+      name: '',
+      surname: '',
+      address: '',
+      category: '',
+      share_qty: '',
+      member_type: ''
+    });
+    setSortColumn('share_no');
+    setSortDirection('asc');
+    setActiveColumnMenu(null);
     setFilteredShareholders(allShareholders.slice(0, 324));
     showToast('ಎಲ್ಲಾ ಫಿಲ್ಟರ್‌ಗಳನ್ನು ತೆರವುಗೊಳಿಸಲಾಗಿದೆ');
   };
@@ -358,7 +592,7 @@ export default function SugarAllotmentModule() {
     const { org_name, sub_title, doc_title, print_columns, exclude_member_types_print } = settings;
 
     // Filter out excluded member types
-    const printableRows = filteredShareholders.filter(s => {
+    const printableRows = processedShareholders.filter(s => {
       const mt = (editedRows[s.id]?.member_type || s.member_type || s.status || '-').trim();
       return !exclude_member_types_print.includes(mt);
     });
@@ -437,7 +671,7 @@ export default function SugarAllotmentModule() {
   // Qualified rows for "ಎಲ್ಲರಿಗೂ ರಶೀದಿ"
   const qualifiedForBatchReceipt = useMemo(() => {
     const { include_zero_shares_receipt, exclude_member_types_receipt, exclude_categories_receipt } = settings;
-    return filteredShareholders.filter(s => {
+    return processedShareholders.filter(s => {
       const shares = parseInt(s.number_of_shares, 10) || 0;
       if (!include_zero_shares_receipt && shares <= 0) return false;
       const mt = (editedRows[s.id]?.member_type || s.member_type || s.status || '-').trim();
@@ -446,7 +680,7 @@ export default function SugarAllotmentModule() {
       if (exclude_categories_receipt.includes(cat)) return false;
       return true;
     });
-  }, [filteredShareholders, settings, editedRows]);
+  }, [processedShareholders, settings, editedRows]);
 
   const todayStr = useMemo(() => {
     const now = new Date();
@@ -455,6 +689,252 @@ export default function SugarAllotmentModule() {
     const y = now.getFullYear();
     return `${d}/${m}/${y}`;
   }, []);
+
+  // Helper to render sortable and filterable column headers
+  const renderSortableHeader = (colKey, label, filterType = 'text', align = 'left', extraClass = '') => {
+    const isSorted = sortColumn === colKey;
+    const isFiltered = Boolean(columnFilters[colKey]);
+    const isOpen = activeColumnMenu === colKey;
+
+    return (
+      <th className={`py-2 px-2.5 border-r border-[#083b5f] relative select-none ${extraClass}`}>
+        <div className={`flex items-center gap-1 ${align === 'center' ? 'justify-center' : 'justify-between'}`}>
+          {/* Click to Sort */}
+          <button
+            type="button"
+            onClick={() => handleColumnSort(colKey)}
+            className="flex items-center gap-1 font-bold text-white hover:text-amber-200 transition-colors cursor-pointer group text-left"
+            title={`${label}: ಸಾರ್ಟ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ`}
+          >
+            <span>{label}</span>
+            <span className="text-[11px] inline-flex items-center">
+              {isSorted ? (
+                sortDirection === 'asc' ? (
+                  <span className="text-amber-300 font-extrabold text-xs">▲</span>
+                ) : (
+                  <span className="text-amber-300 font-extrabold text-xs">▼</span>
+                )
+              ) : (
+                <span className="text-blue-200/50 group-hover:text-white">▴▾</span>
+              )}
+            </span>
+          </button>
+
+          {/* AutoFilter Popover Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveColumnMenu(prev => prev === colKey ? null : colKey);
+            }}
+            className={`p-1 rounded transition-colors cursor-pointer ${
+              isFiltered ? 'text-amber-300 bg-[#073250] ring-1 ring-amber-400' : 'text-blue-200/60 hover:text-white hover:bg-[#08426b]'
+            }`}
+            title={`${label}: ಫಿಲ್ಟರ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ`}
+          >
+            <Filter className={`w-3 h-3 ${isFiltered ? 'fill-amber-300' : ''}`} />
+          </button>
+        </div>
+
+        {/* AutoFilter Popover Dropdown */}
+        {isOpen && (
+          <div
+            ref={columnMenuRef}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute left-0 top-full mt-1.5 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 text-left font-normal normal-case text-slate-100 animate-fadeIn"
+            style={{ minWidth: '220px' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs font-bold text-slate-200">
+              <span className="flex items-center gap-1 text-blue-300">
+                <Filter className="w-3.5 h-3.5" /> {label} ಫಿಲ್ಟರ್
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveColumnMenu(null)}
+                className="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Quick Sort Options */}
+            <div className="py-2 border-b border-slate-800 space-y-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSortColumn(colKey);
+                  setSortDirection('asc');
+                  setActiveColumnMenu(null);
+                  showToast(`${label}: ಕಡಿಮೆಯಿಂದ ಹೆಚ್ಚಿಗೆ (Ascending)`);
+                }}
+                className={`w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                  isSorted && sortDirection === 'asc' ? 'bg-blue-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'
+                }`}
+              >
+                <span>▲ ಕಡಿಮೆಯಿಂದ ಹೆಚ್ಚಿಗೆ (Ascending)</span>
+                {isSorted && sortDirection === 'asc' && <Check className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSortColumn(colKey);
+                  setSortDirection('desc');
+                  setActiveColumnMenu(null);
+                  showToast(`${label}: ಹೆಚ್ಚಿನಿಂದ ಕಡಿಮೆಗೆ (Descending)`);
+                }}
+                className={`w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                  isSorted && sortDirection === 'desc' ? 'bg-blue-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'
+                }`}
+              >
+                <span>▼ ಹೆಚ್ಚಿನಿಂದ ಕಡಿಮೆಗೆ (Descending)</span>
+                {isSorted && sortDirection === 'desc' && <Check className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            {/* Value Filter Options */}
+            <div className="py-2.5 space-y-2">
+              <label className="block text-[11px] font-bold text-slate-300">
+                ಮೌಲ್ಯದ ಪ್ರಕಾರ ಫಿಲ್ಟರ್ ಮಾಡಿ:
+              </label>
+
+              {filterType === 'text' && (
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder={`${label} ಹುಡುಕಿ...`}
+                    value={columnFilters[colKey] || ''}
+                    onChange={(e) => setColumnFilters(prev => ({ ...prev, [colKey]: e.target.value }))}
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
+                    autoFocus
+                  />
+                  {columnFilters[colKey] && (
+                    <button
+                      type="button"
+                      onClick={() => setColumnFilters(prev => ({ ...prev, [colKey]: '' }))}
+                      className="absolute right-2 top-2 text-slate-400 hover:text-white"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {filterType === 'category' && (
+                <div className="space-y-1 max-h-36 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => setColumnFilters(prev => ({ ...prev, category: '' }))}
+                    className={`w-full text-left px-2 py-1 rounded text-xs flex items-center justify-between cursor-pointer ${
+                      !columnFilters.category ? 'bg-blue-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'
+                    }`}
+                  >
+                    <span>ಎಲ್ಲಾ ವರ್ಗಗಳು (All)</span>
+                    {!columnFilters.category && <Check className="w-3.5 h-3.5" />}
+                  </button>
+                  {distinctCategories.map((cat, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setColumnFilters(prev => ({ ...prev, category: cat }))}
+                      className={`w-full text-left px-2 py-1 rounded text-xs flex items-center justify-between cursor-pointer ${
+                        columnFilters.category === cat ? 'bg-blue-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      <span>{cat}</span>
+                      {columnFilters.category === cat && <Check className="w-3.5 h-3.5" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {filterType === 'share_qty' && (
+                <div className="space-y-1 max-h-36 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => setColumnFilters(prev => ({ ...prev, share_qty: '' }))}
+                    className={`w-full text-left px-2 py-1 rounded text-xs flex items-center justify-between cursor-pointer ${
+                      !columnFilters.share_qty ? 'bg-blue-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'
+                    }`}
+                  >
+                    <span>ಎಲ್ಲಾ ಶೇರುಗಳು (All)</span>
+                    {!columnFilters.share_qty && <Check className="w-3.5 h-3.5" />}
+                  </button>
+                  {distinctShareQtys.map((q, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setColumnFilters(prev => ({ ...prev, share_qty: String(q) }))}
+                      className={`w-full text-left px-2 py-1 rounded text-xs flex items-center justify-between cursor-pointer ${
+                        columnFilters.share_qty === String(q) ? 'bg-blue-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      <span>{q} {q === 1 ? 'ಶೇರು' : 'ಶೇರುಗಳು'}</span>
+                      {columnFilters.share_qty === String(q) && <Check className="w-3.5 h-3.5" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {filterType === 'member_type' && (
+                <div className="space-y-1 max-h-36 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => setColumnFilters(prev => ({ ...prev, member_type: '' }))}
+                    className={`w-full text-left px-2 py-1 rounded text-xs flex items-center justify-between cursor-pointer ${
+                      !columnFilters.member_type ? 'bg-blue-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'
+                    }`}
+                  >
+                    <span>ಎಲ್ಲಾ ಪ್ರಕಾರಗಳು (All)</span>
+                    {!columnFilters.member_type && <Check className="w-3.5 h-3.5" />}
+                  </button>
+                  {distinctMemberTypes.map((mt, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setColumnFilters(prev => ({ ...prev, member_type: mt }))}
+                      className={`w-full text-left px-2 py-1 rounded text-xs flex items-center justify-between cursor-pointer ${
+                        columnFilters.member_type === mt ? 'bg-blue-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      <span>{mt}</span>
+                      {columnFilters.member_type === mt && <Check className="w-3.5 h-3.5" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Popover Footer */}
+            <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setColumnFilters(prev => ({ ...prev, [colKey]: '' }));
+                  if (sortColumn === colKey) {
+                    setSortColumn(null);
+                    setSortDirection(null);
+                  }
+                  setActiveColumnMenu(null);
+                  showToast(`${label} ಫಿಲ್ಟರ್ ತೆರವುಗೊಳಿಸಲಾಗಿದೆ`);
+                }}
+                className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold cursor-pointer"
+              >
+                ತೆರವುಗೊಳಿಸಿ
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveColumnMenu(null)}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold rounded cursor-pointer"
+              >
+                ಮುಗಿದಿದೆ
+              </button>
+            </div>
+          </div>
+        )}
+      </th>
+    );
+  };
 
   return (
     <div className="space-y-4 text-xs">
@@ -746,11 +1226,32 @@ export default function SugarAllotmentModule() {
 
       {/* ACTION & SUMMARY BAR (Matching Image 3) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 shadow-md">
-        <div className="text-sm font-bold text-blue-400">
-          {filteredShareholders.length} ಶೇರುದಾರರ್ ಕಂಡುಬಂದಿದ್ದಾರೆ
+        <div className="flex flex-wrap items-center gap-2.5 text-sm font-bold text-blue-400">
+          <span>{processedShareholders.length} ಶೇರುದಾರರ್ ಕಂಡುಬಂದಿದ್ದಾರೆ</span>
+          {(hasActiveColumnFilters || sortColumn !== 'share_no' || sortDirection !== 'asc') && (
+            <span className="text-[11px] text-amber-300 font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center gap-1">
+              <Filter className="w-3 h-3 fill-amber-300" />
+              <span>ಫಿಲ್ಟರ್ / ಸಾರ್ಟ್ ಸಕ್ರಿಯವಾಗಿದೆ</span>
+            </span>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Column Filter Row Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowColumnFilterRow(prev => !prev)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm border ${
+              showColumnFilterRow
+                ? 'bg-blue-600 border-blue-500 text-white shadow-blue-500/20'
+                : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
+            }`}
+            title="ಪ್ರತಿಯೊಂದು ಕಾಲಮ್‌ಗೆ ಶೋಧಕ ಬಾಕ್ಸ್ (Search Row) ಆನ್/ಆಫ್ ಮಾಡಿ"
+          >
+            <Filter className="w-3.5 h-3.5" />
+            <span>{showColumnFilterRow ? 'ಕಾಲಮ್ ಫಿಲ್ಟರ್ ಸಾಲು ಅಡಗಿಸಿ' : 'ಕಾಲಮ್ ಫಿಲ್ಟರ್ ಸಾಲು'}</span>
+          </button>
+
           {/* Settings Button */}
           <button
             type="button"
@@ -808,19 +1309,31 @@ export default function SugarAllotmentModule() {
         {/* Table Top Info */}
         <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-200">
           <span>ದಿನಾಂಕ: {todayStr}</span>
-          <span className="text-blue-400">ಒಟ್ಟು: {filteredShareholders.length}</span>
+          <div className="flex items-center gap-3">
+            {hasActiveColumnFilters && (
+              <button
+                type="button"
+                onClick={handleClearColumnFilters}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all"
+                title="ಎಲ್ಲಾ ಕಾಲಮ್ ಫಿಲ್ಟರ್‌ಗಳನ್ನು ತೆಗೆದುಹಾಕಿ"
+              >
+                <X className="w-3 h-3" /> ಕಾಲಮ್ ಫಿಲ್ಟರ್ ತೆರವು
+              </button>
+            )}
+            <span className="text-blue-400">ಒಟ್ಟು: {processedShareholders.length}</span>
+          </div>
         </div>
 
         {loading ? (
           <div className="p-16 text-center text-slate-400 font-medium">
             ಶೇರುದಾರರ ಮಾಹಿತಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ...
           </div>
-        ) : filteredShareholders.length === 0 ? (
+        ) : processedShareholders.length === 0 ? (
           <div className="p-16 text-center text-slate-400 font-medium space-y-2">
             <p>ಆಯ್ಕೆಮಾಡಿದ ಫಿಲ್ಟರ್‌ಗೆ ಯಾವುದೇ ಶೇರುದಾರರು ಕಂಡುಬಂದಿಲ್ಲ.</p>
             <button
               onClick={handleClearFilters}
-              className="px-4 py-1.5 bg-[#1d70b8] text-white rounded-lg text-xs font-bold"
+              className="px-4 py-1.5 bg-[#1d70b8] text-white rounded-lg text-xs font-bold cursor-pointer"
             >
               ಫಿಲ್ಟರ್ ತೆರವುಗೊಳಿಸಿ
             </button>
@@ -828,25 +1341,140 @@ export default function SugarAllotmentModule() {
         ) : (
           <div className="overflow-x-auto max-h-[70vh]">
             <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
-              {/* Blue Header matching Image 3 */}
+              {/* Blue Header matching Image 3 with fully functional Sorting & AutoFilter Popovers */}
               <thead className="bg-[#0a4b78] text-white font-bold text-[11px] sticky top-0 z-20 select-none shadow">
                 <tr className="border-b border-[#083b5f]">
-                  <th className="py-3 px-3 text-center border-r border-[#083b5f]">ಕ್ರ.ಸಂ.</th>
-                  <th className="py-3 px-3.5 border-r border-[#083b5f]">ಶೇರ್ ಸಂಖ್ಯೆ ▴▾</th>
-                  <th className="py-3 px-4 border-r border-[#083b5f]">ಹೆಸರು ▴▾</th>
-                  <th className="py-3 px-3 border-r border-[#083b5f]">ಉಪನಾಮ ▴▾</th>
-                  <th className="py-3 px-3.5 border-r border-[#083b5f]">ವಿಳಾಸ ▴▾</th>
-                  <th className="py-3 px-3 text-center border-r border-[#083b5f]">ವರ್ಗ ▴▾</th>
-                  <th className="py-3 px-3 text-center border-r border-[#083b5f]">ಶೇರ್ ಪ್ರಮಾಣ ▴▾</th>
-                  <th className="py-3 px-3.5 border-r border-[#083b5f]">ಸದಸ್ಯರ ಪ್ರಕಾರ ▴▾</th>
-                  <th className="py-3 px-3 border-r border-[#083b5f]">ಮೊಬೈಲ್ ನಂಬರ</th>
-                  <th className="py-3 px-3.5 text-center border-r border-[#083b5f]">ಸಹಿ</th>
-                  <th className="py-3 px-3.5 border-r border-[#083b5f]">ಶೇರಾ</th>
-                  <th className="py-3 px-3.5 text-center">ರಶೀದಿ</th>
+                  <th className="py-3 px-3 text-center border-r border-[#083b5f] w-12">ಕ್ರ.ಸಂ.</th>
+                  
+                  {/* ಶೇರ್ ಸಂಖ್ಯೆ ▴▾ */}
+                  {renderSortableHeader('share_no', 'ಶೇರ್ ಸಂಖ್ಯೆ', 'text', 'left', 'min-w-[130px]')}
+
+                  {/* ಹೆಸರು ▴▾ */}
+                  {renderSortableHeader('name', 'ಹೆಸರು', 'text', 'left', 'min-w-[170px]')}
+
+                  {/* ಉಪನಾಮ ▴▾ */}
+                  {renderSortableHeader('surname', 'ಉಪನಾಮ', 'text', 'left', 'min-w-[120px]')}
+
+                  {/* ವಿಳಾಸ ▴▾ */}
+                  {renderSortableHeader('address', 'ವಿಳಾಸ', 'text', 'left', 'min-w-[140px]')}
+
+                  {/* ವರ್ಗ ▴▾ */}
+                  {renderSortableHeader('category', 'ವರ್ಗ', 'category', 'center', 'min-w-[110px]')}
+
+                  {/* ಶೇರ್ ಪ್ರಮಾಣ ▴▾ */}
+                  {renderSortableHeader('share_qty', 'ಶೇರ್ ಪ್ರಮಾಣ', 'share_qty', 'center', 'min-w-[120px]')}
+
+                  {/* ಸದಸ್ಯರ ಪ್ರಕಾರ ▴▾ */}
+                  {renderSortableHeader('member_type', 'ಸದಸ್ಯರ ಪ್ರಕಾರ', 'member_type', 'left', 'min-w-[150px]')}
+
+                  <th className="py-3 px-3 border-r border-[#083b5f] min-w-[110px]">ಮೊಬೈಲ್ ನಂಬರ</th>
+                  <th className="py-3 px-3.5 text-center border-r border-[#083b5f] w-16">ಸಹಿ</th>
+                  <th className="py-3 px-3.5 border-r border-[#083b5f] min-w-[100px]">ಶೇರಾ</th>
+                  <th className="py-3 px-3.5 text-center w-20">ರಶೀದಿ</th>
                 </tr>
+
+                {/* Inline Column Filter Row */}
+                {showColumnFilterRow && (
+                  <tr className="bg-[#073656] text-white border-b border-[#083b5f]">
+                    <td className="p-1.5 text-center border-r border-[#083b5f]">
+                      {hasActiveColumnFilters && (
+                        <button
+                          type="button"
+                          onClick={handleClearColumnFilters}
+                          className="text-amber-300 hover:text-white text-xs font-black cursor-pointer"
+                          title="ಎಲ್ಲಾ ಕಾಲಮ್ ಫಿಲ್ಟರ್ ತೆರವುಗೊಳಿಸಿ"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </td>
+                    {/* ಶೇರ್ ಸಂಖ್ಯೆ filter */}
+                    <td className="p-1 border-r border-[#083b5f]">
+                      <input
+                        type="text"
+                        placeholder="ಶೇರ್ ಸಂಖ್ಯೆ..."
+                        value={columnFilters.share_no}
+                        onChange={(e) => setColumnFilters(prev => ({ ...prev, share_no: e.target.value }))}
+                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1.5 py-1 text-[11px] text-white outline-none"
+                      />
+                    </td>
+                    {/* ಹೆಸರು filter */}
+                    <td className="p-1 border-r border-[#083b5f]">
+                      <input
+                        type="text"
+                        placeholder="ಹೆಸರು..."
+                        value={columnFilters.name}
+                        onChange={(e) => setColumnFilters(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1.5 py-1 text-[11px] text-white outline-none"
+                      />
+                    </td>
+                    {/* ಉಪನಾಮ filter */}
+                    <td className="p-1 border-r border-[#083b5f]">
+                      <input
+                        type="text"
+                        placeholder="ಉಪನಾಮ..."
+                        value={columnFilters.surname}
+                        onChange={(e) => setColumnFilters(prev => ({ ...prev, surname: e.target.value }))}
+                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1.5 py-1 text-[11px] text-white outline-none"
+                      />
+                    </td>
+                    {/* ವಿಳಾಸ filter */}
+                    <td className="p-1 border-r border-[#083b5f]">
+                      <input
+                        type="text"
+                        placeholder="ವಿಳಾಸ..."
+                        value={columnFilters.address}
+                        onChange={(e) => setColumnFilters(prev => ({ ...prev, address: e.target.value }))}
+                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1.5 py-1 text-[11px] text-white outline-none"
+                      />
+                    </td>
+                    {/* ವರ್ಗ filter */}
+                    <td className="p-1 border-r border-[#083b5f]">
+                      <select
+                        value={columnFilters.category}
+                        onChange={(e) => setColumnFilters(prev => ({ ...prev, category: e.target.value }))}
+                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1 py-1 text-[11px] text-white outline-none cursor-pointer"
+                      >
+                        <option value="">ಎಲ್ಲಾ ವರ್ಗ</option>
+                        {distinctCategories.map((c, i) => (
+                          <option key={i} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </td>
+                    {/* ಶೇರ್ ಪ್ರಮಾಣ filter */}
+                    <td className="p-1 border-r border-[#083b5f]">
+                      <select
+                        value={columnFilters.share_qty}
+                        onChange={(e) => setColumnFilters(prev => ({ ...prev, share_qty: e.target.value }))}
+                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1 py-1 text-[11px] text-white outline-none cursor-pointer"
+                      >
+                        <option value="">ಎಲ್ಲಾ</option>
+                        {distinctShareQtys.map((q, i) => (
+                          <option key={i} value={q}>{q} {q === 1 ? 'ಶೇರು' : 'ಶೇರುಗಳು'}</option>
+                        ))}
+                      </select>
+                    </td>
+                    {/* ಸದಸ್ಯರ ಪ್ರಕಾರ filter */}
+                    <td className="p-1 border-r border-[#083b5f]">
+                      <select
+                        value={columnFilters.member_type}
+                        onChange={(e) => setColumnFilters(prev => ({ ...prev, member_type: e.target.value }))}
+                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1 py-1 text-[11px] text-white outline-none cursor-pointer"
+                      >
+                        <option value="">ಎಲ್ಲಾ ಪ್ರಕಾರ</option>
+                        {distinctMemberTypes.map((mt, i) => (
+                          <option key={i} value={mt}>{mt}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td colSpan={4} className="p-1 bg-[#073656] text-[10px] text-slate-300 italic px-2">
+                      ಕಾಲಮ್ ಫಿಲ್ಟರ್ ಅನ್ವಯಿಸಲಾಗಿದೆ
+                    </td>
+                  </tr>
+                )}
               </thead>
               <tbody className="divide-y divide-slate-800/80 text-slate-100">
-                {filteredShareholders.map((s, idx) => {
+                {processedShareholders.map((s, idx) => {
                   const surname = getSurname(s.shareholder_name || s.name || '');
                   const currentMemType = editedRows[s.id]?.member_type !== undefined ? editedRows[s.id].member_type : (s.member_type || s.status || '-');
                   const currentMob = editedRows[s.id]?.mobile_no !== undefined ? editedRows[s.id].mobile_no : (s.mobile_no || s.mobile || '');
