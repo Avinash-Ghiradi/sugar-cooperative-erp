@@ -7,8 +7,30 @@ import {
   CheckCircle2, AlertTriangle, Eye, RotateCcw, XCircle
 } from 'lucide-react';
 
-const MEMBER_TYPE_OPTIONS = ['-', 'ಮೃತ', 'ತಿದ್ದುಪಡಿ', 'ವಾರಸುದಾರರು', 'ವರ್ಗಾವಣೆ'];
+const MEMBER_TYPE_OPTIONS = [
+  '-',
+  'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ',
+  'ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ',
+  'ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ',
+  'ಮೃತ',
+  'ತಿದ್ದುಪಡಿ',
+  'ವಾರಸುದಾರರು',
+  'ವರ್ಗಾವಣೆ'
+];
 const CATEGORY_OPTIONS = ['ಅ - ವರ್ಗ', 'ಬ - ವರ್ಗ', 'ಡ - ವರ್ಗ'];
+
+const normalizeMemberTypeDisplay = (val) => {
+  if (!val || val === '-') return '-';
+  const s = String(val).trim().toLowerCase();
+  if (s.includes('ಬೆಳೆಗಾರಲ್ಲದ') || s.includes('non-grower')) return 'ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ';
+  if (s.includes('ಸಹಕಾರ') || s.includes('ಸಂಘ')) return 'ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ';
+  if (s.includes('ಬೆಳೆಗಾರ') || s.includes('grower')) return 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ';
+  if (s.includes('ಮೃತ') || s.includes('ಸಾವು')) return 'ಮೃತ';
+  if (s.includes('ತಿದ್ದುಪ')) return 'ತಿದ್ದುಪಡಿ';
+  if (s.includes('ವಾರಸು')) return 'ವಾರಸುದಾರರು';
+  if (s.includes('ವರ್ಗಾವಣೆ')) return 'ವರ್ಗಾವಣೆ';
+  return val;
+};
 
 const getSurname = (fullName) => {
   if (!fullName) return '';
@@ -221,89 +243,7 @@ export default function SugarAllotmentModule() {
 
   // --- FILTER EXECUTION ---
   const applyFilters = () => {
-    let result = [...allShareholders];
-
-    // 1. Share number or name search
-    if (searchShareOrName.trim()) {
-      const raw = searchShareOrName.trim();
-      if (raw.includes(',')) {
-        // Comma-separated share numbers: exact match
-        const parts = raw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-        result = result.filter(s => {
-          const sNo = String(s.share_no || s.share_number || '').trim().toLowerCase();
-          return parts.includes(sNo);
-        });
-      } else {
-        // Partial match
-        const q = raw.toLowerCase().normalize('NFC');
-        result = result.filter(s => {
-          const name = (s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
-          const sNo = String(s.share_no || s.share_number || '').toLowerCase();
-          return name.includes(q) || sNo.includes(q);
-        });
-      }
-    }
-
-    // 2. Address / Place search
-    if (searchAddress.trim()) {
-      const q = searchAddress.trim().toLowerCase().normalize('NFC');
-      result = result.filter(s => {
-        const p = (s.place || s.village_name || '').toLowerCase().normalize('NFC');
-        const addr = (s.address || '').toLowerCase().normalize('NFC');
-        return p.includes(q) || addr.includes(q);
-      });
-    }
-
-    // 3. Surname search
-    if (searchSurname.trim()) {
-      const q = searchSurname.trim().toLowerCase().normalize('NFC');
-      result = result.filter(s => {
-        const sn = getSurname(s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
-        return sn.includes(q);
-      });
-    }
-
-    // 4. Member type search
-    if (searchMemberType && searchMemberType !== '-') {
-      result = result.filter(s => {
-        const mt = (editedRows[s.id]?.member_type || s.member_type || s.status || '').trim();
-        return mt === searchMemberType;
-      });
-    }
-
-    // 5. Category search
-    if (searchCategory.trim()) {
-      const q = searchCategory.trim().toLowerCase().normalize('NFC');
-      result = result.filter(s => {
-        const c = (s.schedule_cast || '').toLowerCase().normalize('NFC');
-        return c.includes(q);
-      });
-    }
-
-    // 6. Share quantity search
-    if (searchShareQty.trim()) {
-      const qty = parseInt(searchShareQty.trim(), 10);
-      if (!isNaN(qty)) {
-        result = result.filter(s => {
-          const sQty = parseInt(s.number_of_shares, 10) || 1;
-          return sQty === qty;
-        });
-      }
-    }
-
-    // 7. Circle & Places Checkboxes
-    if (selectedCircle) {
-      result = result.filter(s => (s.circle || s.circle_name || '').trim() === selectedCircle.trim());
-    }
-    if (selectedPlaces.size > 0) {
-      result = result.filter(s => {
-        const p = (s.place || s.village_name || '').trim();
-        return selectedPlaces.has(p);
-      });
-    }
-
-    setFilteredShareholders(result);
-    showToast(`ಫಿಲ್ಟರ್ ಅನ್ವಯಿಸಲಾಗಿದೆ: ${result.length.toLocaleString()} ಶೇರುದಾರರು ಕಂಡುಬಂದಿದ್ದಾರೆ`);
+    showToast(`ಫಿಲ್ಟರ್ ಅನ್ವಯಿಸಲಾಗಿದೆ: ${processedShareholders.length.toLocaleString()} ಶೇರುದಾರರು ಕಂಡುಬಂದಿದ್ದಾರೆ`);
   };
 
   const distinctCategories = useMemo(() => {
@@ -316,13 +256,8 @@ export default function SugarAllotmentModule() {
   }, [allShareholders]);
 
   const distinctMemberTypes = useMemo(() => {
-    const set = new Set(MEMBER_TYPE_OPTIONS);
-    allShareholders.forEach(s => {
-      const mt = (s.member_type || s.status || '').trim();
-      if (mt) set.add(mt);
-    });
-    return Array.from(set).filter(Boolean);
-  }, [allShareholders]);
+    return MEMBER_TYPE_OPTIONS;
+  }, []);
 
   const distinctShareQtys = useMemo(() => {
     const set = new Set();
@@ -395,9 +330,130 @@ export default function SugarAllotmentModule() {
 
   // Combined processed shareholders (top filters + column filters + column sorting)
   const processedShareholders = useMemo(() => {
-    let list = [...filteredShareholders];
+    if (!allShareholders || allShareholders.length === 0) return [];
+    let list = allShareholders;
 
-    // 1. Column filters
+    // Check if any filter is active
+    const hasTopFilter = Boolean(
+      searchShareOrName.trim() ||
+      searchAddress.trim() ||
+      searchSurname.trim() ||
+      (searchMemberType && searchMemberType !== '-') ||
+      searchCategory.trim() ||
+      searchShareQty.trim() ||
+      selectedCircle ||
+      selectedPlaces.size > 0
+    );
+
+    const hasColFilter = Boolean(
+      columnFilters.share_no.trim() ||
+      columnFilters.name.trim() ||
+      columnFilters.surname.trim() ||
+      columnFilters.address.trim() ||
+      columnFilters.category ||
+      columnFilters.share_qty ||
+      columnFilters.member_type
+    );
+
+    // If NO filter is active, show default initial 324 records (as in reference Image 3)
+    if (!hasTopFilter && !hasColFilter) {
+      list = allShareholders.slice(0, 324);
+    }
+
+    // 1. Top filter: Share number or Name (exact match for numeric or comma-separated, partial for name)
+    if (searchShareOrName.trim()) {
+      const raw = searchShareOrName.trim();
+      if (raw.includes(',')) {
+        const parts = raw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        list = list.filter(s => {
+          const sNo = String(s.share_no || s.share_number || '').trim().toLowerCase();
+          return parts.includes(sNo);
+        });
+      } else if (/^\d+$/.test(raw)) {
+        // Direct numeric share number: exact match first, or partial if no exact
+        const exact = list.filter(s => String(s.share_no || s.share_number || '').trim() === raw);
+        if (exact.length > 0) {
+          list = exact;
+        } else {
+          list = list.filter(s => String(s.share_no || s.share_number || '').includes(raw));
+        }
+      } else {
+        const q = raw.toLowerCase().normalize('NFC');
+        list = list.filter(s => {
+          const name = String(s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
+          const sNo = String(s.share_no || s.share_number || '').toLowerCase();
+          return name.includes(q) || sNo.includes(q);
+        });
+      }
+    }
+
+    // 2. Top filter: Address / Place
+    if (searchAddress.trim()) {
+      const q = searchAddress.trim().toLowerCase().normalize('NFC');
+      list = list.filter(s => {
+        const p = String(s.place || s.village_name || '').toLowerCase().normalize('NFC');
+        const addr = String(s.address || '').toLowerCase().normalize('NFC');
+        return p.includes(q) || addr.includes(q);
+      });
+    }
+
+    // 3. Top filter: Surname
+    if (searchSurname.trim()) {
+      const q = searchSurname.trim().toLowerCase().normalize('NFC');
+      list = list.filter(s => {
+        const sn = getSurname(s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
+        return sn.includes(q);
+      });
+    }
+
+    // 4. Top filter: Member Type
+    if (searchMemberType && searchMemberType !== '-') {
+      const q = searchMemberType.toLowerCase().normalize('NFC');
+      list = list.filter(s => {
+        const rawMt = editedRows[s.id]?.member_type !== undefined ? editedRows[s.id].member_type : (s.member_type || s.status || '');
+        const mt = normalizeMemberTypeDisplay(rawMt).toLowerCase().normalize('NFC');
+        return mt.includes(q) || q.includes(mt);
+      });
+    }
+
+    // 5. Top filter: Category
+    if (searchCategory.trim()) {
+      const q = searchCategory.trim().toLowerCase().normalize('NFC');
+      list = list.filter(s => {
+        const c = String(s.schedule_cast || '').toLowerCase().normalize('NFC');
+        return c.includes(q);
+      });
+    }
+
+    // 6. Top filter: Share Quantity
+    if (searchShareQty.trim()) {
+      const qty = parseInt(searchShareQty.trim(), 10);
+      if (!isNaN(qty)) {
+        list = list.filter(s => {
+          const sQty = parseInt(s.number_of_shares, 10) || 1;
+          return sQty === qty;
+        });
+      }
+    }
+
+    // 7. Top filter: Circle
+    if (selectedCircle) {
+      const cQuery = selectedCircle.trim().toLowerCase().normalize('NFC');
+      list = list.filter(s => {
+        const cName = String(s.circle || s.circle_name || '').trim().toLowerCase().normalize('NFC');
+        return cName === cQuery;
+      });
+    }
+
+    // 8. Top filter: Selected Places Checkboxes
+    if (selectedPlaces.size > 0) {
+      list = list.filter(s => {
+        const p = String(s.place || s.village_name || '').trim();
+        return selectedPlaces.has(p);
+      });
+    }
+
+    // 9. Column-level filter: Share Number
     if (columnFilters.share_no.trim()) {
       const q = columnFilters.share_no.trim().toLowerCase();
       list = list.filter(s => {
@@ -406,6 +462,7 @@ export default function SugarAllotmentModule() {
       });
     }
 
+    // 10. Column-level filter: Name
     if (columnFilters.name.trim()) {
       const q = columnFilters.name.trim().toLowerCase().normalize('NFC');
       list = list.filter(s => {
@@ -414,6 +471,7 @@ export default function SugarAllotmentModule() {
       });
     }
 
+    // 11. Column-level filter: Surname
     if (columnFilters.surname.trim()) {
       const q = columnFilters.surname.trim().toLowerCase().normalize('NFC');
       list = list.filter(s => {
@@ -422,6 +480,7 @@ export default function SugarAllotmentModule() {
       });
     }
 
+    // 12. Column-level filter: Address
     if (columnFilters.address.trim()) {
       const q = columnFilters.address.trim().toLowerCase().normalize('NFC');
       list = list.filter(s => {
@@ -430,13 +489,16 @@ export default function SugarAllotmentModule() {
       });
     }
 
+    // 13. Column-level filter: Category
     if (columnFilters.category) {
+      const q = columnFilters.category.trim().toLowerCase().normalize('NFC');
       list = list.filter(s => {
-        const c = String(s.schedule_cast || 'ಅ - ವರ್ಗ').trim();
-        return c === columnFilters.category;
+        const c = String(s.schedule_cast || 'ಅ - ವರ್ಗ').trim().toLowerCase().normalize('NFC');
+        return c.includes(q) || q.includes(c);
       });
     }
 
+    // 14. Column-level filter: Share Quantity
     if (columnFilters.share_qty) {
       const targetQty = parseInt(columnFilters.share_qty, 10);
       list = list.filter(s => {
@@ -445,16 +507,19 @@ export default function SugarAllotmentModule() {
       });
     }
 
+    // 15. Column-level filter: Member Type
     if (columnFilters.member_type) {
+      const q = columnFilters.member_type.trim().toLowerCase().normalize('NFC');
       list = list.filter(s => {
-        const mt = String(editedRows[s.id]?.member_type !== undefined ? editedRows[s.id].member_type : (s.member_type || s.status || '-')).trim();
-        return mt === columnFilters.member_type;
+        const rawMt = editedRows[s.id]?.member_type !== undefined ? editedRows[s.id].member_type : (s.member_type || s.status || '-');
+        const mt = normalizeMemberTypeDisplay(rawMt).toLowerCase().normalize('NFC');
+        return mt.includes(q) || q.includes(mt);
       });
     }
 
-    // 2. Column Sorting
+    // 16. Column Sorting
     if (sortColumn && sortDirection) {
-      list.sort((a, b) => {
+      list = [...list].sort((a, b) => {
         let cmp = 0;
         if (sortColumn === 'share_no') {
           const numA = parseInt(String(a.share_no || a.share_number || '').replace(/\D/g, ''), 10) || 0;
@@ -481,8 +546,10 @@ export default function SugarAllotmentModule() {
           const qB = parseInt(b.number_of_shares, 10) || 1;
           cmp = qA - qB;
         } else if (sortColumn === 'member_type') {
-          const mtA = String(editedRows[a.id]?.member_type !== undefined ? editedRows[a.id].member_type : (a.member_type || a.status || '-'));
-          const mtB = String(editedRows[b.id]?.member_type !== undefined ? editedRows[b.id].member_type : (b.member_type || b.status || '-'));
+          const rawA = editedRows[a.id]?.member_type !== undefined ? editedRows[a.id].member_type : (a.member_type || a.status || '-');
+          const rawB = editedRows[b.id]?.member_type !== undefined ? editedRows[b.id].member_type : (b.member_type || b.status || '-');
+          const mtA = normalizeMemberTypeDisplay(rawA);
+          const mtB = normalizeMemberTypeDisplay(rawB);
           cmp = mtA.localeCompare(mtB, 'kn');
         }
         return sortDirection === 'asc' ? cmp : -cmp;
@@ -490,7 +557,21 @@ export default function SugarAllotmentModule() {
     }
 
     return list;
-  }, [filteredShareholders, columnFilters, sortColumn, sortDirection, editedRows]);
+  }, [
+    allShareholders,
+    searchShareOrName,
+    searchAddress,
+    searchSurname,
+    searchMemberType,
+    searchCategory,
+    searchShareQty,
+    selectedCircle,
+    selectedPlaces,
+    columnFilters,
+    sortColumn,
+    sortDirection,
+    editedRows
+  ]);
 
   // Reset all filters
   const handleClearFilters = () => {
@@ -515,7 +596,6 @@ export default function SugarAllotmentModule() {
     setSortColumn('share_no');
     setSortDirection('asc');
     setActiveColumnMenu(null);
-    setFilteredShareholders(allShareholders.slice(0, 324));
     showToast('ಎಲ್ಲಾ ಫಿಲ್ಟರ್‌ಗಳನ್ನು ತೆರವುಗೊಳಿಸಲಾಗಿದೆ');
   };
 
@@ -697,28 +777,27 @@ export default function SugarAllotmentModule() {
     const isOpen = activeColumnMenu === colKey;
 
     return (
-      <th className={`py-2 px-2.5 border-r border-[#083b5f] relative select-none ${extraClass}`}>
-        <div className={`flex items-center gap-1 ${align === 'center' ? 'justify-center' : 'justify-between'}`}>
-          {/* Click to Sort */}
-          <button
-            type="button"
-            onClick={() => handleColumnSort(colKey)}
-            className="flex items-center gap-1 font-bold text-white hover:text-amber-200 transition-colors cursor-pointer group text-left"
-            title={`${label}: ಸಾರ್ಟ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ`}
-          >
+      <th
+        onClick={() => handleColumnSort(colKey)}
+        className={`py-3 px-3 border-r border-[#083b5f] relative select-none cursor-pointer hover:bg-[#0c5180] transition-colors ${extraClass}`}
+        title={`${label}: ಸಾರ್ಟ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ`}
+      >
+        <div className={`flex items-center gap-1.5 ${align === 'center' ? 'justify-center' : 'justify-between'}`}>
+          {/* Header Title & Sort Indicator */}
+          <div className="flex items-center gap-1 font-bold text-white text-[11px] select-none">
             <span>{label}</span>
-            <span className="text-[11px] inline-flex items-center">
+            <span className="text-[12px] inline-flex items-center">
               {isSorted ? (
                 sortDirection === 'asc' ? (
-                  <span className="text-amber-300 font-extrabold text-xs">▲</span>
+                  <span className="text-amber-300 font-black text-sm">▲</span>
                 ) : (
-                  <span className="text-amber-300 font-extrabold text-xs">▼</span>
+                  <span className="text-amber-300 font-black text-sm">▼</span>
                 )
               ) : (
-                <span className="text-blue-200/50 group-hover:text-white">▴▾</span>
+                <span className="text-blue-200/60 font-medium">▴▾</span>
               )}
             </span>
-          </button>
+          </div>
 
           {/* AutoFilter Popover Button */}
           <button
@@ -728,11 +807,11 @@ export default function SugarAllotmentModule() {
               setActiveColumnMenu(prev => prev === colKey ? null : colKey);
             }}
             className={`p-1 rounded transition-colors cursor-pointer ${
-              isFiltered ? 'text-amber-300 bg-[#073250] ring-1 ring-amber-400' : 'text-blue-200/60 hover:text-white hover:bg-[#08426b]'
+              isFiltered ? 'text-amber-300 bg-[#073250] ring-1 ring-amber-400' : 'text-blue-200/70 hover:text-white hover:bg-[#08426b]'
             }`}
             title={`${label}: ಫಿಲ್ಟರ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ`}
           >
-            <Filter className={`w-3 h-3 ${isFiltered ? 'fill-amber-300' : ''}`} />
+            <Filter className={`w-3.5 h-3.5 ${isFiltered ? 'fill-amber-300' : ''}`} />
           </button>
         </div>
 
