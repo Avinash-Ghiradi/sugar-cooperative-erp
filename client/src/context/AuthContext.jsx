@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [activeReportSubTab, setActiveReportSubTab] = useState('shareholders');
   const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
@@ -63,6 +64,8 @@ export const AuthProvider = ({ children }) => {
       logout,
       activeModule,
       setActiveModule,
+      activeReportSubTab,
+      setActiveReportSubTab,
       hasPermission,
       showToast,
       toastMessage

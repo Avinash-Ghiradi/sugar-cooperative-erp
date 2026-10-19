@@ -3,7 +3,7 @@ import { useAuth, ROLE_PERMISSIONS } from '../context/AuthContext';
 import {
   LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert,
-  Settings, LogOut, Upload, ArrowRightLeft, UserPlus
+  Settings, LogOut, Upload, ArrowRightLeft, UserPlus, ChevronDown, ChevronRight
 } from 'lucide-react';
 
 const MENU_ITEMS = [
@@ -26,8 +26,17 @@ const MENU_ITEMS = [
   { id: 'settings', label: 'Cooperative Settings', icon: Settings },
 ];
 
+const REPORT_SUB_ITEMS = [
+  { id: 'shareholders', label: '1. ಶೇರುದಾರರ ವಿವರ ವರದಿಗಳು (Shareholders)', icon: Users },
+  { id: 'transactions', label: '2. ಆರ್ಥಿಕ ವಹಿವಾಟು ವಹಿ (Financial Ledger)', icon: CreditCard },
+  { id: 'sugar', label: '3. ಸಕ್ಕರೆ ಕೋಟಾ ಹಂಚಿಕೆ (Sugar Allotment)', icon: PackageCheck },
+  { id: 'varasa', label: '4. ವಾರಸುದಾರರ ಆಡಿಟ್ (Varasa Audit)', icon: History },
+  { id: 'villages', label: '5. ಗ್ರಾಮ & ವಲಯ ಸಾರಾಂಶ (Villages & Circles)', icon: Building2 },
+];
+
 export default function Sidebar({ isOpen, setIsOpen }) {
-  const { user, activeModule, setActiveModule, hasPermission, logout } = useAuth();
+  const { user, activeModule, setActiveModule, activeReportSubTab, setActiveReportSubTab, hasPermission, logout } = useAuth();
+  const [reportsExpanded, setReportsExpanded] = React.useState(true);
 
   return (
     <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-950 border-r border-slate-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col no-print`}>
@@ -60,6 +69,63 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           const isActive = activeModule === item.id;
 
           if (!permitted) return null;
+
+          if (item.id === 'reports') {
+            return (
+              <div key={item.id} className="space-y-1">
+                <button
+                  onClick={() => {
+                    setActiveModule('reports');
+                    setReportsExpanded(prev => activeModule === 'reports' ? !prev : true);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                    isActive
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/40 font-semibold'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 truncate">
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {reportsExpanded || isActive ? (
+                    <ChevronDown className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                  ) : (
+                    <ChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                  )}
+                </button>
+
+                {/* Sub-sidebar for Reports Navigation */}
+                {(reportsExpanded || isActive) && (
+                  <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-emerald-500/40 ml-4 my-1 bg-slate-900/40 rounded-r-lg">
+                    {REPORT_SUB_ITEMS.map((sub) => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = isActive && (activeReportSubTab || 'shareholders') === sub.id;
+
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => {
+                            setActiveModule('reports');
+                            setActiveReportSubTab(sub.id);
+                            if (window.innerWidth < 1024) setIsOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] transition-all text-left ${
+                            isSubActive
+                              ? 'bg-emerald-950/90 text-emerald-300 font-bold border border-emerald-700/80 shadow-sm'
+                              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                          }`}
+                        >
+                          <SubIcon className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+                          <span className="truncate">{sub.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
 
           return (
             <button
