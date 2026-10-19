@@ -154,6 +154,9 @@ export default function SugarAllotmentModule() {
       // Exclude member types for printing
       exclude_member_types_print: [],
 
+      // Page Orientation (landscape or portrait)
+      page_orientation: 'landscape',
+
       // Sugar allotment configuration
       kg_per_share: 25,
       sugar_rate_per_kg: 20,
@@ -171,6 +174,7 @@ export default function SugarAllotmentModule() {
         return {
           ...defaultVals,
           ...parsed,
+          page_orientation: parsed.page_orientation || 'landscape',
           print_columns: {
             ...defaultVals.print_columns,
             ...(parsed.print_columns || {}),
@@ -762,14 +766,16 @@ export default function SugarAllotmentModule() {
         addressLine = `Taluk: ${printTaluk} | District: ${printDistrict}`;
       }
 
+      const orientation = settings?.page_orientation || 'landscape';
+
       let html = `<!DOCTYPE html><html><head><meta charset="utf-8">`;
       html += `<title>${doc_title || 'Sugar Allotment'}</title>`;
       html += `<link rel="preconnect" href="https://fonts.googleapis.com">`;
       html += `<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap" rel="stylesheet">`;
       html += `<style>
         @page {
-          size: A4 portrait;
-          margin: 8mm 6mm;
+          size: A4 ${orientation};
+          margin: 8mm 8mm;
         }
         * {
           box-sizing: border-box;
@@ -779,41 +785,41 @@ export default function SugarAllotmentModule() {
         body {
           font-family: 'Noto Sans Kannada', 'Segoe UI', Arial, sans-serif;
           margin: 0;
-          padding: 4px;
+          padding: 2px 4px;
           color: #0f172a;
           background: #ffffff;
-          font-size: 11px;
+          font-size: 11.5px;
         }
         .print-header-box {
           border: 1.5px solid #2563eb;
           border-radius: 4px;
-          padding: 10px 14px;
+          padding: 8px 16px;
           text-align: center;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
           background: #ffffff;
         }
         .print-org-name {
-          font-size: 16px;
+          font-size: 17px;
           font-weight: 700;
           color: #1e3a8a;
-          margin: 0 0 3px 0;
+          margin: 0 0 2px 0;
           letter-spacing: 0.2px;
         }
         .print-sub-title {
-          font-size: 11px;
+          font-size: 11.5px;
           font-weight: 600;
           color: #475569;
-          margin: 0 0 7px 0;
+          margin: 0 0 6px 0;
         }
         .print-doc-banner {
           background-color: #2563eb !important;
           color: #ffffff !important;
-          font-size: 13px;
+          font-size: 13.5px;
           font-weight: 700;
-          padding: 6px 16px;
+          padding: 6px 20px;
           border-radius: 4px;
           display: inline-block;
-          width: 95%;
+          width: 88%;
           margin: 0 auto;
           letter-spacing: 0.3px;
           -webkit-print-color-adjust: exact;
@@ -822,17 +828,17 @@ export default function SugarAllotmentModule() {
         .print-divider {
           border: none;
           border-top: 1.5px solid #2563eb;
-          margin: 6px 0;
+          margin: 5px 0;
         }
         .print-circle-title {
           color: #1d4ed8;
           font-size: 14px;
           font-weight: 700;
           text-align: center;
-          margin: 4px 0 2px 0;
+          margin: 3px 0 2px 0;
         }
         .print-address-line {
-          font-size: 11px;
+          font-size: 11.5px;
           font-weight: 600;
           color: #1e293b;
           text-align: center;
@@ -873,23 +879,23 @@ export default function SugarAllotmentModule() {
           color: #ffffff !important;
           border: 1px solid #1e40af;
           font-weight: 700;
-          font-size: 11px;
-          padding: 7px 4px;
+          font-size: 11.5px;
+          padding: 7px 5px;
           text-align: center;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
         td {
           border: 1px solid #64748b;
-          padding: 6px 5px;
-          font-size: 11px;
+          padding: 6px 6px;
+          font-size: 11.5px;
           color: #000000;
           vertical-align: middle;
-          height: 32px;
+          height: 34px;
         }
         .center { text-align: center; }
         .left { text-align: left; }
-        .font-mono { font-family: 'Courier New', Courier, monospace, sans-serif; font-size: 11px; }
+        .font-mono { font-family: 'Courier New', Courier, monospace, sans-serif; font-size: 11.5px; }
         .font-bold { font-weight: 700; }
         @media print {
           body { margin: 0; padding: 0; }
@@ -913,17 +919,17 @@ export default function SugarAllotmentModule() {
       html += `</div>`;
 
       html += `<table><thead><tr>`;
-      html += `<th class="center" style="width:36px;">ಕ್ರ.ಸಂ.</th>`;
-      if (print_columns.share_no) html += `<th class="center" style="width:65px;">ಶೇರ್ ಸಂಖ್ಯೆ</th>`;
-      if (print_columns.name) html += `<th class="left" style="min-width:180px;">ಹೆಸರು</th>`;
-      if (print_columns.surname) html += `<th class="left" style="width:90px;">ಉಪನಾಮ</th>`;
-      if (print_columns.address) html += `<th class="center" style="width:90px;">ವಿಳಾಸ</th>`;
-      if (print_columns.category) html += `<th class="center" style="width:55px;">ವರ್ಗ</th>`;
-      if (print_columns.share_qty) html += `<th class="center" style="width:65px;">ಶೇರ್ ಪ್ರಮಾಣ</th>`;
-      if (print_columns.member_type) html += `<th class="left" style="width:110px;">ಸದಸ್ಯರ ಪ್ರಕಾರ</th>`;
-      if (print_columns.mobile_no) html += `<th class="center" style="width:95px;">ಮೊಬೈಲ್ ನಂಬರ</th>`;
-      if (print_columns.signature) html += `<th class="center" style="width:80px;">ಸಹಿ</th>`;
-      if (print_columns.remarks) html += `<th class="center" style="width:65px;">ಶೇರಾ</th>`;
+      html += `<th class="center" style="width:42px;">ಕ್ರ.ಸಂ.</th>`;
+      if (print_columns.share_no) html += `<th class="center" style="width:80px;">ಶೇರ್ ಸಂಖ್ಯೆ</th>`;
+      if (print_columns.name) html += `<th class="left" style="min-width:230px;">ಹೆಸರು</th>`;
+      if (print_columns.surname) html += `<th class="left" style="width:110px;">ಉಪನಾಮ</th>`;
+      if (print_columns.address) html += `<th class="center" style="width:130px;">ವಿಳಾಸ</th>`;
+      if (print_columns.category) html += `<th class="center" style="width:75px;">ವರ್ಗ</th>`;
+      if (print_columns.share_qty) html += `<th class="center" style="width:80px;">ಶೇರ್ ಪ್ರಮಾಣ</th>`;
+      if (print_columns.member_type) html += `<th class="left" style="width:140px;">ಸದಸ್ಯರ ಪ್ರಕಾರ</th>`;
+      if (print_columns.mobile_no) html += `<th class="center" style="width:115px;">ಮೊಬೈಲ್ ನಂಬರ</th>`;
+      if (print_columns.signature) html += `<th class="center" style="width:130px;">ಸಹಿ</th>`;
+      if (print_columns.remarks) html += `<th class="center" style="width:90px;">ಶೇರಾ</th>`;
       html += `</tr></thead><tbody>`;
 
       printableRows.forEach((s, idx) => {
@@ -1968,6 +1974,35 @@ export default function SugarAllotmentModule() {
                   onChange={(e) => setTempSettings({ ...tempSettings, doc_title: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-blue-500"
                 />
+              </div>
+
+              {/* 3.1 ಮುದ್ರಣ ಪುಟದ ವಿನ್ಯಾಸ (Page Orientation) */}
+              <div>
+                <label className="block text-slate-300 font-bold mb-1.5">ಮುದ್ರಣ ಪುಟದ ವಿನ್ಯಾಸ (Page Orientation)</label>
+                <div className="flex flex-wrap gap-4 items-center p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+                    <input
+                      type="radio"
+                      name="page_orientation"
+                      value="landscape"
+                      checked={tempSettings.page_orientation === 'landscape' || !tempSettings.page_orientation}
+                      onChange={() => setTempSettings({ ...tempSettings, page_orientation: 'landscape' })}
+                      className="text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                    />
+                    <span className="font-bold text-emerald-400">ಲ್ಯಾಂಡ್‌ಸ್ಕೇಪ್ (Landscape - A4 ಅಗಲ) [ಶಿಫಾರಸು]</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                    <input
+                      type="radio"
+                      name="page_orientation"
+                      value="portrait"
+                      checked={tempSettings.page_orientation === 'portrait'}
+                      onChange={() => setTempSettings({ ...tempSettings, page_orientation: 'portrait' })}
+                      className="text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                    />
+                    <span>ಪೋರ್ಟ್ರೇಟ್ (Portrait - ಲಂಬ)</span>
+                  </label>
+                </div>
               </div>
 
               <hr className="border-slate-800" />
