@@ -213,7 +213,7 @@ export default function IDCardGenerator() {
           @page {
             ${printLayout === 'a4'
               ? 'size: A4 portrait; margin: 10mm 12mm;'
-              : 'size: 85.6mm 54mm landscape; margin: 0;'
+              : 'size: 85.6mm 54mm; margin: 0;'
             }
           }
           html,
@@ -236,21 +236,40 @@ export default function IDCardGenerator() {
             print-color-adjust: exact !important;
             font-family: 'Anek Kannada', 'Aneka Kannada', 'Noto Sans Kannada', sans-serif !important;
           }
-          #root > div,
-          .flex-1,
-          main {
-            padding: 0 !important;
-            margin: 0 !important;
-            max-width: 100% !important;
-            width: 100% !important;
-            min-height: auto !important;
-            height: auto !important;
-          }
+          ${printLayout === 'pvc' ? `
+            html, body {
+              width: 85.6mm !important;
+              height: 54mm !important;
+              max-width: 85.6mm !important;
+              max-height: 54mm !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+            }
+            #root, #root > div, main, .printable-area, .id-card-print-pvc-list {
+              width: 85.6mm !important;
+              height: 54mm !important;
+              max-width: 85.6mm !important;
+              max-height: 54mm !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+            }
+          ` : `
+            #root > div,
+            .flex-1,
+            main {
+              padding: 0 !important;
+              margin: 0 !important;
+              max-width: 100% !important;
+              width: 100% !important;
+              min-height: auto !important;
+              height: auto !important;
+            }
+          `}
           .printable-area {
             position: static !important;
             display: block !important;
-            width: 100% !important;
-            min-height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
@@ -533,17 +552,17 @@ export default function IDCardGenerator() {
         </div>
       )}
 
-      {/* Printer Guidance Banner for PVC vs A4 (Especially for Epson & Desktop Inkjets) */}
+      {/* Printer Guidance Banner for PVC vs A4 */}
       {printLayout === 'pvc' && (
-        <div className="bg-gradient-to-r from-sky-950/80 via-slate-900 to-emerald-950/70 border border-sky-500/50 rounded-2xl p-4 text-xs text-sky-100 no-print flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
-          <div className="space-y-1">
+        <div className="bg-gradient-to-r from-sky-950/90 via-slate-900 to-emerald-950/80 border border-sky-500/60 rounded-2xl p-4 text-xs text-sky-100 no-print flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+          <div className="space-y-1.5">
             <div className="font-bold text-sky-300 flex items-center gap-2 text-sm">
               <span className="text-base">🖨️</span>
-              <span>Epson L3560 / ಡೆಸ್ಕ್‌ಟಾಪ್ ಪ್ರಿಂಟರ್ ಮುದ್ರಣ ಮಾರ್ಗದರ್ಶಿ (Printer Instructions):</span>
+              <span>PVC ಪ್ಲಾಸ್ಟಿಕ್ ಕಾರ್ಡ್ ಮುದ್ರಣ ಮಾರ್ಗದರ್ಶಿ (PVC Card Printing Instructions):</span>
             </div>
             <p className="text-[11.5px] text-slate-200 leading-relaxed">
-              • <strong>Epson L3560</strong> A4 ಇಂಕ್‌ಜೆಟ್ ಪ್ರಿಂಟರ್ ಆಗಿರುವುದರಿಂದ, <strong className="text-emerald-300">"A4 ಹಾಳೆ (A4 Sheet)"</strong> ಫಾರ್ಮ್ಯಾಟ್‌ನಲ್ಲಿ ಮುದ್ರಿಸುವುದು ಸೂಕ್ತ (ಮುಂಭಾಗ & ಹಿಂಬದಿ ಅಕ್ಕಪಕ್ಕದಲ್ಲಿ ಬರುತ್ತದೆ, ಕಟ್ ಮಾಡಿ ಲ್ಯಾಮಿನೇಟ್ ಮಾಡಬಹುದು).<br />
-              • PVC ಕಾರ್ಡ್ ಟ್ರೇ / User-Defined ಮುದ್ರಿಸುವಾಗ Chrome ಮುದ್ರಣ ವಿಂಡೋದಲ್ಲಿ <strong>Margins (ಅಂಚುಗಳು)</strong> ಅನ್ನು <strong className="text-amber-300">"None (ಯಾವುದೇ ಅಂಚಿಲ್ಲ)"</strong> ಮತ್ತು <strong>Scale: 100%</strong> ಎಂದು ಆಯ್ಕೆಮಾಡಿ.
+              • <strong>PVC ಕಾರ್ಡ್ ಪ್ರಿಂಟರ್ ಇದ್ದರೆ</strong>: Chrome ಮುದ್ರಣ ವಿಂಡೋದಲ್ಲಿ <strong>Destination (ಗಮ್ಯಸ್ಥಾನ)</strong> ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ ನಿಮ್ಮ <strong className="text-amber-300">PVC ಕಾರ್ಡ್ ಪ್ರಿಂಟರ್</strong> ಆಯ್ಕೆಮಾಡಿ. ಆಗ ಕಾರ್ಡ್ ಪೂರ್ಣ CR80 (85.6mm × 54mm) ಅಳತೆಗೆ ಸರಿಯಾಗಿ ಹೊಂದಿಕೊಳ್ಳುತ್ತದೆ.<br />
+              • <strong>Epson L3560 ಅಥವಾ ಸಾಮಾನ್ಯ ಪ್ರಿಂಟರ್ ಆಗಿದ್ದರೆ</strong>: <strong className="text-emerald-300">"A4 ಹಾಳೆ (A4 Sheet)"</strong> ಆಯ್ಕೆಮಾಡಿ (ಮುಂಭಾಗ & ಹಿಂಬದಿ ಅಕ್ಕಪಕ್ಕದಲ್ಲಿ ಬರುತ್ತದೆ, ಕಟ್ ಮಾಡಿ ಲ್ಯಾಮಿನೇಟ್ ಮಾಡಬಹುದು).
             </p>
           </div>
           <button
@@ -551,7 +570,7 @@ export default function IDCardGenerator() {
             className="shrink-0 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold transition-all shadow-lg shadow-emerald-950 cursor-pointer flex items-center gap-1.5"
           >
             <span>📄</span>
-            <span>A4 ಹಾಳೆ ಫಾರ್ಮ್ಯಾಟ್‌ಗೆ ಬದಲಾಯಿಸಿ (Recommended)</span>
+            <span>A4 ಹಾಳೆ ಫಾರ್ಮ್ಯಾಟ್‌ಗೆ ಬದಲಾಯಿಸಿ</span>
           </button>
         </div>
       )}
