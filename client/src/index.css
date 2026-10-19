@@ -37,23 +37,59 @@
 }
 
 @media print {
-  body {
-    background: white !important;
-    color: black !important;
+  html,
+  body,
+  #root,
+  #root > div,
+  .min-h-screen,
+  main,
+  .printable-area,
+  .id-card-a4-sheet,
+  .id-card-a4-pairs-container,
+  .id-card-a4-member-pair,
+  .id-card-a4-grid {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
   }
-  .no-print, header, nav, aside {
+
+  /* Reset layout constraints and paddings from screen views */
+  #root > div,
+  .flex-1,
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    border: none !important;
+  }
+
+  /* Hide screen-only navigation, headers, and UI elements */
+  .no-print,
+  header,
+  nav,
+  aside,
+  button,
+  .fixed {
     display: none !important;
     visibility: hidden !important;
   }
+
   .print-only {
     display: block !important;
   }
+
+  /* Printable area must occupy full width with white background */
   .printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 10px;
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    min-height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
   }
 }

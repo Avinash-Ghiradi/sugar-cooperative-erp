@@ -216,16 +216,47 @@ export default function IDCardGenerator() {
               : 'size: 85.6mm 54mm; margin: 0;'
             }
           }
-          body, html {
-            background: white !important;
-            color: black !important;
+          html,
+          body,
+          #root,
+          #root > div,
+          .min-h-screen,
+          main,
+          .printable-area,
+          .id-card-a4-sheet,
+          .id-card-a4-pairs-container,
+          .id-card-a4-member-pair,
+          .id-card-a4-grid {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #000000 !important;
             margin: 0 !important;
             padding: 0 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             font-family: 'Anek Kannada', 'Aneka Kannada', 'Noto Sans Kannada', sans-serif !important;
           }
-          .no-print, header, nav, aside {
+          #root > div,
+          .flex-1,
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            min-height: auto !important;
+            height: auto !important;
+          }
+          .printable-area {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            min-height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+          }
+          .no-print, header, nav, aside, button, .fixed {
             display: none !important;
             visibility: hidden !important;
           }
@@ -244,6 +275,8 @@ export default function IDCardGenerator() {
             position: relative !important;
             display: inline-block !important;
             vertical-align: top !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
           .id-card-print-single .id-card-container-outer {
             width: 372px !important;
@@ -266,12 +299,16 @@ export default function IDCardGenerator() {
             max-width: 186mm !important;
             margin: 0 auto !important;
             padding: 0 !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
           .id-card-a4-pairs-container {
             display: flex !important;
             flex-direction: column !important;
             gap: 6mm !important;
             align-items: center !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
           .id-card-a4-member-pair {
             display: flex !important;
@@ -280,6 +317,8 @@ export default function IDCardGenerator() {
             justify-content: center !important;
             align-items: center !important;
             page-break-inside: avoid !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
           .id-card-a4-grid {
             display: grid !important;
@@ -287,11 +326,15 @@ export default function IDCardGenerator() {
             gap: 6mm !important;
             justify-content: center !important;
             page-break-inside: avoid !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
           .id-card-print-pvc-list {
             display: block !important;
             margin: 0 !important;
             padding: 0 !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
         }
       `}</style>

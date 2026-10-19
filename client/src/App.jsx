@@ -132,7 +132,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex print:bg-white print:text-black print:min-h-0 print:p-0 print:m-0">
       {/* Toast Notification Floating Banner */}
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50 bg-emerald-950 border border-emerald-500 text-emerald-200 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce no-print">
@@ -145,9 +145,9 @@ function AppContent() {
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       {/* Main Layout Area */}
-      <div className="flex-1 flex flex-col lg:pl-64 min-w-0">
+      <div className="flex-1 flex flex-col lg:pl-64 min-w-0 print:pl-0 print:p-0 print:m-0 print:bg-white">
         <Navbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6 print:p-0 print:m-0 print:max-w-none print:w-full print:bg-white">
           {renderActiveModule()}
         </main>
       </div>

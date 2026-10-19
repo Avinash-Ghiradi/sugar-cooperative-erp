@@ -538,7 +538,7 @@ export default function OfficialShareholderIDCard({
               {/* Statutory Member Details Grid */}
               <div className="grid grid-cols-2 gap-x-2.5 gap-y-1 text-[8.8px] py-1 border-b border-slate-300">
                 <div>• ಪುಸ್ತಕ ಸಂ (Book): <strong className="font-mono text-emerald-900">{sh.book_no || 'B.No: 1'}</strong></div>
-                <div>• ಸದಸ್ಯರ ಪ್ರಕಾರ (Member Type): <strong className="text-emerald-900">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</strong></div>
+                <div>• ಸದಸ್ಯರ ಪ್ರಕಾರ: <strong className="text-emerald-900">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</strong></div>
                 <div>• ವರ್ಗ (Class): <strong className="text-emerald-800">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</strong></div>
                 <div>• ಷೇರುಗಳ ಸಂಖ್ಯೆ: <strong className="font-mono text-slate-900">{sharesCount}</strong></div>
                 <div>• ನೋಂದಣಿ ದಿನಾಂಕ: <span className="font-mono">{sh.reg_date || sh.registration_date || '—'}</span></div>
