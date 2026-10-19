@@ -25,6 +25,7 @@ export default function ShareholderList() {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedBook, setSelectedBook] = useState('');
   const [selectedCast, setSelectedCast] = useState('');
+  const [selectedAmount, setSelectedAmount] = useState('');
   const [sortBy, setSortBy] = useState(''); // 'place', 'circle', 'address', 'name', 'share_no'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
   const [viewMode, setViewMode] = useState('ledger'); // 'ledger' (38 columns) or 'summary'
@@ -34,6 +35,7 @@ export default function ShareholderList() {
   const [circles, setCircles] = useState([]);
   const [bookList, setBookList] = useState(['B.No: 1', 'B.No: 2', 'B.No: 3', 'B.No: 4', 'B.No: 5']);
   const [castList, setCastList] = useState([]);
+  const [amountList, setAmountList] = useState([]);
 
   // Modals
   const [activeProfileId, setActiveProfileId] = useState(null);
@@ -71,7 +73,7 @@ export default function ShareholderList() {
 
   useEffect(() => {
     fetchShareholders(1);
-  }, [search, selectedVillage, selectedCircle, selectedStatus, selectedBook, selectedCast, sortBy, sortOrder]);
+  }, [search, selectedVillage, selectedCircle, selectedStatus, selectedBook, selectedCast, selectedAmount, sortBy, sortOrder]);
 
   // CSV Line Parser handling quotes and commas
   const parseCsvLine = (line) => {
@@ -347,6 +349,24 @@ export default function ShareholderList() {
     if (scRes && scRes.data) setCastList(scRes.data);
 
     try {
+      const allSh = await ApiService.getAllShareholdersRaw();
+      if (Array.isArray(allSh)) {
+        const amtMap = new Map();
+        allSh.forEach(s => {
+          const rawAmt = parseFloat(s.total_amount);
+          const amt = !isNaN(rawAmt) && rawAmt > 0 ? rawAmt : (parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000));
+          if (amt > 0) {
+            amtMap.set(amt, (amtMap.get(amt) || 0) + 1);
+          }
+        });
+        const sortedAmts = Array.from(amtMap.entries())
+          .map(([amount, count]) => ({ amount, count }))
+          .sort((a, b) => a.amount - b.amount);
+        setAmountList(sortedAmts);
+      }
+    } catch (e) {}
+
+    try {
       const mRes = await ApiService.getMultipleHoldingsSummary();
       if (mRes && mRes.success) {
         setMultipleHoldingsCount(mRes.totalDetectedShareholders || 0);
@@ -365,6 +385,7 @@ export default function ShareholderList() {
       status: selectedStatus,
       book_no: selectedBook,
       schedule_cast: selectedCast,
+      amount: selectedAmount,
       sortBy,
       sortOrder
     });
@@ -776,6 +797,21 @@ export default function ShareholderList() {
             </button>
           )}
         </div>
+
+        {/* Cash Amount (Total Amount Column) Filter */}
+        <select
+          value={selectedAmount}
+          onChange={(e) => setSelectedAmount(e.target.value)}
+          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none transition-all font-medium"
+          title="Filter by Cash Amount from Total Amount column (ಒಟ್ಟು ಮೊತ್ತ)"
+        >
+          <option value="">All Cash Amounts / ಒಟ್ಟು ಮೊತ್ತ ({amountList.length})</option>
+          {amountList.map(a => (
+            <option key={a.amount} value={a.amount}>
+              ₹ {a.amount.toLocaleString('en-IN')} ({a.count} ಸದಸ್ಯರು)
+            </option>
+          ))}
+        </select>
 
         {/* Status Filter */}
         <select

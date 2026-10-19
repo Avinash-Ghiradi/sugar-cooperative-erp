@@ -164,6 +164,7 @@ app.get('/api/shareholders', (req, res) => {
   const village_id = req.query.village_id || '';
   const circle_id = req.query.circle_id || '';
   const status = req.query.status || '';
+  const amount = req.query.amount || '';
 
   let whereClauses = ['1=1'];
   let params = [];
@@ -187,6 +188,14 @@ app.get('/api/shareholders', (req, res) => {
   if (status) {
     whereClauses.push('s.status = ?');
     params.push(status);
+  }
+
+  if (amount) {
+    const aVal = parseFloat(amount);
+    if (!isNaN(aVal)) {
+      whereClauses.push('(s.total_amount = ? OR s.receipt_amount = ? OR (s.shares * 2000) = ?)');
+      params.push(aVal, aVal, aVal);
+    }
   }
 
   const whereStr = whereClauses.join(' AND ');

@@ -666,9 +666,9 @@ export const ApiService = {
     });
   },
 
-  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', sortBy = '', sortOrder = 'asc' }) {
+  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', amount = '', sortBy = '', sortOrder = 'asc' }) {
     await ensureDBReady();
-    const apiRes = await fetchApi(`/shareholders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&village_id=${village_id}&circle_id=${circle_id}&status=${status}&book_no=${book_no}&schedule_cast=${encodeURIComponent(schedule_cast)}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
+    const apiRes = await fetchApi(`/shareholders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&village_id=${village_id}&circle_id=${circle_id}&status=${status}&book_no=${book_no}&schedule_cast=${encodeURIComponent(schedule_cast)}&amount=${amount}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
     if (apiRes && apiRes.success) return apiRes;
 
     let filtered = mockShareholders;
@@ -726,6 +726,15 @@ export const ApiService = {
     if (schedule_cast) {
       const scq = schedule_cast.trim().toLowerCase().normalize('NFC');
       filtered = filtered.filter(s => (s.schedule_cast || '').trim().toLowerCase().normalize('NFC') === scq);
+    }
+    if (amount !== undefined && amount !== null && amount !== '') {
+      const targetAmt = parseFloat(amount);
+      if (!isNaN(targetAmt)) {
+        filtered = filtered.filter(s => {
+          const sAmt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+          return sAmt === targetAmt;
+        });
+      }
     }
 
     if (sortBy) {

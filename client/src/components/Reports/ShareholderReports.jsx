@@ -6,7 +6,7 @@ import {
   Users, BarChart3, Filter, Search, Printer, Download, FileSpreadsheet,
   Building2, MapPin, Layers, Coins, Calendar, FileText, CheckCircle2,
   ChevronLeft, ChevronRight, RefreshCw, X, Eye, ArrowUpDown, ChevronDown,
-  ChevronUp, ShieldCheck, PieChart, Sparkles, SlidersHorizontal
+  ChevronUp, ShieldCheck, PieChart, Sparkles, SlidersHorizontal, IndianRupee, Banknote
 } from 'lucide-react';
 import ShareholderProfile from '../Shareholders/ShareholderProfile';
 
@@ -59,6 +59,9 @@ export default function ShareholderReports() {
     status: '',
     tharavaNo: '',
     tharavaDate: '',
+    cashAmount: '',
+    minCash: '',
+    maxCash: '',
     fromDate: '',
     toDate: '',
   });
@@ -97,6 +100,7 @@ export default function ShareholderReports() {
     const circlesSet = new Set();
     const categoriesSet = new Set();
     const tharavaSet = new Set();
+    const cashAmountCounts = new Map();
 
     allShareholders.forEach(s => {
       const p = (s.place || s.village_name || '').trim();
@@ -110,13 +114,23 @@ export default function ShareholderReports() {
 
       const tNo = (s.tharava_no || '').trim();
       if (tNo && tNo !== '—' && tNo !== '-') tharavaSet.add(tNo);
+
+      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+      if (amt > 0) {
+        cashAmountCounts.set(amt, (cashAmountCounts.get(amt) || 0) + 1);
+      }
     });
+
+    const cashAmounts = Array.from(cashAmountCounts.entries())
+      .map(([amount, count]) => ({ amount, count }))
+      .sort((a, b) => a.amount - b.amount);
 
     return {
       places: Array.from(placesSet).sort((a, b) => a.localeCompare(b, 'kn')),
       circles: Array.from(circlesSet).sort((a, b) => a.localeCompare(b, 'kn')),
       categories: Array.from(categoriesSet).sort((a, b) => a.localeCompare(b, 'kn')),
       tharavaNumbers: Array.from(tharavaSet).slice(0, 50).sort(),
+      cashAmounts,
     };
   }, [allShareholders]);
 
@@ -252,6 +266,37 @@ export default function ShareholderReports() {
       });
     }
 
+    // 11. Cash Amount Filter (Exact Cash Amount)
+    if (filters.cashAmount) {
+      const targetAmt = parseFloat(filters.cashAmount);
+      if (!isNaN(targetAmt)) {
+        list = list.filter(s => {
+          const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+          return amt === targetAmt;
+        });
+      }
+    }
+
+    // 12. Cash Amount Range (Min Cash - Max Cash)
+    if (filters.minCash) {
+      const min = parseFloat(filters.minCash);
+      if (!isNaN(min)) {
+        list = list.filter(s => {
+          const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+          return amt >= min;
+        });
+      }
+    }
+    if (filters.maxCash) {
+      const max = parseFloat(filters.maxCash);
+      if (!isNaN(max)) {
+        list = list.filter(s => {
+          const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+          return amt <= max;
+        });
+      }
+    }
+
     return list;
   }, [allShareholders, filters]);
 
@@ -305,6 +350,7 @@ export default function ShareholderReports() {
     if (filters.status) count++;
     if (filters.tharavaNo) count++;
     if (filters.tharavaDate) count++;
+    if (filters.cashAmount || filters.minCash || filters.maxCash) count++;
     if (filters.fromDate || filters.toDate) count++;
     return count;
   }, [filters]);
@@ -320,6 +366,9 @@ export default function ShareholderReports() {
       status: '',
       tharavaNo: '',
       tharavaDate: '',
+      cashAmount: '',
+      minCash: '',
+      maxCash: '',
       fromDate: '',
       toDate: '',
     });
@@ -492,6 +541,42 @@ export default function ShareholderReports() {
     });
   }, [filteredShareholders, kpis]);
 
+  // 5. CASH AMOUNTWISE AGGREGATION (ನಗದು ಮೊತ್ತವಾರು ವಿಂಗಡಣೆ)
+  const amountwiseData = useMemo(() => {
+    const map = new Map();
+    filteredShareholders.forEach(s => {
+      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+      const shares = parseInt(s.number_of_shares, 10) || 1;
+
+      if (!map.has(amt)) {
+        map.set(amt, {
+          amount: amt,
+          count: 0,
+          totalShares: 0,
+          totalAmount: 0,
+        });
+      }
+
+      const rec = map.get(amt);
+      rec.count += 1;
+      rec.totalShares += shares;
+      rec.totalAmount += amt;
+    });
+
+    const arr = Array.from(map.values()).map(r => ({
+      ...r,
+      sharePct: kpis.totalShares > 0 ? ((r.totalShares / kpis.totalShares) * 100).toFixed(1) : 0,
+      memberPct: kpis.totalCount > 0 ? ((r.count / kpis.totalCount) * 100).toFixed(1) : 0,
+    }));
+
+    return arr.sort((a, b) => {
+      if (sortField === 'count') {
+        return sortOrder === 'asc' ? a.count - b.count : b.count - a.count;
+      }
+      return sortOrder === 'desc' ? b.amount - a.amount : a.amount - b.amount;
+    });
+  }, [filteredShareholders, kpis, sortField, sortOrder]);
+
   // Paginated detailed members list
   const detailedPaginated = useMemo(() => {
     if (detailedPageSize === 'all') return filteredShareholders;
@@ -519,6 +604,8 @@ export default function ShareholderReports() {
       if (filters.ownership) filterSummary.push(`ಮಾಲೀಕತ್ವ: ${filters.ownership}`);
       if (filters.status) filterSummary.push(`ಸ್ಥಿತಿ: ${filters.status}`);
       if (filters.tharavaNo) filterSummary.push(`ಠರಾವು ನಂ.: ${filters.tharavaNo}`);
+      if (filters.cashAmount) filterSummary.push(`ನಗದು ಮೊತ್ತ: ₹${Number(filters.cashAmount).toLocaleString('en-IN')}`);
+      if (filters.minCash || filters.maxCash) filterSummary.push(`ನಗದು ವ್ಯಾಪ್ತಿ: ₹${filters.minCash || '0'} - ₹${filters.maxCash || '∞'}`);
       if (filters.fromDate || filters.toDate) filterSummary.push(`ದಿನಾಂಕ: ${filters.fromDate || 'ಪ್ರಾರಂಭ'} ದಿಂದ ${filters.toDate || 'ಇಂದಿನವರೆಗೆ'}`);
 
       // 1. Export Current Breakdown Sheet
@@ -659,6 +746,40 @@ export default function ShareholderReports() {
 
         const ws = XLSX.utils.aoa_to_sheet(rows);
         XLSX.utils.book_append_sheet(wb, ws, 'Shares-wise Summary');
+      } else if (reportMode === 'amountwise') {
+        const rows = [
+          ['ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204'],
+          ['ನಗದು ಮೊತ್ತವಾರು ಶೇರುದಾರರ ಸಾರಾಂಶ ವರದಿ (Cash Amount-wise Shareholders Summary Report)'],
+          [`ದಿನಾಂಕ: ${new Date().toLocaleDateString('kn-IN')} | ಫಿಲ್ಟರ್‌ಗಳು: ${filterSummary.join(', ') || 'ಯಾವುದೂ ಇಲ್ಲ'}`],
+          [`ಒಟ್ಟು ನಗದು ವರ್ಗಗಳು: ${amountwiseData.length} | ಒಟ್ಟು ಸದಸ್ಯರು: ${kpis.totalCount} | ಒಟ್ಟು ಶೇರುಗಳು: ${kpis.totalShares} | ಒಟ್ಟು ಮೊತ್ತ: ₹ ${kpis.totalAmount.toLocaleString('en-IN')}`],
+          [],
+          ['ಕ್ರ.ಸಂ.', 'ನಗದು ಮೊತ್ತ (Cash Amount ₹)', 'ಸದಸ್ಯರ ಸಂಖ್ಯೆ (Members)', 'ಒಟ್ಟು ಶೇರುಗಳು (Total Shares)', 'ಶೇರು ಬಂಡವಾಳ ಮೊತ್ತ ₹ (Capital Value)', 'ಸದಸ್ಯರ ಶೇಕಡಾವಾರು (%)', 'ಶೇರುಗಳ ಶೇಕಡಾವಾರು (%)']
+        ];
+
+        amountwiseData.forEach((r, idx) => {
+          rows.push([
+            idx + 1,
+            `₹ ${r.amount.toLocaleString('en-IN')}`,
+            r.count,
+            r.totalShares,
+            r.totalAmount,
+            `${r.memberPct}%`,
+            `${r.sharePct}%`
+          ]);
+        });
+
+        rows.push([
+          'ಒಟ್ಟು (Total)',
+          `${amountwiseData.length} ನಗದು ವರ್ಗಗಳು`,
+          kpis.totalCount,
+          kpis.totalShares,
+          kpis.totalAmount,
+          '100%',
+          '100%'
+        ]);
+
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, 'Cash-Amount-wise Summary');
       }
 
       // 2. Always Export Detailed Members List Sheet
@@ -1067,6 +1188,50 @@ export default function ShareholderReports() {
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500"
               />
             </div>
+
+            {/* 11. Cash Amount Filter (ನಿಖರ ನಗದು ಮೊತ್ತ / Total Amount ಕಾಲಂ ಆಯ್ಕೆ) */}
+            <div className="space-y-1">
+              <label className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
+                <span>ನಗದು ಮೊತ್ತ / ಒಟ್ಟು ಮೊತ್ತ (Total Amount):</span>
+                {filters.cashAmount && (
+                  <button onClick={() => setFilters(prev => ({ ...prev, cashAmount: '' }))} className="text-slate-500 hover:text-slate-300 text-[10px]">Clear</button>
+                )}
+              </label>
+              <select
+                value={filters.cashAmount}
+                onChange={(e) => setFilters(prev => ({ ...prev, cashAmount: e.target.value }))}
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500 font-medium"
+              >
+                <option value="">ಎಲ್ಲಾ ನಗದು ಮೊತ್ತಗಳು (All Total Amounts)</option>
+                {masterOptions.cashAmounts.map(c => (
+                  <option key={c.amount} value={c.amount}>
+                    ₹ {c.amount.toLocaleString('en-IN')} ({c.count} ಸದಸ್ಯರು)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 12. Cash Amount Range (ಕನಿಷ್ಠ & ಗರಿಷ್ಠ ನಗದು ವ್ಯಾಪ್ತಿ) */}
+            <div className="space-y-1">
+              <label className="text-[11px] text-slate-400 font-medium">ನಗದು ವ್ಯಾಪ್ತಿ ₹ (Min - Max):</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="ಕನಿಷ್ಠ ₹"
+                  value={filters.minCash}
+                  onChange={(e) => setFilters(prev => ({ ...prev, minCash: e.target.value }))}
+                  className="w-1/2 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-slate-200 outline-none focus:border-emerald-500 text-xs"
+                />
+                <span className="text-slate-500">-</span>
+                <input
+                  type="number"
+                  placeholder="ಗರಿಷ್ಠ ₹"
+                  value={filters.maxCash}
+                  onChange={(e) => setFilters(prev => ({ ...prev, maxCash: e.target.value }))}
+                  className="w-1/2 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-slate-200 outline-none focus:border-emerald-500 text-xs"
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1134,6 +1299,21 @@ export default function ShareholderReports() {
         </button>
 
         <button
+          onClick={() => { setReportMode('amountwise'); setSortField('amount'); setSortOrder('desc'); }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            reportMode === 'amountwise'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          }`}
+        >
+          <IndianRupee className="w-4 h-4" />
+          <span>5. ನಗದು ಮೊತ್ತವಾರು ವರದಿ (Cash Amount-wise)</span>
+          <span className="px-1.5 py-0.2 rounded-md bg-black/30 text-[10px]">
+            {amountwiseData.length}
+          </span>
+        </button>
+
+        <button
           onClick={() => setReportMode('detailed')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             reportMode === 'detailed'
@@ -1142,7 +1322,7 @@ export default function ShareholderReports() {
           }`}
         >
           <FileText className="w-4 h-4" />
-          <span>5. ಸದಸ್ಯರ ಸಮಗ್ರ ವಿವರ ಪಟ್ಟಿ (Detailed Register)</span>
+          <span>6. ಸದಸ್ಯರ ಸಮಗ್ರ ವಿವರ ಪಟ್ಟಿ (Detailed Register)</span>
           <span className="px-1.5 py-0.2 rounded-md bg-black/30 text-[10px]">
             {kpis.totalCount}
           </span>
@@ -1170,6 +1350,7 @@ export default function ShareholderReports() {
                   {reportMode === 'categorywise' && 'ಅಧಿಕೃತ ವರ್ಗವಾರು ಶೇರುದಾರರ ಸಾರಾಂಶ ವರದಿ (Category-wise Shareholders Summary Report)'}
                   {reportMode === 'circlewise' && 'ಅಧಿಕೃತ ವಲಯವಾರು ಶೇರುದಾರರ ಸಾರಾಂಶ ವರದಿ (Circle-wise Shareholders Summary Report)'}
                   {reportMode === 'shareswise' && 'ಅಧಿಕೃತ ಶೇರುವಾರು ವಿತರಣೆ ವರದಿ (Shares-wise Distribution Report)'}
+                  {reportMode === 'amountwise' && 'ಅಧಿಕೃತ ನಗದು ಮೊತ್ತವಾರು ಶೇರುದಾರರ ಸಾರಾಂಶ ವರದಿ (Cash Amount-wise Shareholders Summary Report)'}
                   {reportMode === 'detailed' && 'ಶೇರುದಾರರ ಸದಸ್ಯರ ಸಮಗ್ರ ನಮೂನೆ ವಹಿ ವರದಿ (Detailed Shareholders Master Register)'}
                 </span>
               </div>
@@ -1195,6 +1376,12 @@ export default function ShareholderReports() {
               {filters.ownership && <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">ಮಾಲೀಕತ್ವ: {filters.ownership}</span>}
               {filters.status && <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">ಸ್ಥಿತಿ: {filters.status}</span>}
               {filters.tharavaNo && <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">ಠರಾವು: #{filters.tharavaNo}</span>}
+              {filters.cashAmount && <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">ನಗದು ಮೊತ್ತ: ₹{Number(filters.cashAmount).toLocaleString('en-IN')}</span>}
+              {(filters.minCash || filters.maxCash) && (
+                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                  ನಗದು ವ್ಯಾಪ್ತಿ: ₹{filters.minCash || '0'} - ₹{filters.maxCash || '∞'}
+                </span>
+              )}
               {(filters.fromDate || filters.toDate) && (
                 <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
                   ದಿನಾಂಕ: {filters.fromDate || 'ಪ್ರಾರಂಭ'} ದಿಂದ {filters.toDate || 'ಇಂದಿನವರೆಗೆ'}
@@ -1531,7 +1718,108 @@ export default function ShareholderReports() {
               </div>
             )}
 
-            {/* 5. DETAILED MEMBERS REGISTER TABLE */}
+            {/* 5. CASH AMOUNTWISE BREAKDOWN TABLE */}
+            {reportMode === 'amountwise' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-xs text-slate-400 no-print">
+                  <span>ಒಟ್ಟು <strong>{amountwiseData.length}</strong> ನಗದು ವರ್ಗಗಳು (Cash Amount Groups)</span>
+                  <div className="flex items-center gap-2">
+                    <span>ವಿಂಗಡಣೆ (Sort by):</span>
+                    <button
+                      onClick={() => { setSortField('amount'); setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc'); }}
+                      className={`px-2 py-1 rounded-lg border text-[11px] ${sortField === 'amount' ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-slate-900 text-slate-400 border-slate-800'}`}
+                    >
+                      ನಗದು ಮೊತ್ತ {sortField === 'amount' && (sortOrder === 'desc' ? '▼' : '▲')}
+                    </button>
+                    <button
+                      onClick={() => { setSortField('count'); setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc'); }}
+                      className={`px-2 py-1 rounded-lg border text-[11px] ${sortField === 'count' ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-slate-900 text-slate-400 border-slate-800'}`}
+                    >
+                      ಸದಸ್ಯರ ಸಂಖ್ಯೆ {sortField === 'count' && (sortOrder === 'desc' ? '▼' : '▲')}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-slate-900 print:bg-gray-100 text-slate-300 print:text-black font-bold uppercase text-[10px] border-b border-slate-800 print:border-gray-400">
+                      <tr>
+                        <th className="py-3 px-3 w-12 text-center">ಕ್ರ.ಸಂ.</th>
+                        <th className="py-3 px-3">ನಗದು ಮೊತ್ತ (Cash Amount ₹)</th>
+                        <th className="py-3 px-3">ವಿವರಣೆ & ಮುಖಬೆಲೆ (Description)</th>
+                        <th className="py-3 px-3 text-right">ಸದಸ್ಯರ ಸಂಖ್ಯೆ (Members)</th>
+                        <th className="py-3 px-3 text-right">ಒಟ್ಟು ಶೇರುಗಳು (Total Shares)</th>
+                        <th className="py-3 px-3 text-right">ಶೇರು ಬಂಡವಾಳ ಮೊತ್ತ ₹ (Capital Value)</th>
+                        <th className="py-3 px-3 text-right">ಸದಸ್ಯರ (%)</th>
+                        <th className="py-3 px-3 text-right">ಶೇರುಗಳ (%)</th>
+                        <th className="py-3 px-3 text-center no-print">ವಿವರ ಪಟ್ಟಿ (Drill-down)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/80 print:divide-gray-300 text-slate-200 print:text-black">
+                      {amountwiseData.map((row, idx) => (
+                        <tr key={row.amount} className="hover:bg-slate-900/60 transition-colors">
+                          <td className="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
+                          <td className="py-2.5 px-3 font-bold text-slate-100 print:text-black text-sm">
+                            <span className="text-amber-300 flex items-center gap-1.5 font-mono">
+                              <IndianRupee className="w-3.5 h-3.5 text-amber-400" />
+                              ₹ {row.amount.toLocaleString('en-IN')}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-400 text-[11px]">
+                            {row.amount === 2000 ? '1 ಶೇರು (ಸಾಮಾನ್ಯ ಮುಖಬೆಲೆ)' :
+                             row.amount === 1000 ? '1 ನೇ ಕಂತು ಪಾವತಿ (₹1,000)' :
+                             row.amount === 4000 ? '2 ಶೇರುಗಳು (₹4,000)' :
+                             row.amount === 6000 ? '3 ಶೇರುಗಳು (₹6,000)' :
+                             row.amount === 8000 ? '4 ಶೇರುಗಳು (₹8,000)' :
+                             row.amount === 10000 ? '5 ಶೇರುಗಳು (₹10,000)' :
+                             row.amount >= 12000 ? `${Math.round(row.amount / 2000)} ಶೇರುಗಳು (ಗರಿಷ್ಠ ಬಂಡವಾಳ)` :
+                             `ವಿಶೇಷ ಮೊತ್ತ / ಮುಂಗಡ`}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400 print:text-black text-sm">
+                            {row.count.toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-200 print:text-black text-sm">
+                            {row.totalShares.toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-amber-300 print:text-black">
+                            ₹ {row.totalAmount.toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-400">{row.memberPct}%</td>
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-400">{row.sharePct}%</td>
+                          <td className="py-2.5 px-3 text-center no-print">
+                            <button
+                              onClick={() => handleDrillDown('cashAmount', String(row.amount))}
+                              className="px-2.5 py-1 bg-slate-900 hover:bg-emerald-950 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-800 rounded-lg text-[10px] font-semibold transition-all cursor-pointer"
+                            >
+                              ಸದಸ್ಯರು ({row.count})
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-slate-900/90 print:bg-gray-200 font-bold border-t-2 border-slate-700 print:border-black text-slate-100 print:text-black text-xs">
+                      <tr>
+                        <td colSpan={3} className="py-3 px-3 text-right uppercase tracking-wider">ಒಟ್ಟು (Total):</td>
+                        <td className="py-3 px-3 text-right font-mono text-emerald-400 print:text-black font-extrabold text-sm">
+                          {kpis.totalCount.toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-extrabold text-sm">
+                          {kpis.totalShares.toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono text-amber-400 print:text-black font-extrabold text-sm">
+                          ₹ {kpis.totalAmount.toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono">100%</td>
+                        <td className="py-3 px-3 text-right font-mono">100%</td>
+                        <td className="py-3 px-3 no-print"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* 6. DETAILED MEMBERS REGISTER TABLE */}
             {reportMode === 'detailed' && (
               <div className="space-y-4">
                 {/* Table Top Controls & Pagination (Screen Only) */}
