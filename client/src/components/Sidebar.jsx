@@ -71,12 +71,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           if (!permitted) return null;
 
           if (item.id === 'reports') {
+            const isReportsOpen = isActive && reportsExpanded;
             return (
               <div key={item.id} className="space-y-1">
                 <button
                   onClick={() => {
-                    setActiveModule('reports');
-                    setReportsExpanded(prev => activeModule === 'reports' ? !prev : true);
+                    if (activeModule === 'reports') {
+                      setReportsExpanded(!reportsExpanded);
+                    } else {
+                      setActiveModule('reports');
+                      setReportsExpanded(true);
+                      if (window.innerWidth < 1024) setIsOpen(false);
+                    }
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                     isActive
@@ -88,15 +94,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                     <span className="truncate">{item.label}</span>
                   </div>
-                  {reportsExpanded || isActive ? (
+                  {isReportsOpen ? (
                     <ChevronDown className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   ) : (
                     <ChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   )}
                 </button>
 
-                {/* Sub-sidebar for Reports Navigation */}
-                {(reportsExpanded || isActive) && (
+                {/* Sub-sidebar for Reports Navigation - ONLY rendered if Reports is in use */}
+                {isReportsOpen && (
                   <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-emerald-500/40 ml-4 my-1 bg-slate-900/40 rounded-r-lg">
                     {REPORT_SUB_ITEMS.map((sub) => {
                       const SubIcon = sub.icon;
