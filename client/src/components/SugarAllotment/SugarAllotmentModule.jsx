@@ -682,271 +682,319 @@ export default function SugarAllotmentModule() {
 
   // Print filtered list according to exact Sugar Allotment official format
   const handlePrintList = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      showToast('Please allow popups to print report', 'error');
-      return;
+    try {
+      const {
+        org_name = 'Shree Bheemashankar Sahakari Sakkare Karkhane Ni., Margur',
+        sub_title = 'Share Holders List',
+        doc_title = 'General Board Meeting 2025 - 26 / 21-09-2026',
+        print_columns = {},
+        exclude_member_types_print = []
+      } = settings || {};
+
+      const safeExcluded = Array.isArray(exclude_member_types_print) ? exclude_member_types_print : [];
+      const printableRows = (processedShareholders || []).filter(s => {
+        const mt = (editedRows[s.id]?.member_type || s.member_type || s.status || '-').trim();
+        return !safeExcluded.includes(mt);
+      });
+
+      if (printableRows.length === 0) {
+        showToast('ಮುದ್ರಿಸಲು ಯಾವುದೇ ದಾಖಲೆಗಳಿಲ್ಲ (No records found to print)', 'warning');
+        return;
+      }
+
+      const now = new Date();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const formattedDateText = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
+      const dateNumeric = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+
+      // Subtitle formatting (e.g. "Share Holders List - 19 Oct, 2026")
+      let subTitleDisplay = sub_title || 'Share Holders List';
+      if (!subTitleDisplay.includes('20')) {
+        subTitleDisplay = `${subTitleDisplay} - ${formattedDateText}`;
+      }
+
+      // Convert Set to Array safely
+      const placesArray = selectedPlaces instanceof Set
+        ? Array.from(selectedPlaces)
+        : (Array.isArray(selectedPlaces) ? selectedPlaces : []);
+
+      // Determine active place and circle
+      let activePlace = '';
+      if (searchAddress && searchAddress.trim()) {
+        activePlace = searchAddress.trim();
+      } else if (placesArray.length === 1) {
+        activePlace = placesArray[0];
+      } else if (printableRows.length > 0) {
+        const firstPlace = (printableRows[0].place || printableRows[0].village_name || '').trim();
+        const allSamePlace = printableRows.every(r => (r.place || r.village_name || '').trim() === firstPlace);
+        if (allSamePlace) {
+          activePlace = firstPlace;
+        }
+      }
+
+      // Lookup details from officialCircleData
+      const circleInfo = (activePlace && Array.isArray(officialCircleData))
+        ? officialCircleData.find(c => (c.address || '').trim().toLowerCase() === activePlace.toLowerCase())
+        : null;
+
+      let printCircle = selectedCircle && selectedCircle !== 'all' ? selectedCircle : '';
+      if (!printCircle && circleInfo?.circle_name) {
+        printCircle = circleInfo.circle_name;
+      }
+      if (!printCircle && printableRows.length > 0) {
+        const rowWithCircle = printableRows.find(r => r.circle || r.circle_name);
+        if (rowWithCircle) {
+          printCircle = rowWithCircle.circle || rowWithCircle.circle_name;
+        }
+      }
+      if (!printCircle) printCircle = 'ಇಂಡಿ ಸರ್ಕಲ್';
+
+      const printTaluk = circleInfo?.taluk || 'ಇಂಡಿ';
+      const printDistrict = circleInfo?.district || 'ವಿಜಯಪುರ';
+      const printPincode = circleInfo?.pincode || (activePlace === 'ಅಗರಖೇಡ' ? '586209' : '');
+
+      let addressLine = '';
+      if (activePlace) {
+        addressLine = `ವಿಳಾಸ : ${activePlace} | Taluk: ${printTaluk} | District: ${printDistrict}${printPincode ? ' | Pincode: ' + printPincode : ''}`;
+      } else if (placesArray.length > 1) {
+        addressLine = `ವಿಳಾಸ : ${placesArray.join(', ')} | Taluk: ${printTaluk} | District: ${printDistrict}`;
+      } else {
+        addressLine = `Taluk: ${printTaluk} | District: ${printDistrict}`;
+      }
+
+      let html = `<!DOCTYPE html><html><head><meta charset="utf-8">`;
+      html += `<title>${doc_title || 'Sugar Allotment'}</title>`;
+      html += `<link rel="preconnect" href="https://fonts.googleapis.com">`;
+      html += `<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap" rel="stylesheet">`;
+      html += `<style>
+        @page {
+          size: A4 portrait;
+          margin: 8mm 6mm;
+        }
+        * {
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        body {
+          font-family: 'Noto Sans Kannada', 'Segoe UI', Arial, sans-serif;
+          margin: 0;
+          padding: 4px;
+          color: #0f172a;
+          background: #ffffff;
+          font-size: 11px;
+        }
+        .print-header-box {
+          border: 1.5px solid #2563eb;
+          border-radius: 4px;
+          padding: 10px 14px;
+          text-align: center;
+          margin-bottom: 8px;
+          background: #ffffff;
+        }
+        .print-org-name {
+          font-size: 16px;
+          font-weight: 700;
+          color: #1e3a8a;
+          margin: 0 0 3px 0;
+          letter-spacing: 0.2px;
+        }
+        .print-sub-title {
+          font-size: 11px;
+          font-weight: 600;
+          color: #475569;
+          margin: 0 0 7px 0;
+        }
+        .print-doc-banner {
+          background-color: #2563eb !important;
+          color: #ffffff !important;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 6px 16px;
+          border-radius: 4px;
+          display: inline-block;
+          width: 95%;
+          margin: 0 auto;
+          letter-spacing: 0.3px;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .print-divider {
+          border: none;
+          border-top: 1.5px solid #2563eb;
+          margin: 6px 0;
+        }
+        .print-circle-title {
+          color: #1d4ed8;
+          font-size: 14px;
+          font-weight: 700;
+          text-align: center;
+          margin: 4px 0 2px 0;
+        }
+        .print-address-line {
+          font-size: 11px;
+          font-weight: 600;
+          color: #1e293b;
+          text-align: center;
+          margin: 0 0 3px 0;
+        }
+        .print-meta-block {
+          text-align: center;
+          margin: 3px 0 6px 0;
+        }
+        .print-meta-date {
+          font-size: 11px;
+          font-weight: 600;
+          color: #334155;
+          margin-bottom: 1px;
+        }
+        .print-meta-total {
+          font-size: 13px;
+          font-weight: 700;
+          color: #2563eb;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 4px;
+        }
+        thead {
+          display: table-header-group;
+        }
+        tbody {
+          display: table-row-group;
+        }
+        tr {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        th {
+          background-color: #2563eb !important;
+          color: #ffffff !important;
+          border: 1px solid #1e40af;
+          font-weight: 700;
+          font-size: 11px;
+          padding: 7px 4px;
+          text-align: center;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        td {
+          border: 1px solid #64748b;
+          padding: 6px 5px;
+          font-size: 11px;
+          color: #000000;
+          vertical-align: middle;
+          height: 32px;
+        }
+        .center { text-align: center; }
+        .left { text-align: left; }
+        .font-mono { font-family: 'Courier New', Courier, monospace, sans-serif; font-size: 11px; }
+        .font-bold { font-weight: 700; }
+        @media print {
+          body { margin: 0; padding: 0; }
+        }
+      </style></head><body>`;
+
+      html += `<div class="print-header-box">`;
+      html += `<div class="print-org-name">${org_name}</div>`;
+      html += `<div class="print-sub-title">${subTitleDisplay}</div>`;
+      html += `<div class="print-doc-banner">${doc_title}</div>`;
+      html += `</div>`;
+
+      html += `<div class="print-divider"></div>`;
+      html += `<div class="print-circle-title">Circle: ${printCircle}</div>`;
+      html += `<div class="print-address-line">${addressLine}</div>`;
+      html += `<div class="print-divider"></div>`;
+
+      html += `<div class="print-meta-block">`;
+      html += `<div class="print-meta-date">ದಿನಾಂಕ: ${dateNumeric}</div>`;
+      html += `<div class="print-meta-total">ಒಟ್ಟು: ${printableRows.length}</div>`;
+      html += `</div>`;
+
+      html += `<table><thead><tr>`;
+      html += `<th class="center" style="width:36px;">ಕ್ರ.ಸಂ.</th>`;
+      if (print_columns.share_no) html += `<th class="center" style="width:65px;">ಶೇರ್ ಸಂಖ್ಯೆ</th>`;
+      if (print_columns.name) html += `<th class="left" style="min-width:180px;">ಹೆಸರು</th>`;
+      if (print_columns.surname) html += `<th class="left" style="width:90px;">ಉಪನಾಮ</th>`;
+      if (print_columns.address) html += `<th class="center" style="width:90px;">ವಿಳಾಸ</th>`;
+      if (print_columns.category) html += `<th class="center" style="width:55px;">ವರ್ಗ</th>`;
+      if (print_columns.share_qty) html += `<th class="center" style="width:65px;">ಶೇರ್ ಪ್ರಮಾಣ</th>`;
+      if (print_columns.member_type) html += `<th class="left" style="width:110px;">ಸದಸ್ಯರ ಪ್ರಕಾರ</th>`;
+      if (print_columns.mobile_no) html += `<th class="center" style="width:95px;">ಮೊಬೈಲ್ ನಂಬರ</th>`;
+      if (print_columns.signature) html += `<th class="center" style="width:80px;">ಸಹಿ</th>`;
+      if (print_columns.remarks) html += `<th class="center" style="width:65px;">ಶೇರಾ</th>`;
+      html += `</tr></thead><tbody>`;
+
+      printableRows.forEach((s, idx) => {
+        const surname = getSurname(s.shareholder_name || s.name || '');
+        const shares = parseInt(s.number_of_shares, 10) || 1;
+        const memType = editedRows[s.id]?.member_type || s.member_type || s.status || '-';
+        const mob = editedRows[s.id]?.mobile_no !== undefined ? editedRows[s.id].mobile_no : (s.mobile_no || s.mobile || '');
+        const rem = editedRows[s.id]?.remarks !== undefined ? editedRows[s.id].remarks : (s.remarks || '');
+        const cat = s.schedule_cast || 'ಅ - ವರ್ಗ';
+
+        html += `<tr>`;
+        html += `<td class="center font-mono">${idx + 1}</td>`;
+        if (print_columns.share_no) html += `<td class="center font-mono font-bold">${s.share_no || s.share_number || ''}</td>`;
+        if (print_columns.name) html += `<td class="left font-bold">${s.shareholder_name || s.name || ''}</td>`;
+        if (print_columns.surname) html += `<td class="left">${surname}</td>`;
+        if (print_columns.address) html += `<td class="center">${s.place || s.village_name || ''}</td>`;
+        if (print_columns.category) html += `<td class="center">${cat}</td>`;
+        if (print_columns.share_qty) html += `<td class="center font-bold font-mono">${shares}</td>`;
+        if (print_columns.member_type) html += `<td class="left">${memType}</td>`;
+        if (print_columns.mobile_no) html += `<td class="center font-mono">${mob}</td>`;
+        if (print_columns.signature) html += `<td></td>`;
+        if (print_columns.remarks) html += `<td>${rem}</td>`;
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table>`;
+      html += `</body></html>`;
+
+      // Try opening window
+      const printWindow = window.open('', '_blank');
+      if (printWindow && !printWindow.closed && typeof printWindow.closed !== 'undefined') {
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          try {
+            printWindow.print();
+          } catch (e) {
+            console.error('printWindow.print() failed:', e);
+          }
+        }, 500);
+      } else {
+        // Fallback: use hidden iframe if popup is blocked
+        let iframe = document.getElementById('sugar_print_iframe');
+        if (!iframe) {
+          iframe = document.createElement('iframe');
+          iframe.id = 'sugar_print_iframe';
+          iframe.style.position = 'fixed';
+          iframe.style.right = '0';
+          iframe.style.bottom = '0';
+          iframe.style.width = '0';
+          iframe.style.height = '0';
+          iframe.style.border = '0';
+          document.body.appendChild(iframe);
+        }
+        const doc = iframe.contentWindow?.document || iframe.contentDocument;
+        if (doc) {
+          doc.open();
+          doc.write(html);
+          doc.close();
+          setTimeout(() => {
+            (iframe.contentWindow || iframe).focus();
+            (iframe.contentWindow || iframe).print();
+          }, 500);
+        }
+      }
+    } catch (err) {
+      console.error('Print generation error:', err);
+      showToast('Error generating print page: ' + err.message, 'error');
     }
-
-    const { org_name, sub_title, doc_title, print_columns, exclude_member_types_print } = settings;
-
-    // Filter out excluded member types
-    const printableRows = processedShareholders.filter(s => {
-      const mt = (editedRows[s.id]?.member_type || s.member_type || s.status || '-').trim();
-      return !exclude_member_types_print.includes(mt);
-    });
-
-    const now = new Date();
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const formattedDateText = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
-    const dateNumeric = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
-
-    // Subtitle formatting (e.g. "Share Holders List - 19 Oct, 2026")
-    let subTitleDisplay = sub_title || 'Share Holders List';
-    if (!subTitleDisplay.includes('20')) {
-      subTitleDisplay = `${subTitleDisplay} - ${formattedDateText}`;
-    }
-
-    // Determine active place and circle
-    let activePlace = '';
-    if (filterAddress && filterAddress.trim()) {
-      activePlace = filterAddress.trim();
-    } else if (selectedPlaces && selectedPlaces.length === 1) {
-      activePlace = selectedPlaces[0];
-    } else if (printableRows.length > 0) {
-      const firstPlace = (printableRows[0].place || printableRows[0].village_name || '').trim();
-      const allSamePlace = printableRows.every(r => (r.place || r.village_name || '').trim() === firstPlace);
-      if (allSamePlace) {
-        activePlace = firstPlace;
-      }
-    }
-
-    // Lookup details from officialCircleData
-    const circleInfo = activePlace
-      ? officialCircleData.find(c => (c.address || '').trim().toLowerCase() === activePlace.toLowerCase())
-      : null;
-
-    let printCircle = selectedCircle && selectedCircle !== 'all' ? selectedCircle : '';
-    if (!printCircle && circleInfo?.circle_name) {
-      printCircle = circleInfo.circle_name;
-    }
-    if (!printCircle && printableRows.length > 0) {
-      const rowWithCircle = printableRows.find(r => r.circle || r.circle_name);
-      if (rowWithCircle) {
-        printCircle = rowWithCircle.circle || rowWithCircle.circle_name;
-      }
-    }
-    if (!printCircle) printCircle = 'ಇಂಡಿ ಸರ್ಕಲ್';
-
-    const printTaluk = circleInfo?.taluk || 'ಇಂಡಿ';
-    const printDistrict = circleInfo?.district || 'ವಿಜಯಪುರ';
-    const printPincode = circleInfo?.pincode || (activePlace === 'ಅಗರಖೇಡ' ? '586209' : '');
-
-    let addressLine = '';
-    if (activePlace) {
-      addressLine = `ವಿಳಾಸ : ${activePlace} | Taluk: ${printTaluk} | District: ${printDistrict}${printPincode ? ' | Pincode: ' + printPincode : ''}`;
-    } else if (selectedPlaces && selectedPlaces.length > 1) {
-      addressLine = `ವಿಳಾಸ : ${selectedPlaces.join(', ')} | Taluk: ${printTaluk} | District: ${printDistrict}`;
-    } else {
-      addressLine = `Taluk: ${printTaluk} | District: ${printDistrict}`;
-    }
-
-    let html = `<!DOCTYPE html><html><head><meta charset="utf-8">`;
-    html += `<title>${doc_title || 'Sugar Allotment'}</title>`;
-    html += `<link rel="preconnect" href="https://fonts.googleapis.com">`;
-    html += `<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap" rel="stylesheet">`;
-    html += `<style>
-      @page {
-        size: A4 portrait;
-        margin: 8mm 6mm;
-      }
-      * {
-        box-sizing: border-box;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      body {
-        font-family: 'Noto Sans Kannada', 'Segoe UI', Arial, sans-serif;
-        margin: 0;
-        padding: 4px;
-        color: #0f172a;
-        background: #ffffff;
-        font-size: 11px;
-      }
-      .print-header-box {
-        border: 1.5px solid #2563eb;
-        border-radius: 4px;
-        padding: 10px 14px;
-        text-align: center;
-        margin-bottom: 8px;
-        background: #ffffff;
-      }
-      .print-org-name {
-        font-size: 16px;
-        font-weight: 700;
-        color: #1e3a8a;
-        margin: 0 0 3px 0;
-        letter-spacing: 0.2px;
-      }
-      .print-sub-title {
-        font-size: 11px;
-        font-weight: 600;
-        color: #475569;
-        margin: 0 0 7px 0;
-      }
-      .print-doc-banner {
-        background-color: #2563eb !important;
-        color: #ffffff !important;
-        font-size: 13px;
-        font-weight: 700;
-        padding: 6px 16px;
-        border-radius: 4px;
-        display: inline-block;
-        width: 95%;
-        margin: 0 auto;
-        letter-spacing: 0.3px;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      .print-divider {
-        border: none;
-        border-top: 1.5px solid #2563eb;
-        margin: 6px 0;
-      }
-      .print-circle-title {
-        color: #1d4ed8;
-        font-size: 14px;
-        font-weight: 700;
-        text-align: center;
-        margin: 4px 0 2px 0;
-      }
-      .print-address-line {
-        font-size: 11px;
-        font-weight: 600;
-        color: #1e293b;
-        text-align: center;
-        margin: 0 0 3px 0;
-      }
-      .print-meta-block {
-        text-align: center;
-        margin: 3px 0 6px 0;
-      }
-      .print-meta-date {
-        font-size: 11px;
-        font-weight: 600;
-        color: #334155;
-        margin-bottom: 1px;
-      }
-      .print-meta-total {
-        font-size: 13px;
-        font-weight: 700;
-        color: #2563eb;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 4px;
-      }
-      thead {
-        display: table-header-group;
-      }
-      tbody {
-        display: table-row-group;
-      }
-      tr {
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-      th {
-        background-color: #2563eb !important;
-        color: #ffffff !important;
-        border: 1px solid #1e40af;
-        font-weight: 700;
-        font-size: 11px;
-        padding: 7px 4px;
-        text-align: center;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      td {
-        border: 1px solid #64748b;
-        padding: 6px 5px;
-        font-size: 11px;
-        color: #000000;
-        vertical-align: middle;
-        height: 32px;
-      }
-      .center { text-align: center; }
-      .left { text-align: left; }
-      .font-mono { font-family: 'Courier New', Courier, monospace, sans-serif; font-size: 11px; }
-      .font-bold { font-weight: 700; }
-      @media print {
-        body { margin: 0; padding: 0; }
-      }
-    </style></head><body>`;
-
-    html += `<div class="print-header-box">`;
-    html += `<div class="print-org-name">${org_name}</div>`;
-    html += `<div class="print-sub-title">${subTitleDisplay}</div>`;
-    html += `<div class="print-doc-banner">${doc_title}</div>`;
-    html += `</div>`;
-
-    html += `<div class="print-divider"></div>`;
-    html += `<div class="print-circle-title">Circle: ${printCircle}</div>`;
-    html += `<div class="print-address-line">${addressLine}</div>`;
-    html += `<div class="print-divider"></div>`;
-
-    html += `<div class="print-meta-block">`;
-    html += `<div class="print-meta-date">ದಿನಾಂಕ: ${dateNumeric}</div>`;
-    html += `<div class="print-meta-total">ಒಟ್ಟು: ${printableRows.length}</div>`;
-    html += `</div>`;
-
-    html += `<table><thead><tr>`;
-    html += `<th class="center" style="width:36px;">ಕ್ರ.ಸಂ.</th>`;
-    if (print_columns.share_no) html += `<th class="center" style="width:65px;">ಶೇರ್ ಸಂಖ್ಯೆ</th>`;
-    if (print_columns.name) html += `<th class="left" style="min-width:180px;">ಹೆಸರು</th>`;
-    if (print_columns.surname) html += `<th class="left" style="width:90px;">ಉಪನಾಮ</th>`;
-    if (print_columns.address) html += `<th class="center" style="width:90px;">ವಿಳಾಸ</th>`;
-    if (print_columns.category) html += `<th class="center" style="width:55px;">ವರ್ಗ</th>`;
-    if (print_columns.share_qty) html += `<th class="center" style="width:65px;">ಶೇರ್ ಪ್ರಮಾಣ</th>`;
-    if (print_columns.member_type) html += `<th class="left" style="width:110px;">ಸದಸ್ಯರ ಪ್ರಕಾರ</th>`;
-    if (print_columns.mobile_no) html += `<th class="center" style="width:95px;">ಮೊಬೈಲ್ ನಂಬರ</th>`;
-    if (print_columns.signature) html += `<th class="center" style="width:80px;">ಸಹಿ</th>`;
-    if (print_columns.remarks) html += `<th class="center" style="width:65px;">ಶೇರಾ</th>`;
-    html += `</tr></thead><tbody>`;
-
-    printableRows.forEach((s, idx) => {
-      const surname = getSurname(s.shareholder_name || s.name || '');
-      const shares = parseInt(s.number_of_shares, 10) || 1;
-      const memType = editedRows[s.id]?.member_type || s.member_type || s.status || '-';
-      const mob = editedRows[s.id]?.mobile_no !== undefined ? editedRows[s.id].mobile_no : (s.mobile_no || s.mobile || '');
-      const rem = editedRows[s.id]?.remarks !== undefined ? editedRows[s.id].remarks : (s.remarks || '');
-      const cat = s.schedule_cast || 'ಅ - ವರ್ಗ';
-
-      html += `<tr>`;
-      html += `<td class="center font-mono">${idx + 1}</td>`;
-      if (print_columns.share_no) html += `<td class="center font-mono font-bold">${s.share_no || s.share_number || ''}</td>`;
-      if (print_columns.name) html += `<td class="left font-bold">${s.shareholder_name || s.name || ''}</td>`;
-      if (print_columns.surname) html += `<td class="left">${surname}</td>`;
-      if (print_columns.address) html += `<td class="center">${s.place || s.village_name || ''}</td>`;
-      if (print_columns.category) html += `<td class="center">${cat}</td>`;
-      if (print_columns.share_qty) html += `<td class="center font-bold font-mono">${shares}</td>`;
-      if (print_columns.member_type) html += `<td class="left">${memType}</td>`;
-      if (print_columns.mobile_no) html += `<td class="center font-mono">${mob}</td>`;
-      if (print_columns.signature) html += `<td></td>`;
-      if (print_columns.remarks) html += `<td>${rem}</td>`;
-      html += `</tr>`;
-    });
-
-    html += `</tbody></table>`;
-    html += `</body></html>`;
-
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 400);
   };
 
   // Qualified rows for "ಎಲ್ಲರಿಗೂ ರಶೀದಿ"
