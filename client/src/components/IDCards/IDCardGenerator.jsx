@@ -28,7 +28,36 @@ export default function IDCardGenerator() {
   const [loading, setLoading] = useState(true);
   const [previewCard, setPreviewCard] = useState(null);
   const [showReferenceSample, setShowReferenceSample] = useState(false);
-  const [printLayout, setPrintLayout] = useState('a4'); // 'a4' (sheet) or 'pvc' (single)
+  const [printLayout, setPrintLayout] = useState(() => {
+    try {
+      return localStorage.getItem('sugar_erp_id_card_print_layout') || 'a4';
+    } catch (e) {
+      return 'a4';
+    }
+  });
+
+  // Card Dimensions: '85x54' (85.6mm x 54.0mm CR80) or '95x65' (95.0mm x 65.0mm Pouch)
+  const [cardSize, setCardSize] = useState(() => {
+    try {
+      return localStorage.getItem('sugar_erp_id_card_print_size') || '85x54';
+    } catch (e) {
+      return '85x54';
+    }
+  });
+
+  const handleSetPrintLayout = (layout) => {
+    setPrintLayout(layout);
+    try {
+      localStorage.setItem('sugar_erp_id_card_print_layout', layout);
+    } catch (e) {}
+  };
+
+  const handleSetCardSize = (size) => {
+    setCardSize(size);
+    try {
+      localStorage.setItem('sugar_erp_id_card_print_size', size);
+    } catch (e) {}
+  };
 
   // Custom ID Card Upload Settings (Logo, Background & MD Signature)
   const [customSettings, setCustomSettings] = useState(getCustomIdCardSettings());
@@ -205,6 +234,16 @@ export default function IDCardGenerator() {
 
   const hasCustomizations = !!(customSettings.customLogo || customSettings.customBackground || customSettings.customMdSignature || customSettings.hideHeader || !customSettings.showSugarcaneWatermark);
 
+  // Dynamic Card Dimension Calculations for 85.6mm x 54.0mm vs 95.0mm x 65.0mm
+  const isJumbo = cardSize === '95x65';
+  const cardWidth = isJumbo ? '95mm' : '85.6mm';
+  const cardHeight = isJumbo ? '65mm' : '54mm';
+  const pairWidth = isJumbo ? '190mm' : '171.2mm';
+  const sheetMaxWidth = isJumbo ? '196mm' : '186mm';
+  const cardOuterHeight = isJumbo ? '254.5px' : '238px';
+  const cardOuterScale = isJumbo ? '0.965' : '0.86';
+  const cutGuideLabel = isJumbo ? '95×65mm' : '85.6×54mm';
+
   return (
     <div className="space-y-6" style={{ fontFamily: "'Anek Kannada', 'Aneka Kannada', 'Noto Sans Kannada', sans-serif" }}>
       {/* Print Stylesheet Injection */}
@@ -212,8 +251,8 @@ export default function IDCardGenerator() {
         @media print {
           @page {
             ${printLayout === 'a4'
-              ? 'size: A4 portrait; margin: 10mm 12mm;'
-              : 'size: 85.6mm 54mm; margin: 0;'
+              ? `size: A4 portrait; margin: ${isJumbo ? '8mm 10mm' : '10mm 12mm'};`
+              : `size: ${cardWidth} ${cardHeight}; margin: 0;`
             }
           }
           html,
@@ -238,19 +277,19 @@ export default function IDCardGenerator() {
           }
           ${printLayout === 'pvc' ? `
             html, body {
-              width: 85.6mm !important;
-              height: 54mm !important;
-              max-width: 85.6mm !important;
-              max-height: 54mm !important;
+              width: ${cardWidth} !important;
+              height: ${cardHeight} !important;
+              max-width: ${cardWidth} !important;
+              max-height: ${cardHeight} !important;
               margin: 0 !important;
               padding: 0 !important;
               overflow: hidden !important;
             }
             #root, #root > div, main, .printable-area, .id-card-print-pvc-list {
-              width: 85.6mm !important;
-              height: 54mm !important;
-              max-width: 85.6mm !important;
-              max-height: 54mm !important;
+              width: ${cardWidth} !important;
+              height: ${cardHeight} !important;
+              max-width: ${cardWidth} !important;
+              max-height: ${cardHeight} !important;
               margin: 0 !important;
               padding: 0 !important;
               overflow: hidden !important;
@@ -279,14 +318,15 @@ export default function IDCardGenerator() {
             display: none !important;
             visibility: hidden !important;
           }
-          /* CR80 Physical Dimensions: 85.6mm x 54mm */
+          /* Card Physical Dimensions (${isJumbo ? '95mm x 65mm' : '85.6mm x 54mm'}) */
           .id-card-print-single {
-            width: 85.6mm !important;
-            height: 54mm !important;
-            max-width: 85.6mm !important;
-            max-height: 54mm !important;
+            width: ${cardWidth} !important;
+            height: ${cardHeight} !important;
+            max-width: ${cardWidth} !important;
+            max-height: ${cardHeight} !important;
             box-sizing: border-box !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
             box-shadow: none !important;
             margin: 0 !important;
             padding: 0 !important;
@@ -299,10 +339,10 @@ export default function IDCardGenerator() {
           }
           .id-card-print-single .id-card-container-outer {
             width: 372px !important;
-            height: 238px !important;
+            height: ${cardOuterHeight} !important;
             min-width: 372px !important;
-            min-height: 238px !important;
-            transform: scale(0.86) !important;
+            min-height: ${cardOuterHeight} !important;
+            transform: scale(${cardOuterScale}) !important;
             transform-origin: 0 0 !important;
             margin: 0 !important;
             padding: 0 !important;
@@ -315,7 +355,7 @@ export default function IDCardGenerator() {
           .id-card-a4-sheet {
             display: block !important;
             width: 100% !important;
-            max-width: 186mm !important;
+            max-width: ${sheetMaxWidth} !important;
             margin: 0 auto !important;
             padding: 0 !important;
             background: #ffffff !important;
@@ -348,16 +388,17 @@ export default function IDCardGenerator() {
             align-items: center !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            border: 1px dashed #334155 !important; /* Outer Cutting Line (ಕತ್ತರಿಸುವ ಗೆರೆ) */
+            border: 1px dashed #334155 !important; /* Outer Cutting Line */
+            width: ${pairWidth} !important;
             box-sizing: border-box !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
             position: relative !important;
           }
-          /* Center Vertical Fold Line (ಮಡಚುವ ಗೆರೆ) */
+          /* Center Vertical Fold Line */
           .id-card-center-fold-line {
             width: 0px !important;
-            height: 54mm !important;
+            height: ${cardHeight} !important;
             border-left: 1.5px dashed #0f172a !important; /* Fold down the middle */
             margin: 0 !important;
             padding: 0 !important;
@@ -370,7 +411,7 @@ export default function IDCardGenerator() {
             display: flex !important;
             justify-content: space-between !important;
             align-items: center !important;
-            width: 171.2mm !important;
+            width: ${pairWidth} !important;
             font-size: 7px !important;
             font-weight: 700 !important;
             color: #475569 !important;
@@ -396,7 +437,7 @@ export default function IDCardGenerator() {
             text-align: center !important;
           }
           .id-card-guide-single {
-            width: 85.6mm !important;
+            width: ${cardWidth} !important;
           }
           .id-card-cut-border {
             border: 1px dashed #334155 !important; /* Single card cut outline */
@@ -411,10 +452,11 @@ export default function IDCardGenerator() {
           }
           .id-card-a4-grid {
             display: grid !important;
-            grid-template-columns: repeat(2, 85.6mm) !important;
+            grid-template-columns: repeat(2, ${cardWidth}) !important;
             gap: 4mm !important;
             justify-content: center !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
           }
@@ -425,6 +467,41 @@ export default function IDCardGenerator() {
             background: #ffffff !important;
             background-color: #ffffff !important;
           }
+          ${isJumbo ? `
+            .id-card-a4-pairs-container > .id-card-a4-foldable-unit:nth-child(3n) {
+              page-break-after: always !important;
+              break-after: page !important;
+            }
+            .id-card-a4-pairs-container > .id-card-a4-foldable-unit:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+            .id-card-a4-grid > .id-card-a4-single-unit:nth-child(6n) {
+              page-break-after: always !important;
+              break-after: page !important;
+            }
+            .id-card-a4-grid > .id-card-a4-single-unit:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+          ` : `
+            .id-card-a4-pairs-container > .id-card-a4-foldable-unit:nth-child(4n) {
+              page-break-after: always !important;
+              break-after: page !important;
+            }
+            .id-card-a4-pairs-container > .id-card-a4-foldable-unit:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+            .id-card-a4-grid > .id-card-a4-single-unit:nth-child(8n) {
+              page-break-after: always !important;
+              break-after: page !important;
+            }
+            .id-card-a4-grid > .id-card-a4-single-unit:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+          `}
         }
       `}</style>
 
@@ -478,30 +555,57 @@ export default function IDCardGenerator() {
             {showReferenceSample ? 'Hide Sample Reference' : 'Compare with Sample Photo'}
           </button>
 
-          {/* Print Layout Format Toggle (A4 Sheet vs CR80 PVC Card) */}
+          {/* Print Layout Format Toggle (A4 Sheet vs Single Card) */}
           <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
             <span className="text-[10px] text-slate-400 font-semibold px-2 uppercase tracking-wider hidden lg:inline">ಫಾರ್ಮ್ಯಾಟ್:</span>
             <button
-              onClick={() => setPrintLayout('a4')}
+              onClick={() => handleSetPrintLayout('a4')}
               className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                 printLayout === 'a4'
                   ? 'bg-emerald-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
-              title="A4 Sheet (Prints Front & Back side-by-side on A4 paper)"
+              title="A4 Sheet (Prints Front & Back side-by-side on A4 paper with Cut & Fold Guides)"
             >
               A4 ಹಾಳೆ (A4 Sheet)
             </button>
             <button
-              onClick={() => setPrintLayout('pvc')}
+              onClick={() => handleSetPrintLayout('pvc')}
               className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                 printLayout === 'pvc'
                   ? 'bg-emerald-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
-              title="CR80 Plastic Card Printer (Separate cards)"
+              title="Single Card Format (PVC Card / User Defined paper)"
             >
-              PVC ಕಾರ್ಡ್ (CR80)
+              PVC ಕಾರ್ಡ್ (Single)
+            </button>
+          </div>
+
+          {/* Card Dimensions Size Toggle: 85.6mm x 54.0mm vs 95.0mm x 65.0mm */}
+          <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+            <span className="text-[10px] text-slate-400 font-semibold px-2 uppercase tracking-wider hidden lg:inline">ಕಾರ್ಡ್ ಗಾತ್ರ (Size):</span>
+            <button
+              onClick={() => handleSetCardSize('85x54')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                cardSize === '85x54'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Standard CR80 / PVC Plastic Card (85.6mm × 54.0mm)"
+            >
+              85.6 × 54.0 mm
+            </button>
+            <button
+              onClick={() => handleSetCardSize('95x65')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                cardSize === '95x65'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Lamination Pouch / Jumbo ID Card (95.0mm × 65.0mm - ಲ್ಯಾಮಿನೇಷನ್ ಪೌಚ್ ಗಾತ್ರ)"
+            >
+              95.0 × 65.0 mm
             </button>
           </div>
 
@@ -628,15 +732,16 @@ export default function IDCardGenerator() {
           <div className="space-y-1.5">
             <div className="font-bold text-sky-300 flex items-center gap-2 text-sm">
               <span className="text-base">🖨️</span>
-              <span>PVC ಪ್ಲಾಸ್ಟಿಕ್ ಕಾರ್ಡ್ ಮುದ್ರಣ ಮಾರ್ಗದರ್ಶಿ (PVC Card Printing Instructions):</span>
+              <span>PVC / ಪ್ರತ್ಯೇಕ ಕಾರ್ಡ್ ಮುದ್ರಣ ಮಾರ್ಗದರ್ಶಿ (Card Printing Instructions):</span>
             </div>
             <p className="text-[11.5px] text-slate-200 leading-relaxed">
-              • <strong>PVC ಕಾರ್ಡ್ ಪ್ರಿಂಟರ್ ಇದ್ದರೆ</strong>: Chrome ಮುದ್ರಣ ವಿಂಡೋದಲ್ಲಿ <strong>Destination (ಗಮ್ಯಸ್ಥಾನ)</strong> ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ ನಿಮ್ಮ <strong className="text-amber-300">PVC ಕಾರ್ಡ್ ಪ್ರಿಂಟರ್</strong> ಆಯ್ಕೆಮಾಡಿ. ಆಗ ಕಾರ್ಡ್ ಪೂರ್ಣ CR80 (85.6mm × 54mm) ಅಳತೆಗೆ ಸರಿಯಾಗಿ ಹೊಂದಿಕೊಳ್ಳುತ್ತದೆ.<br />
-              • <strong>Epson L3560 ಅಥವಾ ಸಾಮಾನ್ಯ ಪ್ರಿಂಟರ್ ಆಗಿದ್ದರೆ</strong>: <strong className="text-emerald-300">"A4 ಹಾಳೆ (A4 Sheet)"</strong> ಆಯ್ಕೆಮಾಡಿ (ಮುಂಭಾಗ & ಹಿಂಬದಿ ಅಕ್ಕಪಕ್ಕದಲ್ಲಿ ಬರುತ್ತದೆ, ಕಟ್ ಮಾಡಿ ಲ್ಯಾಮಿನೇಟ್ ಮಾಡಬಹುದು).
+              • <strong>ಆಯ್ಕೆ ಮಾಡಿದ ಕಾರ್ಡ್ ಅಳತೆ</strong>: <strong className="text-emerald-300 font-mono">{cardSize === '95x65' ? '95.0mm × 65.0mm (ಲ್ಯಾಮಿನೇಷನ್ ಪೌಚ್ ಗಾತ್ರ)' : '85.6mm × 54.0mm (CR80 PVC ಸ್ಟ್ಯಾಂಡರ್ಡ್)'}</strong>.<br />
+              • <strong>PVC ಕಾರ್ಡ್ ಪ್ರಿಂಟರ್ ಇದ್ದರೆ</strong>: Chrome ಮುದ್ರಣ ವಿಂಡೋದಲ್ಲಿ <strong>Destination (ಗಮ್ಯಸ್ಥಾನ)</strong> ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ ನಿಮ್ಮ <strong className="text-amber-300">PVC ಕಾರ್ಡ್ ಪ್ರಿಂಟರ್</strong> ಆಯ್ಕೆಮಾಡಿ. ಪೇಪರ್ ಸೈಜ್ ಅನ್ನು {cardSize === '95x65' ? 'User Defined (95×65mm)' : 'CR80 (85.6×54mm)'} ಗೆ ಸೆಟ್ ಮಾಡಿ.<br />
+              • <strong>Epson ಅಥವಾ ಸಾಮಾನ್ಯ ಇಂಕ್‌ಜೆಟ್ ಪ್ರಿಂಟರ್ ಆಗಿದ್ದರೆ</strong>: <strong className="text-emerald-300">"A4 ಹಾಳೆ (A4 Sheet)"</strong> ಆಯ್ಕೆಮಾಡಿ (ಮುಂಭಾಗ & ಹಿಂಬದಿ ಅಕ್ಕಪಕ್ಕದಲ್ಲಿ ಕತ್ತರಿಸುವ ಹಾಗೂ ಮಡಚುವ ಗೆರೆಯೊಂದಿಗೆ ಬರುತ್ತದೆ).
             </p>
           </div>
           <button
-            onClick={() => setPrintLayout('a4')}
+            onClick={() => handleSetPrintLayout('a4')}
             className="shrink-0 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold transition-all shadow-lg shadow-emerald-950 cursor-pointer flex items-center gap-1.5"
           >
             <span>📄</span>
@@ -720,17 +825,32 @@ export default function IDCardGenerator() {
             </button>
           </div>
 
-          {/* Print Layout Mode */}
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-400">Layout (ಫಾರ್ಮ್ಯಾಟ್):</span>
-            <select
-              value={printLayout}
-              onChange={(e) => setPrintLayout(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 outline-none text-xs"
-            >
-              <option value="a4">A4 Sheet (ಹಾಳೆಯ ಮುದ್ರಣ)</option>
-              <option value="pvc">CR80 Plastic Card Format (PVC ಕಾರ್ಡ್)</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Print Layout Mode */}
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-slate-400">Layout:</span>
+              <select
+                value={printLayout}
+                onChange={(e) => handleSetPrintLayout(e.target.value)}
+                className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 outline-none text-xs"
+              >
+                <option value="a4">A4 Sheet (ಹಾಳೆಯ ಮುದ್ರಣ)</option>
+                <option value="pvc">PVC Card / Single (ಪ್ರತ್ಯೇಕ ಕಾರ್ಡ್)</option>
+              </select>
+            </div>
+
+            {/* Card Size Dimension Mode */}
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-slate-400">ಗಾತ್ರ:</span>
+              <select
+                value={cardSize}
+                onChange={(e) => handleSetCardSize(e.target.value)}
+                className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-emerald-300 font-semibold outline-none text-xs"
+              >
+                <option value="85x54">85.6mm × 54.0mm (CR80 Standard)</option>
+                <option value="95x65">95.0mm × 65.0mm (Pouch / ಲ್ಯಾಮಿನೇಷನ್)</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -840,6 +960,7 @@ export default function IDCardGenerator() {
                       shareholder={sh}
                       side={cardSide}
                       showSeal={showSeal}
+                      cardSize={cardSize}
                       customLogo={customSettings.customLogo}
                       customBackground={customSettings.customBackground}
                       customMdSignature={customSettings.customMdSignature}
@@ -870,7 +991,7 @@ export default function IDCardGenerator() {
                       <div key={`a4-pair-${sh.id || idx}`} className="id-card-a4-foldable-unit">
                         {/* Top Cut & Fold Header Guides */}
                         <div className="id-card-guide-top">
-                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut)</span>
+                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ ({cutGuideLabel} Cut)</span>
                           <span className="id-card-guide-fold-marker">▼ ಇಲ್ಲಿ ಮಡಚಿ (Fold Line) ▼</span>
                           <span className="id-card-guide-cut-text">✂ Cut</span>
                         </div>
@@ -882,6 +1003,7 @@ export default function IDCardGenerator() {
                               shareholder={sh}
                               side="Front"
                               showSeal={showSeal}
+                              cardSize={cardSize}
                               customLogo={customSettings.customLogo}
                               customBackground={customSettings.customBackground}
                               customMdSignature={customSettings.customMdSignature}
@@ -899,6 +1021,7 @@ export default function IDCardGenerator() {
                               shareholder={sh}
                               side="Back"
                               showSeal={showSeal}
+                              cardSize={cardSize}
                               customLogo={customSettings.customLogo}
                               customBackground={customSettings.customBackground}
                               customMdSignature={customSettings.customMdSignature}
@@ -911,7 +1034,7 @@ export default function IDCardGenerator() {
 
                         {/* Bottom Cut & Fold Footer Guides */}
                         <div className="id-card-guide-bottom">
-                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut)</span>
+                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ ({cutGuideLabel} Cut)</span>
                           <span className="id-card-guide-fold-marker">▲ ಇಲ್ಲಿ ಮಡಚಿ (Fold Line) ▲</span>
                           <span className="id-card-guide-cut-text">✂ Cut</span>
                         </div>
@@ -923,7 +1046,7 @@ export default function IDCardGenerator() {
                     {cardsToPrint.map((sh, idx) => (
                       <div key={`a4-single-${sh.id || idx}`} className="id-card-a4-single-unit">
                         <div className="id-card-guide-top id-card-guide-single">
-                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut Line)</span>
+                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ ({cutGuideLabel} Cut Line)</span>
                           <span className="id-card-guide-cut-text">✂ Cut</span>
                         </div>
                         <div className="id-card-print-single id-card-cut-border">
@@ -931,6 +1054,7 @@ export default function IDCardGenerator() {
                             shareholder={sh}
                             side={printSides === 'front' ? 'Front' : 'Back'}
                             showSeal={showSeal}
+                            cardSize={cardSize}
                             customLogo={customSettings.customLogo}
                             customBackground={customSettings.customBackground}
                             customMdSignature={customSettings.customMdSignature}
@@ -940,7 +1064,7 @@ export default function IDCardGenerator() {
                           />
                         </div>
                         <div className="id-card-guide-bottom id-card-guide-single">
-                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut Line)</span>
+                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ ({cutGuideLabel} Cut Line)</span>
                           <span className="id-card-guide-cut-text">✂ Cut</span>
                         </div>
                       </div>
@@ -951,7 +1075,7 @@ export default function IDCardGenerator() {
             );
           }
 
-          // PVC Mode (Single Card CR80)
+          // PVC Mode (Single Card)
           return (
             <div className="id-card-print-pvc-list">
               {cardsToPrint.map((sh, idx) => {
@@ -965,6 +1089,7 @@ export default function IDCardGenerator() {
                       shareholder={sh}
                       side={sideName}
                       showSeal={showSeal}
+                      cardSize={cardSize}
                       customLogo={customSettings.customLogo}
                       customBackground={customSettings.customBackground}
                       customMdSignature={customSettings.customMdSignature}
@@ -1255,6 +1380,7 @@ export default function IDCardGenerator() {
                     shareholder={shareholders[0]}
                     side="Front"
                     showSeal={showSeal}
+                    cardSize={cardSize}
                     customLogo={customSettings.customLogo}
                     customBackground={customSettings.customBackground}
                     customMdSignature={customSettings.customMdSignature}
@@ -1326,6 +1452,7 @@ export default function IDCardGenerator() {
                 shareholder={previewCard}
                 side={cardSide}
                 showSeal={showSeal}
+                cardSize={cardSize}
                 customLogo={customSettings.customLogo}
                 customBackground={customSettings.customBackground}
                 customMdSignature={customSettings.customMdSignature}
@@ -1337,9 +1464,31 @@ export default function IDCardGenerator() {
 
             {/* Modal Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-800">
-              <span className="text-[11px] text-slate-400">
-                CR80 Plastic PVC Card (85.6mm × 54mm)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400">
+                  ಗಾತ್ರ: <strong className="text-emerald-400 font-mono">{cardSize === '95x65' ? '95.0mm × 65.0mm (Pouch)' : '85.6mm × 54.0mm (CR80)'}</strong>
+                </span>
+                <div className="flex items-center bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => handleSetCardSize('85x54')}
+                    className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-all ${
+                      cardSize === '85x54' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    85.6×54mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetCardSize('95x65')}
+                    className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-all ${
+                      cardSize === '95x65' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    95×65mm
+                  </button>
+                </div>
+              </div>
 
               <div className="flex items-center gap-2">
                 <button

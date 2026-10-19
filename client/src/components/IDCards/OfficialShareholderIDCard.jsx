@@ -244,6 +244,7 @@ export default function OfficialShareholderIDCard({
   side = 'Front',
   showSeal = true,
   scale = 1,
+  cardSize = '85x54',
   customLogo,
   customBackground,
   customMdSignature,
@@ -284,12 +285,16 @@ export default function OfficialShareholderIDCard({
     fontFamily: "'Anek Kannada', 'Aneka Kannada', 'Noto Sans Kannada', sans-serif"
   };
 
+  const isJumbo = cardSize === '95x65';
+  const baseWidth = 372;
+  const baseHeight = isJumbo ? 254.5 : 238;
+
   return (
     <div
       className="relative select-none transition-all duration-300 id-card-container-outer"
       style={{
-        width: `${372 * scale}px`,
-        height: `${238 * scale}px`,
+        width: `${baseWidth * scale}px`,
+        height: `${baseHeight * scale}px`,
         transformOrigin: 'top left',
         ...kannadaFontStyle
       }}
