@@ -845,19 +845,24 @@ export default function SugarAllotmentModule() {
           margin: 0 0 3px 0;
         }
         .print-meta-block {
-          text-align: center;
-          margin: 3px 0 6px 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin: 4px 0 6px 0;
+          padding: 0 4px;
+          width: 100%;
         }
         .print-meta-date {
-          font-size: 11px;
-          font-weight: 600;
-          color: #334155;
-          margin-bottom: 1px;
+          font-size: 11.5px;
+          font-weight: 700;
+          color: #1e293b;
+          text-align: left;
         }
         .print-meta-total {
           font-size: 13px;
           font-weight: 700;
-          color: #2563eb;
+          color: #1d4ed8;
+          text-align: right;
         }
         table {
           width: 100%;
@@ -915,7 +920,7 @@ export default function SugarAllotmentModule() {
 
       html += `<div class="print-meta-block">`;
       html += `<div class="print-meta-date">ದಿನಾಂಕ: ${dateNumeric}</div>`;
-      html += `<div class="print-meta-total">ಒಟ್ಟು: ${printableRows.length}</div>`;
+      html += `<div class="print-meta-total">ಒಟ್ಟು ಶೇರುದಾರರು: ${printableRows.length}</div>`;
       html += `</div>`;
 
       html += `<table><thead><tr>`;
