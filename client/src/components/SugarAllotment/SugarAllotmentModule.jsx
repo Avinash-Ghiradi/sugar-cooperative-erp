@@ -38,9 +38,18 @@ export default function SugarAllotmentModule() {
   const [placeFilterQuery, setPlaceFilterQuery] = useState('');
   const [selectedPlaces, setSelectedPlaces] = useState(new Set());
 
-  // Collapsible Filter Sections
-  const [showMoreSearchOptions, setShowMoreSearchOptions] = useState(true);
-  const [showMoreAddressOptions, setShowMoreAddressOptions] = useState(true);
+  // Collapsible Filter Sections (Default: hidden, and mutually exclusive accordion)
+  const [openFilterAccordion, setOpenFilterAccordion] = useState(null);
+  const isSearchOptionsOpen = openFilterAccordion === 'search';
+  const isAddressOptionsOpen = openFilterAccordion === 'address';
+
+  const toggleSearchOptions = () => {
+    setOpenFilterAccordion(prev => prev === 'search' ? null : 'search');
+  };
+
+  const toggleAddressOptions = () => {
+    setOpenFilterAccordion(prev => prev === 'address' ? null : 'address');
+  };
 
   // Auto-suggestion for address field
   const [addressSuggestions, setAddressSuggestions] = useState([]);
@@ -545,16 +554,16 @@ export default function SugarAllotmentModule() {
         <div>
           <button
             type="button"
-            onClick={() => setShowMoreSearchOptions(!showMoreSearchOptions)}
+            onClick={toggleSearchOptions}
             className="w-full py-1.5 px-3 rounded-lg bg-blue-950/40 hover:bg-blue-900/50 border border-blue-800/60 text-blue-300 font-bold text-xs flex items-center justify-between transition-all cursor-pointer"
           >
             <span>🔍 ಹೆಚ್ಚಿನ ಹುಡುಕಾಟ ಆಯ್ಕೆಗಳು (ಸದಸ್ಯರ ಪ್ರಕಾರ / ವರ್ಗ / ಶೇರ್ ಪ್ರಮಾಣ)</span>
-            {showMoreSearchOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {isSearchOptionsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
 
         {/* ROW 2: Collapsible More Search Options */}
-        {showMoreSearchOptions && (
+        {isSearchOptionsOpen && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 animate-fadeIn">
             {/* Box 4: ಸದಸ್ಯರ ಪ್ರಕಾರ */}
             <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-1.5">
@@ -630,16 +639,16 @@ export default function SugarAllotmentModule() {
         <div>
           <button
             type="button"
-            onClick={() => setShowMoreAddressOptions(!showMoreAddressOptions)}
+            onClick={toggleAddressOptions}
             className="w-full py-1.5 px-3 rounded-lg bg-blue-950/40 hover:bg-blue-900/50 border border-blue-800/60 text-blue-300 font-bold text-xs flex items-center justify-between transition-all cursor-pointer"
           >
             <span>📍 ಹೆಚ್ಚಿನ ವಿಳಾಸ ಆಯ್ಕೆಗಳು (Circle / Address)</span>
-            {showMoreAddressOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {isAddressOptionsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
 
         {/* ROW 3: Circle & Address Checkbox Grid */}
-        {showMoreAddressOptions && (
+        {isAddressOptionsOpen && (
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1 animate-fadeIn">
             {/* Left: Circle (ಮಂಡಲ) */}
             <div className="md:col-span-5 bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-2">
