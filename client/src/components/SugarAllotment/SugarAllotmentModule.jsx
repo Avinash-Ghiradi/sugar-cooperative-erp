@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import officialCircleData from '../../services/officialCircleData.json';
+import ShareholderForm from '../Shareholders/ShareholderForm';
 import {
   PackageCheck, Search, Printer, X, Save, Settings, ChevronDown, ChevronUp,
   MapPin, Sparkles, Filter, Check, ShieldCheck, History, Edit, FileText,
@@ -1833,12 +1834,13 @@ export default function SugarAllotmentModule() {
                         <button
                           type="button"
                           onClick={() => {
-                            setEditShareholderModal(s);
+                            const freshSh = allShareholders.find(x => x.id === s.id || String(x.share_no) === String(s.share_no)) || s;
+                            setEditShareholderModal(freshSh);
                             setPinInput('');
                             setPinVerified(false);
                           }}
                           className="font-bold text-[#1d70b8] hover:text-blue-400 underline cursor-pointer"
-                          title="ಕ್ಲಿಕ್ ಮಾಡಿ ಆ ಶೇರುದಾರರ ವಿವರಗಳನ್ನು ಸಂಪಾದಿಸಿ"
+                          title="ಕ್ಲಿಕ್ ಮಾಡಿ ಶಾಸನಬದ್ಧ 38-ಕಾಲಂಗಳ ತಿದ್ದುಪಡಿ ನಮೂನೆ ತೆರೆಯಿರಿ (Edit Statutory Shareholder Record)"
                         >
                           {s.share_no || s.share_number || '—'}
                         </button>
@@ -2525,17 +2527,21 @@ export default function SugarAllotmentModule() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 4: SHAREHOLDER EDIT MODAL (Click on Share Number with PIN Auth) */}
+      {/* MODAL 4: SHAREHOLDER EDIT FLOW (Click Share No -> PIN Auth -> 38-Col Statutory Form) */}
       {/* ========================================================================= */}
-      {editShareholderModal && (
+      {editShareholderModal && !pinVerified && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn">
           <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
               <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                <Edit className="w-4 h-4 text-blue-400" /> ಶೇರುದಾರರ ಸಂಪಾದನೆ & ಇತಿಹಾಸ (#{editShareholderModal.share_no})
+                <ShieldCheck className="w-4 h-4 text-emerald-400" /> ಅಧಿಕೃತ ಭದ್ರತಾ ದೃಢೀಕರಣ (Security PIN)
               </h2>
               <button
-                onClick={() => setEditShareholderModal(null)}
+                onClick={() => {
+                  setEditShareholderModal(null);
+                  setPinInput('');
+                  setPinVerified(false);
+                }}
                 className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -2543,152 +2549,89 @@ export default function SugarAllotmentModule() {
             </div>
 
             <div className="p-5 space-y-4 text-xs text-slate-200">
-              {!pinVerified ? (
-                <div className="space-y-3">
-                  <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-800 text-blue-300 text-xs">
-                    🔒 ಶೇರುದಾರರ ಮಾಹಿತಿ ಸಂಪಾದಿಸಲು ಅಧಿಕೃತ ಆಪರೇಟರ್ ಪಿನ್ (PIN) ನಮೂದಿಸಿ (ಡೀಫಾಲ್ಟ್: <strong>1234</strong> ಅಥವಾ ಆಡ್ಮಿನ್ ಪಿನ್)
-                  </div>
-                  <div>
-                    <label className="block text-slate-400 mb-1 font-semibold">Security PIN</label>
-                    <input
-                      type="password"
-                      placeholder="Enter 4-digit PIN..."
-                      value={pinInput}
-                      onChange={(e) => setPinInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          if (pinInput === '1234' || pinInput === 'admin123' || user?.role === 'Admin') {
-                            setPinVerified(true);
-                          } else {
-                            showToast('ತಪ್ಪಾದ ಪಿನ್ (Incorrect PIN)', 'error');
-                          }
-                        }
-                      }}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
+              <div className="p-3.5 rounded-2xl bg-blue-950/40 border border-blue-800 text-blue-200 text-xs space-y-1">
+                <div className="flex items-center gap-2 font-bold text-sky-300">
+                  <span>🔒 ಶಾಸನಬದ್ಧ 38-ಕಾಲಂಗಳ ತಿದ್ದುಪಡಿ ನಮೂನೆ</span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  ಶೇರು ಸಂಖ್ಯೆ: <strong className="text-emerald-400 font-mono">#{editShareholderModal.share_no}</strong> ({editShareholderModal.shareholder_name || editShareholderModal.name}) ರವರ ಅಧಿಕೃತ ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ ಮಾಡಲು ಆಪರೇಟರ್ ಪಿನ್ ನಮೂದಿಸಿ.
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  (ಡೀಫಾಲ್ಟ್ ಪಿನ್: <strong className="text-amber-400 font-mono">1234</strong> ಅಥವಾ ಆಡ್ಮಿನ್ ಪಾಸ್‌ವರ್ಡ್)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 mb-1.5 font-semibold">Security PIN / ಆಪರೇಟರ್ ಪಿನ್ *</label>
+                <input
+                  type="password"
+                  placeholder="Enter 4-digit PIN..."
+                  autoFocus
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
                       if (pinInput === '1234' || pinInput === 'admin123' || user?.role === 'Admin') {
                         setPinVerified(true);
+                        showToast('ಅಧಿಕೃತ ಪಿನ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ. ಶಾಸನಬದ್ಧ ತಿದ್ದುಪಡಿ ನಮೂನೆ ತೆರೆಯಲಾಗುತ್ತಿದೆ...');
                       } else {
-                        showToast('ತಪ್ಪಾದ ಪಿನ್ (Incorrect PIN)', 'error');
+                        showToast('ತಪ್ಪಾದ ಪಿನ್ (Incorrect PIN). ದಯವಿಟ್ಟು ಸರಿಯಾದ ಪಿನ್ ನಮೂದಿಸಿ.', 'error');
                       }
-                    }}
-                    className="w-full py-2 bg-[#1d70b8] hover:bg-blue-600 text-white font-bold rounded-xl text-xs cursor-pointer shadow-md"
-                  >
-                    ಪರಿಶೀಲಿಸಿ (Verify PIN)
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-slate-400 mb-1 font-medium">ಹೆಸರು (Shareholder Name)</label>
-                    <input
-                      type="text"
-                      value={editShareholderModal.shareholder_name || editShareholderModal.name || ''}
-                      onChange={(e) => setEditShareholderModal({
-                        ...editShareholderModal,
-                        shareholder_name: e.target.value,
-                        name: e.target.value
-                      })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-bold outline-none"
-                    />
-                  </div>
+                    }
+                  }}
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-slate-100 font-mono text-sm outline-none"
+                />
+              </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-slate-400 mb-1 font-medium">ವಿಳಾಸ / ಸ್ಥಳ</label>
-                      <input
-                        type="text"
-                        value={editShareholderModal.place || editShareholderModal.village_name || ''}
-                        onChange={(e) => setEditShareholderModal({
-                          ...editShareholderModal,
-                          place: e.target.value,
-                          village_name: e.target.value
-                        })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-400 mb-1 font-medium">ವರ್ಗ</label>
-                      <input
-                        type="text"
-                        value={editShareholderModal.schedule_cast || 'ಅ - ವರ್ಗ'}
-                        onChange={(e) => setEditShareholderModal({
-                          ...editShareholderModal,
-                          schedule_cast: e.target.value
-                        })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-slate-400 mb-1 font-medium">ಶೇರುಗಳ ಪ್ರಮಾಣ</label>
-                      <input
-                        type="number"
-                        value={editShareholderModal.number_of_shares || 1}
-                        onChange={(e) => setEditShareholderModal({
-                          ...editShareholderModal,
-                          number_of_shares: parseInt(e.target.value, 10) || 1
-                        })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-bold outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-400 mb-1 font-medium">ಮೊಬೈಲ್ ನಂಬರ</label>
-                      <input
-                        type="text"
-                        value={editShareholderModal.mobile_no || editShareholderModal.mobile || ''}
-                        onChange={(e) => setEditShareholderModal({
-                          ...editShareholderModal,
-                          mobile_no: e.target.value,
-                          mobile: e.target.value
-                        })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  {/* History Log Display */}
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                    <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                      <History className="w-3 h-3 text-blue-400" /> ಬದಲಾವಣೆಗಳ ಇತಿಹಾಸ (Edit History):
-                    </span>
-                    <p className="text-[10px] text-slate-500">
-                      ಮೂಲ ದಾಖಲೆ: {editShareholderModal.reg_date || '10/Aug/1982'} • ಬುಕ್ ನಂ: {editShareholderModal.book_no || 'B.No: 1'} • ಠರಾವು ನಂ: {editShareholderModal.tharava_no || 'TR-01/1982'}
-                    </p>
-                  </div>
-
-                  <div className="pt-2 flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await ApiService.updateShareholder(editShareholderModal.id, editShareholderModal);
-                        showToast(`ಶೇರುದಾರ #${editShareholderModal.share_no} ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ!`);
-                        setEditShareholderModal(null);
-                        await loadInitialData();
-                      }}
-                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs cursor-pointer"
-                    >
-                      ಉಳಿಸಿ (Save Changes)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditShareholderModal(null)}
-                      className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs cursor-pointer"
-                    >
-                      ರದ್ದುಮಾಡಿ
-                    </button>
-                  </div>
-                </div>
-              )}
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditShareholderModal(null);
+                    setPinInput('');
+                    setPinVerified(false);
+                  }}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs cursor-pointer transition-colors"
+                >
+                  ರದ್ದುಮಾಡಿ (Cancel)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pinInput === '1234' || pinInput === 'admin123' || user?.role === 'Admin') {
+                      setPinVerified(true);
+                      showToast('ಅಧಿಕೃತ ಪಿನ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ. ಶಾಸನಬದ್ಧ ತಿದ್ದುಪಡಿ ನಮೂನೆ ತೆರೆಯಲಾಗುತ್ತಿದೆ...');
+                    } else {
+                      showToast('ತಪ್ಪಾದ ಪಿನ್ (Incorrect PIN). ದಯವಿಟ್ಟು ಸರಿಯಾದ ಪಿನ್ ನಮೂದಿಸಿ.', 'error');
+                    }
+                  }}
+                  className="px-5 py-2 bg-[#1d70b8] hover:bg-blue-600 text-white font-bold rounded-xl text-xs cursor-pointer shadow-md transition-colors"
+                >
+                  ದೃಢೀಕರಿಸಿ & ನಮೂನೆ ತೆರೆಯಿರಿ
+                </button>
+              </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* When PIN is verified, render the full Statutory 38-column EditShareholderForm */}
+      {editShareholderModal && pinVerified && (
+        <ShareholderForm
+          initialData={editShareholderModal}
+          onClose={() => {
+            setEditShareholderModal(null);
+            setPinVerified(false);
+            setPinInput('');
+          }}
+          onSaveSuccess={async (updatedRecord) => {
+            setEditShareholderModal(null);
+            setPinVerified(false);
+            setPinInput('');
+            showToast(`ಶೇರುದಾರ #${updatedRecord?.share_no || editShareholderModal.share_no} ರವರ ಶಾಸನಬದ್ಧ ದಾಖಲೆ ಮತ್ತು ಇತಿಹಾಸ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ!`, 'success');
+            await loadInitialData();
+          }}
+        />
       )}
     </div>
   );

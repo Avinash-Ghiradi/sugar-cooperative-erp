@@ -3,7 +3,8 @@ import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getSharehold
 import { useAuth } from '../../context/AuthContext';
 import {
   X, Save, Plus, Printer, Contact, AlertTriangle, BookOpen, MapPin,
-  FileText, Users2, Fingerprint, Camera, Upload, Trash2, FileSignature, User, CheckCircle2, RefreshCw
+  FileText, Users2, Fingerprint, Camera, Upload, Trash2, FileSignature, User, CheckCircle2, RefreshCw,
+  History, Clock, ArrowRight
 } from 'lucide-react';
 
 // Client-side image compression to store optimized base64 data URLs in IndexedDB
@@ -92,7 +93,8 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     nominee_aadhaar_no: initialData?.nominee_aadhaar_no || '',
     nominee_mobile_no: initialData?.nominee_mobile_no || '',
     nominee_address: initialData?.nominee_address || '',
-    status: initialData?.status || 'Active'
+    status: initialData?.status || 'Active',
+    history_notes: ''
   });
 
   useEffect(() => {
@@ -190,7 +192,8 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
       ...formData,
       reciept: showSecondInstallment ? String(formData.reciept || '').trim() : '',
       amount: showSecondInstallment ? (parseFloat(formData.amount) || 0) : 0,
-      date: showSecondInstallment ? String(formData.date || '').trim() : ''
+      date: showSecondInstallment ? String(formData.date || '').trim() : '',
+      history_notes: (formData.history_notes || '').trim()
     };
 
     if (initialData) {
@@ -244,13 +247,19 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
         {/* Header */}
         <div className="p-6 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-bold text-slate-100">
                 {initialData ? 'Edit Statutory Shareholder Record (ಷೇರುದಾರರ ತಿದ್ದುಪಡಿ)' : 'Register New Shareholder (ಹೊಸ ಷೇರುದಾರರ ನಮೂದು)'}
               </h2>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
                 38 Statutory Columns
               </span>
+              {initialData && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800 flex items-center gap-1">
+                  <History className="w-3 h-3 text-blue-400" />
+                  {(initialData.history?.length || initialData.change_history?.length || 0)} ತಿದ್ದುಪಡಿಗಳು (Revisions)
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-400 mt-0.5">Official Sugar Cooperative Society Ledger Format (Indi / Vijayapura)</p>
           </div>
@@ -885,6 +894,100 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Section 6: Revision History & Audit Trail */}
+          <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h3 className="font-bold text-slate-200 text-xs flex items-center gap-2">
+                <History className="w-4 h-4 text-blue-400" /> 6. ಬದಲಾವಣೆಗಳ ಇತಿಹಾಸ ಹಾಗೂ ಲೆಕ್ಕಪರಿಶೋಧನಾ ದಾಖಲೆ (Revision History & Audit Trail)
+              </h3>
+              {initialData && (
+                <span className="text-[11px] text-slate-400 font-mono">
+                  ಒಟ್ಟು ತಿದ್ದುಪಡಿಗಳು: <strong className="text-blue-400">{(initialData.history?.length || initialData.change_history?.length || 0)}</strong>
+                </span>
+              )}
+            </div>
+
+            {/* Note / Reason for current edit */}
+            <div>
+              <label className="block text-slate-400 mb-1 font-medium">
+                ಈ ತಿದ್ದುಪಡಿಯ ಕಾರಣ / ಆಪರೇಟರ್ ಟಿಪ್ಪಣಿ (Reason or Operator Note for this Revision)
+              </label>
+              <input
+                type="text"
+                placeholder="ಉದಾಹರಣೆಗೆ: ಗ್ರಾಮ/ವಿಳಾಸ ಬದಲಾವಣೆ, ವಾರಸುದಾರರ ಸೇರ್ಪಡೆ, 2ನೇ ಕಂತು ಜಮೆ, ಮೊಬೈಲ್ ನಂಬರ್ ತಿದ್ದುಪಡಿ..."
+                value={formData.history_notes || ''}
+                onChange={(e) => setFormData({ ...formData, history_notes: e.target.value })}
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-blue-500 font-medium"
+              />
+            </div>
+
+            {/* Prior Revisions List */}
+            {initialData && (
+              <div className="space-y-2 pt-2">
+                <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-blue-400" /> ಹಿಂದಿನ ಬದಲಾವಣೆಗಳ ಪಟ್ಟಿ (Past Revision History):
+                </span>
+
+                {((initialData.history && initialData.history.length > 0) || (initialData.change_history && initialData.change_history.length > 0)) ? (
+                  <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                    {(initialData.history || initialData.change_history).map((rev, revIdx) => (
+                      <div key={rev.id || revIdx} className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-1.5 text-[11px]">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded font-mono font-bold bg-blue-950 text-blue-300 border border-blue-900 text-[10px]">
+                              #{revIdx + 1} ತಿದ್ದುಪಡಿ
+                            </span>
+                            <span className="text-slate-300 font-mono flex items-center gap-1 text-[11px]">
+                              <Clock className="w-3 h-3 text-slate-400" /> {rev.dateFormatted || rev.timestamp?.substring(0, 16)}
+                            </span>
+                          </div>
+                          <span className="text-slate-400 text-[10px]">
+                            ಆಪರೇಟರ್: <strong className="text-slate-200">{rev.operator || 'Admin'}</strong>
+                          </span>
+                        </div>
+
+                        {rev.notes && (
+                          <p className="text-[11px] text-amber-300/95 font-medium">
+                            📝 ಟಿಪ್ಪಣಿ: {rev.notes}
+                          </p>
+                        )}
+
+                        {/* List of changed fields */}
+                        {Array.isArray(rev.changes) && rev.changes.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            {rev.changes.map((c, cIdx) => (
+                              <div key={cIdx} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[10px]">
+                                <span className="font-semibold text-sky-300">{c.field}:</span>
+                                <span className="text-rose-400/90 line-through max-w-[140px] truncate" title={c.from}>{c.from || '—'}</span>
+                                <ArrowRight className="w-2.5 h-2.5 text-slate-500 shrink-0" />
+                                <span className="text-emerald-400 font-bold max-w-[160px] truncate" title={c.to}>{c.to || '—'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-slate-950/60 border border-dashed border-slate-800 rounded-xl text-[11px] text-slate-400 flex flex-col gap-1.5">
+                    <span className="text-slate-200 font-semibold flex items-center gap-1">
+                      🏛️ ಮೂಲ ಶಾಸನಬದ್ಧ ನೊಂದಣಿ ದಾಖಲೆ (Original Statutory Ledger Record):
+                    </span>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-300 text-[11px]">
+                      <span>ನೊಂದಣಿ ದಿನಾಂಕ: <strong className="text-white">{initialData.reg_date || '10/Aug/1982'}</strong></span>
+                      <span>ಬುಕ್ ಸಂಖ್ಯೆ: <strong className="text-sky-400 font-mono">{initialData.book_no || 'B.No: 1'}</strong></span>
+                      <span>ಠರಾವು ಸಂಖ್ಯೆ: <strong className="text-white font-mono">{initialData.tharava_no || 'TR-01/1982'}</strong></span>
+                      <span>ಶೇರು ಸಂಖ್ಯೆ: <strong className="text-emerald-400 font-mono">#{initialData.share_no}</strong></span>
+                    </div>
+                    <span className="text-slate-500 text-[10px] mt-0.5">
+                      ಈ ಶೇರುದಾರರಿಗೆ ಯಾವುದೇ ಹಿಂದಿನ ತಿದ್ದುಪಡಿಗಳಿಲ್ಲ. ಪ್ರಸ್ತುತ ನಮೂನೆಯಲ್ಲಿ ಅಗತ್ಯ ತಿದ್ದುಪಡಿಗಳನ್ನು ಮಾಡಿ ಉಳಿಸಿದಾಗ, ಮೊದಲ ತಿದ್ದುಪಡಿ ದಾಖಲೆಯಾಗಿ ಅಧಿಕೃತವಾಗಿ ಉಳಿಯುತ್ತದೆ.
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Form Actions Footer */}

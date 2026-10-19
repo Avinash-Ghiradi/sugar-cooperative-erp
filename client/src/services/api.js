@@ -1276,6 +1276,121 @@ export const ApiService = {
       thumb_updated: data.thumb_updated || (data.thumb_url ? 'Yes' : current.thumb_updated || 'No'),
     };
 
+    // Calculate field differences to record change history
+    const fieldDefinitions = [
+      { key: 'shareholder_name', label: 'ಹೆಸರು (Name)', altKey: 'name' },
+      { key: 'place', label: 'ಸ್ಥಳ / ಗ್ರಾಮ (Place)', altKey: 'village_name' },
+      { key: 'taluk', label: 'ತಾಲೂಕು (Taluk)' },
+      { key: 'district', label: 'ಜಿಲ್ಲೆ (District)' },
+      { key: 'circle', label: 'ವಲಯ (Circle)', altKey: 'circle_name' },
+      { key: 'pin_code', label: 'ಪಿನ್ ಕೋಡ್ (Pincode)' },
+      { key: 'schedule_cast', label: 'ವರ್ಗ (Category)' },
+      { key: 'number_of_shares', label: 'ಶೇರುಗಳ ಸಂಖ್ಯೆ (Shares count)' },
+      { key: 'total_amount', label: 'ಒಟ್ಟು ಮೊತ್ತ (Total Amount)' },
+      { key: 'mobile_no', label: 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ (Mobile No)', altKey: 'mobile' },
+      { key: 'aadhaar_card_no', label: 'ಆಧಾರ್ ಸಂಖ್ಯೆ (Aadhaar No)' },
+      { key: 'gender', label: 'ಲಿಂಗ (Gender)' },
+      { key: 'book_no', label: 'ಬುಕ್ ನಂ (Book No)' },
+      { key: 'sl_no', label: 'ಕ್ರಮ ಸಂಖ್ಯೆ (Sl No)' },
+      { key: 'receipt_no', label: 'ರಸೀದಿ ನಂ (Receipt No)' },
+      { key: 'receipt_amount', label: 'ರಸೀದಿ ಮೊತ್ತ (Receipt Amount)' },
+      { key: 'reciept', label: '2ನೇ ಕಂತು ರಸೀದಿ (2nd Inst Receipt)' },
+      { key: 'amount', label: '2ನೇ ಕಂತು ಮೊತ್ತ (2nd Inst Amount)' },
+      { key: 'date', label: '2ನೇ ಕಂತು ದಿನಾಂಕ (2nd Inst Date)' },
+      { key: 'nominee_name', label: 'ವಾರಸುದಾರರ ಹೆಸರು (Nominee Name)' },
+      { key: 'nominee_aadhaar_no', label: 'ವಾರಸುದಾರರ ಆಧಾರ್ (Nominee Aadhaar)' },
+      { key: 'nominee_mobile_no', label: 'ವಾರಸುದಾರರ ಮೊಬೈಲ್ (Nominee Mobile)' },
+      { key: 'nominee_address', label: 'ವಾರಸುದಾರರ ವಿಳಾಸ (Nominee Address)' },
+      { key: 'status', label: 'ಸ್ಥಿತಿ (Status)' },
+      { key: 'member_type', label: 'ಸದಸ್ಯತ್ವ ಪ್ರಕಾರ (Member Type)' },
+      { key: 'photo_url', label: 'ಭಾವಚಿತ್ರ (Photo)', isMedia: true },
+      { key: 'signature_url', label: 'ಸಹಿ (Signature)', isMedia: true },
+      { key: 'thumb_url', label: 'ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು (Thumb)', isMedia: true }
+    ];
+
+    const changes = [];
+    for (const f of fieldDefinitions) {
+      if (f.isMedia) {
+        const oldVal = current[f.key];
+        const newVal = updated[f.key];
+        if (oldVal !== newVal) {
+          if (!oldVal && newVal) {
+            changes.push({ field: f.label, fieldKey: f.key, from: 'ಇಲ್ಲ (None)', to: 'ಅಪ್‌ಲೋಡ್ ಮಾಡಲಾಗಿದೆ (Uploaded)' });
+          } else if (oldVal && !newVal) {
+            changes.push({ field: f.label, fieldKey: f.key, from: 'ದಾಖಲಾಗಿತ್ತು (Exists)', to: 'ತೆಗೆದುಹಾಕಲಾಗಿದೆ (Removed)' });
+          } else if (oldVal && newVal && oldVal !== newVal) {
+            changes.push({ field: f.label, fieldKey: f.key, from: 'ಹಳೆಯ ಕಡತ', to: 'ನವೀಕರಿಸಲಾಗಿದೆ (Updated)' });
+          }
+        }
+      } else {
+        const oldVal = String(current[f.key] ?? (f.altKey ? current[f.altKey] : '') ?? '').trim();
+        const newVal = String(updated[f.key] ?? (f.altKey ? updated[f.altKey] : '') ?? '').trim();
+        if (oldVal !== newVal && (oldVal || newVal)) {
+          changes.push({
+            field: f.label,
+            fieldKey: f.key,
+            from: oldVal || '—',
+            to: newVal || '—'
+          });
+        }
+      }
+    }
+
+    const now = new Date();
+    const dateFormatted = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    let operatorName = 'Official Operator (Admin)';
+    try {
+      if (typeof window !== 'undefined') {
+        const authData = localStorage.getItem('sugar_erp_auth');
+        if (authData) {
+          const parsed = JSON.parse(authData);
+          if (parsed?.user?.name || parsed?.user?.username) {
+            operatorName = `${parsed.user.name || parsed.user.username} (${parsed.user.role || 'Admin'})`;
+          }
+        }
+      }
+    } catch (e) {}
+
+    const historyEntry = {
+      id: `REV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: now.toISOString(),
+      dateFormatted,
+      operator: operatorName,
+      changesCount: changes.length,
+      changes: changes.length > 0 ? changes : [{ field: 'ದಾಖಲೆ ಪರಿಶೀಲನೆ (Record Verification)', from: 'ಪರಿಶೀಲಿಸಲಾಗಿದೆ', to: 'ನವೀಕರಿಸಲಾಗಿದೆ' }],
+      notes: (data.history_notes || '').trim() || 'ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ (Statutory Amendment)'
+    };
+
+    const priorHistory = Array.isArray(current.history)
+      ? current.history
+      : (Array.isArray(current.change_history) ? current.change_history : []);
+
+    const updatedHistory = [historyEntry, ...priorHistory];
+    updated.history = updatedHistory;
+    updated.change_history = updatedHistory;
+
+    // Record into system audit logs
+    try {
+      const summaryDiff = changes.length > 0
+        ? changes.map(c => `${c.field}: ${c.from} ➔ ${c.to}`).slice(0, 3).join('; ')
+        : 'ದಾಖಲೆ ಪರಿಷ್ಕರಣೆ';
+      const auditEntry = {
+        id: `LOG-${Date.now()}`,
+        timestamp: now.toISOString(),
+        dateFormatted,
+        action: 'SHAREHOLDER_UPDATE',
+        operator: operatorName,
+        details: `ಶೇರುದಾರ #${updated.share_no} (${updated.shareholder_name}) ತಿದ್ದುಪಡಿ [${summaryDiff}${changes.length > 3 ? ` +${changes.length - 3} ಇತರೆ` : ''}]`,
+        share_no: updated.share_no,
+        target_id: updated.id,
+        changesCount: changes.length
+      };
+      mockAuditLogs.unshift(auditEntry);
+      if (mockAuditLogs.length > 500) mockAuditLogs.pop();
+      saveStoredData(STORAGE_KEY_LOGS, mockAuditLogs);
+    } catch (e) {}
+
     mockShareholders[index] = updated;
     await saveToIndexedDB(mockShareholders);
     if (mockShareholders.length < 2500) {
