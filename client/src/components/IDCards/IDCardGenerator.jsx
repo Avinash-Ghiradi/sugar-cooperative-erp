@@ -17,7 +17,7 @@ import {
 export default function IDCardGenerator() {
   const [shareholders, setShareholders] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
-  const [cardSide, setCardSide] = useState('both'); // 'both', 'Front', or 'Back'
+  const [cardSide, setCardSide] = useState('Front'); // 'Front' or 'Back'
   const [printSides, setPrintSides] = useState('both'); // 'both' (Front & Back), 'front', 'back'
   const [showSeal, setShowSeal] = useState(true);
   const [search, setSearch] = useState('');
@@ -109,7 +109,6 @@ export default function IDCardGenerator() {
 
   const handlePrintSingle = (sh) => {
     setSelectedCards([sh]);
-    setPrintSides('both');
     setTimeout(() => window.print(), 80);
   };
 
@@ -474,25 +473,14 @@ export default function IDCardGenerator() {
             </button>
           </div>
 
-          {/* Screen Preview Side Toggle (Both Pages / Front Only / Back Only) */}
+          {/* Screen Preview Side Toggle */}
           <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
             <span className="text-[10px] text-slate-400 font-semibold px-2 uppercase tracking-wider hidden lg:inline">ವೀಕ್ಷಣೆ:</span>
-            <button
-              onClick={() => setCardSide('both')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                cardSide === 'both'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="View Both Front and Back Pages (ಎರಡೂ ಬದಿಗಳು)"
-            >
-              ಎರಡೂ ಬದಿಗಳು (Both Pages)
-            </button>
             <button
               onClick={() => setCardSide('Front')}
               className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                 cardSide === 'Front'
-                  ? 'bg-emerald-600 text-white shadow'
+                  ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/50'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -502,7 +490,7 @@ export default function IDCardGenerator() {
               onClick={() => setCardSide('Back')}
               className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                 cardSide === 'Back'
-                  ? 'bg-emerald-600 text-white shadow'
+                  ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/50'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -730,7 +718,7 @@ export default function IDCardGenerator() {
             <p className="text-xs text-slate-500">Try adjusting your filters or search keywords.</p>
           </div>
         ) : (
-          <div className={`grid grid-cols-1 ${cardSide === 'both' ? 'xl:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {shareholders.map((sh, idx) => {
               const selected = isSelected(sh);
               return (
@@ -776,56 +764,19 @@ export default function IDCardGenerator() {
                     </div>
                   </div>
 
-                  {/* Render the Exact Official ID Card (Front and/or Back) */}
-                  <div className="cursor-pointer w-full flex flex-col items-center" onClick={() => toggleSelectCard(sh)}>
-                    {cardSide === 'both' ? (
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full py-1">
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-800">
-                            • ಮುಂಭಾಗ (Front)
-                          </span>
-                          <OfficialShareholderIDCard
-                            shareholder={sh}
-                            side="Front"
-                            showSeal={showSeal}
-                            customLogo={customSettings.customLogo}
-                            customBackground={customSettings.customBackground}
-                            customMdSignature={customSettings.customMdSignature}
-                            hideHeader={customSettings.hideHeader}
-                            showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-                            scale={0.92}
-                          />
-                        </div>
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-[10px] font-bold text-sky-400 bg-sky-950/80 px-2.5 py-0.5 rounded-full border border-sky-800">
-                            • ಹಿಂಬದಿ (Back)
-                          </span>
-                          <OfficialShareholderIDCard
-                            shareholder={sh}
-                            side="Back"
-                            showSeal={showSeal}
-                            customLogo={customSettings.customLogo}
-                            customBackground={customSettings.customBackground}
-                            customMdSignature={customSettings.customMdSignature}
-                            hideHeader={customSettings.hideHeader}
-                            showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-                            scale={0.92}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <OfficialShareholderIDCard
-                        shareholder={sh}
-                        side={cardSide}
-                        showSeal={showSeal}
-                        customLogo={customSettings.customLogo}
-                        customBackground={customSettings.customBackground}
-                        customMdSignature={customSettings.customMdSignature}
-                        hideHeader={customSettings.hideHeader}
-                        showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-                        scale={0.96}
-                      />
-                    )}
+                  {/* Render the Exact Official ID Card */}
+                  <div className="cursor-pointer" onClick={() => toggleSelectCard(sh)}>
+                    <OfficialShareholderIDCard
+                      shareholder={sh}
+                      side={cardSide}
+                      showSeal={showSeal}
+                      customLogo={customSettings.customLogo}
+                      customBackground={customSettings.customBackground}
+                      customMdSignature={customSettings.customMdSignature}
+                      hideHeader={customSettings.hideHeader}
+                      showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                      scale={0.96}
+                    />
                   </div>
                 </div>
               );
@@ -1236,101 +1187,72 @@ export default function IDCardGenerator() {
         </div>
       )}
 
-      {/* SINGLE CARD PREVIEW & PRINT MODAL (SHOWS BOTH FRONT & BACK) */}
+      {/* SINGLE CARD PREVIEW & PRINT MODAL */}
       {previewCard && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto no-print">
-          <div className="bg-slate-950 border border-slate-800 w-full max-w-5xl rounded-3xl p-6 shadow-2xl space-y-4 max-h-[95vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-center justify-center p-4 no-print">
+          <div className="bg-slate-950 border border-slate-800 w-full max-w-xl rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
                 <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
                   <Contact className="w-4 h-4 text-emerald-400" />
-                  ಸದಸ್ಯರ ಗುರುತಿನ ಚೀಟಿ ಮುನ್ನೋಟ (Official ID Card Preview - Both Pages)
+                  ಸದಸ್ಯರ ಗುರುತಿನ ಚೀಟಿ ಮುನ್ನೋಟ (ID Card Preview)
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  {previewCard.shareholder_name || previewCard.name} • ಶೇರು ಸಂ: #{previewCard.share_no || previewCard.share_number} • {previewCard.village || previewCard.place}
+                  {previewCard.shareholder_name || previewCard.name} • Share #{previewCard.share_no}
                 </p>
               </div>
 
-              <button
-                onClick={() => setPreviewCard(null)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCardSide(cardSide === 'Front' ? 'Back' : 'Front')}
+                  className="flex items-center gap-1 px-3 py-1 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold cursor-pointer"
+                >
+                  <RotateCw className="w-3 h-3 text-emerald-400" />
+                  Flip to {cardSide === 'Front' ? 'Back' : 'Front'}
+                </button>
+                <button
+                  onClick={() => setPreviewCard(null)}
+                  className="p-1 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            {/* Enlarged Dual Card Presentation (Both Front & Back Side-by-Side) */}
-            <div className="py-4 flex flex-col xl:flex-row items-center justify-center gap-6 bg-slate-900/40 rounded-2xl border border-slate-800/80 p-4">
-              {/* Front Page */}
-              <div className="space-y-2 text-center flex flex-col items-center">
-                <span className="text-[11px] font-bold text-emerald-300 bg-emerald-950/90 px-3 py-0.5 rounded-full border border-emerald-700/80 shadow">
-                  • ಮುಂಭಾಗ (Front Page)
-                </span>
-                <OfficialShareholderIDCard
-                  shareholder={previewCard}
-                  side="Front"
-                  showSeal={showSeal}
-                  customLogo={customSettings.customLogo}
-                  customBackground={customSettings.customBackground}
-                  customMdSignature={customSettings.customMdSignature}
-                  hideHeader={customSettings.hideHeader}
-                  showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-                  scale={1.15}
-                />
-              </div>
-
-              {/* Back Page */}
-              <div className="space-y-2 text-center flex flex-col items-center">
-                <span className="text-[11px] font-bold text-sky-300 bg-sky-950/90 px-3 py-0.5 rounded-full border border-sky-700/80 shadow">
-                  • ಹಿಂಬದಿ (Back Page)
-                </span>
-                <OfficialShareholderIDCard
-                  shareholder={previewCard}
-                  side="Back"
-                  showSeal={showSeal}
-                  customLogo={customSettings.customLogo}
-                  customBackground={customSettings.customBackground}
-                  customMdSignature={customSettings.customMdSignature}
-                  hideHeader={customSettings.hideHeader}
-                  showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-                  scale={1.15}
-                />
-              </div>
+            {/* Enlarged Card Presentation */}
+            <div className="py-4 flex justify-center bg-slate-900/40 rounded-2xl border border-slate-800/80 p-4">
+              <OfficialShareholderIDCard
+                shareholder={previewCard}
+                side={cardSide}
+                showSeal={showSeal}
+                customLogo={customSettings.customLogo}
+                customBackground={customSettings.customBackground}
+                customMdSignature={customSettings.customMdSignature}
+                hideHeader={customSettings.hideHeader}
+                showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                scale={1.2}
+              />
             </div>
 
             {/* Modal Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-800">
               <span className="text-[11px] text-slate-400">
-                CR80 Plastic PVC Card Standard (85.6mm × 54.0mm)
+                CR80 Plastic PVC Card (85.6mm × 54mm)
               </span>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
-                    setPrintSides('front');
+                    setPrintSides(cardSide === 'Front' ? 'front' : 'back');
                     setSelectedCards([previewCard]);
                     setTimeout(() => window.print(), 100);
                   }}
                   className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
-                  title="Print Front Side Only (ಮುಂಭಾಗ ಮಾತ್ರ)"
+                  title={`Print ${cardSide} side only`}
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  ಮುಂಭಾಗ ಮಾತ್ರ
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPrintSides('back');
-                    setSelectedCards([previewCard]);
-                    setTimeout(() => window.print(), 100);
-                  }}
-                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
-                  title="Print Back Side Only (ಹಿಂಬದಿ ಮಾತ್ರ)"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  ಹಿಂಬದಿ ಮಾತ್ರ
+                  {cardSide === 'Front' ? 'ಮುಂಭಾಗ ಮಾತ್ರ' : 'ಹಿಂಬದಿ ಮಾತ್ರ'}
                 </button>
 
                 <button
@@ -1341,7 +1263,7 @@ export default function IDCardGenerator() {
                     setTimeout(() => window.print(), 100);
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
-                  title="Print Both Pages: Front (ಮುಂಭಾಗ) and Back (ಹಿಂಬದಿ)"
+                  title="Print Page 1: Front and Page 2: Back"
                 >
                   <Printer className="w-4 h-4" /> ಎರಡೂ ಬದಿಗಳನ್ನು ಮುದ್ರಿಸಿ (Print Both Pages)
                 </button>
