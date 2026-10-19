@@ -125,7 +125,7 @@ function AppContent() {
       case 'employees': return <EmployeeManagement />;
       case 'users': return <UserManagement />;
       case 'audit_logs': return <AuditLogs />;
-      case 'import_export': return <DataImportExport />;
+      case 'import_export': return <SettingsModule initialTab="upload" />;
       case 'backup': return <BackupManager />;
       case 'settings': return <SettingsModule />;
       default: return <Dashboard />;

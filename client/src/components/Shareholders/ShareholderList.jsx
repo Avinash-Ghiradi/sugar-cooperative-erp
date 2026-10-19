@@ -601,114 +601,13 @@ export default function ShareholderList({ initialShowMerge = false }) {
             <span>ವಿವರ ವರದಿಗಳು (Reports)</span>
           </button>
 
-          <button
-            onClick={() => { setEditShareholderData(null); setShowAddForm(true); }}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Add Shareholder
-          </button>
-
-          {/* Merge Multiple Shares Button */}
-          <button
-            onClick={() => setShowMergeModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-400 text-slate-950 rounded-xl text-xs font-bold shadow-lg shadow-amber-950/40 ring-1 ring-amber-400/60 hover:scale-[1.02] transition-all cursor-pointer"
-            title="ಬಹು ಮೊತ್ತಗಳನ್ನು ಹೊಂದಿರುವ ಶೇರುದಾರರ ಶೇರುಗಳು ಮತ್ತು ವಿವರಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ"
-          >
-            <GitMerge className="w-4 h-4 text-slate-950" />
-            <span>ಬಹು-ಶೇರು ವಿಲೀನ (Merge Shares)</span>
-            {multipleHoldingsCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-slate-950 text-amber-300 text-[10px] font-mono font-bold">
-                {multipleHoldingsCount}
-              </span>
-            )}
-          </button>
-
-          {/* Prominent Upload Excel Button */}
-          <button
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-900/50 ring-2 ring-emerald-400/50 hover:scale-[1.02] transition-all cursor-pointer"
-            title="Upload Shareholder Excel (.xlsx / .xls)"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-white animate-pulse" />
-            <span>Upload Excel (ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)</span>
-          </button>
-
-          <button
-            onClick={exportFullLedgerCsv}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-medium transition-all"
-            title="Export 38-column CSV with UTF-8 BOM (Kannada Supported)"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export CSV (Unicode)
-          </button>
-
-          <button
-            onClick={exportFullLedgerExcel}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-medium transition-all"
-            title="Export Excel (.xls) - Opens directly in Microsoft Excel with 100% Kannada Unicode"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-teal-400" /> Export Excel (.xls)
-          </button>
-
+          {/* Print Button */}
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-medium transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
           >
             <Printer className="w-4 h-4 text-sky-400" /> Print
           </button>
-
-          <button
-            onClick={() => setShowResetModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800 text-rose-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
-            title="Erase all shareholder records or factory reset entire database"
-          >
-            <Trash2 className="w-4 h-4 text-rose-400" />
-            <span>Erase / Reset All</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Prominent Quick CSV Import Banner */}
-      <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900/90 to-slate-950 border border-emerald-800/50 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400">
-            <Upload className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div>
-            <div className="font-bold text-slate-100 flex items-center gap-2">
-              <span>Bulk Shareholder Import & Ledger (ಕನ್ನಡ ಯುನಿಕೋಡ್ 100% ಬೆಂಬಲಿತವಾಗಿದೆ)</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-900/80 text-emerald-300 border border-emerald-700/50">
-                UTF-8 Unicode + Excel
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Upload your complete cooperative shareholder database in CSV or Excel format (Book No, Share No, Name in Kannada/English, Gender, Aadhaar, Receipt, Place, Taluk, Circle, Tharava & Nominee)
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 flex-shrink-0">
-          <button
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950 hover:scale-[1.02] transition-all cursor-pointer"
-          >
-            <Upload className="w-4 h-4" /> Upload File (ಅಪ್ಲೋಡ್)
-          </button>
-          <button
-            type="button"
-            onClick={downloadExcelTemplate}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-teal-300 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all shadow-sm cursor-pointer"
-            title="Download Excel Template with 100% Kannada Unicode"
-          >
-            <Download className="w-4 h-4 text-teal-400" /> Excel Template (.xls)
-          </button>
-          <a
-            href="./shareholders_details.csv"
-            download="shareholders_details.csv"
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all shadow-sm"
-            title="Download CSV Template with UTF-8 BOM"
-          >
-            <Download className="w-4 h-4 text-emerald-400" /> CSV Template
-          </a>
         </div>
       </div>
 
@@ -849,16 +748,16 @@ export default function ShareholderList({ initialShowMerge = false }) {
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">
               <button
-                onClick={() => { setEditShareholderData(null); setShowAddForm(true); }}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all flex items-center gap-1.5"
+                onClick={() => setActiveModule('enrollment')}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <Plus className="w-4 h-4" /> Add Shareholder (ಹೊಸ ಷೇರುದಾರ)
+                <Plus className="w-4 h-4" /> 1. New Enrollment (ಹೊಸ ನೋಂದಣಿ)
               </button>
               <button
-                onClick={() => setShowUploadModal(true)}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5"
+                onClick={() => setActiveModule('settings')}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Upload Excel Ledger (ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)
+                <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Go to Settings for Upload (ಸೆಟ್ಟಿಂಗ್ಸ್)
               </button>
             </div>
           </div>
