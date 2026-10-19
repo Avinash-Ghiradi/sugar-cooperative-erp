@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { BarChart3, FileSpreadsheet, Printer, Download, Filter, RefreshCw, Users, CreditCard, PackageCheck, History, Building2 } from 'lucide-react';
+import {
+  BarChart3, FileSpreadsheet, Printer, Download, Filter, RefreshCw, Users, CreditCard,
+  PackageCheck, History, Building2, Layers, MapPin, Coins, IndianRupee, FileText, ChevronDown
+} from 'lucide-react';
 import ShareholderReports from './ShareholderReports';
 
 export default function ReportsModule() {
   const { showToast } = useAuth();
   const [selectedReport, setSelectedReport] = useState('shareholders');
+  const [shareholderSubReport, setShareholderSubReport] = useState('placewise');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -42,9 +46,19 @@ export default function ReportsModule() {
     { id: 'villages', label: '5. ಗ್ರಾಮ & ವಲಯ ಸಾರಾಂಶ (Villages & Circles)', icon: Building2 }
   ];
 
+  // Submenu for Shareholder Reports (ಶೇರುದಾರರ ವಿವರ ವರದಿಗಳ ಉಪ-ಮೆನು)
+  const shareholderSubmenus = [
+    { id: 'placewise', label: '1. ಸ್ಥಳವಾರು ವರದಿ (Place-wise)', icon: Building2 },
+    { id: 'categorywise', label: '2. ವರ್ಗವಾರು ವರದಿ (Category-wise)', icon: Layers },
+    { id: 'circlewise', label: '3. ವಲಯವಾರು ವರದಿ (Circle-wise)', icon: MapPin },
+    { id: 'shareswise', label: '4. ಶೇರುವಾರು ವರದಿ (Shares-wise)', icon: Coins },
+    { id: 'amountwise', label: '5. ನಗದು ಮೊತ್ತವಾರು ವರದಿ (Cash Amount-wise)', icon: IndianRupee },
+    { id: 'detailed', label: '6. ಸದಸ್ಯರ ಸಮಗ್ರ ವಿವರ ಪಟ್ಟಿ (Detailed Register)', icon: FileText }
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Top Module Report Switcher */}
+      {/* 1. Top Level Report Switcher */}
       <div className="flex flex-wrap items-center gap-2 bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 no-print">
         {reportTypes.map((r) => {
           const Icon = r.icon;
@@ -61,14 +75,58 @@ export default function ReportsModule() {
             >
               <Icon className={`w-4 h-4 ${isSel ? 'text-white' : 'text-emerald-400'}`} />
               <span>{r.label}</span>
+              {r.id === 'shareholders' && isSel && (
+                <ChevronDown className="w-3.5 h-3.5 text-emerald-200 ml-0.5" />
+              )}
             </button>
           );
         })}
       </div>
 
+      {/* 2. Submenu for Shareholder Reports - Directly under 1. ಶೇರುದಾರರ ವಿವರ ವರದಿಗಳು */}
+      {selectedReport === 'shareholders' && (
+        <div className="bg-gradient-to-r from-slate-950/95 via-slate-900/90 to-slate-950/95 p-3.5 rounded-2xl border-2 border-emerald-500/30 shadow-xl no-print space-y-2.5">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                ಶೇರುದಾರರ ವಿವರ ವರದಿಗಳ ಉಪ-ಮೆನು (Shareholders Report Submenu):
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">
+              ಯಾವುದೇ ಉಪ-ವರದಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ (Click to view breakdown)
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {shareholderSubmenus.map((sub) => {
+              const SubIcon = sub.icon;
+              const isSubSel = shareholderSubReport === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  onClick={() => setShareholderSubReport(sub.id)}
+                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isSubSel
+                      ? 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-950 ring-2 ring-emerald-400/60 scale-[1.02]'
+                      : 'bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800'
+                  }`}
+                >
+                  <SubIcon className={`w-3.5 h-3.5 ${isSubSel ? 'text-white' : 'text-emerald-400'}`} />
+                  <span>{sub.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Render Active Report */}
       {selectedReport === 'shareholders' ? (
-        <ShareholderReports />
+        <ShareholderReports
+          activeMode={shareholderSubReport}
+          onModeChange={setShareholderSubReport}
+        />
       ) : (
         <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6 printable-area">
           {/* Printable Official Header */}

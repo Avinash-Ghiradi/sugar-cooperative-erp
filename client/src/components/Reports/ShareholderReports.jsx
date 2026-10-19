@@ -39,14 +39,25 @@ function parseDateValue(dateVal) {
   return isNaN(parsed) ? null : parsed;
 }
 
-export default function ShareholderReports() {
+export default function ShareholderReports({ activeMode, onModeChange }) {
   const { showToast } = useAuth();
   const [allShareholders, setAllShareholders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Active Report Breakdown Tab:
-  // 'placewise' | 'categorywise' | 'circlewise' | 'shareswise' | 'detailed'
-  const [reportMode, setReportMode] = useState('placewise');
+  // 'placewise' | 'categorywise' | 'circlewise' | 'shareswise' | 'amountwise' | 'detailed'
+  const [reportMode, setReportMode] = useState(activeMode || 'placewise');
+
+  useEffect(() => {
+    if (activeMode && activeMode !== reportMode) {
+      setReportMode(activeMode);
+    }
+  }, [activeMode]);
+
+  const changeReportMode = (mode) => {
+    setReportMode(mode);
+    if (onModeChange) onModeChange(mode);
+  };
 
   // Filter States
   const [filters, setFilters] = useState({
@@ -382,7 +393,7 @@ export default function ShareholderReports() {
       ...prev,
       [filterKey]: value
     }));
-    setReportMode('detailed');
+    changeReportMode('detailed');
     setDetailedPage(1);
   };
 
@@ -1239,7 +1250,7 @@ export default function ShareholderReports() {
       {/* 4. Report Breakdown Mode Switcher Tabs */}
       <div className="flex flex-wrap items-center gap-2 bg-slate-950/80 p-2 rounded-2xl border border-slate-800 no-print">
         <button
-          onClick={() => { setReportMode('placewise'); setSortField('count'); setSortOrder('desc'); }}
+          onClick={() => { changeReportMode('placewise'); setSortField('count'); setSortOrder('desc'); }}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             reportMode === 'placewise'
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950'
@@ -1254,7 +1265,7 @@ export default function ShareholderReports() {
         </button>
 
         <button
-          onClick={() => setReportMode('categorywise')}
+          onClick={() => changeReportMode('categorywise')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             reportMode === 'categorywise'
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950'
@@ -1269,7 +1280,7 @@ export default function ShareholderReports() {
         </button>
 
         <button
-          onClick={() => setReportMode('circlewise')}
+          onClick={() => changeReportMode('circlewise')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             reportMode === 'circlewise'
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950'
@@ -1284,7 +1295,7 @@ export default function ShareholderReports() {
         </button>
 
         <button
-          onClick={() => setReportMode('shareswise')}
+          onClick={() => changeReportMode('shareswise')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             reportMode === 'shareswise'
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950'
@@ -1299,7 +1310,7 @@ export default function ShareholderReports() {
         </button>
 
         <button
-          onClick={() => { setReportMode('amountwise'); setSortField('amount'); setSortOrder('desc'); }}
+          onClick={() => { changeReportMode('amountwise'); setSortField('amount'); setSortOrder('desc'); }}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             reportMode === 'amountwise'
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950'
@@ -1314,7 +1325,7 @@ export default function ShareholderReports() {
         </button>
 
         <button
-          onClick={() => setReportMode('detailed')}
+          onClick={() => changeReportMode('detailed')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             reportMode === 'detailed'
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950'
