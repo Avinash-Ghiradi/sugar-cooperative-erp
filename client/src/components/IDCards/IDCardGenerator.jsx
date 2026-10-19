@@ -311,7 +311,7 @@ export default function IDCardGenerator() {
             page-break-after: always !important;
             break-after: page !important;
           }
-          /* A4 Layout Styles */
+          /* A4 Layout Styles: Cut & Fold Guides */
           .id-card-a4-sheet {
             display: block !important;
             width: 100% !important;
@@ -324,25 +324,95 @@ export default function IDCardGenerator() {
           .id-card-a4-pairs-container {
             display: flex !important;
             flex-direction: column !important;
-            gap: 6mm !important;
+            gap: 4mm !important;
             align-items: center !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+          }
+          .id-card-a4-foldable-unit {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
           }
           .id-card-a4-member-pair {
             display: flex !important;
             flex-direction: row !important;
-            gap: 6mm !important;
+            gap: 0 !important;
             justify-content: center !important;
             align-items: center !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            border: 1px dashed #334155 !important; /* Outer Cutting Line (ಕತ್ತರಿಸುವ ಗೆರೆ) */
+            box-sizing: border-box !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
+            position: relative !important;
+          }
+          /* Center Vertical Fold Line (ಮಡಚುವ ಗೆರೆ) */
+          .id-card-center-fold-line {
+            width: 0px !important;
+            height: 54mm !important;
+            border-left: 1.5px dashed #0f172a !important; /* Fold down the middle */
+            margin: 0 !important;
+            padding: 0 !important;
+            position: relative !important;
+            z-index: 25 !important;
+          }
+          /* Top & Bottom Guide text for Cut & Fold */
+          .id-card-guide-top,
+          .id-card-guide-bottom {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 171.2mm !important;
+            font-size: 7px !important;
+            font-weight: 700 !important;
+            color: #475569 !important;
+            line-height: 1 !important;
+            padding: 1.5px 1mm !important;
+            user-select: none !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+          }
+          .id-card-guide-cut-text {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 2px !important;
+            color: #334155 !important;
+            font-size: 6.8px !important;
+          }
+          .id-card-guide-fold-marker {
+            font-weight: 800 !important;
+            color: #0f172a !important;
+            font-size: 7px !important;
+            letter-spacing: 0.3px !important;
+            text-align: center !important;
+          }
+          .id-card-guide-single {
+            width: 85.6mm !important;
+          }
+          .id-card-cut-border {
+            border: 1px dashed #334155 !important; /* Single card cut outline */
+            box-sizing: border-box !important;
+          }
+          .id-card-a4-single-unit {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           .id-card-a4-grid {
             display: grid !important;
             grid-template-columns: repeat(2, 85.6mm) !important;
-            gap: 6mm !important;
+            gap: 4mm !important;
             justify-content: center !important;
             page-break-inside: avoid !important;
             background: #ffffff !important;
@@ -797,32 +867,53 @@ export default function IDCardGenerator() {
                 {printSides === 'both' ? (
                   <div className="id-card-a4-pairs-container">
                     {cardsToPrint.map((sh, idx) => (
-                      <div key={`a4-pair-${sh.id || idx}`} className="id-card-a4-member-pair">
-                        <div className="id-card-print-single">
-                          <OfficialShareholderIDCard
-                            shareholder={sh}
-                            side="Front"
-                            showSeal={showSeal}
-                            customLogo={customSettings.customLogo}
-                            customBackground={customSettings.customBackground}
-                            customMdSignature={customSettings.customMdSignature}
-                            hideHeader={customSettings.hideHeader}
-                            showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-                            scale={1}
-                          />
+                      <div key={`a4-pair-${sh.id || idx}`} className="id-card-a4-foldable-unit">
+                        {/* Top Cut & Fold Header Guides */}
+                        <div className="id-card-guide-top">
+                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut)</span>
+                          <span className="id-card-guide-fold-marker">▼ ಇಲ್ಲಿ ಮಡಚಿ (Fold Line) ▼</span>
+                          <span className="id-card-guide-cut-text">✂ Cut</span>
                         </div>
-                        <div className="id-card-print-single">
-                          <OfficialShareholderIDCard
-                            shareholder={sh}
-                            side="Back"
-                            showSeal={showSeal}
-                            customLogo={customSettings.customLogo}
-                            customBackground={customSettings.customBackground}
-                            customMdSignature={customSettings.customMdSignature}
-                            hideHeader={customSettings.hideHeader}
-                            showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-                            scale={1}
-                          />
+
+                        {/* Combined Pair Container with Outer Cut Border & Center Fold Line */}
+                        <div className="id-card-a4-member-pair">
+                          <div className="id-card-print-single">
+                            <OfficialShareholderIDCard
+                              shareholder={sh}
+                              side="Front"
+                              showSeal={showSeal}
+                              customLogo={customSettings.customLogo}
+                              customBackground={customSettings.customBackground}
+                              customMdSignature={customSettings.customMdSignature}
+                              hideHeader={customSettings.hideHeader}
+                              showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                              scale={1}
+                            />
+                          </div>
+
+                          {/* Center Vertical Fold Line (ಮಡಚುವ ಗೆರೆ) */}
+                          <div className="id-card-center-fold-line" title="ಮಡಚುವ ಗೆರೆ (Fold Line)"></div>
+
+                          <div className="id-card-print-single">
+                            <OfficialShareholderIDCard
+                              shareholder={sh}
+                              side="Back"
+                              showSeal={showSeal}
+                              customLogo={customSettings.customLogo}
+                              customBackground={customSettings.customBackground}
+                              customMdSignature={customSettings.customMdSignature}
+                              hideHeader={customSettings.hideHeader}
+                              showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                              scale={1}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Bottom Cut & Fold Footer Guides */}
+                        <div className="id-card-guide-bottom">
+                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut)</span>
+                          <span className="id-card-guide-fold-marker">▲ ಇಲ್ಲಿ ಮಡಚಿ (Fold Line) ▲</span>
+                          <span className="id-card-guide-cut-text">✂ Cut</span>
                         </div>
                       </div>
                     ))}
@@ -830,18 +921,28 @@ export default function IDCardGenerator() {
                 ) : (
                   <div className="id-card-a4-grid">
                     {cardsToPrint.map((sh, idx) => (
-                      <div key={`a4-single-${sh.id || idx}`} className="id-card-print-single">
-                        <OfficialShareholderIDCard
-                          shareholder={sh}
-                          side={printSides === 'front' ? 'Front' : 'Back'}
-                          showSeal={showSeal}
-                          customLogo={customSettings.customLogo}
-                          customBackground={customSettings.customBackground}
-                          customMdSignature={customSettings.customMdSignature}
-                          hideHeader={customSettings.hideHeader}
-                          showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
-                          scale={1}
-                        />
+                      <div key={`a4-single-${sh.id || idx}`} className="id-card-a4-single-unit">
+                        <div className="id-card-guide-top id-card-guide-single">
+                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut Line)</span>
+                          <span className="id-card-guide-cut-text">✂ Cut</span>
+                        </div>
+                        <div className="id-card-print-single id-card-cut-border">
+                          <OfficialShareholderIDCard
+                            shareholder={sh}
+                            side={printSides === 'front' ? 'Front' : 'Back'}
+                            showSeal={showSeal}
+                            customLogo={customSettings.customLogo}
+                            customBackground={customSettings.customBackground}
+                            customMdSignature={customSettings.customMdSignature}
+                            hideHeader={customSettings.hideHeader}
+                            showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                            scale={1}
+                          />
+                        </div>
+                        <div className="id-card-guide-bottom id-card-guide-single">
+                          <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut Line)</span>
+                          <span className="id-card-guide-cut-text">✂ Cut</span>
+                        </div>
                       </div>
                     ))}
                   </div>
