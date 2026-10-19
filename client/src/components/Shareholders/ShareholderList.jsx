@@ -12,7 +12,7 @@ import ShareholderForm from './ShareholderForm';
 import ResetConfirmModal from '../Common/ResetConfirmModal';
 import MergeSharesModal from './MergeSharesModal';
 
-export default function ShareholderList() {
+export default function ShareholderList({ initialShowMerge = false }) {
   const { showToast, setActiveModule, user } = useAuth();
   const [shareholders, setShareholders] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
@@ -44,7 +44,14 @@ export default function ShareholderList() {
   const [editShareholderData, setEditShareholderData] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [showMergeModal, setShowMergeModal] = useState(initialShowMerge);
+
+  useEffect(() => {
+    if (initialShowMerge) {
+      setShowMergeModal(true);
+    }
+  }, [initialShowMerge]);
+
   const [multipleHoldingsCount, setMultipleHoldingsCount] = useState(0);
   const [previewRecords, setPreviewRecords] = useState([]);
   const [uploadFileName, setUploadFileName] = useState('');
@@ -1445,7 +1452,10 @@ export default function ShareholderList() {
       {/* Merge Multiple Shares Modal */}
       <MergeSharesModal
         isOpen={showMergeModal}
-        onClose={() => setShowMergeModal(false)}
+        onClose={() => {
+          setShowMergeModal(false);
+          setActiveModule('shareholders');
+        }}
         onMergeSuccess={async () => {
           await loadMasters();
           fetchShareholders(pagination.page);

@@ -3,19 +3,16 @@ import { useAuth, ROLE_PERMISSIONS } from '../context/AuthContext';
 import {
   LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert,
-  Settings, LogOut, Upload, ArrowRightLeft, UserPlus, ChevronDown, ChevronRight
+  Settings, LogOut, Upload, ArrowRightLeft, UserPlus, ChevronDown, ChevronRight, GitMerge
 } from 'lucide-react';
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'shareholders', label: 'Shareholders', icon: Users },
-  { id: 'enrollment', label: 'New Enrollment (ಹೊಸ ನೋಂದಣಿ)', icon: UserPlus },
   { id: 'import_export', label: 'Upload Excel (ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)', icon: FileSpreadsheet },
   { id: 'transactions', label: 'Transactions', icon: CreditCard },
   { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
   { id: 'sugar_allotment', label: 'Sugar Allotment', icon: PackageCheck },
-  { id: 'varasa', label: 'Varasa Transfer (ವಾರಸುದಾರರು)', icon: FileSpreadsheet },
-  { id: 'vargavane', label: 'Vargavane Transfer (ವರ್ಗಾವಣೆ)', icon: ArrowRightLeft },
   { id: 'villages', label: 'Village Master', icon: Building2 },
   { id: 'circles', label: 'Circle Master', icon: MapPin },
   { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
@@ -25,6 +22,15 @@ const MENU_ITEMS = [
   { id: 'audit_logs', label: 'Audit Logs', icon: History },
   { id: 'settings', label: 'Cooperative Settings', icon: Settings },
 ];
+
+const SHAREHOLDER_SUB_ITEMS = [
+  { id: 'enrollment', label: '1. New Enrollment (ಹೊಸ ನೋಂದಣಿ)', icon: UserPlus },
+  { id: 'varasa', label: '2. Varasa (ವಾರಸು ವರ್ಗಾವಣೆ)', icon: FileSpreadsheet },
+  { id: 'vargavane', label: '3. Vargavane (ವರ್ಗಾವಣೆ)', icon: ArrowRightLeft },
+  { id: 'merge_shares', label: '4. Merge Shares (ಬಹು-ಶೇರು ವಿಲೀನ)', icon: GitMerge },
+];
+
+const SHAREHOLDER_MODULES = ['shareholders', 'enrollment', 'varasa', 'vargavane', 'merge_shares'];
 
 const REPORT_SUB_ITEMS = [
   { id: 'shareholders', label: '1. ಶೇರುದಾರರ ವಿವರ ವರದಿಗಳು (Shareholders)', icon: Users },
@@ -37,6 +43,7 @@ const REPORT_SUB_ITEMS = [
 export default function Sidebar({ isOpen, setIsOpen }) {
   const { user, activeModule, setActiveModule, activeReportSubTab, setActiveReportSubTab, hasPermission, logout } = useAuth();
   const [reportsExpanded, setReportsExpanded] = React.useState(true);
+  const [shareholdersExpanded, setShareholdersExpanded] = React.useState(true);
 
   return (
     <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-950 border-r border-slate-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col no-print`}>
@@ -69,6 +76,74 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           const isActive = activeModule === item.id;
 
           if (!permitted) return null;
+
+          if (item.id === 'shareholders') {
+            const isShareholdersModuleActive = SHAREHOLDER_MODULES.includes(activeModule);
+            const isShareholdersOpen = isShareholdersModuleActive && shareholdersExpanded;
+            const isCurrentModule = activeModule === 'shareholders';
+
+            return (
+              <div key={item.id} className="space-y-1">
+                <button
+                  onClick={() => {
+                    if (activeModule === 'shareholders') {
+                      setShareholdersExpanded(!shareholdersExpanded);
+                    } else {
+                      setActiveModule('shareholders');
+                      setShareholdersExpanded(true);
+                      if (window.innerWidth < 1024) setIsOpen(false);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                    isCurrentModule
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/40 font-semibold'
+                      : isShareholdersModuleActive
+                      ? 'bg-slate-900 text-emerald-300 font-medium border border-slate-800'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 truncate">
+                    <Icon className={`w-4 h-4 ${isCurrentModule ? 'text-white' : isShareholdersModuleActive ? 'text-emerald-400' : 'text-slate-400'}`} />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {isShareholdersOpen ? (
+                    <ChevronDown className={`w-3.5 h-3.5 ${isCurrentModule ? 'text-white' : isShareholdersModuleActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+                  ) : (
+                    <ChevronRight className={`w-3.5 h-3.5 ${isCurrentModule ? 'text-white' : isShareholdersModuleActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+                  )}
+                </button>
+
+                {/* Sub-sidebar for Shareholders Navigation - ONLY rendered if a shareholder module is in use */}
+                {isShareholdersOpen && (
+                  <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-emerald-500/40 ml-4 my-1 bg-slate-900/40 rounded-r-lg">
+                    {SHAREHOLDER_SUB_ITEMS.map((sub) => {
+                      const SubIcon = sub.icon;
+                      if (!hasPermission(sub.id)) return null;
+                      const isSubActive = activeModule === sub.id;
+
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => {
+                            setActiveModule(sub.id);
+                            if (window.innerWidth < 1024) setIsOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] transition-all text-left ${
+                            isSubActive
+                              ? 'bg-emerald-950/90 text-emerald-300 font-bold border border-emerald-700/80 shadow-sm'
+                              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                          }`}
+                        >
+                          <SubIcon className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+                          <span className="truncate">{sub.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
 
           if (item.id === 'reports') {
             const isReportsOpen = isActive && reportsExpanded;

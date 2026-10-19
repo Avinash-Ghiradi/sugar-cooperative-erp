@@ -111,6 +111,7 @@ function AppContent() {
     switch (activeModule) {
       case 'dashboard': return <Dashboard />;
       case 'shareholders': return <ShareholderList />;
+      case 'merge_shares': return <ShareholderList initialShowMerge={true} />;
       case 'enrollment': return <NewShareholderModule />;
       case 'transactions': return <TransactionsModule />;
       case 'attendance': return <AttendanceModule />;
