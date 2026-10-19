@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
   Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle,
-  History, GitMerge, ArrowUpDown, ArrowUp, ArrowDown
+  History, GitMerge, ArrowUpDown, ArrowUp, ArrowDown, BarChart3
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
 import ShareholderForm from './ShareholderForm';
@@ -562,6 +562,16 @@ export default function ShareholderList() {
               Summary View
             </button>
           </div>
+
+          {/* Direct Link to Detailed Reports */}
+          <button
+            onClick={() => setActiveModule('reports')}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 text-emerald-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+            title="Open Placewise, Categorywise, Circlewise & Shareswise Reports with Multi-Filters"
+          >
+            <BarChart3 className="w-4 h-4 text-emerald-400" />
+            <span>ವಿವರ ವರದಿಗಳು (Reports)</span>
+          </button>
 
           <button
             onClick={() => { setEditShareholderData(null); setShowAddForm(true); }}

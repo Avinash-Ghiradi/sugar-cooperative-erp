@@ -653,6 +653,19 @@ export const ApiService = {
     };
   },
 
+  async getAllShareholdersRaw() {
+    await ensureDBReady();
+    return (mockShareholders || []).map(s => {
+      const own = getShareholderOwnership(s);
+      return {
+        ...s,
+        ownership: own,
+        relationship: own,
+        member_type: getMemberTypeByCategory(s.schedule_cast, s.member_type)
+      };
+    });
+  },
+
   async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', sortBy = '', sortOrder = 'asc' }) {
     await ensureDBReady();
     const apiRes = await fetchApi(`/shareholders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&village_id=${village_id}&circle_id=${circle_id}&status=${status}&book_no=${book_no}&schedule_cast=${encodeURIComponent(schedule_cast)}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
