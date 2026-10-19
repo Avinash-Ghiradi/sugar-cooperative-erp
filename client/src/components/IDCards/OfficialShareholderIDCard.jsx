@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
+import { getMemberTypeByCategory } from '../../services/api';
 
 const STORAGE_KEY_ID_SETTINGS = 'sugar_erp_id_card_custom_settings_v1';
 
@@ -270,7 +270,6 @@ export default function OfficialShareholderIDCard({
   const placeName = sh.place || sh.village_name || 'ಅಥರ್ಗಾ';
   const talukName = sh.taluk || 'ಇಂಡಿ';
   const districtName = sh.district || 'ವಿಜಯಪುರ';
-  const ownership = getShareholderOwnership(sh);
 
   // Effective settings prioritizing props over persisted settings
   const effectiveLogo = customLogo !== undefined ? customLogo : globalSettings.customLogo;
@@ -365,7 +364,7 @@ export default function OfficialShareholderIDCard({
 
               {/* MIDDLE CONTENT: Sub-Header + Details & Photo */}
               <div className="flex-1 min-h-0 flex flex-col justify-between px-2.5 pt-0.5 pb-0.5 relative z-10" style={kannadaFontStyle}>
-                {/* 2. SUB-HEADER: ID Card No (Left) + Center Badge + Ownership (Top-Right Above Corner) */}
+                {/* 2. SUB-HEADER: ID Card No (Left) + Center Badge (ಗುರುತಿನ ಚೀಟಿ) */}
                 <div className="flex items-center justify-between">
                   {/* Left Side: ID Card No */}
                   <span className="text-[7.5px] font-bold text-slate-800 tracking-tight font-mono">
@@ -387,12 +386,8 @@ export default function OfficialShareholderIDCard({
                     </div>
                   </div>
 
-                  {/* Top-Right Above Corner: Just Ownership value (e.g. "ಸ್ವಂತ (Self)" / "ವಾರಸದಾರರು (ಮಗ)") */}
-                  <div className="text-right">
-                    <span className="font-black text-[8.5px] text-emerald-950 bg-emerald-100/90 border border-emerald-600/50 px-1.5 py-0.5 rounded shadow-xs inline-block">
-                      {ownership}
-                    </span>
-                  </div>
+                  {/* Right Spacer (Balances left ID Card No so Center Badge stays centered) */}
+                  <div className="w-[105px]"></div>
                 </div>
 
                 {/* 3. CARD BODY: Member Info (Left) + Photo & Seal (Right) */}
