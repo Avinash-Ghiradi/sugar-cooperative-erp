@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import OfficialShareholderIDCard from '../IDCards/OfficialShareholderIDCard';
@@ -16,6 +17,56 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
   const [loading, setLoading] = useState(true);
   const [idCardSide, setIdCardSide] = useState('Front');
   const [idCardSeal, setIdCardSeal] = useState(true);
+
+  // ID Card Print Options: layout (A4 / PVC), size (85.6x54 / 95x65), and sides (both / front / back)
+  const [printLayout, setPrintLayout] = useState(() => {
+    try {
+      return localStorage.getItem('sugar_erp_id_card_print_layout') || 'a4';
+    } catch (e) {
+      return 'a4';
+    }
+  });
+
+  const [cardSize, setCardSize] = useState(() => {
+    try {
+      return localStorage.getItem('sugar_erp_id_card_print_size') || '85x54';
+    } catch (e) {
+      return '85x54';
+    }
+  });
+
+  const [printSides, setPrintSides] = useState('both'); // 'both', 'front', 'back'
+
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      if (activeTab === 'id_card') {
+        document.body.classList.add('id-card-printing');
+      }
+    };
+    const handleAfterPrint = () => {
+      document.body.classList.remove('id-card-printing');
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+      document.body.classList.remove('id-card-printing');
+    };
+  }, [activeTab]);
+
+  const handlePrintIdCard = () => {
+    document.body.classList.add('id-card-printing');
+    const cleanup = () => {
+      document.body.classList.remove('id-card-printing');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(() => {
+      window.print();
+      setTimeout(cleanup, 2500);
+    }, 120);
+  };
 
   useEffect(() => {
     loadProfile();
@@ -46,6 +97,16 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
 
   const { shareholder: sh, history } = profile;
 
+  // Dynamic Card Dimension Calculations for 85.6mm x 54.0mm vs 95.0mm x 65.0mm
+  const isJumbo = cardSize === '95x65';
+  const cardWidth = isJumbo ? '95mm' : '85.6mm';
+  const cardHeight = isJumbo ? '65mm' : '54mm';
+  const pairWidth = isJumbo ? '190mm' : '171.2mm';
+  const sheetMaxWidth = isJumbo ? '196mm' : '186mm';
+  const cardOuterHeight = isJumbo ? '254.5px' : '238px';
+  const cardOuterScale = isJumbo ? '0.965' : '0.86';
+  const cutGuideLabel = isJumbo ? '95×65mm' : '85.6×54mm';
+
   const tabs = [
     { id: 'ledger', label: '1. Statutory Ledger (ನಮೂನೆ ವಹಿ)', icon: BookOpen },
     { id: 'id_card', label: '2. ಗುರುತಿನ ಚೀಟಿ (Official ID Card)', icon: Contact },
@@ -59,7 +120,8 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-center justify-center p-4 sm:p-6 overflow-y-auto no-print">
+    <>
+      <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-center justify-center p-4 sm:p-6 overflow-y-auto no-print">
       <div className="bg-slate-950 border border-slate-800 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         
         {/* Profile Header */}
@@ -110,8 +172,14 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
             </button>
 
             <button
-              onClick={() => window.print()}
-              className="p-2 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs flex items-center gap-1.5 transition-colors"
+              onClick={() => {
+                if (activeTab === 'id_card') {
+                  handlePrintIdCard();
+                } else {
+                  window.print();
+                }
+              }}
+              className="p-2 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Printer className="w-4 h-4 text-sky-400" /> Print
             </button>
@@ -262,51 +330,142 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
           {/* Tab: Official ID Card */}
           {activeTab === 'id_card' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800">
                 <div>
                   <h4 className="font-bold text-slate-100 text-xs flex items-center gap-2">
                     <Contact className="w-4 h-4 text-emerald-400" />
                     ಅಧಿಕೃತ ಸದಸ್ಯರ ಗುರುತಿನ ಚೀಟಿ (Official Statutory ID Card)
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204, ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ. • CR80 Plastic PVC Plastic Card & Print Layout
+                    ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204 • {cardSize === '95x65' ? '95.0mm × 65.0mm (Pouch)' : '85.6mm × 54.0mm (CR80)'} • {printLayout === 'a4' ? 'A4 ಹಾಳೆ ಮುದ್ರಣ (Cut & Fold)' : 'PVC / ಪ್ರತ್ಯೇಕ ಕಾರ್ಡ್'}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Flip Preview Side */}
                   <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
                     <button
                       onClick={() => setIdCardSide('Front')}
-                      className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                        idCardSide === 'Front' ? 'bg-emerald-600 text-white' : 'text-slate-400'
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        idCardSide === 'Front' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      ಮುಂಭಾಗ (Front)
+                      ಮುಂಭಾಗ
                     </button>
                     <button
                       onClick={() => setIdCardSide('Back')}
-                      className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                        idCardSide === 'Back' ? 'bg-emerald-600 text-white' : 'text-slate-400'
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        idCardSide === 'Back' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      ಹಿಂಬದಿ (Back)
+                      ಹಿಂಬದಿ
                     </button>
                   </div>
 
+                  {/* Format Toggle (A4 Sheet vs PVC) */}
+                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                    <button
+                      onClick={() => {
+                        setPrintLayout('a4');
+                        try { localStorage.setItem('sugar_erp_id_card_print_layout', 'a4'); } catch (e) {}
+                      }}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        printLayout === 'a4' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="A4 Sheet (Prints Front & Back side-by-side on A4 paper with Cut & Fold Guides)"
+                    >
+                      A4 ಹಾಳೆ
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPrintLayout('pvc');
+                        try { localStorage.setItem('sugar_erp_id_card_print_layout', 'pvc'); } catch (e) {}
+                      }}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        printLayout === 'pvc' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="Single Card (PVC / User Defined Paper)"
+                    >
+                      PVC ಕಾರ್ಡ್
+                    </button>
+                  </div>
+
+                  {/* Card Size Toggle (85.6x54mm vs 95x65mm) */}
+                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                    <button
+                      onClick={() => {
+                        setCardSize('85x54');
+                        try { localStorage.setItem('sugar_erp_id_card_print_size', '85x54'); } catch (e) {}
+                      }}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        cardSize === '85x54' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="Standard CR80 (85.6mm × 54.0mm)"
+                    >
+                      85.6×54
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCardSize('95x65');
+                        try { localStorage.setItem('sugar_erp_id_card_print_size', '95x65'); } catch (e) {}
+                      }}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        cardSize === '95x65' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="Pouch / Jumbo (95.0mm × 65.0mm - ಲ್ಯಾಮಿನೇಷನ್ ಪೌಚ್ ಗಾತ್ರ)"
+                    >
+                      95×65
+                    </button>
+                  </div>
+
+                  {/* Print Sides Toggle */}
+                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                    <button
+                      onClick={() => setPrintSides('both')}
+                      className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        printSides === 'both' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="Print Both Pages (Front & Back)"
+                    >
+                      ಎರಡೂ ಬದಿ
+                    </button>
+                    <button
+                      onClick={() => setPrintSides('front')}
+                      className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        printSides === 'front' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="Print Front Page Only"
+                    >
+                      ಮುಂಭಾಗ
+                    </button>
+                    <button
+                      onClick={() => setPrintSides('back')}
+                      className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        printSides === 'back' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="Print Back Page Only"
+                    >
+                      ಹಿಂಬದಿ
+                    </button>
+                  </div>
+
+                  {/* Seal Toggle */}
                   <button
                     onClick={() => setIdCardSeal(!idCardSeal)}
-                    className={`px-2.5 py-1 rounded-xl text-xs font-medium border ${
+                    className={`px-2.5 py-1 rounded-xl text-xs font-medium border cursor-pointer transition-all ${
                       idCardSeal ? 'bg-purple-950/70 text-purple-300 border-purple-800' : 'bg-slate-950 text-slate-500 border-slate-800'
                     }`}
                   >
                     {idCardSeal ? 'Seal: ON' : 'Seal: OFF'}
                   </button>
 
+                  {/* Print ID Card Button */}
                   <button
-                    onClick={() => window.print()}
-                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer"
+                    onClick={handlePrintIdCard}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-950 cursor-pointer transition-all"
+                    title="Print ID Card directly (ಮುಂಭಾಗ & ಹಿಂಬದಿ ಕತ್ತರಿಸುವ ಹಾಗೂ ಮಡಚುವ ಗೆರೆಗಳೊಂದಿಗೆ)"
                   >
-                    <Printer className="w-3.5 h-3.5" /> Print Card
+                    <Printer className="w-4 h-4" /> ಕಾರ್ಡ್ ಮುದ್ರಿಸಿ (Print Card)
                   </button>
 
                   <button
@@ -317,7 +476,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer transition-colors"
                     title="Open Full ID Card Generator & Uploads"
                   >
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" /> ಹಿನ್ನೆಲೆ/MD ಸಹಿ
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" /> ಲೋಗೋ/MD ಸಹಿ
                   </button>
                 </div>
               </div>
@@ -328,10 +487,13 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                   shareholder={sh}
                   side={idCardSide}
                   showSeal={idCardSeal}
+                  cardSize={cardSize}
                   scale={1.25}
                 />
-                <p className="text-[11px] text-slate-500 mt-4 text-center">
-                  Standard Statutory Cooperative ID Card Dimensions (85.6mm × 54mm) • Attested with Official Stamp & Signatures
+                <p className="text-[11px] text-slate-400 mt-4 text-center font-medium">
+                  {cardSize === '95x65'
+                    ? 'ಲ್ಯಾಮಿನೇಷನ್ ಪೌಚ್ ಅಳತೆ (95.0mm × 65.0mm Pouch) • Attested with Official Stamp & Signatures'
+                    : 'Standard Statutory Cooperative ID Card Dimensions (85.6mm × 54.0mm CR80) • Attested with Official Stamp & Signatures'}
                 </p>
               </div>
             </div>
@@ -665,5 +827,283 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
         </div>
       </div>
     </div>
+
+    {typeof document !== 'undefined' && createPortal(
+      <div className="id-card-profile-print-portal">
+        <style>{`
+          @media screen {
+            .id-card-profile-print-portal { display: none !important; }
+          }
+          @media print {
+            body.id-card-printing > #root {
+              display: none !important;
+              visibility: hidden !important;
+            }
+            body.id-card-printing .id-card-profile-print-portal {
+              display: block !important;
+              visibility: visible !important;
+              position: static !important;
+              width: 100% !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+              color: #000000 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              font-family: 'Anek Kannada', 'Aneka Kannada', 'Noto Sans Kannada', sans-serif !important;
+            }
+            @page {
+              ${printLayout === 'a4'
+                ? `size: A4 portrait; margin: ${isJumbo ? '8mm 10mm' : '10mm 12mm'};`
+                : `size: ${cardWidth} ${cardHeight}; margin: 0;`}
+            }
+            ${printLayout === 'pvc' ? `
+              body.id-card-printing, body.id-card-printing html {
+                width: ${cardWidth} !important;
+                height: ${cardHeight} !important;
+                max-width: ${cardWidth} !important;
+                max-height: ${cardHeight} !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+              }
+            ` : ''}
+            .id-card-print-single {
+              width: ${cardWidth} !important;
+              height: ${cardHeight} !important;
+              max-width: ${cardWidth} !important;
+              max-height: ${cardHeight} !important;
+              box-sizing: border-box !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              box-shadow: none !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+              position: relative !important;
+              display: block !important;
+              vertical-align: top !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+            }
+            .id-card-print-single .id-card-container-outer {
+              width: 372px !important;
+              height: ${cardOuterHeight} !important;
+              min-width: 372px !important;
+              min-height: ${cardOuterHeight} !important;
+              transform: scale(${cardOuterScale}) !important;
+              transform-origin: 0 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            .id-card-page-break {
+              page-break-after: always !important;
+              break-after: page !important;
+            }
+            .id-card-a4-sheet {
+              display: block !important;
+              width: 100% !important;
+              max-width: ${sheetMaxWidth} !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+            }
+            .id-card-a4-pairs-container {
+              display: flex !important;
+              flex-direction: column !important;
+              gap: 4mm !important;
+              align-items: center !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+            }
+            .id-card-a4-foldable-unit {
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: center !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+            }
+            .id-card-a4-member-pair {
+              display: flex !important;
+              flex-direction: row !important;
+              gap: 0 !important;
+              justify-content: center !important;
+              align-items: center !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              border: 1px dashed #334155 !important;
+              width: ${pairWidth} !important;
+              box-sizing: border-box !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+              position: relative !important;
+            }
+            .id-card-center-fold-line {
+              width: 0px !important;
+              height: ${cardHeight} !important;
+              border-left: 1.5px dashed #0f172a !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              position: relative !important;
+              z-index: 25 !important;
+            }
+            .id-card-guide-top,
+            .id-card-guide-bottom {
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              width: ${pairWidth} !important;
+              font-size: 7px !important;
+              font-weight: 700 !important;
+              color: #475569 !important;
+              line-height: 1 !important;
+              padding: 1.5px 1mm !important;
+              user-select: none !important;
+              box-sizing: border-box !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+            }
+            .id-card-guide-cut-text {
+              display: inline-flex !important;
+              align-items: center !important;
+              gap: 2px !important;
+              color: #334155 !important;
+              font-size: 6.8px !important;
+            }
+            .id-card-guide-fold-marker {
+              font-weight: 800 !important;
+              color: #0f172a !important;
+              font-size: 7px !important;
+              letter-spacing: 0.3px !important;
+              text-align: center !important;
+            }
+            .id-card-guide-single {
+              width: ${cardWidth} !important;
+            }
+            .id-card-cut-border {
+              border: 1px dashed #334155 !important;
+              box-sizing: border-box !important;
+            }
+            .id-card-a4-single-unit {
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: center !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            .id-card-a4-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, ${cardWidth}) !important;
+              gap: 4mm !important;
+              justify-content: center !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+            }
+            .id-card-print-pvc-list {
+              display: block !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+            }
+          }
+        `}</style>
+
+        {printLayout === 'a4' ? (
+          <div className="id-card-a4-sheet">
+            {printSides === 'both' ? (
+              <div className="id-card-a4-pairs-container">
+                <div className="id-card-a4-foldable-unit">
+                  <div className="id-card-guide-top">
+                    <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ ({cutGuideLabel} Cut)</span>
+                    <span className="id-card-guide-fold-marker">▼ ಇಲ್ಲಿ ಮಡಚಿ (Fold Line) ▼</span>
+                    <span className="id-card-guide-cut-text">✂ Cut</span>
+                  </div>
+
+                  <div className="id-card-a4-member-pair">
+                    <div className="id-card-print-single">
+                      <OfficialShareholderIDCard
+                        shareholder={sh}
+                        side="Front"
+                        showSeal={idCardSeal}
+                        cardSize={cardSize}
+                        scale={1}
+                      />
+                    </div>
+
+                    <div className="id-card-center-fold-line" title="ಮಡಚುವ ಗೆರೆ (Fold Line)"></div>
+
+                    <div className="id-card-print-single">
+                      <OfficialShareholderIDCard
+                        shareholder={sh}
+                        side="Back"
+                        showSeal={idCardSeal}
+                        cardSize={cardSize}
+                        scale={1}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="id-card-guide-bottom">
+                    <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ ({cutGuideLabel} Cut)</span>
+                    <span className="id-card-guide-fold-marker">▲ ಇಲ್ಲಿ ಮಡಚಿ (Fold Line) ▲</span>
+                    <span className="id-card-guide-cut-text">✂ Cut</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="id-card-a4-pairs-container">
+                <div className="id-card-a4-single-unit">
+                  <div className="id-card-guide-top id-card-guide-single">
+                    <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ ({cutGuideLabel} Cut Line)</span>
+                    <span className="id-card-guide-cut-text">✂ Cut</span>
+                  </div>
+                  <div className="id-card-print-single id-card-cut-border">
+                    <OfficialShareholderIDCard
+                      shareholder={sh}
+                      side={printSides === 'front' ? 'Front' : 'Back'}
+                      showSeal={idCardSeal}
+                      cardSize={cardSize}
+                      scale={1}
+                    />
+                  </div>
+                  <div className="id-card-guide-bottom id-card-guide-single">
+                    <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ ({cutGuideLabel} Cut Line)</span>
+                    <span className="id-card-guide-cut-text">✂ Cut</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="id-card-print-pvc-list">
+            {(printSides === 'both' ? ['Front', 'Back'] : [printSides === 'front' ? 'Front' : 'Back']).map((sideName, sIdx) => (
+              <div
+                key={`pvc-${sh.id || 'sh'}-${sideName}`}
+                className={`id-card-print-single ${sIdx === 0 && printSides === 'both' ? 'id-card-page-break' : ''}`}
+              >
+                <OfficialShareholderIDCard
+                  shareholder={sh}
+                  side={sideName}
+                  showSeal={idCardSeal}
+                  cardSize={cardSize}
+                  scale={1}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>,
+      document.body
+    )}
+  </>
   );
 }
