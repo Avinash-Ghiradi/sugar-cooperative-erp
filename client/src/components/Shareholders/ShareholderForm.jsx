@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   X, Save, Plus, Printer, Contact, AlertTriangle, BookOpen, MapPin,
   FileText, Users2, Fingerprint, Camera, Upload, Trash2, FileSignature, User, CheckCircle2, RefreshCw,
-  History, Clock, ArrowRight
+  History, Clock, ArrowRight, Coins
 } from 'lucide-react';
 
 // Client-side image compression to store optimized base64 data URLs in IndexedDB
@@ -73,6 +73,12 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
   const [showAdditionalSection, setShowAdditionalSection] = useState(
     initialAddShares > 0 || initialAddAmt > 0
   );
+
+  const historyList = Array.isArray(initialData?.history)
+    ? initialData.history
+    : (Array.isArray(initialData?.change_history)
+      ? initialData.change_history
+      : (Array.isArray(initialData?.audit_history) ? initialData.audit_history : []));
 
   const [formData, setFormData] = useState({
     // 38 Official Statutory Cooperative Columns:
@@ -324,7 +330,7 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
               {initialData && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800 flex items-center gap-1">
                   <History className="w-3 h-3 text-blue-400" />
-                  {(initialData.history?.length || initialData.change_history?.length || 0)} ತಿದ್ದುಪಡಿಗಳು (Revisions)
+                  {historyList.length} ತಿದ್ದುಪಡಿಗಳು (Revisions)
                 </span>
               )}
             </div>
@@ -1161,7 +1167,7 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
               </h3>
               {initialData && (
                 <span className="text-[11px] text-slate-400 font-mono">
-                  ಒಟ್ಟು ತಿದ್ದುಪಡಿಗಳು: <strong className="text-blue-400">{(initialData.history?.length || initialData.change_history?.length || 0)}</strong>
+                  ಒಟ್ಟು ತಿದ್ದುಪಡಿಗಳು: <strong className="text-blue-400">{historyList.length}</strong>
                 </span>
               )}
             </div>
@@ -1187,9 +1193,9 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                   <Clock className="w-3.5 h-3.5 text-blue-400" /> ಹಿಂದಿನ ಬದಲಾವಣೆಗಳ ಪಟ್ಟಿ (Past Revision History):
                 </span>
 
-                {((initialData.history && initialData.history.length > 0) || (initialData.change_history && initialData.change_history.length > 0)) ? (
+                {historyList.length > 0 ? (
                   <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
-                    {(initialData.history || initialData.change_history).map((rev, revIdx) => (
+                    {historyList.map((rev, revIdx) => (
                       <div key={rev.id || revIdx} className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-1.5 text-[11px]">
                           <div className="flex items-center gap-2">

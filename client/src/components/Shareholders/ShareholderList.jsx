@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
 import ShareholderForm from './ShareholderForm';
+import ErrorBoundary from '../Common/ErrorBoundary';
 import ResetConfirmModal from '../Common/ResetConfirmModal';
 import MergeSharesModal from './MergeSharesModal';
 
@@ -928,7 +929,13 @@ export default function ShareholderList({ initialShowMerge = false }) {
                     {/* 3. Share No */}
                     <td className="py-2.5 px-3 font-mono font-bold text-emerald-400">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span>{sh.share_no || sh.share_number}</span>
+                        <span
+                          onClick={() => { setEditShareholderData(sh); setShowAddForm(true); }}
+                          className="cursor-pointer hover:underline hover:text-emerald-300 transition-colors"
+                          title="ಕ್ಲಿಕ್ ಮಾಡಿ ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ ಮಾಡಿ (Click to Edit Record)"
+                        >
+                          {sh.share_no || sh.share_number}
+                        </span>
                         {(sh.is_merged || (sh.all_share_numbers && sh.all_share_numbers.length > 1) || String(sh.share_no).includes(',')) && (
                           <span className="px-1.5 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-700/60 text-[9px] font-sans font-bold flex items-center gap-1 shrink-0" title="ಬಹು-ಶೇರುಗಳು ಮತ್ತು ಮೊತ್ತಗಳು ವಿಲೀನಗೊಂಡಿವೆ">
                             <GitMerge className="w-2.5 h-2.5 text-amber-400" />
@@ -1121,11 +1128,13 @@ export default function ShareholderList({ initialShowMerge = false }) {
 
       {/* Add / Edit Form Modal */}
       {showAddForm && (
-        <ShareholderForm
-          initialData={editShareholderData}
-          onClose={() => { setShowAddForm(false); setEditShareholderData(null); }}
-          onSaveSuccess={() => { setShowAddForm(false); setEditShareholderData(null); fetchShareholders(pagination.page); }}
-        />
+        <ErrorBoundary onClose={() => { setShowAddForm(false); setEditShareholderData(null); }}>
+          <ShareholderForm
+            initialData={editShareholderData}
+            onClose={() => { setShowAddForm(false); setEditShareholderData(null); }}
+            onSaveSuccess={() => { setShowAddForm(false); setEditShareholderData(null); fetchShareholders(pagination.page); }}
+          />
+        </ErrorBoundary>
       )}
 
       {/* Upload Excel In-Page Modal */}

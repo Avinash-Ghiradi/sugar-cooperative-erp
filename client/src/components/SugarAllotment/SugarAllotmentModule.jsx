@@ -3,6 +3,7 @@ import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import officialCircleData from '../../services/officialCircleData.json';
 import ShareholderForm from '../Shareholders/ShareholderForm';
+import ErrorBoundary from '../Common/ErrorBoundary';
 import {
   PackageCheck, Search, Printer, X, Save, Settings, ChevronDown, ChevronUp,
   MapPin, Sparkles, Filter, Check, ShieldCheck, History, Edit, FileText,

@@ -20,6 +20,7 @@ import AuditLogs from './components/Admin/AuditLogs';
 import DataImportExport from './components/Admin/DataImportExport';
 import BackupManager from './components/Admin/BackupManager';
 import SettingsModule from './components/Settings/SettingsModule';
+import ErrorBoundary from './components/Common/ErrorBoundary';
 import { ShieldCheck, LogIn, Lock, CheckCircle2 } from 'lucide-react';
 
 function AppContent() {
@@ -149,7 +150,7 @@ function AppContent() {
       <div className="flex-1 flex flex-col lg:pl-64 min-w-0 print:pl-0 print:p-0 print:m-0 print:bg-white">
         <Navbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6 print:p-0 print:m-0 print:max-w-none print:w-full print:bg-white">
-          {renderActiveModule()}
+          <ErrorBoundary>{renderActiveModule()}</ErrorBoundary>
         </main>
       </div>
     </div>
