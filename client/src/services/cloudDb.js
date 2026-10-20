@@ -318,7 +318,18 @@ export const CloudDbService = {
     try {
       const res = await this.request(`audit_logs?module=eq.${encodeURIComponent(moduleName)}&order=id.desc`);
       if (Array.isArray(res)) {
-        return res.map(r => r.new_value).filter(Boolean);
+        const seen = new Set();
+        const unique = [];
+        for (const r of res) {
+          const item = r.new_value;
+          if (!item) continue;
+          const key = String(r.record_id || item.enrollment_id || item.transfer_id || item.request_id || item.id || '').trim();
+          if (key && !seen.has(key)) {
+            seen.add(key);
+            unique.push(item);
+          }
+        }
+        return unique;
       }
     } catch (err) {
       console.warn(`Cloud DB getCollection(${moduleName}) failed:`, err.message);

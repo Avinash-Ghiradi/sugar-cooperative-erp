@@ -539,39 +539,67 @@ export async function syncAllCloudWorkflows() {
     ]);
 
     if (Array.isArray(enr)) {
-      const cloudIds = new Set(enr.map(e => String(e.enrollment_id || e.id)));
-      const unpushed = mockEnrollments.filter(e => !cloudIds.has(String(e.enrollment_id || e.id)));
-      for (const u of unpushed) {
-        CloudDbService.saveCollectionItem('enrollments', u.enrollment_id || u.id, u).catch(() => {});
-      }
-      mockEnrollments = [...enr, ...unpushed];
+      const map = new Map();
+      enr.forEach(e => {
+        const k = String(e.enrollment_id || e.id || '').trim();
+        if (k) map.set(k, e);
+      });
+      mockEnrollments.forEach(e => {
+        const k = String(e.enrollment_id || e.id || '').trim();
+        if (k && !map.has(k)) {
+          map.set(k, e);
+          CloudDbService.saveCollectionItem('enrollments', k, e).catch(() => {});
+        }
+      });
+      mockEnrollments = Array.from(map.values());
       saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
     }
     if (Array.isArray(varasa)) {
-      const cloudIds = new Set(varasa.map(v => String(v.transfer_id || v.id)));
-      const unpushed = mockVarasaTransfers.filter(v => !cloudIds.has(String(v.transfer_id || v.id)));
-      for (const u of unpushed) {
-        CloudDbService.saveCollectionItem('varasa', u.transfer_id || u.id, u).catch(() => {});
-      }
-      mockVarasaTransfers = [...varasa, ...unpushed];
+      const map = new Map();
+      varasa.forEach(v => {
+        const k = String(v.transfer_id || v.id || '').trim();
+        if (k) map.set(k, v);
+      });
+      mockVarasaTransfers.forEach(v => {
+        const k = String(v.transfer_id || v.id || '').trim();
+        if (k && !map.has(k)) {
+          map.set(k, v);
+          CloudDbService.saveCollectionItem('varasa', k, v).catch(() => {});
+        }
+      });
+      mockVarasaTransfers = Array.from(map.values());
       saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
     }
     if (Array.isArray(varg)) {
-      const cloudIds = new Set(varg.map(v => String(v.transfer_id || v.id)));
-      const unpushed = mockVargavaneTransfers.filter(v => !cloudIds.has(String(v.transfer_id || v.id)));
-      for (const u of unpushed) {
-        CloudDbService.saveCollectionItem('vargavane', u.transfer_id || u.id, u).catch(() => {});
-      }
-      mockVargavaneTransfers = [...varg, ...unpushed];
+      const map = new Map();
+      varg.forEach(v => {
+        const k = String(v.transfer_id || v.id || '').trim();
+        if (k) map.set(k, v);
+      });
+      mockVargavaneTransfers.forEach(v => {
+        const k = String(v.transfer_id || v.id || '').trim();
+        if (k && !map.has(k)) {
+          map.set(k, v);
+          CloudDbService.saveCollectionItem('vargavane', k, v).catch(() => {});
+        }
+      });
+      mockVargavaneTransfers = Array.from(map.values());
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
     }
     if (Array.isArray(merges)) {
-      const cloudIds = new Set(merges.map(m => String(m.request_id || m.id)));
-      const unpushed = mockMergeRequests.filter(m => !cloudIds.has(String(m.request_id || m.id)));
-      for (const u of unpushed) {
-        CloudDbService.saveCollectionItem('merge_requests', u.request_id || u.id, u).catch(() => {});
-      }
-      mockMergeRequests = [...merges, ...unpushed];
+      const map = new Map();
+      merges.forEach(m => {
+        const k = String(m.request_id || m.id || '').trim();
+        if (k) map.set(k, m);
+      });
+      mockMergeRequests.forEach(m => {
+        const k = String(m.request_id || m.id || '').trim();
+        if (k && !map.has(k)) {
+          map.set(k, m);
+          CloudDbService.saveCollectionItem('merge_requests', k, m).catch(() => {});
+        }
+      });
+      mockMergeRequests = Array.from(map.values());
       saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
     }
     if (Array.isArray(txs) && txs.length > 0) {
@@ -1992,12 +2020,19 @@ const newSh = {
       try {
         const cloudData = await CloudDbService.getCollection('varasa');
         if (Array.isArray(cloudData)) {
-          const cloudIds = new Set(cloudData.map(v => String(v.transfer_id || v.id)));
-          const unpushed = mockVarasaTransfers.filter(v => !cloudIds.has(String(v.transfer_id || v.id)));
-          for (const u of unpushed) {
-            CloudDbService.saveCollectionItem('varasa', u.transfer_id || u.id, u).catch(() => {});
-          }
-          mockVarasaTransfers = [...cloudData, ...unpushed];
+          const map = new Map();
+          cloudData.forEach(item => {
+            const key = String(item.transfer_id || item.id || '').trim();
+            if (key) map.set(key, item);
+          });
+          mockVarasaTransfers.forEach(item => {
+            const key = String(item.transfer_id || item.id || '').trim();
+            if (key && !map.has(key)) {
+              map.set(key, item);
+              CloudDbService.saveCollectionItem('varasa', key, item).catch(() => {});
+            }
+          });
+          mockVarasaTransfers = Array.from(map.values());
           saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
         }
       } catch (e) {
@@ -2238,12 +2273,19 @@ const newSh = {
       try {
         const cloudData = await CloudDbService.getCollection('vargavane');
         if (Array.isArray(cloudData)) {
-          const cloudIds = new Set(cloudData.map(v => String(v.transfer_id || v.id)));
-          const unpushed = mockVargavaneTransfers.filter(v => !cloudIds.has(String(v.transfer_id || v.id)));
-          for (const u of unpushed) {
-            CloudDbService.saveCollectionItem('vargavane', u.transfer_id || u.id, u).catch(() => {});
-          }
-          mockVargavaneTransfers = [...cloudData, ...unpushed];
+          const map = new Map();
+          cloudData.forEach(item => {
+            const key = String(item.transfer_id || item.id || '').trim();
+            if (key) map.set(key, item);
+          });
+          mockVargavaneTransfers.forEach(item => {
+            const key = String(item.transfer_id || item.id || '').trim();
+            if (key && !map.has(key)) {
+              map.set(key, item);
+              CloudDbService.saveCollectionItem('vargavane', key, item).catch(() => {});
+            }
+          });
+          mockVargavaneTransfers = Array.from(map.values());
           saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
         }
       } catch (e) {
@@ -2464,12 +2506,19 @@ const newSh = {
       try {
         const cloudData = await CloudDbService.getCollection('enrollments');
         if (Array.isArray(cloudData)) {
-          const cloudIds = new Set(cloudData.map(e => String(e.enrollment_id || e.id)));
-          const unpushed = mockEnrollments.filter(e => !cloudIds.has(String(e.enrollment_id || e.id)));
-          for (const u of unpushed) {
-            CloudDbService.saveCollectionItem('enrollments', u.enrollment_id || u.id, u).catch(() => {});
-          }
-          mockEnrollments = [...cloudData, ...unpushed];
+          const map = new Map();
+          cloudData.forEach(item => {
+            const key = String(item.enrollment_id || item.id || '').trim();
+            if (key) map.set(key, item);
+          });
+          mockEnrollments.forEach(item => {
+            const key = String(item.enrollment_id || item.id || '').trim();
+            if (key && !map.has(key)) {
+              map.set(key, item);
+              CloudDbService.saveCollectionItem('enrollments', key, item).catch(() => {});
+            }
+          });
+          mockEnrollments = Array.from(map.values());
           saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
         }
       } catch (e) {
