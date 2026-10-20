@@ -38,13 +38,42 @@ function saveStoredData(key, data) {
   } catch (e) {}
 }
 
+// Rule:
+// 1. If shareholder already paid for complete share(s) (e.g. 2000, 4000, 6000, 8000...),
+//    there is NO 2nd installment needed or allowed!
+// 2. Only allow 2nd installment for incomplete share amounts: 1000, 3000, 5000, 7000, 9000...
+// 3. For incomplete share amounts, the required 2nd installment amount is strictly ₹1,000!
+export function isEligibleForSecondInstallment(receiptAmount, scheduleCast = 'ಅ - ವರ್ಗ') {
+  const amt = parseFloat(receiptAmount) || 0;
+  if (amt <= 0) return false;
+  const isClassB = String(scheduleCast || '').toLowerCase().includes('ಬ') || String(scheduleCast || '').toLowerCase().includes('b');
+  const baseRate = isClassB ? 5000 : 2000;
+  // Incomplete share exists ONLY if receipt amount is not a complete multiple of baseRate:
+  // e.g. For Class A/D: 1000, 3000, 5000, 7000, 9000... (amt % 2000 !== 0)
+  return (amt % baseRate) !== 0;
+}
+
+export function getRequiredSecondInstallmentAmount(receiptAmount, scheduleCast = 'ಅ - ವರ್ಗ') {
+  const amt = parseFloat(receiptAmount) || 0;
+  if (amt <= 0) return 0;
+  const isClassB = String(scheduleCast || '').toLowerCase().includes('ಬ') || String(scheduleCast || '').toLowerCase().includes('b');
+  const baseRate = isClassB ? 5000 : 2000;
+  const rem = amt % baseRate;
+  return rem > 0 ? (baseRate - rem) : 0;
+}
+
 // Helper: Determine if a shareholder record genuinely has a 2nd installment
 export function hasSecondInstallment(sh) {
   if (!sh) return false;
+  const amt1 = parseFloat(sh.receipt_amount) || 0;
+  // If 1st installment is already complete (e.g. 2000, 4000, 6000...), no 2nd installment!
+  if (!isEligibleForSecondInstallment(amt1, sh.schedule_cast)) {
+    return false;
+  }
+
   const amt2 = parseFloat(sh.amount) || 0;
   const rec2 = String(sh.reciept || '').trim();
   const rec1 = String(sh.receipt_no || '').trim();
-  const amt1 = parseFloat(sh.receipt_amount) || 0;
   const totAmt = parseFloat(sh.total_amount) || 0;
 
   // If amt2 is 0 or empty, and rec2 is empty or '—'
@@ -210,7 +239,9 @@ export function calculateShareholdingDetails({
 }) {
   const config = getShareRateConfig(schedule_cast, reg_date);
   const amt1 = Math.max(0, parseFloat(receipt_amount) || 0);
-  const amt2 = has_second_installment ? Math.max(0, parseFloat(amount) || 0) : 0;
+  const isEligible2nd = isEligibleForSecondInstallment(receipt_amount, schedule_cast);
+  const req2ndAmt = getRequiredSecondInstallmentAmount(receipt_amount, schedule_cast);
+  const amt2 = (has_second_installment && isEligible2nd) ? (Math.max(0, parseFloat(amount) || 0) || req2ndAmt) : 0;
   const addSharesInput = Math.max(0, parseInt(additional_shares_count, 10) || 0);
   const addAmtInput = Math.max(0, parseFloat(additional_amount) || 0);
 

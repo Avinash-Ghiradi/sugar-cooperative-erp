@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isRegisteredOnOrBeforeCutoff, getShareRateConfig, calculateShareholdingDetails } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isRegisteredOnOrBeforeCutoff, getShareRateConfig, calculateShareholdingDetails, isEligibleForSecondInstallment, getRequiredSecondInstallmentAmount } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   X, Save, Plus, Printer, Contact, AlertTriangle, BookOpen, MapPin,
@@ -49,13 +49,18 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
   const [circles, setCircles] = useState([]);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const hasInitial2nd = initialData ? hasSecondInstallment(initialData) : false;
-  const [showSecondInstallment, setShowSecondInstallment] = useState(hasInitial2nd);
-
   const initialRegDate = initialData?.reg_date || initialData?.registration_date || new Date().toLocaleDateString('en-GB');
   const initialCast = initialData?.schedule_cast || 'ಅ - ವರ್ಗ';
   const initialReceiptAmt = initialData?.receipt_amount !== undefined ? (parseFloat(initialData.receipt_amount) || 0) : 2000;
-  const initial2ndAmt = hasInitial2nd ? (parseFloat(initialData?.amount) || 0) : 0;
+
+  // 2nd installment eligibility check:
+  // ONLY allow 1000, 3000, 5000, 7000, 9000... (incomplete share amounts)
+  const initialEligible2nd = isEligibleForSecondInstallment(initialReceiptAmt, initialCast);
+  const initialRequired2nd = getRequiredSecondInstallmentAmount(initialReceiptAmt, initialCast);
+
+  const hasInitial2nd = initialEligible2nd && initialData ? hasSecondInstallment(initialData) : false;
+  const [showSecondInstallment, setShowSecondInstallment] = useState(hasInitial2nd);
+  const initial2ndAmt = hasInitial2nd ? (parseFloat(initialData?.amount) || initialRequired2nd || 1000) : 0;
   const initialAddShares = parseInt(initialData?.additional_shares_count, 10) || 0;
   const initialAddAmt = parseFloat(initialData?.additional_amount) || 0;
 
@@ -207,16 +212,31 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
   const updateCalculation = (overrides = {}) => {
     setFormData(prev => {
       const next = { ...prev, ...overrides };
-      const has2nd = overrides.showSecondInstallment !== undefined
+      const curReceiptAmt = parseFloat(next.receipt_amount) || 0;
+      const curEligible2nd = isEligibleForSecondInstallment(curReceiptAmt, next.schedule_cast);
+      const curRequired2nd = getRequiredSecondInstallmentAmount(curReceiptAmt, next.schedule_cast);
+
+      let effectiveShow2nd = overrides.showSecondInstallment !== undefined
         ? overrides.showSecondInstallment
         : showSecondInstallment;
+
+      // Rule: If already completed share (e.g. 2000, 4000...), 2nd installment is NOT shown or allowed!
+      if (!curEligible2nd) {
+        effectiveShow2nd = false;
+        setShowSecondInstallment(false);
+        next.amount = 0;
+        next.reciept = '';
+        next.date = '';
+      } else if (effectiveShow2nd && (!next.amount || parseFloat(next.amount) <= 0)) {
+        next.amount = curRequired2nd || 1000;
+      }
 
       const calc = calculateShareholdingDetails({
         reg_date: next.reg_date,
         schedule_cast: next.schedule_cast,
         receipt_amount: next.receipt_amount,
-        amount: next.amount,
-        has_second_installment: has2nd,
+        amount: effectiveShow2nd ? (parseFloat(next.amount) || curRequired2nd || 1000) : 0,
+        has_second_installment: effectiveShow2nd,
         additional_shares_count: next.additional_shares_count,
         additional_amount: next.additional_amount
       });
@@ -232,12 +252,15 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
 
   // Current live rate and calculation details
   const rateConfig = getShareRateConfig(formData.schedule_cast, formData.reg_date);
+  const isEligibleFor2nd = isEligibleForSecondInstallment(formData.receipt_amount, formData.schedule_cast);
+  const required2ndAmt = getRequiredSecondInstallmentAmount(formData.receipt_amount, formData.schedule_cast);
+
   const currentCalc = calculateShareholdingDetails({
     reg_date: formData.reg_date,
     schedule_cast: formData.schedule_cast,
     receipt_amount: formData.receipt_amount,
-    amount: formData.amount,
-    has_second_installment: showSecondInstallment,
+    amount: (isEligibleFor2nd && showSecondInstallment) ? (parseFloat(formData.amount) || required2ndAmt || 1000) : 0,
+    has_second_installment: isEligibleFor2nd && showSecondInstallment,
     additional_shares_count: formData.additional_shares_count,
     additional_amount: formData.additional_amount,
     manual_total: formData.total_amount
@@ -259,9 +282,9 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
       remaining_balance: currentCalc.remainingBalance,
       old_shares_count: currentCalc.oldSharesCount,
       new_shares_count: currentCalc.newSharesCount,
-      reciept: showSecondInstallment ? String(formData.reciept || '').trim() : '',
-      amount: showSecondInstallment ? (parseFloat(formData.amount) || 0) : 0,
-      date: showSecondInstallment ? String(formData.date || '').trim() : '',
+      reciept: (isEligibleFor2nd && showSecondInstallment) ? String(formData.reciept || '').trim() : '',
+      amount: (isEligibleFor2nd && showSecondInstallment) ? (parseFloat(formData.amount) || required2ndAmt || 1000) : 0,
+      date: (isEligibleFor2nd && showSecondInstallment) ? String(formData.date || '').trim() : '',
       additional_shares_count: formData.additional_shares_count || 0,
       additional_amount: formData.additional_amount || 0,
       additional_receipt_no: String(formData.additional_receipt_no || '').trim(),
@@ -543,76 +566,84 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
               </div>
             )}
 
-            {/* 2nd Installment Toggle & Fields */}
-            <div className="pt-3 mt-1 border-t border-slate-800/80">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-slate-300">2ನೇ ಕಂತು / ರಶೀದಿ (2nd Installment - ಐಚ್ಛಿಕ)</span>
-                  <p className="text-[11px] text-slate-500">2ನೇ ಕಂತು ಮೊತ್ತ ನಮೂದಿಸಿದಾಗ ಒಟ್ಟು ಜಮಾ ಮೊತ್ತ ಹಾಗೂ ಪೂರ್ಣಗೊಂಡ ಶೇರುಗಳು ತಕ್ಷಣವೇ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ನವೀಕರಣಗೊಳ್ಳುತ್ತವೆ.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !showSecondInstallment;
-                    setShowSecondInstallment(next);
-                    if (!next) {
-                      updateCalculation({ showSecondInstallment: false, amount: 0, reciept: '', date: '' });
-                    } else {
-                      updateCalculation({
-                        showSecondInstallment: true,
-                        amount: formData.amount || rateConfig.baseRate,
-                        date: formData.date || new Date().toLocaleDateString('en-GB')
-                      });
-                    }
-                  }}
-                  className={`text-xs px-3 py-1.5 rounded-xl border font-semibold transition-colors ${
-                    showSecondInstallment
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
-                  }`}
-                >
-                  {showSecondInstallment ? '✓ 2ನೇ ಕಂತು ಸಕ್ರಿಯವಾಗಿದೆ (Remove)' : '+ 2ನೇ ಕಂತು ಸೇರಿಸಿ (Add)'}
-                </button>
-              </div>
-
-              {showSecondInstallment && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
+            {/* 2nd Installment Section - Only shown for incomplete share amounts (1000, 3000, 5000, 7000, 9000...) */}
+            {isEligibleFor2nd && (
+              <div className="pt-3 mt-1 border-t border-slate-800/80">
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="block text-slate-400 mb-1 font-medium text-xs">2ನೇ ಕಂತು ರಶೀದಿ ಸಂ. (2nd Receipt No)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 5421"
-                      value={formData.reciept}
-                      onChange={(e) => setFormData({ ...formData, reciept: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono text-sm outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-slate-400 font-medium text-xs">2ನೇ ಕಂತು ಮೊತ್ತ (2nd Amount ₹) *</label>
-                      <span className="text-[10px] text-emerald-400">ಒಟ್ಟು ಮೊತ್ತಕ್ಕೆ ಕೂಡುತ್ತದೆ</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-300">2ನೇ ಕಂತು / ರಶೀದಿ (2nd Installment - ಅಪೂರ್ಣ ಶೇರು ಪೂರ್ಣಗೊಳಿಸಲು)</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800">
+                        ನಿಗದಿತ ಕಂತು: ₹{required2ndAmt.toLocaleString()}
+                      </span>
                     </div>
-                    <input
-                      type="number"
-                      placeholder="e.g. 2000"
-                      value={formData.amount}
-                      onChange={(e) => updateCalculation({ amount: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-mono font-bold text-sm outline-none focus:border-emerald-500"
-                    />
+                    <p className="text-[11px] text-slate-500">
+                      ಅಪೂರ್ಣ ಶೇರಿಗೆ (₹{Number(formData.receipt_amount || 0).toLocaleString()}) ಬಾಕಿ ಇರುವ ನಿಗದಿತ 2ನೇ ಕಂತು ₹{required2ndAmt.toLocaleString()} ಪಾವತಿಸಿದಾಗ ಮತ್ತೊಂದು ಪೂರ್ಣ ಶೇರು ಲಭ್ಯವಾಗುತ್ತದೆ.
+                    </p>
                   </div>
-                  <div>
-                    <label className="block text-slate-400 mb-1 font-medium text-xs">2ನೇ ಕಂತು ದಿನಾಂಕ (2nd Date)</label>
-                    <input
-                      type="text"
-                      placeholder="DD/MM/YYYY"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 text-sm outline-none focus:border-emerald-500"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !showSecondInstallment;
+                      setShowSecondInstallment(next);
+                      if (!next) {
+                        updateCalculation({ showSecondInstallment: false, amount: 0, reciept: '', date: '' });
+                      } else {
+                        updateCalculation({
+                          showSecondInstallment: true,
+                          amount: required2ndAmt || 1000,
+                          date: formData.date || new Date().toLocaleDateString('en-GB')
+                        });
+                      }
+                    }}
+                    className={`text-xs px-3 py-1.5 rounded-xl border font-semibold transition-colors ${
+                      showSecondInstallment
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    {showSecondInstallment ? '✓ 2ನೇ ಕಂತು ಸಕ್ರಿಯವಾಗಿದೆ (Remove)' : '+ 2ನೇ ಕಂತು ಸೇರಿಸಿ (Add)'}
+                  </button>
                 </div>
-              )}
-            </div>
+
+                {showSecondInstallment && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-medium text-xs">2ನೇ ಕಂತು ರಶೀದಿ ಸಂ. (2nd Receipt No)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 5421"
+                        value={formData.reciept}
+                        onChange={(e) => setFormData({ ...formData, reciept: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono text-sm outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-slate-400 font-medium text-xs">2ನೇ ಕಂತು ಮೊತ್ತ (2nd Amount ₹) *</label>
+                        <span className="text-[10px] text-emerald-400 font-bold">ನಿಗದಿತ ಮೊತ್ತ: ₹{required2ndAmt.toLocaleString()}</span>
+                      </div>
+                      <input
+                        type="number"
+                        value={formData.amount || required2ndAmt || 1000}
+                        onChange={(e) => updateCalculation({ amount: parseFloat(e.target.value) || required2ndAmt || 1000 })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-mono font-bold text-sm outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-medium text-xs">2ನೇ ಕಂತು ದಿನಾಂಕ (2nd Date)</label>
+                      <input
+                        type="text"
+                        placeholder="DD/MM/YYYY"
+                        value={formData.date}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 text-sm outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Additional Share Purchase Rule (Point 4 & 6) for Existing Members (<= 28/02/2022) */}
             {rateConfig.isLegacy && (
