@@ -374,11 +374,78 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
 
         {/* Form Body */}
         <form onSubmit={(e) => handleSubmit(e, false)} className="p-6 space-y-6 text-xs overflow-y-auto">
-          {/* Section 1: Book & Share Ledger */}
+          {/* Section 1: Shareholder Personal Info */}
+          <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <h3 className="font-bold text-slate-200 text-xs flex items-center gap-2 border-b border-slate-800 pb-2">
+              <Users2 className="w-4 h-4 text-sky-400" /> 1. Shareholder Personal Details (ಷೇರುದಾರರ ವೈಯಕ್ತಿಕ ವಿವರ)
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
+                <label className="block text-slate-400 mb-1 font-medium">Share Holder Name (ಷೇರುದಾರರ ಹೆಸರು) *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ"
+                  value={formData.shareholder_name}
+                  onChange={(e) => setFormData({ ...formData, shareholder_name: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-bold outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1 font-medium">Gender</label>
+                <select
+                  value={formData.gender}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
+                >
+                  <option value="M">M (Male / ಪುರುಷ)</option>
+                  <option value="F">F (Female / ಮಹಿಳೆ)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-slate-400 mb-1 font-medium">Aadhaar Card No</label>
+                <input
+                  type="text"
+                  placeholder="12 digit Aadhaar"
+                  value={formData.aadhaar_card_no}
+                  onChange={(e) => setFormData({ ...formData, aadhaar_card_no: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1 font-medium">Mobile No *</label>
+                <input
+                  type="text"
+                  placeholder="10 digit mobile"
+                  value={formData.mobile_no}
+                  onChange={(e) => setFormData({ ...formData, mobile_no: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1 font-medium">Reg. Date</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 10/Aug/1982"
+                  value={formData.reg_date}
+                  onChange={(e) => updateCalculation({ reg_date: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Book & Share Ledger */}
           <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3.5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="font-bold text-slate-200 text-xs flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-emerald-400" /> 1. Book & Share Certificate Details (ನಮೂನೆ ವಹಿ ಹಾಗೂ ಷೇರು ವಿವರ)
+                <BookOpen className="w-4 h-4 text-emerald-400" /> 2. Book & Share Certificate Details (ನಮೂನೆ ವಹಿ ಹಾಗೂ ಷೇರು ವಿವರ)
               </h3>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-slate-400">
@@ -738,73 +805,6 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                 )}
               </div>
             )}
-          </div>
-
-          {/* Section 2: Shareholder Personal Info */}
-          <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
-            <h3 className="font-bold text-slate-200 text-xs flex items-center gap-2 border-b border-slate-800 pb-2">
-              <Users2 className="w-4 h-4 text-sky-400" /> 2. Shareholder Personal Details (ಷೇರುದಾರರ ವೈಯಕ್ತಿಕ ವಿವರ)
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-2">
-                <label className="block text-slate-400 mb-1 font-medium">Share Holder Name (ಷೇರುದಾರರ ಹೆಸರು) *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. ಬೀರಪ್ಪ ಕಾಮಣ್ಣ ಸಗಾಯಿ"
-                  value={formData.shareholder_name}
-                  onChange={(e) => setFormData({ ...formData, shareholder_name: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-bold outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-medium">Gender</label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
-                >
-                  <option value="M">M (Male / ಪುರುಷ)</option>
-                  <option value="F">F (Female / ಮಹಿಳೆ)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-slate-400 mb-1 font-medium">Aadhaar Card No</label>
-                <input
-                  type="text"
-                  placeholder="12 digit Aadhaar"
-                  value={formData.aadhaar_card_no}
-                  onChange={(e) => setFormData({ ...formData, aadhaar_card_no: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-medium">Mobile No *</label>
-                <input
-                  type="text"
-                  placeholder="10 digit mobile"
-                  value={formData.mobile_no}
-                  onChange={(e) => setFormData({ ...formData, mobile_no: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-medium">Reg. Date</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 10/Aug/1982"
-                  value={formData.reg_date}
-                  onChange={(e) => updateCalculation({ reg_date: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Section 3: Place & Address */}
@@ -1194,7 +1194,7 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
           <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="font-bold text-slate-200 text-xs flex items-center gap-2">
-                <History className="w-4 h-4 text-blue-400" /> 6. ಬದಲಾವಣೆಗಳ ಇತಿಹಾಸ ಹಾಗೂ ಲೆಕ್ಕಪರಿಶೋಧನಾ ದಾಖಲೆ (Revision History & Audit Trail)
+                <History className="w-4 h-4 text-blue-400" /> 7. ಬದಲಾವಣೆಗಳ ಇತಿಹಾಸ ಹಾಗೂ ಲೆಕ್ಕಪರಿಶೋಧನಾ ದಾಖಲೆ (Revision History & Audit Trail)
               </h3>
               {initialData && (
                 <span className="text-[11px] text-slate-400 font-mono">
