@@ -946,10 +946,10 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
 
         <div className="sh-record-sheet">
           <div className="sh-record-inner-frame">
-            {/* Top Factory Header with Bigger Logo and Official Seal */}
-            <div className="flex items-center justify-between border-b-2 border-emerald-900 pb-3 mb-3 gap-4">
-              {/* Bigger Factory Logo */}
-              <div className="w-24 h-24 shrink-0 flex items-center justify-center p-1 bg-white border border-emerald-100 rounded-xl shadow-sm">
+            {/* Top Factory Header: Clean Logo (No Background) & Centered Text (No Seal) */}
+            <div className="flex items-center justify-between border-b-2 border-emerald-900 pb-3 mb-3 gap-3">
+              {/* Clean Factory Logo without any background or border */}
+              <div className="w-24 h-24 shrink-0 flex items-center justify-center">
                 <img
                   src="./id_assets/bsskn_logo.png"
                   alt="BSSKN Logo"
@@ -977,11 +977,8 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                 </div>
               </div>
 
-              {/* Right: Official Society Seal in Header */}
-              <div className="w-24 h-24 shrink-0 flex flex-col items-center justify-center p-1 border border-purple-200 bg-purple-50/40 rounded-xl text-center">
-                <OfficialSocietySeal className="w-16 h-16" />
-                <span className="text-[8.5px] font-bold text-purple-900 mt-0.5">ಅಧಿಕೃತ ಮೊಹರು</span>
-              </div>
+              {/* Invisible spacer on right to ensure center text is perfectly balanced */}
+              <div className="w-24 shrink-0 pointer-events-none" aria-hidden="true" />
             </div>
 
             {/* Sub-Header Status Bar */}
