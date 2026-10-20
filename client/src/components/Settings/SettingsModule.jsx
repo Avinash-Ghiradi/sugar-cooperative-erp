@@ -556,7 +556,8 @@ export default function SettingsModule({ initialTab = 'org' }) {
 
   const TABS = [
     { id: 'org', label: '1. Organization Profile (ಸಂಸ್ಥೆಯ ವಿವರ)', icon: Building2 },
-    { id: 'upload', label: '2. Upload & Import (ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)', icon: Upload },
+    { id: 'clouddb', label: '2. Cloud Database (ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್ - Supabase)', icon: Cloud },
+    { id: 'upload', label: '3. Upload & Import (ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)', icon: Upload },
     { id: 'export', label: '3. Data Export (ಡೇಟಾ ರಫ್ತು - Excel/CSV)', icon: Download },
     { id: 'reset', label: '4. Erase & Reset (ಡೇಟಾ ರಿಸೆಟ್)', icon: Trash2 },
   ];

@@ -1,6 +1,7 @@
 // Data Service Layer supporting both backend REST API and clean client-side storage
 // Official 357-Village Circle Directory mapping provided by user
 import officialCircleData from './officialCircleData.json';
+import { CloudDbService } from './cloudDb';
 
 const API_BASE = '/api';
 
@@ -899,6 +900,14 @@ export const ApiService = {
   },
 
   async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', amount = '', sortBy = '', sortOrder = 'asc' }) {
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudRes = await CloudDbService.getShareholders({ page, limit, search, village_id, circle_id, status, book_no, schedule_cast, amount, sortBy, sortOrder });
+        if (cloudRes && cloudRes.success) return cloudRes;
+      } catch (e) {
+        console.warn('Cloud DB fetch failed, falling back:', e);
+      }
+    }
     await ensureDBReady();
     const apiRes = await fetchApi(`/shareholders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&village_id=${village_id}&circle_id=${circle_id}&status=${status}&book_no=${book_no}&schedule_cast=${encodeURIComponent(schedule_cast)}&amount=${amount}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
     if (apiRes && apiRes.success) return apiRes;
@@ -1025,6 +1034,12 @@ export const ApiService = {
   },
 
   async getShareholderById(id) {
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudRes = await CloudDbService.getShareholderById(id);
+        if (cloudRes && cloudRes.success) return cloudRes;
+      } catch (e) {}
+    }
     await ensureDBReady();
     const apiRes = await fetchApi(`/shareholders/${id}`);
     if (apiRes && apiRes.success) return apiRes;
@@ -3994,3 +4009,6 @@ const newSh = {
     return { success: false, message: 'Request not found' };
   }
 };
+
+
+export { CloudDbService };
