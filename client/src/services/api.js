@@ -1495,6 +1495,48 @@ const newSh = {
     if (mockShareholders.length < 2500) {
       saveStoredData(STORAGE_KEY_SH, mockShareholders);
     }
+
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.addShareholder({
+        book_no: newSh.book_no,
+        sl_no: newSh.sl_no,
+        share_no: newSh.share_no,
+        shareholder_name: newSh.shareholder_name,
+        gender: newSh.gender,
+        aadhaar_card_no: newSh.aadhaar_card_no,
+        reg_date: newSh.reg_date,
+        receipt_no: newSh.receipt_no,
+        receipt_amount: newSh.receipt_amount,
+        date: newSh.date,
+        reciept: newSh.reciept,
+        amount: newSh.amount,
+        total_amount: newSh.total_amount,
+        remaining_balance: newSh.remaining_balance,
+        new_shares_count: newSh.new_shares_count,
+        number_of_shares: newSh.number_of_shares,
+        schedule_cast: newSh.schedule_cast,
+        address: newSh.address,
+        place: newSh.place,
+        taluk: newSh.taluk,
+        district: newSh.district,
+        pin_code: newSh.pin_code,
+        circle: newSh.circle,
+        member_type: newSh.member_type,
+        relationship: newSh.relationship,
+        tharava_date: newSh.tharava_date,
+        tharava_no: newSh.tharava_no,
+        mobile_no: newSh.mobile_no,
+        photo_url: newSh.photo_url,
+        signature_url: newSh.signature_url,
+        thumb_url: newSh.thumb_url,
+        nominee_name: newSh.nominee_name,
+        nominee_aadhaar_no: newSh.nominee_aadhaar_no,
+        nominee_mobile_no: newSh.nominee_mobile_no,
+        nominee_address: newSh.nominee_address,
+        status: newSh.status
+      }).catch(err => console.warn('Cloud DB add error:', err));
+    }
+
     return { success: true, shareholder_id: newSh.shareholder_id };
   },
 
@@ -1688,6 +1730,46 @@ const newSh = {
     if (mockShareholders.length < 2500) {
       saveStoredData(STORAGE_KEY_SH, mockShareholders);
     }
+
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.updateShareholder(updated.share_no, {
+        shareholder_name: updated.shareholder_name,
+        gender: updated.gender,
+        aadhaar_card_no: updated.aadhaar_card_no,
+        reg_date: updated.reg_date,
+        receipt_no: updated.receipt_no,
+        receipt_amount: updated.receipt_amount,
+        date: updated.date,
+        reciept: updated.reciept,
+        amount: updated.amount,
+        total_amount: updated.total_amount,
+        remaining_balance: updated.remaining_balance,
+        new_shares_count: updated.new_shares_count,
+        number_of_shares: updated.number_of_shares,
+        schedule_cast: updated.schedule_cast,
+        address: updated.address,
+        place: updated.place,
+        taluk: updated.taluk,
+        district: updated.district,
+        pin_code: updated.pin_code,
+        circle: updated.circle,
+        member_type: updated.member_type,
+        relationship: updated.relationship,
+        tharava_date: updated.tharava_date,
+        tharava_no: updated.tharava_no,
+        mobile_no: updated.mobile_no,
+        photo_url: updated.photo_url,
+        signature_url: updated.signature_url,
+        thumb_url: updated.thumb_url,
+        nominee_name: updated.nominee_name,
+        nominee_aadhaar_no: updated.nominee_aadhaar_no,
+        nominee_mobile_no: updated.nominee_mobile_no,
+        nominee_address: updated.nominee_address,
+        status: updated.status,
+        updated_at: new Date().toISOString()
+      }).catch(err => console.warn('Cloud DB update error:', err));
+    }
+
     return { success: true, data: updated };
   },
 
@@ -2586,6 +2668,19 @@ const newSh = {
       sh.notes = `ವಾರಸು ವರ್ಗಾವಣೆ: ${prevHolderName} (ನಿಧನ: ${item.dod || '—'}) ಇವರ ವಾರಸುದಾರರಾದ ${newHeirName} (${item.heir_relationship || 'ವಾರಸುದಾರರು'}) ಇವರಿಗೆ ವರ್ಗಾಯಿಸಲಾಗಿದೆ. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`;
 
       await saveToIndexedDB(mockShareholders);
+      if (CloudDbService.isEnabled() && sh.share_no) {
+        CloudDbService.updateShareholder(sh.share_no, {
+          shareholder_name: sh.shareholder_name,
+          place: sh.place,
+          taluk: sh.taluk,
+          district: sh.district,
+          mobile_no: sh.mobile_no || '',
+          aadhaar_card_no: sh.aadhaar_card_no || '',
+          photo_url: sh.photo_url || '',
+          relationship: sh.relationship || '',
+          updated_at: new Date().toISOString()
+        }).catch(err => console.warn('Cloud DB varasa sync error:', err));
+      }
     } else {
       const resolvedCircle = this.resolveCircleForPlace(item.heir_place || item.shareholder_place);
       let maxId = 0;
@@ -2722,6 +2817,19 @@ const newSh = {
       sh.notes = `ವರ್ಗಾವಣೆ: ${prevHolderName} ಇವರಿಂದ ${newTransfereeName} (${item.transferee_relationship || 'ವರ್ಗಾವಣೆ'}) ಇವರಿಗೆ ವರ್ಗಾಯಿಸಲಾಗಿದೆ. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`;
 
       await saveToIndexedDB(mockShareholders);
+      if (CloudDbService.isEnabled() && sh.share_no) {
+        CloudDbService.updateShareholder(sh.share_no, {
+          shareholder_name: sh.shareholder_name,
+          place: sh.place,
+          taluk: sh.taluk,
+          district: sh.district,
+          mobile_no: sh.mobile_no || '',
+          aadhaar_card_no: sh.aadhaar_card_no || '',
+          photo_url: sh.photo_url || '',
+          relationship: sh.relationship || '',
+          updated_at: new Date().toISOString()
+        }).catch(err => console.warn('Cloud DB vargavane sync error:', err));
+      }
     } else {
       const resolvedCircle = this.resolveCircleForPlace(item.transferee_place || item.transferor_place);
       let maxId = 0;

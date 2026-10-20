@@ -3,19 +3,32 @@
 
 const CONFIG_KEY = 'sugar_erp_cloud_config';
 
+const DEFAULT_SUPABASE_URL = 'https://lrzzmcmiamufpruywucy.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyenptY21pYW11ZnBydXl3dWN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MDkwNTIsImV4cCI6MjEwODA4NTA1Mn0.EyUfa0VR3OoQj4BopOwya1q60mBNd5ubHbCe7tAWgFo';
+
 export const CloudDbService = {
   // 1. Get stored cloud config
   getConfig() {
     try {
       const saved = localStorage.getItem(CONFIG_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            url: parsed.url || DEFAULT_SUPABASE_URL,
+            anonKey: parsed.anonKey || DEFAULT_SUPABASE_ANON_KEY,
+            enabled: parsed.enabled !== undefined ? parsed.enabled : true,
+            lastSync: parsed.lastSync || null
+          };
+        }
+      }
     } catch (e) {}
-    // Default fallback environment configuration if available
+    // Default pre-configured cloud database for instant multi-browser sync
     return {
-      url: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || '',
-      anonKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || '',
-      enabled: false,
-      lastSync: null
+      url: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || DEFAULT_SUPABASE_URL,
+      anonKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || DEFAULT_SUPABASE_ANON_KEY,
+      enabled: true,
+      lastSync: new Date().toISOString()
     };
   },
 
@@ -236,7 +249,13 @@ export const CloudDbService = {
       const sanitizedChunk = chunk.map(r => ({
         book_no: r.book_no || 'B.No: 1',
         sl_no: parseInt(r.sl_no, 10) || 1,
-        share_no: String(r.share_no || r.share_number || ''),
+        share_no: (() => {
+          let sn = String(r.share_no || r.share_number || '').trim();
+          if (r.schedule_cast && r.schedule_cast.includes('ಬ') && !sn.startsWith('ಬ-') && !sn.startsWith('B-')) {
+            sn = 'ಬ-' + sn;
+          }
+          return sn;
+        })(),
         shareholder_name: r.shareholder_name || r.name || '',
         gender: r.gender || 'M',
         aadhaar_card_no: r.aadhaar_card_no || '',
@@ -272,7 +291,7 @@ export const CloudDbService = {
         status: r.status || 'Active'
       }));
 
-      await this.request('shareholders', {
+      await this.request('shareholders?on_conflict=share_no', {
         method: 'POST',
         headers: {
           'Prefer': 'resolution=merge-duplicates'
