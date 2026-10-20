@@ -258,6 +258,18 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                     )}
                   </>
                 )}
+                {sh.remaining_balance !== undefined && Number(sh.remaining_balance) > 0 && (
+                  <div className="flex justify-between py-1 border-b border-slate-800/40 bg-amber-950/30 px-2 rounded-lg text-xs">
+                    <span className="text-amber-300 font-medium">Balance for Next Share (ಮುಂದಿನ ಶೇರಿಗೆ ಬಾಕಿ):</span>
+                    <span className="text-amber-300 font-mono font-bold">₹ {Number(sh.remaining_balance).toLocaleString()}</span>
+                  </div>
+                )}
+                {sh.new_shares_count !== undefined && Number(sh.new_shares_count) > 0 && (
+                  <div className="flex justify-between py-1 border-b border-slate-800/40 bg-sky-950/30 px-2 rounded-lg text-xs">
+                    <span className="text-sky-300 font-medium">Additional Shares (ಹೆಚ್ಚುವರಿ ಶೇರುಗಳು):</span>
+                    <span className="text-sky-300 font-mono font-bold">{sh.new_shares_count} Shares (@ current rate)</span>
+                  </div>
+                )}
                 <div className="flex justify-between py-1"><span className="text-slate-400">Cooperative Status:</span><span className="text-emerald-400 font-bold">{sh.status || 'Active'}</span></div>
               </div>
 

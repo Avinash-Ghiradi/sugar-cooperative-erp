@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isRegisteredOnOrBeforeCutoff, getShareRateConfig, calculateShareholdingDetails } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   X, Save, Plus, Printer, Contact, AlertTriangle, BookOpen, MapPin,
@@ -52,6 +52,28 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
   const hasInitial2nd = initialData ? hasSecondInstallment(initialData) : false;
   const [showSecondInstallment, setShowSecondInstallment] = useState(hasInitial2nd);
 
+  const initialRegDate = initialData?.reg_date || initialData?.registration_date || new Date().toLocaleDateString('en-GB');
+  const initialCast = initialData?.schedule_cast || 'ಅ - ವರ್ಗ';
+  const initialReceiptAmt = initialData?.receipt_amount !== undefined ? (parseFloat(initialData.receipt_amount) || 0) : 2000;
+  const initial2ndAmt = hasInitial2nd ? (parseFloat(initialData?.amount) || 0) : 0;
+  const initialAddShares = parseInt(initialData?.additional_shares_count, 10) || 0;
+  const initialAddAmt = parseFloat(initialData?.additional_amount) || 0;
+
+  const initialCalc = calculateShareholdingDetails({
+    reg_date: initialRegDate,
+    schedule_cast: initialCast,
+    receipt_amount: initialReceiptAmt,
+    amount: initial2ndAmt,
+    has_second_installment: hasInitial2nd,
+    additional_shares_count: initialAddShares,
+    additional_amount: initialAddAmt,
+    manual_total: initialData?.total_amount
+  });
+
+  const [showAdditionalSection, setShowAdditionalSection] = useState(
+    initialAddShares > 0 || initialAddAmt > 0
+  );
+
   const [formData, setFormData] = useState({
     // 38 Official Statutory Cooperative Columns:
     book_no: initialData?.book_no || 'B.No: 1',
@@ -60,15 +82,20 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     shareholder_name: initialData?.shareholder_name || initialData?.name || '',
     gender: initialData?.gender || 'M',
     aadhaar_card_no: initialData?.aadhaar_card_no || initialData?.aadhaar_ref || '',
-    reg_date: initialData?.reg_date || initialData?.registration_date || new Date().toLocaleDateString('en-GB'),
+    reg_date: initialRegDate,
     receipt_no: initialData?.receipt_no || String(Math.floor(Math.random() * 9000) + 100),
-    receipt_amount: initialData?.receipt_amount || 2000,
+    receipt_amount: initialReceiptAmt,
     date: hasInitial2nd ? (initialData?.date || '') : '',
     reciept: hasInitial2nd ? (initialData?.reciept || '') : '',
-    amount: hasInitial2nd ? (initialData?.amount || '') : '',
-    total_amount: initialData?.total_amount || 2000,
-    number_of_shares: initialData?.number_of_shares || 1,
-    schedule_cast: initialData?.schedule_cast || 'ಅ - ವರ್ಗ',
+    amount: hasInitial2nd ? initial2ndAmt : '',
+    total_amount: initialCalc.totalAmount,
+    number_of_shares: initialCalc.completeShares,
+    remaining_balance: initialCalc.remainingBalance,
+    additional_shares_count: initialAddShares,
+    additional_amount: initialAddAmt,
+    additional_receipt_no: initialData?.additional_receipt_no || '',
+    additional_date: initialData?.additional_date || '',
+    schedule_cast: initialCast,
     address: initialData?.address || '',
     nagara: initialData?.nagara || 'ಗ್ರಾಮ ಠಾಣಾ',
     road: initialData?.road || 'ಮುಖ್ಯ ರಸ್ತೆ',
@@ -77,7 +104,7 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     district: initialData?.district || 'ವಿಜಯಪುರ',
     pin_code: initialData?.pin_code || '586 117',
     circle: initialData?.circle || initialData?.circle_name || 'ಇಂಡಿ',
-    member_type: getMemberTypeByCategory(initialData?.schedule_cast, initialData?.member_type),
+    member_type: getMemberTypeByCategory(initialCast, initialData?.member_type),
     ownership: getShareholderOwnership(initialData),
     relationship: getShareholderOwnership(initialData),
     tharava_date: initialData?.tharava_date || initialData?.reg_date || new Date().toLocaleDateString('en-GB'),
@@ -170,14 +197,45 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     }
   };
 
-  const handleSharesChange = (shares) => {
-    const s = parseInt(shares) || 1;
-    setFormData(prev => ({
-      ...prev,
-      number_of_shares: s,
-      total_amount: s * 2000
-    }));
+  // Central Dynamic Calculation Function
+  const updateCalculation = (overrides = {}) => {
+    setFormData(prev => {
+      const next = { ...prev, ...overrides };
+      const has2nd = overrides.showSecondInstallment !== undefined
+        ? overrides.showSecondInstallment
+        : showSecondInstallment;
+
+      const calc = calculateShareholdingDetails({
+        reg_date: next.reg_date,
+        schedule_cast: next.schedule_cast,
+        receipt_amount: next.receipt_amount,
+        amount: next.amount,
+        has_second_installment: has2nd,
+        additional_shares_count: next.additional_shares_count,
+        additional_amount: next.additional_amount
+      });
+
+      return {
+        ...next,
+        total_amount: calc.totalAmount,
+        number_of_shares: calc.completeShares,
+        remaining_balance: calc.remainingBalance
+      };
+    });
   };
+
+  // Current live rate and calculation details
+  const rateConfig = getShareRateConfig(formData.schedule_cast, formData.reg_date);
+  const currentCalc = calculateShareholdingDetails({
+    reg_date: formData.reg_date,
+    schedule_cast: formData.schedule_cast,
+    receipt_amount: formData.receipt_amount,
+    amount: formData.amount,
+    has_second_installment: showSecondInstallment,
+    additional_shares_count: formData.additional_shares_count,
+    additional_amount: formData.additional_amount,
+    manual_total: formData.total_amount
+  });
 
   const handleSubmit = async (e, saveAndNew = false) => {
     e.preventDefault();
@@ -190,9 +248,18 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
 
     const submissionData = {
       ...formData,
+      total_amount: currentCalc.totalAmount,
+      number_of_shares: currentCalc.completeShares,
+      remaining_balance: currentCalc.remainingBalance,
+      old_shares_count: currentCalc.oldSharesCount,
+      new_shares_count: currentCalc.newSharesCount,
       reciept: showSecondInstallment ? String(formData.reciept || '').trim() : '',
       amount: showSecondInstallment ? (parseFloat(formData.amount) || 0) : 0,
       date: showSecondInstallment ? String(formData.date || '').trim() : '',
+      additional_shares_count: formData.additional_shares_count || 0,
+      additional_amount: formData.additional_amount || 0,
+      additional_receipt_no: String(formData.additional_receipt_no || '').trim(),
+      additional_date: String(formData.additional_date || '').trim(),
       history_notes: (formData.history_notes || '').trim()
     };
 
@@ -279,10 +346,53 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
         {/* Form Body */}
         <form onSubmit={(e) => handleSubmit(e, false)} className="p-6 space-y-6 text-xs overflow-y-auto">
           {/* Section 1: Book & Share Ledger */}
-          <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
-            <h3 className="font-bold text-slate-200 text-xs flex items-center gap-2 border-b border-slate-800 pb-2">
-              <BookOpen className="w-4 h-4 text-emerald-400" /> 1. Book & Share Certificate Details (ನಮೂನೆ ವಹಿ ಹಾಗೂ ಷೇರು ವಿವರ)
-            </h3>
+          <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3.5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h3 className="font-bold text-slate-200 text-xs flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-emerald-400" /> 1. Book & Share Certificate Details (ನಮೂನೆ ವಹಿ ಹಾಗೂ ಷೇರು ವಿವರ)
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400">
+                  ಶಾಸನಬದ್ಧ ಶೇರು ಮೌಲ್ಯ: <strong className="text-emerald-400 font-mono">₹{rateConfig.baseRate.toLocaleString()}</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* Statutory Share Rate & Cutoff Banner */}
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl ${rateConfig.isLegacy ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                  <Coins className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 font-bold text-slate-100 text-xs">
+                    <span>{rateConfig.categoryName}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${rateConfig.isLegacy ? 'bg-sky-950 text-sky-300 border border-sky-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'}`}>
+                      {rateConfig.isLegacy ? '28/02/2022 ಕ್ಕೂ ಮುಂಚಿನ ನೋಂದಣಿ (₹2,000 / ₹5,000)' : '28/02/2022 ನಂತರದ ನೋಂದಣಿ (₹24,000 / ₹25,000)'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    ಅನ್ವಯವಾಗುವ ಶೇರು ದರ: <strong className="text-emerald-400 font-mono">₹{rateConfig.baseRate.toLocaleString()}</strong>
+                    {rateConfig.isLegacy && (
+                      <span className="text-slate-400 ml-1.5">
+                        • ಹೊಸ ಹೆಚ್ಚುವರಿ ಶೇರು ಖರೀದಿಗೆ ಪ್ರಸ್ತುತ ದರ: <strong className="text-sky-400 font-mono">₹{rateConfig.newRate.toLocaleString()}</strong>
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-[11px]">
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-950/70 border border-emerald-800 text-emerald-300 font-bold">
+                  ಪೂರ್ಣ ಶೇರುಗಳು: {formData.number_of_shares}
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-blue-950/70 border border-blue-800 text-blue-300 font-bold font-mono">
+                  ಒಟ್ಟು ಜಮಾ: ₹{Number(formData.total_amount || 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Row 1: Book No, Sl No, Share No, Schedule Cast */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-slate-400 mb-1 font-medium">Book. No *</label>
@@ -325,46 +435,23 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                   value={formData.schedule_cast}
                   onChange={(e) => {
                     const sc = e.target.value;
-                    setFormData({
-                      ...formData,
+                    updateCalculation({
                       schedule_cast: sc,
                       member_type: getMemberTypeByCategory(sc)
                     });
                   }}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-semibold outline-none focus:border-emerald-500"
                 >
-                  <option value="ಅ - ವರ್ಗ">ಅ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Class A)</option>
-                  <option value="ಬ - ವರ್ಗ">ಬ - ವರ್ಗ : ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ (Class B)</option>
+                  <option value="ಅ - ವರ್ಗ">ಅ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Class A - ₹2,000 / ₹24,000)</option>
+                  <option value="ಬ - ವರ್ಗ">ಬ - ವರ್ಗ : ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ (Class B - ₹5,000 / ₹25,000)</option>
                   <option value="ಕ - ವರ್ಗ">ಕ - ವರ್ಗ (Class C)</option>
-                  <option value="ಡ - ವರ್ಗ">ಡ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ (Class D)</option>
+                  <option value="ಡ - ವರ್ಗ">ಡ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ (Class D - ₹2,000 / ₹24,000)</option>
                 </select>
               </div>
             </div>
 
+            {/* Row 2: 1st Installment, Total Amount, No of Shares */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
-              <div>
-                <label className="block text-slate-400 mb-1 font-medium">No. of Shares *</label>
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  value={formData.number_of_shares}
-                  onChange={(e) => handleSharesChange(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-bold outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-medium">Total Amount (₹) *</label>
-                <input
-                  type="number"
-                  required
-                  value={formData.total_amount}
-                  onChange={(e) => setFormData({ ...formData, total_amount: parseFloat(e.target.value) || 0 })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-amber-400 font-bold outline-none focus:border-emerald-500"
-                />
-              </div>
-
               <div>
                 <label className="block text-slate-400 mb-1 font-medium">1ನೇ ಕಂತು ರಶೀದಿ ಸಂ. (Receipt No)</label>
                 <input
@@ -376,33 +463,106 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">1ನೇ ಕಂತು ಮೊತ್ತ (Receipt Amount ₹)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-400 font-medium">1ನೇ ಕಂತು ಮೊತ್ತ (Receipt Amount ₹) *</label>
+                </div>
                 <input
                   type="number"
+                  required
                   value={formData.receipt_amount}
-                  onChange={(e) => setFormData({ ...formData, receipt_amount: parseFloat(e.target.value) || 0 })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
+                  onChange={(e) => updateCalculation({ receipt_amount: parseFloat(e.target.value) || 0 })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono font-bold outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-400 font-medium">Total Amount (₹) *</label>
+                  <span className="text-[10px] text-amber-400 font-bold bg-amber-950/70 px-1.5 py-0.5 rounded border border-amber-800">
+                    ಸ್ವಯಂಚಾಲಿತ ಮೊತ್ತ
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  required
+                  value={formData.total_amount}
+                  onChange={(e) => setFormData({ ...formData, total_amount: parseFloat(e.target.value) || 0 })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-amber-400 font-bold font-mono outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-400 font-medium">No. of Shares *</label>
+                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-800">
+                    {currentCalc.completeShares} ಪೂರ್ಣ ಶೇರು
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={formData.number_of_shares}
+                  onChange={(e) => setFormData({ ...formData, number_of_shares: parseInt(e.target.value, 10) || 0 })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-bold font-mono outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
 
-            {/* Optional 2nd Installment Toggle & Fields */}
-            <div className="pt-3 mt-2 border-t border-slate-800/80">
+            {/* Row 3: Live Remaining Balance Alert Banner */}
+            {currentCalc.remainingBalance > 0 ? (
+              <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-800 text-amber-200 text-xs flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>
+                    ಮುಂದಿನ ಶೇರಿಗೆ ಜಮೆಯಾಗಿರುವ ಬಾಕಿ ಮೊತ್ತ: <strong className="text-amber-300 font-mono font-bold">₹{currentCalc.remainingBalance.toLocaleString()}</strong>.
+                    (ಇನ್ನೂ <strong className="text-white font-mono">₹{currentCalc.neededForNext.toLocaleString()}</strong> ಪಾವತಿಸಿದಾಗ ಮತ್ತೊಂದು ಪೂರ್ಣ ಶೇರು ಲಭ್ಯವಾಗುತ್ತದೆ)
+                  </span>
+                </div>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-900/60 text-amber-300 border border-amber-700">
+                  ಬಾಕಿ ಮೊತ್ತ: ₹{currentCalc.remainingBalance.toLocaleString()}
+                </span>
+              </div>
+            ) : (
+              <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-800/60 text-emerald-300 text-xs flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>
+                    ಪಾವತಿಸಿದ ಒಟ್ಟು ಮೊತ್ತಕ್ಕೆ ಎಲ್ಲಾ <strong className="text-white font-bold font-mono">{formData.number_of_shares}</strong> ಶೇರುಗಳು ಯಶಸ್ವಿಯಾಗಿ ಪೂರ್ಣಗೊಂಡಿವೆ.
+                  </span>
+                </div>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-900/60 text-emerald-300 border border-emerald-700">
+                  ಬಾಕಿ: ₹0
+                </span>
+              </div>
+            )}
+
+            {/* 2nd Installment Toggle & Fields */}
+            <div className="pt-3 mt-1 border-t border-slate-800/80">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-300">2ನೇ ಕಂತು / ರಶೀದಿ (2nd Installment - ಐಚ್ಛಿಕ)</span>
+                <div>
+                  <span className="text-xs font-semibold text-slate-300">2ನೇ ಕಂತು / ರಶೀದಿ (2nd Installment - ಐಚ್ಛಿಕ)</span>
+                  <p className="text-[11px] text-slate-500">2ನೇ ಕಂತು ಮೊತ್ತ ನಮೂದಿಸಿದಾಗ ಒಟ್ಟು ಜಮಾ ಮೊತ್ತ ಹಾಗೂ ಪೂರ್ಣಗೊಂಡ ಶೇರುಗಳು ತಕ್ಷಣವೇ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ನವೀಕರಣಗೊಳ್ಳುತ್ತವೆ.</p>
+                </div>
                 <button
                   type="button"
                   onClick={() => {
                     const next = !showSecondInstallment;
                     setShowSecondInstallment(next);
                     if (!next) {
-                      setFormData(prev => ({ ...prev, reciept: '', amount: '', date: '' }));
+                      updateCalculation({ showSecondInstallment: false, amount: 0, reciept: '', date: '' });
+                    } else {
+                      updateCalculation({
+                        showSecondInstallment: true,
+                        amount: formData.amount || rateConfig.baseRate,
+                        date: formData.date || new Date().toLocaleDateString('en-GB')
+                      });
                     }
                   }}
-                  className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
+                  className={`text-xs px-3 py-1.5 rounded-xl border font-semibold transition-colors ${
                     showSecondInstallment
                       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200'
+                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
                   }`}
                 >
                   {showSecondInstallment ? '✓ 2ನೇ ಕಂತು ಸಕ್ರಿಯವಾಗಿದೆ (Remove)' : '+ 2ನೇ ಕಂತು ಸೇರಿಸಿ (Add)'}
@@ -422,13 +582,16 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-400 mb-1 font-medium text-xs">2ನೇ ಕಂತು ಮೊತ್ತ (2nd Amount ₹)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-slate-400 font-medium text-xs">2ನೇ ಕಂತು ಮೊತ್ತ (2nd Amount ₹) *</label>
+                      <span className="text-[10px] text-emerald-400">ಒಟ್ಟು ಮೊತ್ತಕ್ಕೆ ಕೂಡುತ್ತದೆ</span>
+                    </div>
                     <input
                       type="number"
-                      placeholder="e.g. 1000"
+                      placeholder="e.g. 2000"
                       value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 text-sm outline-none focus:border-emerald-500"
+                      onChange={(e) => updateCalculation({ amount: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-mono font-bold text-sm outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div>
@@ -444,6 +607,100 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                 </div>
               )}
             </div>
+
+            {/* Additional Share Purchase Rule (Point 4 & 6) for Existing Members (<= 28/02/2022) */}
+            {rateConfig.isLegacy && (
+              <div className="pt-3 mt-1 border-t border-slate-800/80">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-300">
+                      ಪ್ರಸ್ತುತ ದರದಲ್ಲಿ ಹೆಚ್ಚುವರಿ ಶೇರು ಖರೀದಿ (Purchase Additional Share @ ₹{rateConfig.newRate.toLocaleString()})
+                    </span>
+                    <p className="text-[11px] text-slate-500">
+                      ಮೂಲ ಶೇರುಗಳು ಹಳೆಯ ದರದಲ್ಲೇ (₹{rateConfig.oldRate.toLocaleString()}) ಉಳಿಯುತ್ತವೆ. ಹೊಸದಾಗಿ ಖರೀದಿಸುವ ಪ್ರತಿ ಹೆಚ್ಚುವರಿ ಶೇರಿಗೆ ₹{rateConfig.newRate.toLocaleString()} ಅನ್ವಯಿಸುತ್ತದೆ.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !showAdditionalSection;
+                      setShowAdditionalSection(next);
+                      if (!next) {
+                        updateCalculation({ additional_shares_count: 0, additional_amount: 0 });
+                      } else {
+                        updateCalculation({
+                          additional_shares_count: 1,
+                          additional_amount: rateConfig.newRate,
+                          additional_date: formData.additional_date || new Date().toLocaleDateString('en-GB')
+                        });
+                      }
+                    }}
+                    className={`text-xs px-3 py-1.5 rounded-xl border font-semibold transition-colors ${
+                      showAdditionalSection
+                        ? 'bg-sky-500/10 text-sky-400 border-sky-500/30 hover:bg-sky-500/20'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    {showAdditionalSection ? '✓ ಹೆಚ್ಚುವರಿ ಶೇರು ಸಕ್ರಿಯವಾಗಿದೆ (Remove)' : '+ ಹೆಚ್ಚುವರಿ ಶೇರು ಸೇರಿಸಿ (Add New Share)'}
+                  </button>
+                </div>
+
+                {showAdditionalSection && (
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-3 bg-sky-950/20 p-3 rounded-xl border border-sky-900/40 mt-2">
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-medium text-xs">ಖರೀದಿಸುವ ಹೆಚ್ಚುವರಿ ಶೇರುಗಳ ಸಂಖ್ಯೆ</label>
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="1"
+                        value={formData.additional_shares_count || 1}
+                        onChange={(e) => {
+                          const count = parseInt(e.target.value, 10) || 0;
+                          updateCalculation({
+                            additional_shares_count: count,
+                            additional_amount: count * rateConfig.newRate
+                          });
+                        }}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sky-400 font-mono font-bold text-sm outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-medium text-xs">ಹೆಚ್ಚುವರಿ ಶೇರು ಮೊತ್ತ (₹{rateConfig.newRate.toLocaleString()} / ಪ್ರತಿ ಶೇರು)</label>
+                      <input
+                        type="number"
+                        readOnly
+                        value={(formData.additional_shares_count || 1) * rateConfig.newRate}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-400 font-mono font-bold text-sm outline-none cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-medium text-xs">ಹೆಚ್ಚುವರಿ ಶೇರು ರಶೀದಿ ಸಂ.</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. REC-NEW-01"
+                        value={formData.additional_receipt_no || ''}
+                        onChange={(e) => setFormData({ ...formData, additional_receipt_no: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono text-sm outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-medium text-xs">ಖರೀದಿ ದಿನಾಂಕ</label>
+                      <input
+                        type="text"
+                        placeholder="DD/MM/YYYY"
+                        value={formData.additional_date || ''}
+                        onChange={(e) => setFormData({ ...formData, additional_date: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 text-sm outline-none focus:border-sky-500"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-4 pt-1 text-[11px] text-sky-300/90 font-medium border-t border-sky-900/30">
+                      ℹ️ ಲೆಕ್ಕಾಚಾರ: ಹಳೆಯ ದರದ ಶೇರುಗಳು: <strong className="text-white">{currentCalc.oldSharesCount}</strong> (@ ₹{rateConfig.oldRate.toLocaleString()}) + ಹೊಸ ದರದ ಹೆಚ್ಚುವರಿ ಶೇರುಗಳು: <strong className="text-white">{currentCalc.newSharesCount}</strong> (@ ₹{rateConfig.newRate.toLocaleString()}) = ಒಟ್ಟು: <strong className="text-emerald-400">{currentCalc.completeShares}</strong> ಶೇರುಗಳು | ಒಟ್ಟು ಮೊತ್ತ: <strong className="text-amber-400 font-mono">₹{currentCalc.totalAmount.toLocaleString()}</strong>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Section 2: Shareholder Personal Info */}
@@ -506,7 +763,7 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                   type="text"
                   placeholder="e.g. 10/Aug/1982"
                   value={formData.reg_date}
-                  onChange={(e) => setFormData({ ...formData, reg_date: e.target.value, date: e.target.value })}
+                  onChange={(e) => updateCalculation({ reg_date: e.target.value })}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-emerald-500"
                 />
               </div>

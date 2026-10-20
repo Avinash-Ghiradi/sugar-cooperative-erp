@@ -119,6 +119,203 @@ export function getMemberTypeByCategory(category, explicitType = null) {
   return 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ';
 }
 
+
+// -------------------------------------------------------------
+// STATUTORY SHARE VALUE & AUTOMATIC CALCULATION ENGINE
+// Rules:
+// 1. Cutoff: 28/02/2022
+// 2. Class A & D (ಅ & ಡ): Old Rate = ₹2,000 | New Rate = ₹24,000
+// 3. Class B (ಬ): Old Rate = ₹5,000 | New Rate = ₹25,000
+// 4. Complete Shares: Math.floor(eligibleAmount / rate)
+// 5. Remaining Balance: eligibleAmount % rate
+// 6. Additional shares purchased by legacy members charged at current rate (₹24k/₹25k)
+//    without changing the value or count of previously completed shares.
+// -------------------------------------------------------------
+export const SHARE_RATE_CUTOFF_DATE = new Date(2022, 1, 28, 23, 59, 59, 999);
+
+export function parseCoopDate(dateStr) {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+  const s = String(dateStr).trim();
+  if (!s || s === '-' || s === '—') return null;
+
+  const dmy = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})/);
+  if (dmy) {
+    const day = parseInt(dmy[1], 10);
+    const month = parseInt(dmy[2], 10) - 1;
+    const year = parseInt(dmy[3], 10);
+    return new Date(year, month, day);
+  }
+
+  const monthNames = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+  };
+  const named = s.match(/^(\d{1,2})[/\-.]([a-zA-Z]{3,})[/\-.](\d{4})/);
+  if (named) {
+    const day = parseInt(named[1], 10);
+    const mStr = named[2].substring(0, 3).toLowerCase();
+    const month = monthNames[mStr] !== undefined ? monthNames[mStr] : 0;
+    const year = parseInt(named[3], 10);
+    return new Date(year, month, day);
+  }
+
+  const ymd = s.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})/);
+  if (ymd) {
+    const year = parseInt(ymd[1], 10);
+    const month = parseInt(ymd[2], 10) - 1;
+    const day = parseInt(ymd[3], 10);
+    return new Date(year, month, day);
+  }
+
+  const dt = new Date(s);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+export function isRegisteredOnOrBeforeCutoff(regDate) {
+  if (!regDate) return true;
+  const d = parseCoopDate(regDate);
+  if (!d) return true;
+  return d.getTime() <= SHARE_RATE_CUTOFF_DATE.getTime();
+}
+
+export function getShareRateConfig(scheduleCast, regDate) {
+  const isLegacy = isRegisteredOnOrBeforeCutoff(regDate);
+  const cat = String(scheduleCast || '').toLowerCase();
+  const isClassB = cat.includes('ಬ') || cat.includes('b');
+
+  const oldRate = isClassB ? 5000 : 2000;
+  const newRate = isClassB ? 25000 : 24000;
+  const baseRate = isLegacy ? oldRate : newRate;
+
+  return {
+    isLegacy,
+    isClassB,
+    oldRate,
+    newRate,
+    baseRate,
+    categoryName: isClassB ? 'ಬ - ವರ್ಗ (Class B)' : (cat.includes('ಡ') || cat.includes('d') ? 'ಡ - ವರ್ಗ (Class D)' : 'ಅ - ವರ್ಗ (Class A)')
+  };
+}
+
+export function calculateShareholdingDetails({
+  reg_date,
+  schedule_cast,
+  receipt_amount = 0,
+  amount = 0,
+  has_second_installment = false,
+  additional_shares_count = 0,
+  additional_amount = 0,
+  manual_total = null
+}) {
+  const config = getShareRateConfig(schedule_cast, reg_date);
+  const amt1 = Math.max(0, parseFloat(receipt_amount) || 0);
+  const amt2 = has_second_installment ? Math.max(0, parseFloat(amount) || 0) : 0;
+  const addSharesInput = Math.max(0, parseInt(additional_shares_count, 10) || 0);
+  const addAmtInput = Math.max(0, parseFloat(additional_amount) || 0);
+
+  if (!config.isLegacy) {
+    const totalPaid = manual_total !== null && manual_total !== undefined
+      ? Math.max(0, parseFloat(manual_total) || 0)
+      : (amt1 + amt2 + addAmtInput);
+
+    const completeShares = Math.floor(totalPaid / config.newRate);
+    const remainingBalance = totalPaid % config.newRate;
+    const neededForNext = remainingBalance > 0 ? (config.newRate - remainingBalance) : 0;
+
+    return {
+      isLegacy: false,
+      shareRate: config.newRate,
+      oldRate: config.oldRate,
+      newRate: config.newRate,
+      totalAmount: totalPaid,
+      completeShares,
+      remainingBalance,
+      neededForNext,
+      oldSharesCount: 0,
+      newSharesCount: completeShares,
+      oldSharesAmount: 0,
+      newSharesAmount: completeShares * config.newRate,
+      summaryText: `ನೊಂದಣಿ ದಿನಾಂಕ: 28/02/2022 ನಂತರ | ಪ್ರಸ್ತುತ ಶೇರು ದರ: ₹${config.newRate.toLocaleString()} | ಒಟ್ಟು ಜಮಾ: ₹${totalPaid.toLocaleString()} | ಪೂರ್ಣಗೊಂಡ ಶೇರುಗಳು: ${completeShares} | ಬಾಕಿ: ₹${remainingBalance.toLocaleString()}`
+    };
+  }
+
+  // IF REGISTERED ON OR BEFORE 28/02/2022:
+  if (addSharesInput > 0 || addAmtInput > 0) {
+    const actualAddShares = addSharesInput > 0
+      ? addSharesInput
+      : Math.floor(addAmtInput / config.newRate);
+    const newSharesPayment = actualAddShares * config.newRate;
+
+    const oldPayment = amt1 + amt2;
+    const oldCompleteShares = Math.floor(oldPayment / config.oldRate);
+    const remainingBalance = oldPayment % config.oldRate;
+    const neededForNext = remainingBalance > 0 ? (config.oldRate - remainingBalance) : 0;
+
+    const totalPaid = oldPayment + newSharesPayment;
+    const totalCompleteShares = oldCompleteShares + actualAddShares;
+
+    return {
+      isLegacy: true,
+      shareRate: config.oldRate,
+      oldRate: config.oldRate,
+      newRate: config.newRate,
+      totalAmount: totalPaid,
+      completeShares: totalCompleteShares,
+      remainingBalance,
+      neededForNext,
+      oldSharesCount: oldCompleteShares,
+      newSharesCount: actualAddShares,
+      oldSharesAmount: oldCompleteShares * config.oldRate,
+      newSharesAmount: newSharesPayment,
+      summaryText: `ಹಳೆಯ ದರದ ಶೇರುಗಳು: ${oldCompleteShares} (@ ₹${config.oldRate.toLocaleString()}) + ಹೊಸ ದರದ ಹೆಚ್ಚುವರಿ ಶೇರುಗಳು: ${actualAddShares} (@ ₹${config.newRate.toLocaleString()}) = ಒಟ್ಟು: ${totalCompleteShares} ಶೇರುಗಳು | ಒಟ್ಟು ಜಮಾ: ₹${totalPaid.toLocaleString()} | ಬಾಕಿ: ₹${remainingBalance.toLocaleString()}`
+    };
+  }
+
+  const totalPaid = manual_total !== null && manual_total !== undefined
+    ? Math.max(0, parseFloat(manual_total) || 0)
+    : (amt1 + amt2);
+
+  let recognizedNewShares = 0;
+  let paymentForOldShares = totalPaid;
+
+  if (amt2 >= config.newRate && amt2 % config.newRate === 0) {
+    recognizedNewShares = Math.floor(amt2 / config.newRate);
+    paymentForOldShares = amt1;
+  } else if (totalPaid >= config.newRate && (totalPaid % config.oldRate === 0) && (totalPaid - config.newRate >= config.oldRate) && ((totalPaid - config.newRate) % config.oldRate === 0)) {
+    recognizedNewShares = Math.floor((totalPaid - (Math.floor(totalPaid / config.newRate) > 0 ? (totalPaid % config.newRate) : 0)) / config.newRate);
+    if (totalPaid - (recognizedNewShares * config.newRate) >= config.oldRate) {
+      paymentForOldShares = totalPaid - (recognizedNewShares * config.newRate);
+    } else {
+      recognizedNewShares = 0;
+      paymentForOldShares = totalPaid;
+    }
+  }
+
+  const oldCompleteShares = Math.floor(paymentForOldShares / config.oldRate);
+  const remainingBalance = paymentForOldShares % config.oldRate;
+  const neededForNext = remainingBalance > 0 ? (config.oldRate - remainingBalance) : 0;
+  const totalCompleteShares = oldCompleteShares + recognizedNewShares;
+
+  return {
+    isLegacy: true,
+    shareRate: config.oldRate,
+    oldRate: config.oldRate,
+    newRate: config.newRate,
+    totalAmount: totalPaid,
+    completeShares: totalCompleteShares,
+    remainingBalance,
+    neededForNext,
+    oldSharesCount: oldCompleteShares,
+    newSharesCount: recognizedNewShares,
+    oldSharesAmount: oldCompleteShares * config.oldRate,
+    newSharesAmount: recognizedNewShares * config.newRate,
+    summaryText: recognizedNewShares > 0
+      ? `ಹಳೆಯ ಶೇರುಗಳು: ${oldCompleteShares} (@ ₹${config.oldRate.toLocaleString()}) + ಹೊಸ ಶೇರುಗಳು: ${recognizedNewShares} (@ ₹${config.newRate.toLocaleString()}) = ಒಟ್ಟು: ${totalCompleteShares} ಶೇರುಗಳು | ಒಟ್ಟು ಜಮಾ: ₹${totalPaid.toLocaleString()} | ಬಾಕಿ: ₹${remainingBalance.toLocaleString()}`
+      : `ಶಾಸನಬದ್ಧ ಶೇರು ದರ: ₹${config.oldRate.toLocaleString()} | ಒಟ್ಟು ಜಮಾ ಮೊತ್ತ: ₹${totalPaid.toLocaleString()} | ಪೂರ್ಣಗೊಂಡ ಶೇರುಗಳು: ${totalCompleteShares} | ಮುಂದಿನ ಶೇರಿಗೆ ಬಾಕಿ: ₹${remainingBalance.toLocaleString()}`
+  };
+}
+
 // Zero-dependency IndexedDB storage for massive datasets (17k - 100k+ records)
 const DB_NAME = 'SugarCooperativeERP_DB_v2';
 const DB_VERSION = 2;
@@ -1171,7 +1368,18 @@ export const ApiService = {
     const finalDistrict = ((match && match.district) ? match.district : (data.district || '')).normalize('NFC');
     const finalPin = (match && match.pincode) ? match.pincode : (data.pin_code || '');
 
-    const newSh = {
+    
+    const shareCalc = calculateShareholdingDetails({
+      reg_date: data.reg_date || nowStr,
+      schedule_cast: data.schedule_cast || 'ಅ - ವರ್ಗ',
+      receipt_amount: data.receipt_amount,
+      amount: data.amount,
+      has_second_installment: Boolean(data.reciept || (parseFloat(data.amount) > 0)),
+      additional_shares_count: data.additional_shares_count || 0,
+      additional_amount: data.additional_amount || 0,
+      manual_total: data.total_amount
+    });
+const newSh = {
       id: nextId,
       shareholder_id: data.shareholder_id || `SH-${String(nextId).padStart(5, '0')}`,
       book_no: data.book_no || 'B.No: 1',
@@ -1190,9 +1398,14 @@ export const ApiService = {
       date: data.date || '',
       reciept: (data.reciept && String(data.reciept).trim() !== String(data.receipt_no || '').trim()) ? String(data.reciept).trim() : (parseFloat(data.amount) > 0 && parseFloat(data.total_amount) > (parseFloat(data.receipt_amount) || 0) ? String(data.reciept || '') : ''),
       amount: (parseFloat(data.amount) > 0 && (String(data.reciept).trim() !== String(data.receipt_no || '').trim() || parseFloat(data.total_amount) > (parseFloat(data.receipt_amount) || 0))) ? parseFloat(data.amount) : 0,
-      total_amount: parseFloat(data.total_amount) || (parseFloat(data.number_of_shares) || 1) * 2000,
-      number_of_shares: parseInt(data.number_of_shares) || 1,
-      share_value: parseFloat(data.total_amount) || (parseFloat(data.number_of_shares) || 1) * 2000,
+      total_amount: shareCalc.totalAmount,
+      number_of_shares: shareCalc.completeShares,
+      remaining_balance: shareCalc.remainingBalance,
+      share_value: shareCalc.totalAmount,
+      old_shares_count: shareCalc.oldSharesCount,
+      new_shares_count: shareCalc.newSharesCount,
+      additional_shares_count: data.additional_shares_count || 0,
+      additional_amount: data.additional_amount || 0,
       schedule_cast: (data.schedule_cast || 'ಅ - ವರ್ಗ').normalize('NFC'),
       address: (data.address || '').normalize('NFC'),
       nagara: (data.nagara || '').normalize('NFC'),
@@ -1254,6 +1467,23 @@ export const ApiService = {
     const rawPlace = (data.place || current.place || '').trim().normalize('NFC');
     const circleInfo = this.resolveCircleForPlace(rawPlace);
 
+    const amt1 = data.receipt_amount !== undefined ? data.receipt_amount : (current.receipt_amount || 0);
+    const amt2 = data.amount !== undefined ? data.amount : (current.amount || 0);
+    const has2nd = hasSecondInstallment(data) || (parseFloat(amt2) > 0) || (data.reciept && data.reciept !== '—');
+    const addShares = data.additional_shares_count !== undefined ? data.additional_shares_count : (current.additional_shares_count || 0);
+    const addAmt = data.additional_amount !== undefined ? data.additional_amount : (current.additional_amount || 0);
+
+    const shareCalc = calculateShareholdingDetails({
+      reg_date: data.reg_date || current.reg_date,
+      schedule_cast: data.schedule_cast || current.schedule_cast,
+      receipt_amount: amt1,
+      amount: amt2,
+      has_second_installment: has2nd,
+      additional_shares_count: addShares,
+      additional_amount: addAmt,
+      manual_total: data.total_amount
+    });
+
     const updated = {
       ...current,
       ...data,
@@ -1274,11 +1504,23 @@ export const ApiService = {
       photo_updated: data.photo_updated || (data.photo_url ? 'Yes' : current.photo_updated || 'No'),
       signature_updated: data.signature_updated || (data.signature_url ? 'Yes' : current.signature_updated || 'No'),
       thumb_updated: data.thumb_updated || (data.thumb_url ? 'Yes' : current.thumb_updated || 'No'),
+      total_amount: shareCalc.totalAmount,
+      number_of_shares: shareCalc.completeShares,
+      remaining_balance: shareCalc.remainingBalance,
+      old_shares_count: shareCalc.oldSharesCount,
+      new_shares_count: shareCalc.newSharesCount,
+      additional_shares_count: addShares,
+      additional_amount: addAmt,
+      additional_receipt_no: data.additional_receipt_no || current.additional_receipt_no || '',
+      additional_date: data.additional_date || current.additional_date || ''
     };
 
     // Calculate field differences to record change history
     const fieldDefinitions = [
       { key: 'shareholder_name', label: 'ಹೆಸರು (Name)', altKey: 'name' },
+      { key: 'number_of_shares', label: 'ಶೇರುಗಳ ಸಂಖ್ಯೆ (Complete Shares)' },
+      { key: 'total_amount', label: 'ಒಟ್ಟು ಜಮಾ ಮೊತ್ತ (Total Paid Amount)' },
+      { key: 'remaining_balance', label: 'ಬಾಕಿ ಮೊತ್ತ (Remaining Balance)' },
       { key: 'place', label: 'ಸ್ಥಳ / ಗ್ರಾಮ (Place)', altKey: 'village_name' },
       { key: 'taluk', label: 'ತಾಲೂಕು (Taluk)' },
       { key: 'district', label: 'ಜಿಲ್ಲೆ (District)' },
