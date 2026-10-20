@@ -941,13 +941,31 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Member Type (ಸದಸ್ಯರ ಪ್ರಕಾರ)</label>
-                <input
-                  type="text"
-                  value={formData.member_type}
+                <label className="block text-slate-400 mb-1 font-medium">Member Type (ಸದಸ್ಯರ ಪ್ರಕಾರ) *</label>
+                <select
+                  value={formData.member_type || 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ'}
                   onChange={(e) => setFormData({ ...formData, member_type: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-semibold outline-none focus:border-emerald-500"
-                />
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-semibold outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  <option value="ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ">ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower Member)</option>
+                  <option value="ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ">ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ (Non-Cane Grower Member)</option>
+                  <option value="ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ">ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ (Cooperative Society / Institution)</option>
+                  <option value="ನಾಮಿನಿ / ವಾರಸುದಾರ ಸದಸ್ಯ">ನಾಮಿನಿ / ವಾರಸುದಾರ ಸದಸ್ಯ (Nominee / Successor Member)</option>
+                  <option value="ವರ್ಗಾವಣೆ ಪಡೆದ ಸದಸ್ಯ">ವರ್ಗಾವಣೆ ಪಡೆದ ಸದಸ್ಯ (Transferee Member)</option>
+                  <option value="ಸಾಮಾನ್ಯ ಸದಸ್ಯ">ಸಾಮಾನ್ಯ ಸದಸ್ಯ (General Member)</option>
+                  <option value="ಇತರೆ">ಇತರೆ (Other)</option>
+                  {formData.member_type && ![
+                    'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ',
+                    'ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ',
+                    'ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ',
+                    'ನಾಮಿನಿ / ವಾರಸುದಾರ ಸದಸ್ಯ',
+                    'ವರ್ಗಾವಣೆ ಪಡೆದ ಸದಸ್ಯ',
+                    'ಸಾಮಾನ್ಯ ಸದಸ್ಯ',
+                    'ಇತರೆ'
+                  ].includes(formData.member_type) && (
+                    <option value={formData.member_type}>{formData.member_type}</option>
+                  )}
+                </select>
               </div>
 
               <div>
@@ -955,13 +973,17 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                 <input
                   type="text"
                   list="ownership-type-suggestions"
-                  placeholder="ಉದಾ: ಸ್ವಂತ, ವಾರಸದಾರರು (ಮಗ), ವಾರಸದಾರರು (ಪತ್ನಿ)..."
+                  placeholder="ಉದಾ: ಸ್ವಂತ, ವಾರಸದಾರರು, ವರ್ಗಾವಣೆದಾರರು..."
                   value={formData.ownership || formData.relationship}
                   onChange={(e) => setFormData({ ...formData, ownership: e.target.value, relationship: e.target.value })}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-semibold outline-none focus:border-emerald-500"
                 />
                 <datalist id="ownership-type-suggestions">
+                  {/* 1. ಸ್ವಂತ ಒಡೆತನ (Self / Original) */}
                   <option value="ಸ್ವಂತ (Self)" />
+                  <option value="ಸ್ವಂತ" />
+
+                  {/* 2. ವಾರಸಾ ಒಡೆತನ (Varasa / Legal Heir) */}
                   <option value="ವಾರಸದಾರರು (ಮಗ)" />
                   <option value="ವಾರಸದಾರರು (ಮಗಳು)" />
                   <option value="ವಾರಸದಾರರು (ಪತ್ನಿ)" />
@@ -969,7 +991,26 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                   <option value="ವಾರಸದಾರರು (ತಾಯಿ)" />
                   <option value="ವಾರಸದಾರರು (ತಂದೆ)" />
                   <option value="ವಾರಸದಾರರು (ಸಹೋದರ)" />
+                  <option value="ವಾರಸದಾರರು (ಸೊಸೆ)" />
+                  <option value="ವಾರಸದಾರರು (ಮೊಮ್ಮಗ)" />
+                  <option value="ವಾರಸದಾರರು (ಇತರೆ)" />
                   <option value="ವಾರಸದಾರರು" />
+
+                  {/* 3. ವರ್ಗಾವಣೆ ಒಡೆತನ (Vargavane / Share Transfer) */}
+                  <option value="ವರ್ಗಾವಣೆ (Transfer)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ಮಗ)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ಮಗಳು)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ಪತ್ನಿ)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ಪತಿ)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ಸಹೋದರ)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ತಾಯಿ)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ತಂದೆ)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ಸೊಸೆ)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ಮೊಮ್ಮಗ)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ಖರೀದಿದಾರರು)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು (ಇತರೆ ಸದಸ್ಯರು)" />
+                  <option value="ವರ್ಗಾವಣೆದಾರರು" />
+                  <option value="ವರ್ಗಾವಣೆ" />
                 </datalist>
               </div>
             </div>

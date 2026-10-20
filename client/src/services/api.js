@@ -106,6 +106,10 @@ export function hasSecondInstallment(sh) {
 //   ಡ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ
 //   ಬ - ವರ್ಗ : ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ
 export function getMemberTypeByCategory(category, explicitType = null) {
+  if (explicitType && typeof explicitType === 'string' && explicitType.trim() && explicitType !== '—' && explicitType !== '-') {
+    return explicitType.trim();
+  }
+
   const cat = String(category || '').trim().normalize('NFC').toLowerCase();
 
   // 1. Exact Kannada category matching
@@ -700,8 +704,8 @@ export function getShareholderOwnership(sh, varasaList = null, vargavaneList = n
     });
 
     if (vgMatch) {
-      const rel = (vgMatch.transferee_relationship || 'ಮಗ').trim();
-      return `ವಾರಸದಾರರು (${rel})`;
+      const rel = (vgMatch.transferee_relationship || 'ಖರೀದಿದಾರರು').trim();
+      return `ವರ್ಗಾವಣೆದಾರರು (${rel})`;
     }
   }
 
