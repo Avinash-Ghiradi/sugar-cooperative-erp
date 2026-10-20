@@ -312,7 +312,95 @@ export const CloudDbService = {
     return { success: true, count: uploaded };
   },
 
-  // 10. Ready-to-copy Supabase SQL Setup Schema
+  // 10. Generic Cloud Collection Operations (Multi-Browser Sync for Workflows)
+  async getCollection(moduleName) {
+    if (!this.isEnabled()) return null;
+    try {
+      const res = await this.request(`audit_logs?module=eq.${encodeURIComponent(moduleName)}&order=id.desc`);
+      if (Array.isArray(res)) {
+        return res.map(r => r.new_value).filter(Boolean);
+      }
+    } catch (err) {
+      console.warn(`Cloud DB getCollection(${moduleName}) failed:`, err.message);
+    }
+    return null;
+  },
+
+  async saveCollectionItem(moduleName, recordId, data) {
+    if (!this.isEnabled()) return false;
+    try {
+      const recKey = String(recordId || data.id || data.enrollment_id || data.transfer_id || Date.now());
+      // Clean previous entry with same recordId
+      await this.request(`audit_logs?module=eq.${encodeURIComponent(moduleName)}&record_id=eq.${encodeURIComponent(recKey)}`, {
+        method: 'DELETE'
+      }).catch(() => {});
+
+      // Insert new entry
+      await this.request('audit_logs', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: 'System Administrator',
+          role: 'Admin',
+          module: moduleName,
+          action: 'UPSERT',
+          record_id: recKey,
+          new_value: data
+        })
+      });
+      return true;
+    } catch (err) {
+      console.warn(`Cloud DB saveCollectionItem(${moduleName}) failed:`, err.message);
+      return false;
+    }
+  },
+
+  async deleteCollectionItem(moduleName, recordId) {
+    if (!this.isEnabled()) return false;
+    try {
+      const recKey = String(recordId);
+      await this.request(`audit_logs?module=eq.${encodeURIComponent(moduleName)}&record_id=eq.${encodeURIComponent(recKey)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch (err) {
+      console.warn(`Cloud DB deleteCollectionItem(${moduleName}) failed:`, err.message);
+      return false;
+    }
+  },
+
+  async saveCollectionBulk(moduleName, items, idField = 'id') {
+    if (!this.isEnabled() || !Array.isArray(items) || items.length === 0) return false;
+    try {
+      // Clear old module rows
+      await this.request(`audit_logs?module=eq.${encodeURIComponent(moduleName)}`, {
+        method: 'DELETE'
+      }).catch(() => {});
+
+      // Batch insert in chunks of 50
+      for (let i = 0; i < items.length; i += 50) {
+        const chunk = items.slice(i, i + 50);
+        const rows = chunk.map(item => ({
+          username: 'System Administrator',
+          role: 'Admin',
+          module: moduleName,
+          action: 'BULK_IMPORT',
+          record_id: String(item[idField] || item.enrollment_id || item.transfer_id || `rec-${Date.now()}-${Math.random()}`),
+          new_value: item
+        }));
+
+        await this.request('audit_logs', {
+          method: 'POST',
+          body: JSON.stringify(rows)
+        });
+      }
+      return true;
+    } catch (err) {
+      console.warn(`Cloud DB saveCollectionBulk(${moduleName}) failed:`, err.message);
+      return false;
+    }
+  },
+
+  // 11. Ready-to-copy Supabase SQL Setup Schema
   getSqlSchema() {
     return `-- ====================================================================
 -- Shree Bheemashankar Sahakari Sakkare Karkhane Niyamit, Maragur

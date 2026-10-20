@@ -526,6 +526,67 @@ async function fetchOfficialShareholdersFallback() {
   return null;
 }
 
+export async function syncAllCloudWorkflows() {
+  if (!CloudDbService.isEnabled()) return;
+  try {
+    const [enr, varasa, varg, merges, txs, allotments] = await Promise.all([
+      CloudDbService.getCollection('enrollments').catch(() => null),
+      CloudDbService.getCollection('varasa').catch(() => null),
+      CloudDbService.getCollection('vargavane').catch(() => null),
+      CloudDbService.getCollection('merge_requests').catch(() => null),
+      CloudDbService.getCollection('transactions').catch(() => null),
+      CloudDbService.getCollection('sugar_allotments').catch(() => null)
+    ]);
+
+    if (Array.isArray(enr)) {
+      const cloudIds = new Set(enr.map(e => String(e.enrollment_id || e.id)));
+      const unpushed = mockEnrollments.filter(e => !cloudIds.has(String(e.enrollment_id || e.id)));
+      for (const u of unpushed) {
+        CloudDbService.saveCollectionItem('enrollments', u.enrollment_id || u.id, u).catch(() => {});
+      }
+      mockEnrollments = [...enr, ...unpushed];
+      saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+    }
+    if (Array.isArray(varasa)) {
+      const cloudIds = new Set(varasa.map(v => String(v.transfer_id || v.id)));
+      const unpushed = mockVarasaTransfers.filter(v => !cloudIds.has(String(v.transfer_id || v.id)));
+      for (const u of unpushed) {
+        CloudDbService.saveCollectionItem('varasa', u.transfer_id || u.id, u).catch(() => {});
+      }
+      mockVarasaTransfers = [...varasa, ...unpushed];
+      saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+    }
+    if (Array.isArray(varg)) {
+      const cloudIds = new Set(varg.map(v => String(v.transfer_id || v.id)));
+      const unpushed = mockVargavaneTransfers.filter(v => !cloudIds.has(String(v.transfer_id || v.id)));
+      for (const u of unpushed) {
+        CloudDbService.saveCollectionItem('vargavane', u.transfer_id || u.id, u).catch(() => {});
+      }
+      mockVargavaneTransfers = [...varg, ...unpushed];
+      saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+    }
+    if (Array.isArray(merges)) {
+      const cloudIds = new Set(merges.map(m => String(m.request_id || m.id)));
+      const unpushed = mockMergeRequests.filter(m => !cloudIds.has(String(m.request_id || m.id)));
+      for (const u of unpushed) {
+        CloudDbService.saveCollectionItem('merge_requests', u.request_id || u.id, u).catch(() => {});
+      }
+      mockMergeRequests = [...merges, ...unpushed];
+      saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
+    }
+    if (Array.isArray(txs) && txs.length > 0) {
+      mockTransactions = txs;
+      saveStoredData(STORAGE_KEY_TX, mockTransactions);
+    }
+    if (Array.isArray(allotments) && allotments.length > 0) {
+      mockSugarAllotments = allotments;
+      saveStoredData(STORAGE_KEY_SA, mockSugarAllotments);
+    }
+  } catch (err) {
+    console.warn('syncAllCloudWorkflows error:', err);
+  }
+}
+
 export function ensureDBReady() {
   if (isDBReady) return Promise.resolve(mockShareholders);
   if (!dbInitPromise) {
@@ -633,7 +694,7 @@ export function ensureDBReady() {
 
 // Immediate eager initialization of IndexedDB
 if (typeof window !== 'undefined') {
-  ensureDBReady();
+  ensureDBReady().then(() => syncAllCloudWorkflows().catch(() => {}));
 }
 
 export const initialVarasaTransfers = [];
@@ -1836,6 +1897,15 @@ const newSh = {
 
   async getTransactions({ page = 1, limit = 20, search = '' }) {
     await ensureDBReady();
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudData = await CloudDbService.getCollection('transactions');
+        if (Array.isArray(cloudData) && cloudData.length > 0) {
+          mockTransactions = cloudData;
+          saveStoredData(STORAGE_KEY_TX, mockTransactions);
+        }
+      } catch (e) {}
+    }
     const apiRes = await fetchApi(`/transactions?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
     if (apiRes && apiRes.success) return apiRes;
 
@@ -1866,11 +1936,23 @@ const newSh = {
     };
     mockTransactions.unshift(newTx);
     saveStoredData(STORAGE_KEY_TX, mockTransactions);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionItem('transactions', newTx.transaction_id, newTx).catch(() => {});
+    }
     return { success: true, transaction_id: newTx.transaction_id };
   },
 
   async getSugarAllotments({ page = 1, limit = 20, search = '' }) {
     await ensureDBReady();
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudData = await CloudDbService.getCollection('sugar_allotments');
+        if (Array.isArray(cloudData) && cloudData.length > 0) {
+          mockSugarAllotments = cloudData;
+          saveStoredData(STORAGE_KEY_SA, mockSugarAllotments);
+        }
+      } catch (e) {}
+    }
     const apiRes = await fetchApi(`/sugar-allotment?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
     if (apiRes && apiRes.success) return apiRes;
 
@@ -1898,11 +1980,30 @@ const newSh = {
     };
     mockSugarAllotments.unshift(newSa);
     saveStoredData(STORAGE_KEY_SA, mockSugarAllotments);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionItem('sugar_allotments', newSa.allotment_id, newSa).catch(() => {});
+    }
     return { success: true, allotment_id: newSa.allotment_id };
   },
 
   async getVarasaTransfers({ search = '', status = '', taluk = '' } = {}) {
     await ensureDBReady();
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudData = await CloudDbService.getCollection('varasa');
+        if (Array.isArray(cloudData)) {
+          const cloudIds = new Set(cloudData.map(v => String(v.transfer_id || v.id)));
+          const unpushed = mockVarasaTransfers.filter(v => !cloudIds.has(String(v.transfer_id || v.id)));
+          for (const u of unpushed) {
+            CloudDbService.saveCollectionItem('varasa', u.transfer_id || u.id, u).catch(() => {});
+          }
+          mockVarasaTransfers = [...cloudData, ...unpushed];
+          saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+        }
+      } catch (e) {
+        console.warn('Cloud DB varasa sync warning:', e);
+      }
+    }
     const apiRes = await fetchApi('/varasa');
     if (apiRes && apiRes.success) return apiRes;
 
@@ -1989,6 +2090,10 @@ const newSh = {
     };
     mockVarasaTransfers.unshift(newV);
     saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionItem('varasa', newV.transfer_id, newV)
+        .catch(err => console.warn('Cloud DB addVarasa error:', err));
+    }
 
     // If linked to existing shareholder, update ownership to ವಾರಸದಾರರು (ಸಂಬಂಧ)
     const targetShareNo = String(data.share_no || data.existing_share_number || '').trim();
@@ -2089,6 +2194,9 @@ const newSh = {
 
     mockVarasaTransfers = [...items, ...mockVarasaTransfers];
     saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionBulk('varasa', mockVarasaTransfers, 'transfer_id').catch(() => {});
+    }
 
     // Sync already approved/completed records to shareholder registry
     items.forEach(r => {
@@ -2126,6 +2234,22 @@ const newSh = {
 
   async getVargavaneTransfers({ search = '', status = '', taluk = '' } = {}) {
     await ensureDBReady();
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudData = await CloudDbService.getCollection('vargavane');
+        if (Array.isArray(cloudData)) {
+          const cloudIds = new Set(cloudData.map(v => String(v.transfer_id || v.id)));
+          const unpushed = mockVargavaneTransfers.filter(v => !cloudIds.has(String(v.transfer_id || v.id)));
+          for (const u of unpushed) {
+            CloudDbService.saveCollectionItem('vargavane', u.transfer_id || u.id, u).catch(() => {});
+          }
+          mockVargavaneTransfers = [...cloudData, ...unpushed];
+          saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+        }
+      } catch (e) {
+        console.warn('Cloud DB vargavane sync warning:', e);
+      }
+    }
     const apiRes = await fetchApi('/vargavane');
     if (apiRes && apiRes.success) return apiRes;
 
@@ -2208,6 +2332,10 @@ const newSh = {
     };
     mockVargavaneTransfers.unshift(newV);
     saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionItem('vargavane', newV.transfer_id, newV)
+        .catch(err => console.warn('Cloud DB addVargavane error:', err));
+    }
 
     // If linked to existing shareholder, update ownership to ವಾರಸದಾರರು (ಸಂಬಂಧ)
     const targetShareNo = String(data.share_no || '').trim();
@@ -2302,6 +2430,9 @@ const newSh = {
 
     mockVargavaneTransfers = [...items, ...mockVargavaneTransfers];
     saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionBulk('vargavane', mockVargavaneTransfers, 'transfer_id').catch(() => {});
+    }
 
     // Sync already completed records to shareholder registry
     items.forEach(r => {
@@ -2329,6 +2460,22 @@ const newSh = {
   // ==========================================
   async getEnrollments({ search = '', category = '', status = '', page = 1, limit = 20 } = {}) {
     await ensureDBReady();
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudData = await CloudDbService.getCollection('enrollments');
+        if (Array.isArray(cloudData)) {
+          const cloudIds = new Set(cloudData.map(e => String(e.enrollment_id || e.id)));
+          const unpushed = mockEnrollments.filter(e => !cloudIds.has(String(e.enrollment_id || e.id)));
+          for (const u of unpushed) {
+            CloudDbService.saveCollectionItem('enrollments', u.enrollment_id || u.id, u).catch(() => {});
+          }
+          mockEnrollments = [...cloudData, ...unpushed];
+          saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+        }
+      } catch (e) {
+        console.warn('Cloud DB enrollments fetch error:', e);
+      }
+    }
     let filtered = mockEnrollments;
 
     if (search) {
@@ -2441,6 +2588,10 @@ const newSh = {
 
     mockEnrollments.unshift(newE);
     saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionItem('enrollments', newE.enrollment_id, newE)
+        .catch(err => console.warn('Cloud DB addEnrollment error:', err));
+    }
     return { success: true, enrollment_id: newE.enrollment_id, data: newE };
   },
 
@@ -2463,6 +2614,10 @@ const newSh = {
         total_amount: totalAmount
       };
       saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+      if (CloudDbService.isEnabled()) {
+        CloudDbService.saveCollectionItem('enrollments', mockEnrollments[idx].enrollment_id || idOrEnrollmentId, mockEnrollments[idx])
+          .catch(err => console.warn('Cloud DB updateEnrollment error:', err));
+      }
       return { success: true, data: mockEnrollments[idx] };
     }
     return { success: false, message: 'Record not found' };
@@ -2472,8 +2627,12 @@ const newSh = {
     await ensureDBReady();
     const idx = mockEnrollments.findIndex(e => String(e.id) === String(idOrEnrollmentId) || e.enrollment_id === idOrEnrollmentId);
     if (idx !== -1) {
-      mockEnrollments.splice(idx, 1);
+      const removed = mockEnrollments.splice(idx, 1)[0];
       saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+      if (CloudDbService.isEnabled()) {
+        CloudDbService.deleteCollectionItem('enrollments', removed?.enrollment_id || idOrEnrollmentId)
+          .catch(err => console.warn('Cloud DB deleteEnrollment error:', err));
+      }
       return { success: true };
     }
     return { success: false, message: 'Record not found' };
@@ -2488,6 +2647,10 @@ const newSh = {
       if (extra.tharava_no !== undefined) item.tharava_no = extra.tharava_no;
       if (extra.tharava_date !== undefined) item.tharava_date = extra.tharava_date;
       saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+      if (CloudDbService.isEnabled()) {
+        CloudDbService.saveCollectionItem('enrollments', item.enrollment_id || idOrEnrollmentId, item)
+          .catch(err => console.warn('Cloud DB status sync error:', err));
+      }
       return { success: true, data: item };
     }
     return { success: false, message: 'Record not found' };
@@ -2937,6 +3100,10 @@ const newSh = {
 
     mockEnrollments = [...items, ...mockEnrollments];
     saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionBulk('enrollments', mockEnrollments, 'enrollment_id')
+        .catch(err => console.warn('Cloud DB bulk enrollment error:', err));
+    }
     return { success: true, count: items.length };
   },
 
@@ -3926,6 +4093,22 @@ const newSh = {
 
   async getMergeRequests(status = '') {
     await ensureDBReady();
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudData = await CloudDbService.getCollection('merge_requests');
+        if (Array.isArray(cloudData)) {
+          const cloudIds = new Set(cloudData.map(m => String(m.request_id || m.id)));
+          const unpushed = mockMergeRequests.filter(m => !cloudIds.has(String(m.request_id || m.id)));
+          for (const u of unpushed) {
+            CloudDbService.saveCollectionItem('merge_requests', u.request_id || u.id, u).catch(() => {});
+          }
+          mockMergeRequests = [...cloudData, ...unpushed];
+          saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
+        }
+      } catch (e) {
+        console.warn('Cloud DB merge_requests sync warning:', e);
+      }
+    }
     let filtered = mockMergeRequests;
     if (status) {
       filtered = filtered.filter(m => (m.approval_status || '').toLowerCase().includes(status.toLowerCase()));
@@ -4043,6 +4226,10 @@ const newSh = {
 
     mockMergeRequests.unshift(newReq);
     saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionItem('merge_requests', newReq.request_id, newReq)
+        .catch(err => console.warn('Cloud DB submitMerge error:', err));
+    }
 
     return {
       success: true,
@@ -4079,6 +4266,10 @@ const newSh = {
     };
 
     saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionItem('merge_requests', req.request_id, req)
+        .catch(err => console.warn('Cloud DB approveMerge error:', err));
+    }
 
     return {
       success: true,
@@ -4099,6 +4290,10 @@ const newSh = {
     req.rejection_remarks = remarks || 'ಅಡ್ಮಿನ್ ಪರಿಶೀಲನೆಯಲ್ಲಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.';
 
     saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionItem('merge_requests', req.request_id, req)
+        .catch(err => console.warn('Cloud DB rejectMerge error:', err));
+    }
 
     return {
       success: true,
@@ -4110,8 +4305,12 @@ const newSh = {
   async deleteMergeRequest(requestId) {
     const idx = mockMergeRequests.findIndex(m => m.id === requestId || m.request_id === requestId);
     if (idx !== -1) {
-      mockMergeRequests.splice(idx, 1);
+      const removed = mockMergeRequests.splice(idx, 1)[0];
       saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
+      if (CloudDbService.isEnabled()) {
+        CloudDbService.deleteCollectionItem('merge_requests', removed?.request_id || requestId)
+          .catch(err => console.warn('Cloud DB deleteMerge error:', err));
+      }
       return { success: true };
     }
     return { success: false, message: 'Request not found' };
