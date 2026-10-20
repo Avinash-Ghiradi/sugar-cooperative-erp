@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import OfficialShareholderIDCard from '../IDCards/OfficialShareholderIDCard';
+import OfficialShareholderIDCard, { OfficialSocietySeal } from '../IDCards/OfficialShareholderIDCard';
 import {
   User, Coins, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   X, Printer, Contact, CheckCircle2, ShieldCheck, MapPin, Phone, Building2,
@@ -41,10 +41,15 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
     const handleBeforePrint = () => {
       if (activeTab === 'id_card') {
         document.body.classList.add('id-card-printing');
+        document.body.classList.remove('shareholder-record-printing');
+      } else {
+        document.body.classList.add('shareholder-record-printing');
+        document.body.classList.remove('id-card-printing');
       }
     };
     const handleAfterPrint = () => {
       document.body.classList.remove('id-card-printing');
+      document.body.classList.remove('shareholder-record-printing');
     };
     window.addEventListener('beforeprint', handleBeforePrint);
     window.addEventListener('afterprint', handleAfterPrint);
@@ -52,13 +57,29 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
       window.removeEventListener('beforeprint', handleBeforePrint);
       window.removeEventListener('afterprint', handleAfterPrint);
       document.body.classList.remove('id-card-printing');
+      document.body.classList.remove('shareholder-record-printing');
     };
   }, [activeTab]);
 
   const handlePrintIdCard = () => {
+    document.body.classList.remove('shareholder-record-printing');
     document.body.classList.add('id-card-printing');
     const cleanup = () => {
       document.body.classList.remove('id-card-printing');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(() => {
+      window.print();
+      setTimeout(cleanup, 2500);
+    }, 120);
+  };
+
+  const handlePrintShareholderRecord = () => {
+    document.body.classList.remove('id-card-printing');
+    document.body.classList.add('shareholder-record-printing');
+    const cleanup = () => {
+      document.body.classList.remove('shareholder-record-printing');
       window.removeEventListener('afterprint', cleanup);
     };
     window.addEventListener('afterprint', cleanup);
@@ -172,17 +193,24 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
             </button>
 
             <button
-              onClick={() => {
-                if (activeTab === 'id_card') {
-                  handlePrintIdCard();
-                } else {
-                  window.print();
-                }
-              }}
-              className="p-2 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              onClick={handlePrintShareholderRecord}
+              className="px-3 py-2 text-slate-200 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+              title="ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿ ದಾಖಲೆ ಪತ್ರ ಮುದ್ರಿಸಿ (Print Statutory Shareholder Record)"
             >
-              <Printer className="w-4 h-4 text-sky-400" /> Print
+              <Printer className="w-4 h-4 text-sky-400" />
+              <span>ದಾಖಲೆ ಮುದ್ರಿಸಿ (Print Record)</span>
             </button>
+
+            {activeTab === 'id_card' && (
+              <button
+                onClick={handlePrintIdCard}
+                className="px-3 py-2 text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                title="ಗುರುತಿನ ಚೀಟಿ ಮುದ್ರಿಸಿ (Print Official ID Card)"
+              >
+                <Printer className="w-4 h-4" />
+                <span>ಕಾರ್ಡ್ ಮುದ್ರಿಸಿ</span>
+              </button>
+            )}
 
             <button
               onClick={onClose}
@@ -220,6 +248,29 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
           {/* Tab 1: Statutory Ledger */}
           {activeTab === 'ledger' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+              {/* Quick Official Record Print Bar */}
+              <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-700/60 p-3.5 rounded-2xl shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-900/80 border border-emerald-600/80 flex items-center justify-center text-emerald-400 shrink-0">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-emerald-200">
+                      ಅಧಿಕೃತ ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿ ದಾಖಲೆ ಪತ್ರ (Official Statutory Record Slip)
+                    </h4>
+                    <p className="text-[11px] text-slate-400">
+                      ಈ ಷೇರುದಾರರ ಎಲ್ಲಾ 38-ಶಾಸನಬದ್ಧ ವಿವರಗಳು, ಕಂತುಗಳು ಹಾಗೂ ಪ್ರಮಾಣಪತ್ರದ ಅಧಿಕೃತ ಮುದ್ರಣ ಪ್ರತಿ (A4 Format)
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handlePrintShareholderRecord}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>ದಾಖಲೆ ಪತ್ರ ಮುದ್ರಿಸಿ (Print Record)</span>
+                </button>
+              </div>
               <div className="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
                 <h3 className="font-semibold text-slate-200 text-sm border-b border-slate-800 pb-2 flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-emerald-400" /> Book & Share Certificate Details
@@ -840,7 +891,301 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
       </div>
     </div>
 
+
+
+    {/* Dedicated Official Statutory Shareholder Record Sheet Print Portal */}
     {typeof document !== 'undefined' && createPortal(
+      <div className="shareholder-record-print-portal">
+        <style>{`
+          @media screen {
+            .shareholder-record-print-portal { display: none !important; }
+          }
+          @media print {
+            body.shareholder-record-printing > #root {
+              display: none !important;
+              visibility: hidden !important;
+            }
+            body.shareholder-record-printing .shareholder-record-print-portal {
+              display: block !important;
+              visibility: visible !important;
+              position: static !important;
+              width: 100% !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+              color: #000000 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              font-family: 'Anek Kannada', 'Aneka Kannada', 'Noto Sans Kannada', sans-serif !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            @page {
+              size: A4 portrait;
+              margin: 8mm 10mm;
+            }
+          }
+          .sh-record-sheet {
+            max-width: 790px;
+            margin: 0 auto;
+            border: 2px solid #064e3b;
+            padding: 18px 22px;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 11.5px;
+            line-height: 1.4;
+            position: relative;
+            box-sizing: border-box;
+          }
+          .sh-record-inner-frame {
+            border: 1px solid #047857;
+            padding: 12px;
+          }
+        `}</style>
+
+        <div className="sh-record-sheet">
+          <div className="sh-record-inner-frame">
+            {/* Top Factory Header */}
+            <div className="flex items-start justify-between border-b-2 border-emerald-900 pb-3 mb-3 gap-3">
+              <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+                <img
+                  src="./id_assets/bsskn_logo.png"
+                  alt="BSSKN Logo"
+                  className="max-w-full max-h-full object-contain"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              </div>
+
+              <div className="text-center flex-1">
+                <h1 className="text-lg font-black text-emerald-950 leading-tight">
+                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ
+                </h1>
+                <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                  SHREE BHEEMASHANKAR SAHAKARI SAKKARE KARKHANE NIYAMIT
+                </h2>
+                <p className="text-[10px] text-slate-700 font-medium mt-0.5">
+                  ಕಾರ್ಯಾಲಯ: ಮರಗೂರ - 586204, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ (ಕರ್ನಾಟಕ)
+                </p>
+                <p className="text-[9.5px] text-slate-600">
+                  (ಸಹಕಾರ ಸಂಘಗಳ ಕಾಯ್ದೆ 1959 ರ ಪ್ರಕಾರ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿದೆ • Reg No: BSSKN/1982/COOP)
+                </p>
+                <div className="inline-block mt-1.5 px-4 py-0.5 rounded-full bg-emerald-900 text-white text-[11px] font-black tracking-wide">
+                  ಷೇರುದಾರರ ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿ ವಿವರ ದಾಖಲೆ (ಫಾರಂ 'ಅ')
+                </div>
+              </div>
+
+              {/* Photo Box */}
+              <div className="w-20 h-24 border border-slate-400 bg-slate-50 flex flex-col items-center justify-center overflow-hidden shrink-0 shadow-sm text-center">
+                {sh.photo_url ? (
+                  <img src={sh.photo_url} alt="Shareholder" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="p-1 text-[9px] text-slate-500 font-medium">
+                    ಭಾವಚಿತ್ರ<br />(Photo)
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sub-Header Status Bar */}
+            <div className="flex items-center justify-between text-[10px] font-semibold text-slate-700 bg-emerald-50/70 border border-emerald-200 px-3 py-1.5 rounded mb-3">
+              <div>
+                <span>ಮುದ್ರಣ ದಿನಾಂಕ (Date): </span>
+                <span className="font-mono text-slate-900">{new Date().toLocaleDateString('en-GB')} {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              <div>
+                <span>ನಮೂನೆ ವಹಿ ಸಂಖ್ಯೆ (Book No): </span>
+                <span className="font-mono font-bold text-emerald-900">{sh.book_no || 'B.No: 1'}</span>
+                <span className="mx-2">•</span>
+                <span>ಕ್ರಮ ಸಂಖ್ಯೆ (Sl. No): </span>
+                <span className="font-mono font-bold text-emerald-900">{sh.sl_no || sh.id}</span>
+              </div>
+              <div>
+                <span>ಸದಸ್ಯತ್ವ ಸ್ಥಿತಿ: </span>
+                <span className="font-bold text-emerald-800">ಸಕ್ರಿಯ (Active)</span>
+              </div>
+            </div>
+
+            {/* Section 1: Member Identification & Shares */}
+            <div className="mb-3">
+              <div className="bg-emerald-900 text-white text-[10.5px] font-bold px-2.5 py-1 rounded-t flex items-center justify-between">
+                <span>1. ಸದಸ್ಯರ ಹಾಗೂ ಷೇರು ಪ್ರಮಾಣ ಪತ್ರ ವಿವರ (Member & Share Certificate Identification)</span>
+                <span className="font-mono text-amber-300">ಷೇರು ನಂ: #{sh.share_no || sh.share_number}</span>
+              </div>
+              <table className="w-full border-collapse border border-slate-300 text-[10.5px]">
+                <tbody>
+                  <tr className="border-b border-slate-200">
+                    <td className="w-1/4 p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಷೇರುದಾರರ ಪೂರ್ಣ ಹೆಸರು:</td>
+                    <td className="w-1/4 p-1.5 font-bold text-slate-900 border-r border-slate-300">{sh.shareholder_name || sh.name}</td>
+                    <td className="w-1/4 p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಷೇರು ಸಂಖ್ಯೆ (Share No):</td>
+                    <td className="w-1/4 p-1.5 font-mono font-bold text-emerald-900">{sh.share_no || sh.share_number}</td>
+                  </tr>
+                  <tr className="border-b border-slate-200">
+                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ವರ್ಗ / ಪ್ರವರ್ಗ (Category):</td>
+                    <td className="p-1.5 font-bold text-emerald-800 border-r border-slate-300">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</td>
+                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಒಟ್ಟು ಷೇರುಗಳ ಸಂಖ್ಯೆ:</td>
+                    <td className="p-1.5 font-bold text-slate-900">{sh.number_of_shares || 1} ಷೇರುಗಳು</td>
+                  </tr>
+                  <tr className="border-b border-slate-200">
+                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಸದಸ್ಯರ ಪ್ರಕಾರ (Member Type):</td>
+                    <td className="p-1.5 text-slate-900 border-r border-slate-300">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</td>
+                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಸ್ವಾಮ್ಯತ್ವ (Ownership):</td>
+                    <td className="p-1.5 text-slate-900">{getShareholderOwnership(sh)}</td>
+                  </tr>
+                  <tr>
+                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಲಿಂಗ (Gender):</td>
+                    <td className="p-1.5 text-slate-900 border-r border-slate-300">{sh.gender === 'F' ? 'ಮಹಿಳೆ (Female)' : 'ಪುರುಷ (Male)'}</td>
+                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ನೋಂದಣಿ ದಿನಾಂಕ:</td>
+                    <td className="p-1.5 text-slate-900 font-mono">{sh.reg_date || sh.registration_date}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Section 2: Share Capital & Installments */}
+            <div className="mb-3">
+              <div className="bg-emerald-900 text-white text-[10.5px] font-bold px-2.5 py-1 rounded-t flex items-center justify-between">
+                <span>2. ಷೇರು ಬಂಡವಾಳ ಮತ್ತು ಕಂತುಗಳ ಜಮೆ ವಿವರ (Share Capital & Receipts)</span>
+                <span className="font-mono text-amber-300 font-bold">ಒಟ್ಟು ಬಂಡವಾಳ: ₹ {(sh.total_amount || sh.share_value || 2000).toLocaleString()}</span>
+              </div>
+              <table className="w-full border-collapse border border-slate-300 text-[10.5px]">
+                <tbody>
+                  <tr className="border-b border-slate-200">
+                    <td className="w-1/4 p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">1ನೇ ಕಂತು ಜಮೆ ಮೊತ್ತ:</td>
+                    <td className="w-1/4 p-1.5 font-mono font-bold text-emerald-900 border-r border-slate-300">₹ {(sh.receipt_amount || sh.total_amount || 2000).toLocaleString()}</td>
+                    <td className="w-1/4 p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">1ನೇ ರಶೀದಿ ನಂ & ದಿನಾಂಕ:</td>
+                    <td className="w-1/4 p-1.5 font-mono text-slate-900">#{sh.receipt_no || sh.id} ({sh.reg_date || sh.registration_date})</td>
+                  </tr>
+                  {hasSecondInstallment(sh) && (
+                    <tr className="border-b border-slate-200 bg-amber-50/50">
+                      <td className="p-1.5 bg-amber-100/70 font-semibold text-slate-700 border-r border-slate-300">2ನೇ ಕಂತು ಜಮೆ ಮೊತ್ತ:</td>
+                      <td className="p-1.5 font-mono font-bold text-amber-900 border-r border-slate-300">₹ {Number(sh.amount).toLocaleString()}</td>
+                      <td className="p-1.5 bg-amber-100/70 font-semibold text-slate-700 border-r border-slate-300">2ನೇ ರಶೀದಿ ನಂ & ದಿನಾಂಕ:</td>
+                      <td className="p-1.5 font-mono text-slate-900">#{sh.reciept} ({sh.date || '-'})</td>
+                    </tr>
+                  )}
+                  {sh.remaining_balance !== undefined && Number(sh.remaining_balance) > 0 && (
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಮುಂದಿನ ಶೇರಿಗೆ ಬಾಕಿ:</td>
+                      <td className="p-1.5 font-mono font-bold text-amber-700 border-r border-slate-300">₹ {Number(sh.remaining_balance).toLocaleString()}</td>
+                      <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಹೆಚ್ಚುವರಿ ಶೇರುಗಳು (@ ಪ್ರಸ್ತುತ ದರ):</td>
+                      <td className="p-1.5 font-bold text-sky-800">{sh.new_shares_count || 0} ಶೇರುಗಳು</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              {/* Merged Holdings mini-table if merged */}
+              {sh.merged_holdings && sh.merged_holdings.length > 0 && (
+                <div className="mt-1 border border-amber-300 bg-amber-50/60 p-2 text-[10px]">
+                  <strong className="text-amber-900">ಸಂಯೋಜಿತ ಶೇರುಗಳ ವಿವರ (Merged Certificates): </strong>
+                  {sh.merged_holdings.map((h, i) => (
+                    <span key={i} className="inline-block mr-3">
+                      ಶೇರು #{h.share_no} ({h.shares} ಶೇರು, ₹ {Number(h.amount || 0).toLocaleString()}, ರಶೀದಿ: #{h.receipt_no})
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Section 3: Place, Address & Board Tharava */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <div className="bg-emerald-900 text-white text-[10.5px] font-bold px-2.5 py-1 rounded-t">
+                  3. ಸ್ಥಳ ಹಾಗೂ ಅಂಚೆ ವಿಳಾಸ (Jurisdiction & Address)
+                </div>
+                <table className="w-full border-collapse border border-slate-300 text-[10px]">
+                  <tbody>
+                    <tr className="border-b border-slate-200"><td className="p-1.5 bg-slate-100 font-semibold text-slate-700 w-1/3 border-r border-slate-300">ಗ್ರಾಮ / ಸ್ಥಳ:</td><td className="p-1.5 font-bold text-slate-900">{sh.place || sh.village_name}</td></tr>
+                    <tr className="border-b border-slate-200"><td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ತಾಲೂಕು & ಜಿಲ್ಲೆ:</td><td className="p-1.5 text-slate-900">{sh.taluk || 'ಇಂಡಿ'}, {sh.district || 'ವಿಜಯಪುರ'}</td></tr>
+                    <tr className="border-b border-slate-200"><td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಪಿನ್ ಕೋಡ್ & ವಲಯ:</td><td className="p-1.5 text-slate-900">{sh.pin_code || '586 112'} • {sh.circle || 'ವಲಯ'}</td></tr>
+                    <tr><td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಪೂರ್ಣ ವಿಳಾಸ:</td><td className="p-1.5 text-slate-800">{sh.address}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div>
+                <div className="bg-emerald-900 text-white text-[10.5px] font-bold px-2.5 py-1 rounded-t">
+                  4. ಆಡಳಿತ ಮಂಡಳಿ ಠರಾವು & ನಾಮಿನಿ ವಿವರ
+                </div>
+                <table className="w-full border-collapse border border-slate-300 text-[10px]">
+                  <tbody>
+                    <tr className="border-b border-slate-200"><td className="p-1.5 bg-slate-100 font-semibold text-slate-700 w-1/3 border-r border-slate-300">ಠರಾವು ನಂ & ದಿನಾಂಕ:</td><td className="p-1.5 font-mono font-bold text-slate-900">{sh.tharava_no || 'TR-01/1982'} ({sh.tharava_date || sh.reg_date})</td></tr>
+                    <tr className="border-b border-slate-200"><td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ನಾಮಿನಿ ಹೆಸರು:</td><td className="p-1.5 font-bold text-slate-900">{sh.nominee_name || '—'}</td></tr>
+                    <tr className="border-b border-slate-200"><td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ನಾಮಿನಿ ಸಂಬಂಧ:</td><td className="p-1.5 text-slate-900">{sh.nominee_relationship || '—'}</td></tr>
+                    <tr><td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ನಾಮಿನಿ ಆಧಾರ್ / ಮೊ.:</td><td className="p-1.5 text-slate-900 font-mono">{sh.nominee_aadhaar_no || '—'} / {sh.nominee_mobile_no || '—'}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Section 4: KYC & Signatures Block */}
+            <div className="border border-slate-300 rounded p-2.5 bg-slate-50 mb-3">
+              <div className="flex items-center justify-between text-[10px] font-semibold text-slate-700 border-b border-slate-200 pb-1.5 mb-2">
+                <span>ಆಧಾರ್ ಕಾರ್ಡ್: <strong className="font-mono text-slate-900">{sh.aadhaar_card_no || 'ದಾಖಲಿಸಲಾಗಿದೆ'}</strong></span>
+                <span>ಮೊಬೈಲ್ ನಂ: <strong className="font-mono text-slate-900">{sh.mobile_no || '—'}</strong></span>
+                <span>ಇ-ಸಹಿ / ಹೆಬ್ಬೆರಳು: <strong className="text-emerald-800">{sh.signature_url ? 'ದೃಢೀಕರಿಸಲಾಗಿದೆ' : 'ಲಭ್ಯವಿದೆ'}</strong></span>
+              </div>
+
+              {/* 4 Signatures and Stamp */}
+              <div className="grid grid-cols-4 gap-2 text-center pt-2">
+                {/* 1. Member Sign / Thumb */}
+                <div className="flex flex-col items-center justify-end h-24 border border-dashed border-slate-300 bg-white p-1 rounded">
+                  {sh.signature_url ? (
+                    <img src={sh.signature_url} alt="Member Sign" className="max-h-12 object-contain mb-1" />
+                  ) : sh.thumb_url ? (
+                    <img src={sh.thumb_url} alt="Member Thumb" className="max-h-12 object-contain mb-1" />
+                  ) : (
+                    <div className="text-[9px] text-slate-400 mb-2">(ಸಹಿ / ಹೆಬ್ಬೆರಳು)</div>
+                  )}
+                  <span className="text-[9.5px] font-bold text-slate-800 border-t border-slate-300 w-full pt-0.5">
+                    ಸದಸ್ಯರ ಸಹಿ / ಹೆಬ್ಬೆರಳು
+                  </span>
+                </div>
+
+                {/* 2. Prepared by */}
+                <div className="flex flex-col items-center justify-end h-24 border border-dashed border-slate-300 bg-white p-1 rounded">
+                  <div className="text-[9px] text-slate-400 mb-2">ಕರಣಿಕರು</div>
+                  <span className="text-[9.5px] font-bold text-slate-800 border-t border-slate-300 w-full pt-0.5">
+                    ತಯಾರಿಸಿದವರು (Clerk)
+                  </span>
+                </div>
+
+                {/* 3. Verified by */}
+                <div className="flex flex-col items-center justify-end h-24 border border-dashed border-slate-300 bg-white p-1 rounded">
+                  <div className="text-[9px] text-slate-400 mb-2">ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿ</div>
+                  <span className="text-[9.5px] font-bold text-slate-800 border-t border-slate-300 w-full pt-0.5">
+                    ಪರಿಶೀಲಿಸಿದವರು (Auditor)
+                  </span>
+                </div>
+
+                {/* 4. MD & Official Seal */}
+                <div className="flex flex-col items-center justify-end h-24 border border-dashed border-slate-300 bg-white p-1 rounded relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-16 h-16 opacity-75 pointer-events-none">
+                    <OfficialSocietySeal className="w-full h-full" />
+                  </div>
+                  <img
+                    src="./id_assets/md_signature_transparent.png"
+                    alt="MD Sign"
+                    className="max-h-10 object-contain mb-1 relative z-10"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                  <span className="text-[9.5px] font-bold text-slate-800 border-t border-slate-300 w-full pt-0.5 relative z-10">
+                    ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Official Footer Note */}
+            <div className="text-center text-[9px] text-slate-500 border-t border-slate-200 pt-1">
+              ಈ ದಾಖಲೆಯು ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ ಇವರ ಅಧಿಕೃತ ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿ ರಿಜಿಸ್ಟರ್ ಪ್ರಕಾರ ಮುದ್ರಿಸಲ್ಪಟ್ಟಿದೆ.
+            </div>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
+
+        {typeof document !== 'undefined' && createPortal(
       <div className="id-card-profile-print-portal">
         <style>{`
           @media screen {

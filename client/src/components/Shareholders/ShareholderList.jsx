@@ -584,6 +584,36 @@ export default function ShareholderList({ initialShowMerge = false }) {
 
   return (
     <div className="space-y-6">
+      {/* Print-Only Official Register Header (A4 Landscape: Left Date, Center Factory, Right Total Shareholders) */}
+      <div className="hidden print:block print:mb-4 border-b-2 border-slate-900 pb-2 print-only-register-header">
+        <style>{`
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 8mm 10mm;
+            }
+          }
+        `}</style>
+        <div className="flex items-center justify-between text-xs text-slate-800 font-semibold mb-1">
+          <div>
+            <span>ದಿನಾಂಕ (Date): </span>
+            <span className="font-mono">{new Date().toLocaleDateString('en-GB')}</span>
+          </div>
+          <div className="text-right">
+            <span>ಒಟ್ಟು ಷೇರುದಾರರು (Total Shareholders): </span>
+            <span className="font-mono font-bold text-slate-900">{pagination?.total ? pagination.total.toLocaleString() : shareholders.length}</span>
+          </div>
+        </div>
+        <div className="text-center">
+          <h1 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
+            ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204
+          </h1>
+          <p className="text-[11px] text-slate-700">
+            ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ (ಕರ್ನಾಟಕ) • ಷೇರುದಾರರ ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿ ಮಾಸ್ಟರ್ ರಿಜಿಸ್ಟರ್ (Statutory Shareholder Master Register)
+          </p>
+        </div>
+      </div>
+
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
         <div>

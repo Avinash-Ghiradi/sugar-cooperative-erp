@@ -53,6 +53,13 @@
     color: #000000 !important;
   }
 
+    /* When printing single shareholder record or ID card, hide #root completely */
+  body.id-card-printing > #root,
+  body.shareholder-record-printing > #root {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
   /* Reset layout constraints and paddings from screen views */
   #root > div,
   .flex-1,
