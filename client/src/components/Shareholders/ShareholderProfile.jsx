@@ -905,6 +905,8 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
               display: none !important;
               visibility: hidden !important;
             }
+            .id-card-profile-print-portal { display: none !important; }
+            body.shareholder-record-printing .id-card-profile-print-portal { display: none !important; }
             body.shareholder-record-printing .shareholder-record-print-portal {
               display: block !important;
               visibility: visible !important;
@@ -944,25 +946,27 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
 
         <div className="sh-record-sheet">
           <div className="sh-record-inner-frame">
-            {/* Top Factory Header */}
-            <div className="flex items-start justify-between border-b-2 border-emerald-900 pb-3 mb-3 gap-3">
-              <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+            {/* Top Factory Header with Bigger Logo and Official Seal */}
+            <div className="flex items-center justify-between border-b-2 border-emerald-900 pb-3 mb-3 gap-4">
+              {/* Bigger Factory Logo */}
+              <div className="w-24 h-24 shrink-0 flex items-center justify-center p-1 bg-white border border-emerald-100 rounded-xl shadow-sm">
                 <img
                   src="./id_assets/bsskn_logo.png"
                   alt="BSSKN Logo"
-                  className="max-w-full max-h-full object-contain"
+                  className="w-full h-full object-contain"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
               </div>
 
+              {/* Centered Factory Name & Official Banner */}
               <div className="text-center flex-1">
-                <h1 className="text-lg font-black text-emerald-950 leading-tight">
+                <h1 className="text-xl font-black text-emerald-950 leading-tight">
                   ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ
                 </h1>
                 <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
                   SHREE BHEEMASHANKAR SAHAKARI SAKKARE KARKHANE NIYAMIT
                 </h2>
-                <p className="text-[10px] text-slate-700 font-medium mt-0.5">
+                <p className="text-[10.5px] text-slate-700 font-medium mt-0.5">
                   ಕಾರ್ಯಾಲಯ: ಮರಗೂರ - 586204, ತಾ: ಇಂಡಿ, ಜಿ: ವಿಜಯಪುರ (ಕರ್ನಾಟಕ)
                 </p>
                 <p className="text-[9.5px] text-slate-600">
@@ -973,15 +977,10 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                 </div>
               </div>
 
-              {/* Photo Box */}
-              <div className="w-20 h-24 border border-slate-400 bg-slate-50 flex flex-col items-center justify-center overflow-hidden shrink-0 shadow-sm text-center">
-                {sh.photo_url ? (
-                  <img src={sh.photo_url} alt="Shareholder" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="p-1 text-[9px] text-slate-500 font-medium">
-                    ಭಾವಚಿತ್ರ<br />(Photo)
-                  </div>
-                )}
+              {/* Right: Official Society Seal in Header */}
+              <div className="w-24 h-24 shrink-0 flex flex-col items-center justify-center p-1 border border-purple-200 bg-purple-50/40 rounded-xl text-center">
+                <OfficialSocietySeal className="w-16 h-16" />
+                <span className="text-[8.5px] font-bold text-purple-900 mt-0.5">ಅಧಿಕೃತ ಮೊಹರು</span>
               </div>
             </div>
 
@@ -1004,40 +1003,59 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
               </div>
             </div>
 
-            {/* Section 1: Member Identification & Shares */}
+            {/* Section 1: Member Identification & Shares with Shareholder Photo in Details Place */}
             <div className="mb-3">
               <div className="bg-emerald-900 text-white text-[10.5px] font-bold px-2.5 py-1 rounded-t flex items-center justify-between">
                 <span>1. ಸದಸ್ಯರ ಹಾಗೂ ಷೇರು ಪ್ರಮಾಣ ಪತ್ರ ವಿವರ (Member & Share Certificate Identification)</span>
                 <span className="font-mono text-amber-300">ಷೇರು ನಂ: #{sh.share_no || sh.share_number}</span>
               </div>
-              <table className="w-full border-collapse border border-slate-300 text-[10.5px]">
-                <tbody>
-                  <tr className="border-b border-slate-200">
-                    <td className="w-1/4 p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಷೇರುದಾರರ ಪೂರ್ಣ ಹೆಸರು:</td>
-                    <td className="w-1/4 p-1.5 font-bold text-slate-900 border-r border-slate-300">{sh.shareholder_name || sh.name}</td>
-                    <td className="w-1/4 p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಷೇರು ಸಂಖ್ಯೆ (Share No):</td>
-                    <td className="w-1/4 p-1.5 font-mono font-bold text-emerald-900">{sh.share_no || sh.share_number}</td>
-                  </tr>
-                  <tr className="border-b border-slate-200">
-                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ವರ್ಗ / ಪ್ರವರ್ಗ (Category):</td>
-                    <td className="p-1.5 font-bold text-emerald-800 border-r border-slate-300">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</td>
-                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಒಟ್ಟು ಷೇರುಗಳ ಸಂಖ್ಯೆ:</td>
-                    <td className="p-1.5 font-bold text-slate-900">{sh.number_of_shares || 1} ಷೇರುಗಳು</td>
-                  </tr>
-                  <tr className="border-b border-slate-200">
-                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಸದಸ್ಯರ ಪ್ರಕಾರ (Member Type):</td>
-                    <td className="p-1.5 text-slate-900 border-r border-slate-300">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</td>
-                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಸ್ವಾಮ್ಯತ್ವ (Ownership):</td>
-                    <td className="p-1.5 text-slate-900">{getShareholderOwnership(sh)}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಲಿಂಗ (Gender):</td>
-                    <td className="p-1.5 text-slate-900 border-r border-slate-300">{sh.gender === 'F' ? 'ಮಹಿಳೆ (Female)' : 'ಪುರುಷ (Male)'}</td>
-                    <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ನೋಂದಣಿ ದಿನಾಂಕ:</td>
-                    <td className="p-1.5 text-slate-900 font-mono">{sh.reg_date || sh.registration_date}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="flex border border-slate-300 bg-white">
+                {/* Left: Shareholder Details Table */}
+                <div className="flex-1">
+                  <table className="w-full border-collapse text-[10.5px]">
+                    <tbody>
+                      <tr className="border-b border-slate-200">
+                        <td className="w-1/4 p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಷೇರುದಾರರ ಹೆಸರು:</td>
+                        <td className="w-1/4 p-1.5 font-bold text-slate-900 border-r border-slate-300">{sh.shareholder_name || sh.name}</td>
+                        <td className="w-1/4 p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಷೇರು ಸಂಖ್ಯೆ (Share No):</td>
+                        <td className="w-1/4 p-1.5 font-mono font-bold text-emerald-900">{sh.share_no || sh.share_number}</td>
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ವರ್ಗ / ಪ್ರವರ್ಗ (Category):</td>
+                        <td className="p-1.5 font-bold text-emerald-800 border-r border-slate-300">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</td>
+                        <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಒಟ್ಟು ಷೇರುಗಳ ಸಂಖ್ಯೆ:</td>
+                        <td className="p-1.5 font-bold text-slate-900">{sh.number_of_shares || 1} ಷೇರುಗಳು</td>
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಸದಸ್ಯರ ಪ್ರಕಾರ (Member Type):</td>
+                        <td className="p-1.5 text-slate-900 border-r border-slate-300">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</td>
+                        <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಸ್ವಾಮ್ಯತ್ವ (Ownership):</td>
+                        <td className="p-1.5 text-slate-900">{getShareholderOwnership(sh)}</td>
+                      </tr>
+                      <tr>
+                        <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಲಿಂಗ (Gender):</td>
+                        <td className="p-1.5 text-slate-900 border-r border-slate-300">{sh.gender === 'F' ? 'ಮಹಿಳೆ (Female)' : 'ಪುರುಷ (Male)'}</td>
+                        <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ನೋಂದಣಿ ದಿನಾಂಕ:</td>
+                        <td className="p-1.5 text-slate-900 font-mono">{sh.reg_date || sh.registration_date}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Right: Shareholder Photo placed directly inside Shareholder Details place */}
+                <div className="w-28 shrink-0 border-l border-slate-300 bg-slate-50 flex flex-col items-center justify-center p-1.5 text-center">
+                  <div className="w-20 h-24 border border-slate-400 bg-white flex flex-col items-center justify-center overflow-hidden shadow-sm">
+                    {sh.photo_url ? (
+                      <img src={sh.photo_url} alt="Shareholder" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="p-1 text-[9px] text-slate-500 font-medium">
+                        ಸದಸ್ಯರ<br />ಭಾವಚಿತ್ರ<br />(Photo)
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[8.5px] font-semibold text-slate-700 mt-1">ಸದಸ್ಯರ ಭಾವಚಿತ್ರ</span>
+                </div>
+              </div>
             </div>
 
             {/* Section 2: Share Capital & Installments */}
@@ -1185,13 +1203,16 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
       document.body
     )}
 
-        {typeof document !== 'undefined' && createPortal(
+        {typeof document !== 'undefined' && activeTab === 'id_card' && createPortal(
       <div className="id-card-profile-print-portal">
         <style>{`
           @media screen {
             .id-card-profile-print-portal { display: none !important; }
           }
           @media print {
+            .id-card-profile-print-portal { display: none !important; }
+            body:not(.id-card-printing) .id-card-profile-print-portal { display: none !important; }
+            body.shareholder-record-printing .id-card-profile-print-portal { display: none !important; }
             body.id-card-printing > #root {
               display: none !important;
               visibility: hidden !important;

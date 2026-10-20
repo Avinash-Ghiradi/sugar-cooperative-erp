@@ -37,6 +37,16 @@
 }
 
 @media print {
+  /* Portals default hidden unless active */
+  .id-card-profile-print-portal {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  body.id-card-printing .id-card-profile-print-portal {
+    display: block !important;
+    visibility: visible !important;
+  }
+
   html,
   body,
   #root,
