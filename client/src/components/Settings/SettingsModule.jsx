@@ -5,8 +5,9 @@ import * as XLSX from 'xlsx';
 import {
   Settings, Save, Building2, Trash2, ShieldAlert, Upload, Download,
   FileSpreadsheet, RefreshCw, CheckCircle2, AlertTriangle, FileCheck,
-  Database, Layers, Check, ArrowRight, Eye, FileText, XCircle, MapPin, Users
+  Database, Layers, Check, ArrowRight, Eye, FileText, XCircle, MapPin, Users, Cloud
 } from 'lucide-react';
+import BackupManager from '../Admin/BackupManager';
 import ResetConfirmModal from '../Common/ResetConfirmModal';
 
 const OFFICIAL_38_HEADERS = [
@@ -558,8 +559,8 @@ export default function SettingsModule({ initialTab = 'org' }) {
     { id: 'org', label: '1. Organization Profile (ಸಂಸ್ಥೆಯ ವಿವರ)', icon: Building2 },
     { id: 'clouddb', label: '2. Cloud Database (ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್ - Supabase)', icon: Cloud },
     { id: 'upload', label: '3. Upload & Import (ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್)', icon: Upload },
-    { id: 'export', label: '3. Data Export (ಡೇಟಾ ರಫ್ತು - Excel/CSV)', icon: Download },
-    { id: 'reset', label: '4. Erase & Reset (ಡೇಟಾ ರಿಸೆಟ್)', icon: Trash2 },
+    { id: 'export', label: '4. Data Export (ಡೇಟಾ ರಫ್ತು - Excel/CSV)', icon: Download },
+    { id: 'reset', label: '5. Erase & Reset (ಡೇಟಾ ರಿಸೆಟ್)', icon: Trash2 },
   ];
 
   return (
@@ -698,7 +699,14 @@ export default function SettingsModule({ initialTab = 'org' }) {
         </div>
       )}
 
-      {/* TAB 2: DATA UPLOAD & IMPORT */}
+      {/* TAB 2: CLOUD DATABASE (SUPABASE) & BACKUP */}
+      {activeTab === 'clouddb' && (
+        <div className="space-y-6 animate-fadeIn">
+          <BackupManager />
+        </div>
+      )}
+
+      {/* TAB 3: DATA UPLOAD & IMPORT */}
       {activeTab === 'upload' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Quick Info & Action Header */}
