@@ -293,7 +293,7 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     };
 
     if (initialData) {
-      const shId = initialData.id || initialData.shareholder_id;
+      const shId = initialData.share_no || initialData.share_number || initialData.id || initialData.shareholder_id;
       const res = await ApiService.updateShareholder(shId, submissionData);
       if (res && res.success) {
         showToast(`Updated shareholder record for ${formData.shareholder_name}`);

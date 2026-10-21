@@ -101,7 +101,7 @@ export default function NewShareholderModule() {
       return;
     }
     const res = await ApiService.approveEnrollmentByAdmin({
-      enrollmentId: promoteModal.record.id,
+      enrollmentId: promoteModal.record.enrollment_id || promoteModal.record.id,
       shareNo: promoteModal.shareNo.trim(),
       adminUser: user?.name || 'Admin',
       tharavaNo: promoteModal.tharavaNo || promoteModal.record.tharava_no || '',

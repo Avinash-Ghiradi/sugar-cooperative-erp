@@ -179,12 +179,67 @@ export const CloudDbService = {
     }
   },
 
+  // Sanitize any shareholder payload to match exact PostgreSQL schema columns
+  sanitizeShareholderRecord(r = {}) {
+    const validCols = new Set([
+      'book_no', 'sl_no', 'share_no', 'shareholder_name', 'gender',
+      'aadhaar_card_no', 'reg_date', 'receipt_no', 'receipt_amount',
+      'date', 'reciept', 'amount', 'total_amount', 'remaining_balance',
+      'new_shares_count', 'number_of_shares', 'schedule_cast', 'address',
+      'place', 'taluk', 'district', 'pin_code', 'circle', 'member_type',
+      'relationship', 'tharava_date', 'tharava_no', 'mobile_no',
+      'photo_url', 'signature_url', 'thumb_url', 'nominee_name',
+      'nominee_aadhaar_no', 'nominee_mobile_no', 'nominee_address',
+      'status', 'updated_at'
+    ]);
+
+    const sanitized = {};
+    for (const [k, v] of Object.entries(r)) {
+      if (validCols.has(k) && v !== undefined) {
+        sanitized[k] = v;
+      }
+    }
+
+    // Common alias fallbacks
+    if (!sanitized.shareholder_name && (r.name || r.full_name)) {
+      sanitized.shareholder_name = String(r.name || r.full_name).trim().normalize('NFC');
+    }
+    if (!sanitized.share_no && (r.share_number || r.shareNo)) {
+      sanitized.share_no = String(r.share_number || r.shareNo).trim();
+    }
+    if (!sanitized.mobile_no && (r.mobile || r.mobile_number)) {
+      sanitized.mobile_no = String(r.mobile || r.mobile_number).trim();
+    }
+    if (!sanitized.aadhaar_card_no && (r.aadhaar_no || r.aadhaar_number || r.aadhaar_ref)) {
+      sanitized.aadhaar_card_no = String(r.aadhaar_no || r.aadhaar_number || r.aadhaar_ref).trim();
+    }
+    if (!sanitized.place && (r.village_name || r.village)) {
+      sanitized.place = String(r.village_name || r.village).trim().normalize('NFC');
+    }
+    if (!sanitized.circle && (r.circle_name)) {
+      sanitized.circle = String(r.circle_name).trim().normalize('NFC');
+    }
+    if (!sanitized.photo_url && r.photo) sanitized.photo_url = r.photo;
+    if (!sanitized.signature_url && r.signature) sanitized.signature_url = r.signature;
+    if (!sanitized.thumb_url && (r.thumb_impression || r.thumb)) sanitized.thumb_url = r.thumb_impression || r.thumb;
+    if (sanitized.total_amount === undefined && (r.share_amount || r.total_amt)) {
+      sanitized.total_amount = parseFloat(r.share_amount || r.total_amt) || 2000;
+    }
+    if (sanitized.number_of_shares === undefined && (r.no_shares || r.shares)) {
+      sanitized.number_of_shares = parseInt(r.no_shares || r.shares) || 1;
+    }
+
+    return sanitized;
+  },
+
   // 6. Get single shareholder by ID or Share No
   async getShareholderById(idOrShareNo) {
     if (!this.isEnabled()) return null;
     try {
-      const q = encodeURIComponent(String(idOrShareNo));
-      const res = await this.request(`shareholders?or=(id.eq.${q},share_no.eq.${q})&limit=1`);
+      const q = encodeURIComponent(String(idOrShareNo).trim());
+      const isNum = /^\d+$/.test(String(idOrShareNo).trim());
+      const filter = isNum ? `or=(id.eq.${q},share_no.eq.${q})` : `share_no.eq.${q}`;
+      const res = await this.request(`shareholders?${filter}&limit=1`);
       if (Array.isArray(res) && res.length > 0) {
         return { success: true, shareholder: res[0], history: {} };
       }
@@ -195,18 +250,38 @@ export const CloudDbService = {
   },
 
   // 7. Update shareholder in Cloud
-  async updateShareholder(shareNo, updates) {
+  async updateShareholder(identifier, updates) {
     if (!this.isEnabled()) return null;
     try {
-      const res = await this.request(`shareholders?share_no=eq.${encodeURIComponent(shareNo)}`, {
-        method: 'PATCH',
-        body: JSON.stringify(updates),
-        headers: { 'Prefer': 'return=representation' }
-      });
+      const sanitized = this.sanitizeShareholderRecord(updates);
+      sanitized.updated_at = new Date().toISOString();
+
+      const targetShareNo = String(updates?.share_no || identifier || '').trim();
+      let res = null;
+
+      // 1. Try matching by share_no first (share_no is unique)
+      if (targetShareNo) {
+        res = await this.request(`shareholders?share_no=eq.${encodeURIComponent(targetShareNo)}`, {
+          method: 'PATCH',
+          body: JSON.stringify(sanitized),
+          headers: { 'Prefer': 'return=representation' }
+        });
+      }
+
+      // 2. If not found or target was numeric ID, try by id
+      const isNum = /^\d+$/.test(String(identifier).trim());
+      if ((!res || (Array.isArray(res) && res.length === 0)) && isNum) {
+        res = await this.request(`shareholders?id=eq.${identifier}`, {
+          method: 'PATCH',
+          body: JSON.stringify(sanitized),
+          headers: { 'Prefer': 'return=representation' }
+        });
+      }
+
       if (Array.isArray(res) && res.length > 0) {
         return { success: true, data: res[0] };
       }
-      return { success: true };
+      return { success: true, data: sanitized };
     } catch (err) {
       console.error('Cloud DB update failed:', err);
       return null;
@@ -217,9 +292,18 @@ export const CloudDbService = {
   async addShareholder(record) {
     if (!this.isEnabled()) return null;
     try {
+      const sanitized = this.sanitizeShareholderRecord(record);
+      if (!sanitized.book_no) sanitized.book_no = 'B.No: 1';
+      if (!sanitized.gender) sanitized.gender = 'M';
+      if (!sanitized.schedule_cast) sanitized.schedule_cast = 'ಅ - ವರ್ಗ';
+      if (!sanitized.status) sanitized.status = 'Active';
+      if (!sanitized.relationship) sanitized.relationship = 'ಸ್ವಂತ (Self)';
+      if (!sanitized.created_at) sanitized.created_at = new Date().toISOString();
+      sanitized.updated_at = new Date().toISOString();
+
       const res = await this.request(`shareholders`, {
         method: 'POST',
-        body: JSON.stringify(record),
+        body: JSON.stringify(sanitized),
         headers: { 'Prefer': 'return=representation' }
       });
       return { success: true, data: Array.isArray(res) ? res[0] : res };
