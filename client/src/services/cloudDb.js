@@ -304,7 +304,7 @@ export const CloudDbService = {
     }
   },
 
-  // 8. Add single shareholder to Cloud
+  // 8. Add single shareholder to Cloud (with safe on_conflict upsert on share_no)
   async addShareholder(record) {
     if (!this.isEnabled()) return null;
     try {
@@ -317,10 +317,12 @@ export const CloudDbService = {
       if (!sanitized.created_at) sanitized.created_at = new Date().toISOString();
       sanitized.updated_at = new Date().toISOString();
 
-      const res = await this.request(`shareholders`, {
+      const res = await this.request(`shareholders?on_conflict=share_no`, {
         method: 'POST',
         body: JSON.stringify(sanitized),
-        headers: { 'Prefer': 'return=representation' }
+        headers: {
+          'Prefer': 'resolution=merge-duplicates,return=representation'
+        }
       });
       return { success: true, data: Array.isArray(res) ? res[0] : res };
     } catch (err) {

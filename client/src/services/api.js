@@ -2514,43 +2514,13 @@ const newSh = {
 
           // Auto-sync any approved enrollments to Supabase shareholders table if missing
           for (const item of mockEnrollments) {
-            const isApproved = (item.approval_status || '').includes('Approved') || (item.approval_status || '').includes('Active') || (item.approval_status || '').includes('Issued');
-            const sNo = String(item.share_no || '').trim();
-            if (isApproved && sNo) {
-              CloudDbService.getShareholderById(sNo).then(res => {
-                if (!res || !res.shareholder) {
-                  const resolvedCircle = this.resolveCircleForPlace(item.place);
-                  const shareAmt = parseFloat(item.share_amount) || (parseInt(item.no_shares || 1) * 24000);
-                  const admFee = parseFloat(item.admission_fee) || 570;
-                  const memberRecord = {
-                    book_no: item.tharava_no ? `ಠರಾವು-${item.tharava_no}` : 'B.No: 1',
-                    sl_no: parseInt(item.sl_no) || 17077,
-                    share_no: sNo,
-                    shareholder_name: (item.full_name || '').normalize('NFC'),
-                    gender: item.gender || 'M',
-                    aadhaar_card_no: item.aadhaar_no || '',
-                    reg_date: item.date || new Date().toLocaleDateString('en-GB'),
-                    receipt_no: String(item.receipt_no || ''),
-                    receipt_amount: shareAmt,
-                    total_amount: parseFloat(item.total_amount) || (shareAmt + admFee),
-                    remaining_balance: 0,
-                    number_of_shares: parseInt(item.no_shares) || 1,
-                    schedule_cast: item.category || 'ಅ ವರ್ಗ',
-                    place: (item.place || '').normalize('NFC'),
-                    taluk: item.taluk || resolvedCircle.taluk || 'ಚಡಚಣ',
-                    district: item.dist || resolvedCircle.district || 'ವಿಜಯಪುರ',
-                    pin_code: resolvedCircle.pincode || '',
-                    circle: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
-                    member_type: 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
-                    relationship: 'ಸ್ವಂತ (Self)',
-                    tharava_date: item.tharava_date || '',
-                    tharava_no: item.tharava_no || '',
-                    mobile_no: item.mobile_no || '',
-                    status: 'Active'
-                  };
-                  CloudDbService.addShareholder(memberRecord).catch(() => {});
-                }
-              }).catch(() => {});
+            const isApproved = (item.approval_status || '').includes('Approved') ||
+                               (item.approval_status || '').includes('Active') ||
+                               (item.approval_status || '').includes('Issued') ||
+                               (item.approval_status || '').includes('ಮಂಜೂರು') ||
+                               (item.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ');
+            if (isApproved && item.share_no) {
+              this.ensureEnrollmentInMaster(item).catch(() => {});
             }
           }
         }
@@ -2674,6 +2644,16 @@ const newSh = {
       CloudDbService.saveCollectionItem('enrollments', newE.enrollment_id, newE)
         .catch(err => console.warn('Cloud DB addEnrollment error:', err));
     }
+    // If added with share_no and approved status, ensure added to Master Sheet!
+    if (newE.share_no && (
+      (newE.approval_status || '').includes('Approved') ||
+      (newE.approval_status || '').includes('Issued') ||
+      (newE.approval_status || '').includes('Active') ||
+      (newE.approval_status || '').includes('ಮಂಜೂರು') ||
+      (newE.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ')
+    )) {
+      this.ensureEnrollmentInMaster(newE).catch(() => {});
+    }
     return { success: true, enrollment_id: newE.enrollment_id, data: newE };
   },
 
@@ -2700,6 +2680,18 @@ const newSh = {
         CloudDbService.saveCollectionItem('enrollments', mockEnrollments[idx].enrollment_id || idOrEnrollmentId, mockEnrollments[idx])
           .catch(err => console.warn('Cloud DB updateEnrollment error:', err));
       }
+
+      // If enrollment is approved and has share_no, ensure added to Master Sheet!
+      if (mockEnrollments[idx].share_no && (
+        (mockEnrollments[idx].approval_status || '').includes('Approved') ||
+        (mockEnrollments[idx].approval_status || '').includes('Issued') ||
+        (mockEnrollments[idx].approval_status || '').includes('Active') ||
+        (mockEnrollments[idx].approval_status || '').includes('ಮಂಜೂರು') ||
+        (mockEnrollments[idx].approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ')
+      )) {
+        this.ensureEnrollmentInMaster(mockEnrollments[idx]).catch(() => {});
+      }
+
       return { success: true, data: mockEnrollments[idx] };
     }
     return { success: false, message: 'Record not found' };
@@ -2733,9 +2725,103 @@ const newSh = {
         CloudDbService.saveCollectionItem('enrollments', item.enrollment_id || idOrEnrollmentId, item)
           .catch(err => console.warn('Cloud DB status sync error:', err));
       }
+
+      // If approved and has share_no, ensure added to Master Sheet!
+      if (item.share_no && (
+        (approval_status || '').includes('Approved') ||
+        (approval_status || '').includes('Issued') ||
+        (approval_status || '').includes('Active') ||
+        (approval_status || '').includes('ಮಂಜೂರು') ||
+        (approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ')
+      )) {
+        this.ensureEnrollmentInMaster(item).catch(() => {});
+      }
+
       return { success: true, data: item };
     }
     return { success: false, message: 'Record not found' };
+  },
+
+  // Ensure an approved enrollment record is securely present in the Master Shareholder sheet
+  async ensureEnrollmentInMaster(item, adminUser = 'Admin') {
+    if (!item) return null;
+    await ensureDBReady();
+    const sNo = String(item.share_no || '').trim();
+    if (!sNo) return null;
+
+    const resolvedCircle = this.resolveCircleForPlace(item.place);
+    const shareAmt = parseFloat(item.share_amount) || (parseInt(item.no_shares || 1) * 24000);
+    const admFee = parseFloat(item.admission_fee) || 570;
+    const totAmt = parseFloat(item.total_amount) || (shareAmt + admFee);
+
+    let maxId = 0;
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const mid = Number(mockShareholders[i]?.id);
+      if (mid > maxId) maxId = mid;
+    }
+    const nextId = maxId + 1;
+    const existingIndex = mockShareholders.findIndex(s => String(s.share_no || s.share_number || '').trim() === sNo);
+
+    const masterRecord = {
+      id: existingIndex !== -1 ? mockShareholders[existingIndex].id : nextId,
+      sl_no: parseInt(item.sl_no) || (existingIndex !== -1 ? (mockShareholders[existingIndex].sl_no || nextId) : nextId),
+      share_number: sNo,
+      share_no: sNo,
+      shareholder_id: existingIndex !== -1 ? mockShareholders[existingIndex].shareholder_id : `SH-${String(nextId).padStart(5, '0')}`,
+      shareholder_name: (item.full_name || '').normalize('NFC'),
+      name: (item.full_name || '').normalize('NFC'),
+      place: (item.place || '').normalize('NFC'),
+      village_name: (item.place || '').normalize('NFC'),
+      taluk: item.taluk || resolvedCircle.taluk || 'ಚಡಚಣ',
+      district: item.dist || resolvedCircle.district || 'ವಿಜಯಪುರ',
+      circle: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
+      circle_name: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
+      pin_code: resolvedCircle.pincode || '',
+      number_of_shares: parseInt(item.no_shares) || 1,
+      schedule_cast: item.category || 'ಅ ವರ್ಗ',
+      gender: item.gender || 'M',
+      reg_date: item.date || new Date().toLocaleDateString('en-GB'),
+      receipt_no: String(item.receipt_no || ''),
+      receipt_amount: shareAmt,
+      total_amount: totAmt,
+      remaining_balance: 0,
+      member_type: 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
+      relationship: 'ಸ್ವಂತ (Self)',
+      tharava_date: item.tharava_date || new Date().toLocaleDateString('en-GB'),
+      tharava_no: item.tharava_no || '05(8)',
+      status: 'Active',
+      mobile_number: item.mobile_no || '',
+      mobile_no: item.mobile_no || '',
+      aadhaar_number: item.aadhaar_no || '',
+      aadhaar_card_no: item.aadhaar_no || '',
+      photo: item.photo || '',
+      photo_url: item.photo || '',
+      signature: item.signature || '',
+      signature_url: item.signature || '',
+      thumb_impression: item.thumb_impression || '',
+      thumb_url: item.thumb_impression || '',
+      date_of_joining: item.date || new Date().toLocaleDateString('en-GB'),
+      book_no: item.tharava_no ? `ಠರಾವು-${item.tharava_no}` : 'B.No: 1',
+      notes: `ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ: ${item.enrollment_id || ''}, ರಶೀದಿ ನಂ: ${item.receipt_no || '—'}. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`
+    };
+
+    if (existingIndex === -1) {
+      mockShareholders.unshift(masterRecord);
+    } else {
+      mockShareholders[existingIndex] = { ...mockShareholders[existingIndex], ...masterRecord };
+    }
+    await saveToIndexedDB(mockShareholders).catch(() => {});
+
+    // Save/Upsert directly in Supabase PostgreSQL public.shareholders
+    if (CloudDbService.isEnabled()) {
+      try {
+        await CloudDbService.addShareholder(masterRecord);
+      } catch (err) {
+        console.warn('Cloud DB ensureEnrollmentInMaster error:', err);
+      }
+    }
+
+    return masterRecord;
   },
 
   // 1. Approve New Shareholder Enrollment by Admin
@@ -2749,9 +2835,9 @@ const newSh = {
       return { success: false, message: 'ದಯವಿಟ್ಟು ಅಧಿಕೃತ ಶೇರು ಸರ್ಟಿಫಿಕೇಟ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ (Please assign Share Certificate Number)' };
     }
 
-    // Check if share_number already exists in active master database
+    // Check if share_number already exists in active master database and belongs to someone else
     const existingSh = mockShareholders.find(s => String(s.share_number || s.share_no) === assignedShareNo);
-    if (existingSh) {
+    if (existingSh && existingSh.shareholder_name !== item.full_name) {
       return { success: false, message: `ಶೇರು ಸಂಖ್ಯೆ ${assignedShareNo} ಈಗಾಗಲೇ "${existingSh.shareholder_name}" ಅವರಿಗೆ ನಿಯೋಜಿತವಾಗಿದೆ (Already assigned)` };
     }
 
@@ -2835,18 +2921,6 @@ const newSh = {
       ]
     };
 
-    mockShareholders.unshift(newMember);
-    await saveToIndexedDB(mockShareholders);
-
-    // If Cloud DB is enabled, insert new shareholder into Supabase!
-    if (CloudDbService.isEnabled()) {
-      try {
-        await CloudDbService.addShareholder(newMember);
-      } catch (err) {
-        console.warn('Cloud DB addShareholder error:', err);
-      }
-    }
-
     // Update enrollment status
     item.share_no = assignedShareNo;
     item.tharava_no = finalTharavaNo;
@@ -2854,6 +2928,7 @@ const newSh = {
     item.approval_status = 'Approved & Active in Master (ಮಂಜೂರಾಗಿದೆ)';
     item.approved_by = adminUser;
     item.approved_at = new Date().toISOString();
+    if (remarks) item.remarks = remarks;
     saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
 
     // Sync updated enrollment to Supabase audit_logs!
@@ -2865,7 +2940,10 @@ const newSh = {
       }
     }
 
-    return { success: true, share_no: assignedShareNo, shareholder: newMember };
+    // Direct, bulletproof add/upsert to Master Sheet (PostgreSQL public.shareholders & local cache)!
+    const masterMember = await this.ensureEnrollmentInMaster(item, adminUser);
+
+    return { success: true, share_no: assignedShareNo, shareholder: masterMember || newMember };
   },
 
   async promoteEnrollmentToShareholder(idOrEnrollmentId, shareNo, adminUser = 'Admin') {
