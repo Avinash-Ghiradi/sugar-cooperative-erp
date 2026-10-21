@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
   Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle,
-  History, GitMerge, ArrowUpDown, ArrowUp, ArrowDown, BarChart3,
+  History, GitMerge, ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Sparkles,
   Lock, ShieldCheck, EyeOff, KeyRound
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
@@ -654,6 +654,29 @@ export default function ShareholderList({ initialShowMerge = false }) {
             </button>
           </div>
 
+          {/* Newest Issued Quick Toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              if (sortBy === 'newest') {
+                setSortBy('');
+                setSortOrder('asc');
+              } else {
+                setSortBy('newest');
+                setSortOrder('desc');
+              }
+            }}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm border ${
+              sortBy === 'newest'
+                ? 'bg-emerald-950 border-emerald-500 text-emerald-300 shadow-md shadow-emerald-950 ring-1 ring-emerald-500'
+                : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
+            }`}
+            title="ಹೊಸದಾಗಿ ವಿತರಿಸಲಾದ ಶೇರುದಾರರನ್ನು ಮೊದಲು ವೀಕ್ಷಿಸಿ (View Newly Issued Share Certificates First)"
+          >
+            <Sparkles className={`w-4 h-4 ${sortBy === 'newest' ? 'text-amber-300 fill-amber-300' : 'text-amber-400'}`} />
+            <span>ಹೊಸ ಶೇರುಗಳು (Recent Issued)</span>
+          </button>
+
           {/* Direct Link to Detailed Reports */}
           <button
             onClick={() => setActiveModule('reports')}
@@ -744,11 +767,18 @@ export default function ShareholderList({ initialShowMerge = false }) {
         <div className="flex items-center gap-1">
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSortBy(val);
+              if (val === 'newest') {
+                setSortOrder('desc');
+              }
+            }}
             className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all"
             title="Sort alphabetically (ಅಕಾರಾದಿ ಕ್ರಮ)"
           >
-            <option value="">ಕ್ರಮಬದ್ಧ ವಿಂಗಡಣೆ (Default)</option>
+            <option value="">ಕ್ರಮಬದ್ಧ ವಿಂಗಡಣೆ (Default: ಷೇರು ನಂ)</option>
+            <option value="newest">ಹೊಸದಾಗಿ ವಿತರಿಸಲಾದ ಶೇರುಗಳು (Newest / Recent First)</option>
             <option value="place">ಸ್ಥಳ / ಗ್ರಾಮ (Place: ಅ-ಹ / A-Z)</option>
             <option value="circle">ವಲಯ / ಸರ್ಕಲ್ (Circle: ಅ-ಹ / A-Z)</option>
             <option value="address">ವಿಳಾಸ (Address: ಅ-ಹ / A-Z)</option>

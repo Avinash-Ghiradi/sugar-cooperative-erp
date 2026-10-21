@@ -122,16 +122,34 @@ export const CloudDbService = {
       let queryParams = [];
 
       // Sort
-      const orderCol = sortBy === 'share_no' ? 'share_no' : (sortBy === 'place' ? 'place' : 'id');
-      queryParams.push(`order=${orderCol}.${sortOrder === 'desc' ? 'desc' : 'asc'}`);
+      let orderCol = 'id';
+      let effectiveOrder = sortOrder;
+      if (sortBy === 'newest') {
+        orderCol = 'id';
+        effectiveOrder = 'desc';
+      } else if (sortBy === 'share_no') {
+        orderCol = 'share_no';
+      } else if (sortBy === 'name' || sortBy === 'shareholder_name') {
+        orderCol = 'shareholder_name';
+      } else if (sortBy === 'place') {
+        orderCol = 'place';
+      } else if (sortBy === 'circle') {
+        orderCol = 'circle';
+      } else if (sortBy === 'address') {
+        orderCol = 'address';
+      } else if (!sortBy && search && /^\d+$/.test(search.trim()) && search.trim().length <= 6) {
+        orderCol = 'id';
+        effectiveOrder = 'desc';
+      }
+      queryParams.push(`order=${orderCol}.${effectiveOrder === 'desc' ? 'desc' : 'asc'}`);
 
       // Filters
       if (search) {
         const q = encodeURIComponent(search.trim());
         const isNum = /^\d+$/.test(search.trim());
         if (isNum && search.trim().length <= 6) {
-          // Numbers <= 6 digits: primarily match share_no, receipt_no, or mobile prefix
-          queryParams.push(`or=(share_no.eq.${q},share_no.ilike.${q}*,shareholder_name.ilike.*${q}*,receipt_no.eq.${q},mobile_no.ilike.${q}*)`);
+          // Numbers <= 6 digits: primarily match share_no, receipt_no, or shareholder_name
+          queryParams.push(`or=(share_no.eq.${q},share_no.ilike.${q}*,shareholder_name.ilike.*${q}*,receipt_no.eq.${q})`);
         } else {
           queryParams.push(`or=(shareholder_name.ilike.*${q}*,share_no.ilike.*${q}*,mobile_no.ilike.*${q}*,place.ilike.*${q}*,aadhaar_card_no.ilike.*${q}*)`);
         }

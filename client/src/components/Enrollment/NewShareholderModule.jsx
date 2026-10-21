@@ -577,17 +577,18 @@ export default function NewShareholderModule() {
                         {/* Promote / Add to Master Shareholders */}
                         {!item.share_no ? (
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               if (user?.role !== 'Admin') {
                                 showToast('ಕೇವಲ Admin ಗಳಿಗೆ ಮಾತ್ರ ಹೊಸ ಶೇರುದಾರರನ್ನು ಮಂಜೂರಿಸಿ ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಸೇರಿಸಲು ಅನುಮತಿ ಇದೆ (Admin approval required)', 'error');
                                 return;
                               }
+                              const nextNo = await ApiService.getNextAvailableShareNumber();
                               setPromoteModal({
                                 open: true,
                                 record: item,
-                                shareNo: '',
-                                tharavaNo: item.tharava_no || '',
-                                tharavaDate: item.tharava_date || '',
+                                shareNo: item.share_no || nextNo,
+                                tharavaNo: item.tharava_no || '05(8)',
+                                tharavaDate: item.tharava_date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
                                 remarks: ''
                               });
                             }}

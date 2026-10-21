@@ -178,11 +178,20 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
 
     setLoading(true);
     try {
+      const submissionData = { ...formData };
+      const isIssuedOrApproved = (submissionData.approval_status || '').includes('Issued') ||
+                                 (submissionData.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ') ||
+                                 (submissionData.approval_status || '').includes('Approved') ||
+                                 (submissionData.approval_status || '').includes('ಮಂಜೂರು');
+      if (isIssuedOrApproved && !submissionData.share_no?.trim()) {
+        submissionData.share_no = await ApiService.getNextAvailableShareNumber();
+      }
+
       let res;
       if (editRecord) {
-        res = await ApiService.updateEnrollment(editRecord.id || editRecord.enrollment_id, formData);
+        res = await ApiService.updateEnrollment(editRecord.id || editRecord.enrollment_id, submissionData);
       } else {
-        res = await ApiService.addEnrollment(formData);
+        res = await ApiService.addEnrollment(submissionData);
       }
 
       if (res && res.success) {
@@ -634,21 +643,37 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                         { id: 'Application Submitted', label: 'ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ (Application Submitted)' },
                         { id: 'Board Approved (ಠರಾವು ಮಂಜೂರು)', label: 'ಠರಾವು ಮಂಜೂರಾಗಿದೆ (Board Approved)' },
                         { id: 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)', label: 'ಶೇರು ವಿತರಿಸಲಾಗಿದೆ (Share Certificate Issued)' }
-                      ].map((st) => (
-                        <button
-                          key={st.id}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, approval_status: st.id })}
-                          className={`p-2.5 rounded-xl text-left border transition-all text-xs flex items-center justify-between ${
-                            formData.approval_status === st.id
-                              ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300 font-semibold'
-                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
-                          }`}
-                        >
-                          <span>{st.label}</span>
-                          {formData.approval_status === st.id && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-                        </button>
-                      ))}
+                      ].map((st) => {
+                        const isSelected = formData.approval_status === st.id ||
+                          (st.id.includes('Issued') && (formData.approval_status || '').includes('Issued')) ||
+                          (st.id.includes('Approved') && !st.id.includes('Issued') && (formData.approval_status || '').includes('Approved') && !(formData.approval_status || '').includes('Issued'));
+
+                        return (
+                          <button
+                            key={st.id}
+                            type="button"
+                            onClick={async () => {
+                              let nextShare = formData.share_no;
+                              if (st.id.includes('Issued') && !nextShare) {
+                                nextShare = await ApiService.getNextAvailableShareNumber();
+                              }
+                              setFormData(prev => ({
+                                ...prev,
+                                approval_status: st.id,
+                                share_no: prev.share_no || nextShare
+                              }));
+                            }}
+                            className={`p-2.5 rounded-xl text-left border transition-all text-xs flex items-center justify-between ${
+                              isSelected
+                                ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300 font-semibold shadow-sm'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                            }`}
+                          >
+                            <span>{st.label}</span>
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

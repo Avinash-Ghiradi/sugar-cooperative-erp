@@ -1090,6 +1090,11 @@ export const ApiService = {
           const valB = (b.shareholder_name || b.name || '').trim();
           return dir * valA.localeCompare(valB, 'kn');
         }
+        if (sortBy === 'newest') {
+          const idA = Number(a.id) || 0;
+          const idB = Number(b.id) || 0;
+          return dir * (idB - idA);
+        }
         if (sortBy === 'share_no') {
           const numA = parseInt(String(a.share_no || a.share_number || '').replace(/\D/g, '')) || 0;
           const numB = parseInt(String(b.share_no || b.share_number || '').replace(/\D/g, '')) || 0;
@@ -2644,15 +2649,17 @@ const newSh = {
       CloudDbService.saveCollectionItem('enrollments', newE.enrollment_id, newE)
         .catch(err => console.warn('Cloud DB addEnrollment error:', err));
     }
-    // If added with share_no and approved status, ensure added to Master Sheet!
-    if (newE.share_no && (
-      (newE.approval_status || '').includes('Approved') ||
-      (newE.approval_status || '').includes('Issued') ||
-      (newE.approval_status || '').includes('Active') ||
-      (newE.approval_status || '').includes('ಮಂಜೂರು') ||
-      (newE.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ')
-    )) {
-      this.ensureEnrollmentInMaster(newE).catch(() => {});
+    // If added with approved or share issued status, ensure added to Master Sheet!
+    const isIssuedOrApprovedNew = (newE.approval_status || '').includes('Approved') ||
+                                  (newE.approval_status || '').includes('Issued') ||
+                                  (newE.approval_status || '').includes('Active') ||
+                                  (newE.approval_status || '').includes('ಮಂಜೂರು') ||
+                                  (newE.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ');
+    if (isIssuedOrApprovedNew) {
+      if (!newE.share_no) {
+        newE.share_no = await this.getNextAvailableShareNumber();
+      }
+      await this.ensureEnrollmentInMaster(newE);
     }
     return { success: true, enrollment_id: newE.enrollment_id, data: newE };
   },
@@ -2681,15 +2688,17 @@ const newSh = {
           .catch(err => console.warn('Cloud DB updateEnrollment error:', err));
       }
 
-      // If enrollment is approved and has share_no, ensure added to Master Sheet!
-      if (mockEnrollments[idx].share_no && (
-        (mockEnrollments[idx].approval_status || '').includes('Approved') ||
-        (mockEnrollments[idx].approval_status || '').includes('Issued') ||
-        (mockEnrollments[idx].approval_status || '').includes('Active') ||
-        (mockEnrollments[idx].approval_status || '').includes('ಮಂಜೂರು') ||
-        (mockEnrollments[idx].approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ')
-      )) {
-        this.ensureEnrollmentInMaster(mockEnrollments[idx]).catch(() => {});
+      // If enrollment is approved or share certificate issued, ensure added to Master Sheet!
+      const isIssuedOrApproved = (mockEnrollments[idx].approval_status || '').includes('Approved') ||
+                                 (mockEnrollments[idx].approval_status || '').includes('Issued') ||
+                                 (mockEnrollments[idx].approval_status || '').includes('Active') ||
+                                 (mockEnrollments[idx].approval_status || '').includes('ಮಂಜೂರು') ||
+                                 (mockEnrollments[idx].approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ');
+      if (isIssuedOrApproved) {
+        if (!mockEnrollments[idx].share_no) {
+          mockEnrollments[idx].share_no = await this.getNextAvailableShareNumber();
+        }
+        await this.ensureEnrollmentInMaster(mockEnrollments[idx]);
       }
 
       return { success: true, data: mockEnrollments[idx] };
@@ -2726,15 +2735,17 @@ const newSh = {
           .catch(err => console.warn('Cloud DB status sync error:', err));
       }
 
-      // If approved and has share_no, ensure added to Master Sheet!
-      if (item.share_no && (
-        (approval_status || '').includes('Approved') ||
-        (approval_status || '').includes('Issued') ||
-        (approval_status || '').includes('Active') ||
-        (approval_status || '').includes('ಮಂಜೂರು') ||
-        (approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ')
-      )) {
-        this.ensureEnrollmentInMaster(item).catch(() => {});
+      // If approved or share certificate issued, ensure added to Master Sheet!
+      const isIssuedOrApproved = (approval_status || '').includes('Approved') ||
+                                 (approval_status || '').includes('Issued') ||
+                                 (approval_status || '').includes('Active') ||
+                                 (approval_status || '').includes('ಮಂಜೂರು') ||
+                                 (approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ');
+      if (isIssuedOrApproved) {
+        if (!item.share_no) {
+          item.share_no = await this.getNextAvailableShareNumber();
+        }
+        await this.ensureEnrollmentInMaster(item);
       }
 
       return { success: true, data: item };
@@ -2742,12 +2753,57 @@ const newSh = {
     return { success: false, message: 'Record not found' };
   },
 
+  // Get next available official numeric share certificate number
+  async getNextAvailableShareNumber() {
+    await ensureDBReady();
+    let maxNum = 0;
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cfg = CloudDbService.getConfig();
+        const cleanUrl = cfg.url.trim().replace(/\/+$/, '');
+        const res = await fetch(`${cleanUrl}/rest/v1/shareholders?select=share_no&order=id.desc&limit=50`, {
+          headers: {
+            'apikey': cfg.anonKey.trim(),
+            'Authorization': `Bearer ${cfg.anonKey.trim()}`
+          }
+        });
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list)) {
+            list.forEach(row => {
+              const n = parseInt(row.share_no, 10);
+              if (!isNaN(n) && n > maxNum && n < 1000000) {
+                maxNum = n;
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Cloud DB getNextAvailableShareNumber query failed:', e);
+      }
+    }
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const s = String(mockShareholders[i]?.share_no || mockShareholders[i]?.share_number || '').trim();
+      const n = parseInt(s, 10);
+      if (!isNaN(n) && n > maxNum && n < 1000000) maxNum = n;
+    }
+    for (let i = 0; i < mockEnrollments.length; i++) {
+      const s = String(mockEnrollments[i]?.share_no || '').trim();
+      const n = parseInt(s, 10);
+      if (!isNaN(n) && n > maxNum && n < 1000000) maxNum = n;
+    }
+    return String(Math.max(maxNum + 1, 18007));
+  },
+
   // Ensure an approved enrollment record is securely present in the Master Shareholder sheet
   async ensureEnrollmentInMaster(item, adminUser = 'Admin') {
     if (!item) return null;
     await ensureDBReady();
-    const sNo = String(item.share_no || '').trim();
-    if (!sNo) return null;
+    let sNo = String(item.share_no || '').trim();
+    if (!sNo) {
+      sNo = await this.getNextAvailableShareNumber();
+      item.share_no = sNo;
+    }
 
     const resolvedCircle = this.resolveCircleForPlace(item.place);
     const shareAmt = parseFloat(item.share_amount) || (parseInt(item.no_shares || 1) * 24000);
@@ -2815,7 +2871,13 @@ const newSh = {
     // Save/Upsert directly in Supabase PostgreSQL public.shareholders
     if (CloudDbService.isEnabled()) {
       try {
-        await CloudDbService.addShareholder(masterRecord);
+        const cloudRes = await CloudDbService.addShareholder(masterRecord);
+        if (cloudRes?.data?.id) {
+          masterRecord.id = cloudRes.data.id;
+          if (existingIndex === -1 && mockShareholders.length > 0) {
+            mockShareholders[0].id = cloudRes.data.id;
+          }
+        }
       } catch (err) {
         console.warn('Cloud DB ensureEnrollmentInMaster error:', err);
       }
@@ -2925,7 +2987,7 @@ const newSh = {
     item.share_no = assignedShareNo;
     item.tharava_no = finalTharavaNo;
     item.tharava_date = finalTharavaDate;
-    item.approval_status = 'Approved & Active in Master (ಮಂಜೂರಾಗಿದೆ)';
+    item.approval_status = 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)';
     item.approved_by = adminUser;
     item.approved_at = new Date().toISOString();
     if (remarks) item.remarks = remarks;
