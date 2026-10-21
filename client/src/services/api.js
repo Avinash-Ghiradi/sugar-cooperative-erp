@@ -2511,6 +2511,48 @@ const newSh = {
           });
           mockEnrollments = Array.from(map.values());
           saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+
+          // Auto-sync any approved enrollments to Supabase shareholders table if missing
+          for (const item of mockEnrollments) {
+            const isApproved = (item.approval_status || '').includes('Approved') || (item.approval_status || '').includes('Active') || (item.approval_status || '').includes('Issued');
+            const sNo = String(item.share_no || '').trim();
+            if (isApproved && sNo) {
+              CloudDbService.getShareholderById(sNo).then(res => {
+                if (!res || !res.shareholder) {
+                  const resolvedCircle = this.resolveCircleForPlace(item.place);
+                  const shareAmt = parseFloat(item.share_amount) || (parseInt(item.no_shares || 1) * 24000);
+                  const admFee = parseFloat(item.admission_fee) || 570;
+                  const memberRecord = {
+                    book_no: item.tharava_no ? `ಠರಾವು-${item.tharava_no}` : 'B.No: 1',
+                    sl_no: parseInt(item.sl_no) || 17077,
+                    share_no: sNo,
+                    shareholder_name: (item.full_name || '').normalize('NFC'),
+                    gender: item.gender || 'M',
+                    aadhaar_card_no: item.aadhaar_no || '',
+                    reg_date: item.date || new Date().toLocaleDateString('en-GB'),
+                    receipt_no: String(item.receipt_no || ''),
+                    receipt_amount: shareAmt,
+                    total_amount: parseFloat(item.total_amount) || (shareAmt + admFee),
+                    remaining_balance: 0,
+                    number_of_shares: parseInt(item.no_shares) || 1,
+                    schedule_cast: item.category || 'ಅ ವರ್ಗ',
+                    place: (item.place || '').normalize('NFC'),
+                    taluk: item.taluk || resolvedCircle.taluk || 'ಚಡಚಣ',
+                    district: item.dist || resolvedCircle.district || 'ವಿಜಯಪುರ',
+                    pin_code: resolvedCircle.pincode || '',
+                    circle: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
+                    member_type: 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
+                    relationship: 'ಸ್ವಂತ (Self)',
+                    tharava_date: item.tharava_date || '',
+                    tharava_no: item.tharava_no || '',
+                    mobile_no: item.mobile_no || '',
+                    status: 'Active'
+                  };
+                  CloudDbService.addShareholder(memberRecord).catch(() => {});
+                }
+              }).catch(() => {});
+            }
+          }
         }
       } catch (e) {
         console.warn('Cloud DB enrollments fetch error:', e);
@@ -2725,21 +2767,37 @@ const newSh = {
     const finalTharavaNo = tharavaNo || item.tharava_no || '05(8)';
     const finalTharavaDate = tharavaDate || item.tharava_date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
 
+    const shareAmt = parseFloat(item.share_amount) || (parseInt(item.no_shares || 1) * 24000);
+    const admFee = parseFloat(item.admission_fee) || 570;
+    const totAmt = parseFloat(item.total_amount) || (shareAmt + admFee);
+
     const newMember = {
       id: nextId,
+      sl_no: parseInt(item.sl_no) || nextId,
       share_number: assignedShareNo,
       share_no: assignedShareNo,
       shareholder_id: `SH-${String(nextId).padStart(5, '0')}`,
-      shareholder_name: item.full_name,
-      name: item.full_name,
-      place: item.place,
-      village_name: item.place,
+      shareholder_name: (item.full_name || '').normalize('NFC'),
+      name: (item.full_name || '').normalize('NFC'),
+      place: (item.place || '').normalize('NFC'),
+      village_name: (item.place || '').normalize('NFC'),
       taluk: item.taluk || resolvedCircle.taluk || 'ಚಡಚಣ',
       district: item.dist || resolvedCircle.district || 'ವಿಜಯಪುರ',
       circle: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
       circle_name: resolvedCircle.circle_name || 'ಇತರೆ (Other)',
+      pin_code: resolvedCircle.pincode || '',
       number_of_shares: parseInt(item.no_shares) || 1,
       schedule_cast: item.category || 'ಅ ವರ್ಗ',
+      gender: item.gender || 'M',
+      reg_date: item.date || new Date().toLocaleDateString('en-GB'),
+      receipt_no: String(item.receipt_no || ''),
+      receipt_amount: shareAmt,
+      total_amount: totAmt,
+      remaining_balance: 0,
+      member_type: 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
+      relationship: 'ಸ್ವಂತ (Self)',
+      tharava_date: finalTharavaDate,
+      tharava_no: finalTharavaNo,
       status: 'Active',
       mobile_number: item.mobile_no || '',
       mobile_no: item.mobile_no || '',
@@ -2752,7 +2810,7 @@ const newSh = {
       thumb_impression: item.thumb_impression || '',
       thumb_url: item.thumb_impression || '',
       date_of_joining: item.date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
-      book_no: finalTharavaNo ? `ಠರಾವು-${finalTharavaNo}` : 'BOOK-1',
+      book_no: finalTharavaNo ? `ಠರಾವು-${finalTharavaNo}` : 'B.No: 1',
       notes: `ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ: ${item.enrollment_id}, ರಶೀದಿ ನಂ: ${item.receipt_no || '—'}. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`,
       audit_history: [
         {

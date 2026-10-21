@@ -128,7 +128,13 @@ export const CloudDbService = {
       // Filters
       if (search) {
         const q = encodeURIComponent(search.trim());
-        queryParams.push(`or=(shareholder_name.ilike.*${q}*,share_no.ilike.*${q}*,mobile_no.ilike.*${q}*,place.ilike.*${q}*,aadhaar_card_no.ilike.*${q}*)`);
+        const isNum = /^\d+$/.test(search.trim());
+        if (isNum && search.trim().length <= 6) {
+          // Numbers <= 6 digits: primarily match share_no, receipt_no, or mobile prefix
+          queryParams.push(`or=(share_no.eq.${q},share_no.ilike.${q}*,shareholder_name.ilike.*${q}*,receipt_no.eq.${q},mobile_no.ilike.${q}*)`);
+        } else {
+          queryParams.push(`or=(shareholder_name.ilike.*${q}*,share_no.ilike.*${q}*,mobile_no.ilike.*${q}*,place.ilike.*${q}*,aadhaar_card_no.ilike.*${q}*)`);
+        }
       }
       if (status) queryParams.push(`status=eq.${encodeURIComponent(status)}`);
       if (book_no) queryParams.push(`book_no=eq.${encodeURIComponent(book_no)}`);
@@ -156,6 +162,16 @@ export const CloudDbService = {
       if (!res.ok) return null;
 
       const data = await res.json();
+      if (search && Array.isArray(data)) {
+        const cleanSearch = search.trim().toLowerCase();
+        data.sort((a, b) => {
+          const aExact = String(a.share_no || '').trim().toLowerCase() === cleanSearch;
+          const bExact = String(b.share_no || '').trim().toLowerCase() === cleanSearch;
+          if (aExact && !bExact) return -1;
+          if (!aExact && bExact) return 1;
+          return 0;
+        });
+      }
       const contentRange = res.headers.get('content-range'); // e.g. "0-19/17076"
       let total = data.length;
       if (contentRange && contentRange.includes('/')) {
