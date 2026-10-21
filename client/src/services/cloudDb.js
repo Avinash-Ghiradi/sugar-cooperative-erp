@@ -123,10 +123,13 @@ export const CloudDbService = {
 
       // Sort
       let orderCol = 'id';
-      let effectiveOrder = sortOrder;
-      if (sortBy === 'newest') {
+      let effectiveOrder = sortOrder || 'desc';
+      if (sortBy === 'newest' || !sortBy) {
         orderCol = 'id';
         effectiveOrder = 'desc';
+      } else if (sortBy === 'share_no_asc') {
+        orderCol = 'id';
+        effectiveOrder = 'asc';
       } else if (sortBy === 'share_no') {
         orderCol = 'share_no';
       } else if (sortBy === 'name' || sortBy === 'shareholder_name') {
@@ -137,7 +140,7 @@ export const CloudDbService = {
         orderCol = 'circle';
       } else if (sortBy === 'address') {
         orderCol = 'address';
-      } else if (!sortBy && search && /^\d+$/.test(search.trim()) && search.trim().length <= 6) {
+      } else if (search && /^\d+$/.test(search.trim()) && search.trim().length <= 6) {
         orderCol = 'id';
         effectiveOrder = 'desc';
       }

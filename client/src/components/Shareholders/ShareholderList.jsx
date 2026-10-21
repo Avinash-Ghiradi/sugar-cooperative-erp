@@ -28,8 +28,8 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const [selectedBook, setSelectedBook] = useState('');
   const [selectedCast, setSelectedCast] = useState('');
   const [selectedAmount, setSelectedAmount] = useState('');
-  const [sortBy, setSortBy] = useState(''); // 'place', 'circle', 'address', 'name', 'share_no'
-  const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
+  const [sortBy, setSortBy] = useState('newest'); // 'newest' by default so newly issued/approved members appear at top of page 1
+  const [sortOrder, setSortOrder] = useState('desc');
   const [viewMode, setViewMode] = useState('ledger'); // 'ledger' (38 columns) or 'summary'
 
   // Options
@@ -777,13 +777,13 @@ export default function ShareholderList({ initialShowMerge = false }) {
             className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all"
             title="Sort alphabetically (ಅಕಾರಾದಿ ಕ್ರಮ)"
           >
-            <option value="">ಕ್ರಮಬದ್ಧ ವಿಂಗಡಣೆ (Default: ಷೇರು ನಂ)</option>
             <option value="newest">ಹೊಸದಾಗಿ ವಿತರಿಸಲಾದ ಶೇರುಗಳು (Newest / Recent First)</option>
+            <option value="share_no_asc">ಕ್ರಮಬದ್ಧ ಷೇರು ನಂ (Share No: 1, 2, 3...)</option>
+            <option value="share_no">ಷೇರು ಸಂಖ್ಯೆ (Share No: ಇಳಿಕೆ ಕ್ರಮ)</option>
             <option value="place">ಸ್ಥಳ / ಗ್ರಾಮ (Place: ಅ-ಹ / A-Z)</option>
             <option value="circle">ವಲಯ / ಸರ್ಕಲ್ (Circle: ಅ-ಹ / A-Z)</option>
             <option value="address">ವಿಳಾಸ (Address: ಅ-ಹ / A-Z)</option>
             <option value="name">ಹೆಸರು (Name: ಅ-ಹ / A-Z)</option>
-            <option value="share_no">ಷೇರು ಸಂಖ್ಯೆ (Share No)</option>
           </select>
           {sortBy && (
             <button

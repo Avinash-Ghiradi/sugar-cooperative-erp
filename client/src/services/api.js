@@ -988,7 +988,7 @@ export const ApiService = {
     });
   },
 
-  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', amount = '', sortBy = '', sortOrder = 'asc' }) {
+  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', amount = '', sortBy = 'newest', sortOrder = 'desc' }) {
     if (CloudDbService.isEnabled()) {
       try {
         const cloudRes = await CloudDbService.getShareholders({ page, limit, search, village_id, circle_id, status, book_no, schedule_cast, amount, sortBy, sortOrder });
@@ -1090,10 +1090,15 @@ export const ApiService = {
           const valB = (b.shareholder_name || b.name || '').trim();
           return dir * valA.localeCompare(valB, 'kn');
         }
-        if (sortBy === 'newest') {
+        if (sortBy === 'newest' || !sortBy) {
           const idA = Number(a.id) || 0;
           const idB = Number(b.id) || 0;
-          return dir * (idB - idA);
+          return (idB - idA);
+        }
+        if (sortBy === 'share_no_asc') {
+          const numA = parseInt(String(a.share_no || a.share_number || '').replace(/\D/g, '')) || 0;
+          const numB = parseInt(String(b.share_no || b.share_number || '').replace(/\D/g, '')) || 0;
+          return (numA - numB);
         }
         if (sortBy === 'share_no') {
           const numA = parseInt(String(a.share_no || a.share_number || '').replace(/\D/g, '')) || 0;
@@ -2524,8 +2529,11 @@ const newSh = {
                                (item.approval_status || '').includes('Issued') ||
                                (item.approval_status || '').includes('ಮಂಜೂರು') ||
                                (item.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ');
-            if (isApproved && item.share_no) {
-              this.ensureEnrollmentInMaster(item).catch(() => {});
+            if (isApproved) {
+              if (!item.share_no) {
+                item.share_no = await this.getNextAvailableShareNumber();
+              }
+              await this.ensureEnrollmentInMaster(item).catch(() => {});
             }
           }
         }
