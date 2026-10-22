@@ -6,7 +6,7 @@ import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
   Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle,
   History, GitMerge, ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Sparkles,
-  Lock, ShieldCheck, EyeOff, KeyRound
+  Lock, ShieldCheck, EyeOff, KeyRound, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
 import ShareholderForm from './ShareholderForm';
@@ -664,6 +664,20 @@ export default function ShareholderList({ initialShowMerge = false }) {
             <span>ವಿವರ ವರದಿಗಳು (Reports)</span>
           </button>
 
+          {/* Refresh Button */}
+          <button
+            onClick={() => {
+              loadMasters();
+              fetchShareholders(pagination.page);
+            }}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm disabled:opacity-50"
+            title="ಡೇಟಾಬೇಸ್‌ನಿಂದ ತಾಜಾ ಮಾಹಿತಿ ಪಡೆಯಿರಿ (Refresh from Cloud Database)"
+          >
+            <RefreshCw className={`w-4 h-4 text-emerald-400 ${loading ? 'animate-spin' : ''}`} />
+            <span>ರಿಫ್ರೆಶ್ (Refresh)</span>
+          </button>
+
           {/* Print Button */}
           <button
             onClick={() => window.print()}
@@ -1154,11 +1168,20 @@ export default function ShareholderList({ initialShowMerge = false }) {
             <span className="font-bold text-emerald-400">{pagination.total.toLocaleString()}</span> statutory cooperative shareholders
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => handlePageChange(1)}
+              disabled={pagination.page === 1}
+              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors"
+              title="ಮೊದಲ ಪುಟ (First Page - Book 1, Sl No 1)"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
             <button
               onClick={() => handlePageChange(pagination.page - 1)}
               disabled={pagination.page === 1}
               className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors"
+              title="ಹಿಂದಿನ ಪುಟ (Previous Page)"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -1169,8 +1192,17 @@ export default function ShareholderList({ initialShowMerge = false }) {
               onClick={() => handlePageChange(pagination.page + 1)}
               disabled={pagination.page === pagination.totalPages}
               className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors"
+              title="ಮುಂದಿನ ಪುಟ (Next Page)"
             >
               <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handlePageChange(pagination.totalPages)}
+              disabled={pagination.page === pagination.totalPages}
+              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors"
+              title="ಕೊನೆಯ ಪುಟ (Last Page - ಇತ್ತೀಚಿನ ಶೇರುಗಳು)"
+            >
+              <ChevronsRight className="w-4 h-4" />
             </button>
           </div>
         </div>

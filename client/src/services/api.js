@@ -2793,6 +2793,36 @@ const newSh = {
     return String(Math.max(maxNum + 1, 18007));
   },
 
+  // Get next sequential statutory serial number (Sl. No) for the cooperative ledger
+  async getNextAvailableSlNo() {
+    await ensureDBReady();
+    let maxSl = 0;
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cfg = CloudDbService.getConfig();
+        const res = await fetch(`${cfg.url.trim().replace(/\/+$/, '')}/rest/v1/shareholders?select=sl_no&order=sl_no.desc.nullslast&limit=1`, {
+          headers: {
+            'apikey': cfg.anonKey.trim(),
+            'Authorization': `Bearer ${cfg.anonKey.trim()}`
+          }
+        });
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list) && list.length > 0 && list[0].sl_no) {
+            maxSl = Math.max(maxSl, Number(list[0].sl_no) || 0);
+          }
+        }
+      } catch (e) {
+        console.warn('Cloud DB getNextAvailableSlNo query failed:', e);
+      }
+    }
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const s = Number(mockShareholders[i]?.sl_no);
+      if (!isNaN(s) && s > maxSl && s < 1000000) maxSl = s;
+    }
+    return Math.max(maxSl + 1, 17104);
+  },
+
   // Ensure an approved enrollment record is securely present in the Master Shareholder sheet
   async ensureEnrollmentInMaster(item, adminUser = 'Admin') {
     if (!item) return null;
@@ -2818,7 +2848,7 @@ const newSh = {
 
     const masterRecord = {
       id: existingIndex !== -1 ? mockShareholders[existingIndex].id : nextId,
-      sl_no: parseInt(item.sl_no) || (existingIndex !== -1 ? (mockShareholders[existingIndex].sl_no || nextId) : nextId),
+      sl_no: existingIndex !== -1 && mockShareholders[existingIndex]?.sl_no ? mockShareholders[existingIndex].sl_no : await this.getNextAvailableSlNo(),
       share_number: sNo,
       share_no: sNo,
       shareholder_id: existingIndex !== -1 ? mockShareholders[existingIndex].shareholder_id : `SH-${String(nextId).padStart(5, '0')}`,
@@ -2860,7 +2890,7 @@ const newSh = {
     };
 
     if (existingIndex === -1) {
-      mockShareholders.unshift(masterRecord);
+      mockShareholders.push(masterRecord);
     } else {
       mockShareholders[existingIndex] = { ...mockShareholders[existingIndex], ...masterRecord };
     }
@@ -2873,7 +2903,7 @@ const newSh = {
         if (cloudRes?.data?.id) {
           masterRecord.id = cloudRes.data.id;
           if (existingIndex === -1 && mockShareholders.length > 0) {
-            mockShareholders[0].id = cloudRes.data.id;
+            mockShareholders[mockShareholders.length - 1].id = cloudRes.data.id;
           }
         }
       } catch (err) {
@@ -2882,6 +2912,11 @@ const newSh = {
     }
 
     return masterRecord;
+  },
+
+  // Unified Architecture Alias
+  async promoteToStatutoryLedger(item, adminUser = 'Admin') {
+    return await this.ensureEnrollmentInMaster(item, adminUser);
   },
 
   // 1. Approve New Shareholder Enrollment by Admin
