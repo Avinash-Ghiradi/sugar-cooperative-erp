@@ -98,14 +98,15 @@ export const CloudDbService = {
     if (!cfg.url || !cfg.anonKey) return null;
     const cleanUrl = cfg.url.trim().replace(/\/+$/, '');
 
+    const { headers: customHeaders, ...restOptions } = options;
     const res = await fetch(`${cleanUrl}/rest/v1/${endpoint}`, {
+      ...restOptions,
       headers: {
         'apikey': cfg.anonKey.trim(),
         'Authorization': `Bearer ${cfg.anonKey.trim()}`,
         'Content-Type': 'application/json',
-        ...options.headers
-      },
-      ...options
+        ...customHeaders
+      }
     });
 
     if (!res.ok) {

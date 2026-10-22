@@ -741,7 +741,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
             className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all"
             title="Sort alphabetically (ಅಕಾರಾದಿ ಕ್ರಮ)"
           >
-            <option value="">ಕ್ರಮಬದ್ಧ ವಿಂಗಡಣೆ: ಹೊಸ ಶೇರುದಾರರು ಮೊದಲು (Newest First)</option>
+            <option value="">ಕ್ರಮಬದ್ಧ ವಿಂಗಡಣೆ (Default)</option>
             <option value="place">ಸ್ಥಳ / ಗ್ರಾಮ (Place: ಅ-ಹ / A-Z)</option>
             <option value="circle">ವಲಯ / ಸರ್ಕಲ್ (Circle: ಅ-ಹ / A-Z)</option>
             <option value="address">ವಿಳಾಸ (Address: ಅ-ಹ / A-Z)</option>
@@ -991,12 +991,6 @@ export default function ShareholderList({ initialShowMerge = false }) {
                         >
                           {sh.share_no || sh.share_number}
                         </span>
-                        {(parseInt(sh.share_no) >= 18005 || (sh.notes && sh.notes.includes('ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ'))) && (
-                          <span className="px-1.5 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-600/70 text-[9px] font-sans font-bold flex items-center gap-1 shrink-0" title="ಆಡಳಿತ ಮಂಡಳಿ ಅನುಮೋದಿತ ಹೊಸ ಶೇರುದಾರರು">
-                            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
-                            <span>ಹೊಸದು (New)</span>
-                          </span>
-                        )}
                         {(sh.is_merged || (sh.all_share_numbers && sh.all_share_numbers.length > 1) || String(sh.share_no).includes(',')) && (
                           <span className="px-1.5 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-700/60 text-[9px] font-sans font-bold flex items-center gap-1 shrink-0" title="ಬಹು-ಶೇರುಗಳು ಮತ್ತು ಮೊತ್ತಗಳು ವಿಲೀನಗೊಂಡಿವೆ">
                             <GitMerge className="w-2.5 h-2.5 text-amber-400" />

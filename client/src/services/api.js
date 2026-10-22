@@ -585,6 +585,23 @@ export async function syncAllCloudWorkflows() {
       });
       mockEnrollments = Array.from(map.values());
       saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
+
+      // Reconcile approved enrollments into mockShareholders and Supabase across browsers
+      for (const item of mockEnrollments) {
+        const isApproved = ((item.approval_status || '').includes('Approved') ||
+                           (item.approval_status || '').includes('Active') ||
+                           (item.approval_status || '').includes('Issued') ||
+                           (item.approval_status || '').includes('ಮಂಜೂರು') ||
+                           (item.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ')) &&
+                           Boolean(item.share_no && String(item.share_no).trim());
+        if (isApproved) {
+          const sNo = String(item.share_no).trim();
+          const exists = mockShareholders.some(s => String(s.share_no || s.share_number || '').trim() === sNo);
+          if (!exists) {
+            await ApiService.ensureEnrollmentInMaster(item).catch(() => {});
+          }
+        }
+      }
     }
     if (Array.isArray(varasa)) {
       const map = new Map();
