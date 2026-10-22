@@ -17,17 +17,17 @@ export const CloudDbService = {
           return {
             url: parsed.url || DEFAULT_SUPABASE_URL,
             anonKey: parsed.anonKey || DEFAULT_SUPABASE_ANON_KEY,
-            enabled: Boolean(parsed.user_explicitly_enabled === true),
+            enabled: parsed.enabled !== undefined ? Boolean(parsed.enabled) : true,
             lastSync: parsed.lastSync || null
           };
         }
       }
     } catch (e) {}
-    // Default to LOCAL STORAGE MODE (high performance, offline client-side IndexedDB)
+    // Default to Supabase Cloud Database ENABLED so all browsers sync automatically in real-time
     return {
       url: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || DEFAULT_SUPABASE_URL,
       anonKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || DEFAULT_SUPABASE_ANON_KEY,
-      enabled: false,
+      enabled: true,
       lastSync: null
     };
   },
@@ -37,7 +37,7 @@ export const CloudDbService = {
     try {
       const toSave = {
         ...config,
-        user_explicitly_enabled: Boolean(config.enabled)
+        enabled: Boolean(config.enabled)
       };
       localStorage.setItem(CONFIG_KEY, JSON.stringify(toSave));
     } catch (e) {}

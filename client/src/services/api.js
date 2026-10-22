@@ -2885,7 +2885,7 @@ const newSh = {
       bank_name: data.bank_name || '',
       bank_account: data.bank_account || '',
       ifsc_code: data.ifsc_code || '',
-      approval_status: data.approval_status || 'Application Submitted',
+      approval_status: data.approval_status || 'Application Submitted (ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ)',
       remarks: data.remarks || '',
       created_at: new Date().toISOString()
     };
@@ -2896,16 +2896,14 @@ const newSh = {
       CloudDbService.saveCollectionItem('enrollments', newE.enrollment_id, newE)
         .catch(err => console.warn('Cloud DB addEnrollment error:', err));
     }
-    // If added with approved or share issued status, ensure added to Master Sheet!
-    const isIssuedOrApprovedNew = (newE.approval_status || '').includes('Approved') ||
+    // Only promote to Master Sheet if explicitly approved/issued WITH a valid assigned share_no!
+    const isIssuedOrApprovedNew = ((newE.approval_status || '').includes('Approved') ||
                                   (newE.approval_status || '').includes('Issued') ||
                                   (newE.approval_status || '').includes('Active') ||
                                   (newE.approval_status || '').includes('ಮಂಜೂರು') ||
-                                  (newE.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ');
+                                  (newE.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ')) &&
+                                  Boolean(newE.share_no && String(newE.share_no).trim());
     if (isIssuedOrApprovedNew) {
-      if (!newE.share_no) {
-        newE.share_no = await this.getNextAvailableShareNumber();
-      }
       await this.ensureEnrollmentInMaster(newE);
     }
     return { success: true, enrollment_id: newE.enrollment_id, data: newE };
@@ -3133,6 +3131,10 @@ const newSh = {
       signature_url: item.signature || '',
       thumb_impression: item.thumb_impression || '',
       thumb_url: item.thumb_impression || '',
+      bank_name: item.bank_name || '',
+      bank_account: item.bank_account || '',
+      bank_acc_no: item.bank_account || '',
+      ifsc_code: item.ifsc_code || '',
       date_of_joining: item.date || new Date().toLocaleDateString('en-GB'),
       book_no: item.tharava_no ? `ಠರಾವು-${item.tharava_no}` : 'B.No: 1',
       notes: `ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ: ${item.enrollment_id || ''}, ರಶೀದಿ ನಂ: ${item.receipt_no || '—'}. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`
@@ -3170,7 +3172,7 @@ const newSh = {
   },
 
   // 1. Approve New Shareholder Enrollment by Admin
-  async approveEnrollmentByAdmin({ enrollmentId, shareNo, adminUser = 'Admin', tharavaNo, tharavaDate, remarks }) {
+  async approveEnrollmentByAdmin({ enrollmentId, shareNo, adminUser = 'Admin', tharavaNo, tharavaDate, remarks, photo, signature, thumb_impression, bank_name, bank_account, ifsc_code }) {
     await ensureDBReady();
     const item = mockEnrollments.find(e => String(e.id) === String(enrollmentId) || e.enrollment_id === enrollmentId);
     if (!item) return { success: false, message: 'Enrollment record not found' };
@@ -3185,6 +3187,13 @@ const newSh = {
     if (existingSh && existingSh.shareholder_name !== item.full_name) {
       return { success: false, message: `ಶೇರು ಸಂಖ್ಯೆ ${assignedShareNo} ಈಗಾಗಲೇ "${existingSh.shareholder_name}" ಅವರಿಗೆ ನಿಯೋಜಿತವಾಗಿದೆ (Already assigned)` };
     }
+
+    if (photo !== undefined) item.photo = photo;
+    if (signature !== undefined) item.signature = signature;
+    if (thumb_impression !== undefined) item.thumb_impression = thumb_impression;
+    if (bank_name !== undefined) item.bank_name = bank_name;
+    if (bank_account !== undefined) item.bank_account = bank_account;
+    if (ifsc_code !== undefined) item.ifsc_code = ifsc_code;
 
     // Auto resolve circle from place
     const resolvedCircle = this.resolveCircleForPlace(item.place);
@@ -3670,7 +3679,7 @@ const newSh = {
         photo: r.photo || '',
         signature: r.signature || '',
         thumb_impression: r.thumb_impression || '',
-        approval_status: r.approval_status || (r.share_no ? 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)' : 'Board Approved (ಠರಾವು ಮಂಜೂರು)'),
+        approval_status: r.approval_status || (r.share_no ? 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)' : 'Application Submitted (ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ)'),
         created_at: new Date().toISOString()
       };
     });

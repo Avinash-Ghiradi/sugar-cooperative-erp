@@ -4,12 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import {
   X, Save, User, MapPin, Coins, Receipt, FileText, CheckCircle2,
   Calendar, Phone, CreditCard, Camera, Upload, Trash2, Building,
-  Stamp, PenTool, Hash, Info
+  Stamp, PenTool, Hash, Info, ShieldCheck, ArrowRight, ArrowLeft
 } from 'lucide-react';
 
-export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRecord }) {
-  const { showToast } = useAuth();
-  const [activeTab, setActiveTab] = useState('member'); // 'member' | 'shares' | 'tharavu' | 'kyc'
+export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRecord, mode = 'register' }) {
+  const { user, showToast } = useAuth();
+  const [activeTab, setActiveTab] = useState(mode === 'approve' ? 'tharavu' : 'member');
   const [loading, setLoading] = useState(false);
   const [villageSuggestions, setVillageSuggestions] = useState([]);
 
@@ -36,12 +36,16 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
     bank_name: '',
     bank_account: '',
     ifsc_code: '',
-    approval_status: 'Board Approved (ಠರಾವು ಮಂಜೂರು)',
+    approval_status: mode === 'approve' ? 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)' : 'Application Submitted (ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ)',
     remarks: ''
   });
 
   useEffect(() => {
-    if (editRecord) {
+    if (!isOpen) return;
+
+    if (mode === 'approve' && editRecord) {
+      // APPROVAL MODE: Steps 3 & 4
+      setActiveTab('tharavu');
       setFormData({
         ...editRecord,
         no_shares: editRecord.no_shares || 1,
@@ -50,9 +54,38 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
         total_amount: editRecord.total_amount || 24570,
         category: editRecord.category || 'ಅ ವರ್ಗ',
         taluk: editRecord.taluk || 'ಚಡಚಣ',
-        dist: editRecord.dist || 'ವಿಜಯಪುರ'
+        dist: editRecord.dist || 'ವಿಜಯಪುರ',
+        tharava_no: editRecord.tharava_no || '05(8)',
+        tharava_date: editRecord.tharava_date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
+        approval_status: 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)'
+      });
+
+      // Auto-suggest next available share certificate number if not already assigned
+      if (!editRecord.share_no) {
+        ApiService.getNextAvailableShareNumber().then(nextNo => {
+          setFormData(prev => ({
+            ...prev,
+            share_no: prev.share_no || nextNo
+          }));
+        });
+      }
+    } else if (editRecord) {
+      // EDIT MODE
+      setActiveTab(mode === 'register' ? 'member' : 'member');
+      setFormData({
+        ...editRecord,
+        no_shares: editRecord.no_shares || 1,
+        share_amount: editRecord.share_amount || 24000,
+        admission_fee: editRecord.admission_fee || 570,
+        total_amount: editRecord.total_amount || 24570,
+        category: editRecord.category || 'ಅ ವರ್ಗ',
+        taluk: editRecord.taluk || 'ಚಡಚಣ',
+        dist: editRecord.dist || 'ವಿಜಯಪುರ',
+        approval_status: editRecord.approval_status || 'Application Submitted (ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ)'
       });
     } else {
+      // NEW REGISTRATION MODE: Steps 1 & 2 ONLY
+      setActiveTab('member');
       setFormData({
         date: new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
         full_name: '',
@@ -76,11 +109,10 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
         bank_name: '',
         bank_account: '',
         ifsc_code: '',
-        approval_status: 'Board Approved (ಠರಾವು ಮಂಜೂರು)',
+        approval_status: 'Application Submitted (ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ)',
         remarks: ''
       });
     }
-    setActiveTab('member');
 
     const loadVillages = async () => {
       const vRes = await ApiService.getVillages();
@@ -89,7 +121,7 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
       }
     };
     loadVillages();
-  }, [editRecord, isOpen]);
+  }, [editRecord, isOpen, mode]);
 
   // Handle Share count change -> Auto-calculate Share Amount & Admission Fee
   const handleShareCountChange = (shares) => {
@@ -163,8 +195,56 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
     reader.readAsDataURL(file);
   };
 
+  // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 1. APPROVAL MODE SUBMIT (Phase 2: Steps 3 & 4)
+    if (mode === 'approve') {
+      if (!formData.share_no?.trim()) {
+        showToast('ದಯವಿಟ್ಟು ಅಧಿಕೃತ ಶೇರು ಪ್ರಮಾಣಪತ್ರ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ (Enter Share No)', 'error');
+        setActiveTab('tharavu');
+        return;
+      }
+      if (!formData.tharava_no?.trim()) {
+        showToast('ದಯವಿಟ್ಟು ಮಂಡಳಿ ಠರಾವು ಸಂಖ್ಯೆ ನಮೂದಿಸಿ (Enter Tharava No)', 'error');
+        setActiveTab('tharavu');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await ApiService.approveEnrollmentByAdmin({
+          enrollmentId: editRecord?.enrollment_id || editRecord?.id,
+          shareNo: formData.share_no.trim(),
+          adminUser: user?.name || 'Admin',
+          tharavaNo: formData.tharava_no || '05(8)',
+          tharavaDate: formData.tharava_date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
+          remarks: formData.remarks || '',
+          photo: formData.photo || '',
+          signature: formData.signature || '',
+          thumb_impression: formData.thumb_impression || '',
+          bank_name: formData.bank_name || '',
+          bank_account: formData.bank_account || '',
+          ifsc_code: formData.ifsc_code || ''
+        });
+
+        if (res && res.success) {
+          showToast(`ಶೇರು ನಂ. #${res.share_no} ಯಶಸ್ವಿಯಾಗಿ ಕಾರ್ಖಾನೆಯ ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಪಟ್ಟಿಗೆ ಸೇರಿಸಲಾಗಿದೆ!`);
+          onSuccess();
+          onClose();
+        } else {
+          showToast(res?.message || 'ಅನುಮೋದನೆ ವಿಫಲವಾಗಿದೆ', 'error');
+        }
+      } catch (err) {
+        showToast('ದೋಷ ಸಂಭವಿಸಿದೆ: ' + err.message, 'error');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // 2. REGISTRATION MODE SUBMIT (Phase 1: Steps 1 & 2 ONLY)
     if (!formData.full_name?.trim()) {
       showToast('ದಯವಿಟ್ಟು ಶೇರುದಾರರ ಪೂರ್ಣ ಹೆಸರು ನಮೂದಿಸಿ (Enter Full Name)', 'error');
       setActiveTab('member');
@@ -179,12 +259,13 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
     setLoading(true);
     try {
       const submissionData = { ...formData };
-      const isIssuedOrApproved = (submissionData.approval_status || '').includes('Issued') ||
-                                 (submissionData.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ') ||
-                                 (submissionData.approval_status || '').includes('Approved') ||
-                                 (submissionData.approval_status || '').includes('ಮಂಜೂರು');
-      if (isIssuedOrApproved && !submissionData.share_no?.trim()) {
-        submissionData.share_no = await ApiService.getNextAvailableShareNumber();
+
+      if (mode === 'register') {
+        // Enforce Phase 1 constraints: Pending Application ONLY!
+        submissionData.approval_status = 'Application Submitted (ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ)';
+        submissionData.share_no = '';
+        submissionData.tharava_no = '';
+        submissionData.tharava_date = '';
       }
 
       let res;
@@ -195,7 +276,11 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
       }
 
       if (res && res.success) {
-        showToast(editRecord ? 'ನೋಂದಣಿ ದಾಖಲೆ ನವೀಕರಿಸಲಾಗಿದೆ!' : 'ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ!');
+        showToast(
+          editRecord
+            ? 'ನೋಂದಣಿ ದಾಖಲೆ ನವೀಕರಿಸಲಾಗಿದೆ!'
+            : 'ಅರ್ಜಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ನೋಂದಾಯಿಸಲಾಗಿದೆ! (ಮಂಡಳಿ ಅನುಮೋದನೆಗೆ ಬಾಕಿ ಇದೆ)'
+        );
         onSuccess();
         onClose();
       } else {
@@ -217,18 +302,42 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-950 border border-emerald-700/60 flex items-center justify-center text-emerald-400 font-bold shadow-md shadow-emerald-950">
-              <Coins className="w-5 h-5" />
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold shadow-md ${
+              mode === 'approve'
+                ? 'bg-amber-950 border border-amber-600/60 text-amber-400 shadow-amber-950'
+                : 'bg-emerald-950 border border-emerald-700/60 text-emerald-400 shadow-emerald-950'
+            }`}>
+              {mode === 'approve' ? <ShieldCheck className="w-5 h-5" /> : <Coins className="w-5 h-5" />}
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                <span>{editRecord ? 'ಶೇರುದಾರರ ನೋಂದಣಿ ತಿದ್ದುಪಡಿ (Edit Enrollment)' : 'ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ (New Shareholder Enrollment)'}</span>
-                <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                  ಅಧಿಕೃತ 15 ಕಾಲಂ ನಮೂನೆ
-                </span>
+                {mode === 'approve' ? (
+                  <>
+                    <span>ಆಡಳಿತ ಮಂಡಳಿ ಅನುಮೋದನೆ & ಶೇರು ವಿತರಣೆ (Board Approval & Allotment)</span>
+                    <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-amber-950 text-amber-300 border border-amber-800">
+                      ಹಂತ 3 & 4 (Approval Phase)
+                    </span>
+                  </>
+                ) : editRecord && mode === 'all' ? (
+                  <>
+                    <span>ಶೇರುದಾರರ ದಾಖಲೆ ತಿದ್ದುಪಡಿ (Edit Shareholder Record)</span>
+                    <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                      ಅಧಿಕೃತ 15 ಕಾಲಂ ನಮೂನೆ
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span>ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ನೋಂದಣಿ (New Shareholder Registration)</span>
+                    <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                      ಹಂತ 1 & 2 (ಅರ್ಜಿ ಹಂತ)
+                    </span>
+                  </>
+                )}
               </h2>
               <p className="text-xs text-slate-400">
-                ಕಾರ್ಖಾನೆಯ ಠರಾವು, ಶೇರು ಮೊತ್ತ (₹24,000/ಶೇರು) ಮತ್ತು ಪ್ರವೇಶ ಶುಲ್ಕ (₹570/ಶೇರು) ನೋಂದಣಿ
+                {mode === 'approve'
+                  ? 'ಮಂಡಳಿ ಠರಾವು, ಅಧಿಕೃತ ಶೇರು ಸಂಖ್ಯೆ ನಿಯೋಜನೆ ಮತ್ತು ಫೋಟೋ/ಸಹಿ/ಬ್ಯಾಂಕ್ ವಿವರಗಳ ನಮೂದು'
+                  : 'ಕಾರ್ಖಾನೆಯ ಶೇರು ಮೊತ್ತ (₹24,000/ಶೇರು) ಮತ್ತು ಪ್ರವೇಶ ಶುಲ್ಕ (₹570/ಶೇರು) ಅರ್ಜಿ ನೋಂದಣಿ'}
               </p>
             </div>
           </div>
@@ -240,52 +349,99 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
           </button>
         </div>
 
-        {/* Tab Bar */}
+        {/* In Approval Mode: Applicant Summary Card */}
+        {mode === 'approve' && (
+          <div className="bg-slate-950/80 border-b border-slate-800 px-6 py-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
+              <div>
+                <span className="text-slate-500 block text-[10px]">ಅರ್ಜಿದಾರರ ಹೆಸರು</span>
+                <span className="font-bold text-slate-200 truncate block">{formData.full_name || '—'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">ಸ್ಥಳ / ಗ್ರಾಮ</span>
+                <span className="font-semibold text-slate-300 truncate block">{formData.place}, {formData.taluk}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">ಶೇರುಗಳ ಸಂಖ್ಯೆ</span>
+                <span className="font-bold text-emerald-400 block">{formData.no_shares} ಶೇರು ({formData.category})</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">ಒಟ್ಟು ಪಾವತಿ</span>
+                <span className="font-extrabold text-teal-400 block">₹{Number(formData.total_amount).toLocaleString()}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">ರಶೀದಿ ನಂ / ದಿನಾಂಕ</span>
+                <span className="font-mono text-slate-300 block">{formData.receipt_no ? `#${formData.receipt_no}` : '—'} ({formData.date})</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px]">ಅರ್ಜಿ ID</span>
+                <span className="font-mono text-sky-400 font-semibold block">{editRecord?.enrollment_id || editRecord?.id}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Bar: Controlled by Mode */}
         <div className="flex border-b border-slate-800 bg-slate-950/40 px-6 gap-2 pt-2 text-xs overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveTab('member')}
-            className={`pb-2.5 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'member'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <User className="w-4 h-4" /> 1. ಸದಸ್ಯರ ವಿವರಗಳು (Member)
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('shares')}
-            className={`pb-2.5 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'shares'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Coins className="w-4 h-4" /> 2. ಶೇರು & ಶುಲ್ಕ ವಿವರ (Shares & Fees)
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('tharavu')}
-            className={`pb-2.5 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'tharavu'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Stamp className="w-4 h-4" /> 3. ಮಂಡಳಿ ಠರಾವು (Board Resolution)
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('kyc')}
-            className={`pb-2.5 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'kyc'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Camera className="w-4 h-4" /> 4. ಫೋಟೋ & ಸಹಿ (KYC & Photo)
-          </button>
+          {/* STEP 1: Member (Shown in Register & All modes) */}
+          {(mode === 'register' || mode === 'all') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('member')}
+              className={`pb-2.5 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'member'
+                  ? 'border-emerald-500 text-emerald-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <User className="w-4 h-4" /> 1. ಸದಸ್ಯರ ವಿವರಗಳು (Member)
+            </button>
+          )}
+
+          {/* STEP 2: Shares & Fees (Shown in Register & All modes) */}
+          {(mode === 'register' || mode === 'all') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('shares')}
+              className={`pb-2.5 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'shares'
+                  ? 'border-emerald-500 text-emerald-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Coins className="w-4 h-4" /> 2. ಶೇರು & ಶುಲ್ಕ ವಿವರ (Shares & Fees)
+            </button>
+          )}
+
+          {/* STEP 3: Board Resolution (Shown in Approve & All modes) */}
+          {(mode === 'approve' || mode === 'all') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('tharavu')}
+              className={`pb-2.5 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'tharavu'
+                  ? 'border-emerald-500 text-emerald-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Stamp className="w-4 h-4" /> 3. ಮಂಡಳಿ ಠರಾವು & ಶೇರು ಸಂಖ್ಯೆ (Board Resolution)
+            </button>
+          )}
+
+          {/* STEP 4: KYC & Photos (Shown in Approve & All modes) */}
+          {(mode === 'approve' || mode === 'all') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('kyc')}
+              className={`pb-2.5 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'kyc'
+                  ? 'border-emerald-500 text-emerald-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Camera className="w-4 h-4" /> 4. ಫೋಟೋ, ಸಹಿ & ಬ್ಯಾಂಕ್ (KYC & Photos)
+            </button>
+          )}
         </div>
 
         {/* Modal Form Body */}
@@ -329,72 +485,57 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                       required
                       value={formData.full_name}
                       onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                      placeholder="ಉದಾ: ಧೋಳೇಶ ಧನಸಿಂಗ ಚವ್ಹಾಣ"
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 font-medium outline-none text-sm"
+                      placeholder="ಕನ್ನಡದಲ್ಲಿ ಅಥವಾ ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ಪೂರ್ಣ ಹೆಸರು"
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 font-semibold outline-none"
                     />
                   </div>
 
-                  {/* Place */}
-                  <div>
+                  {/* Place / Village (with Suggestions) */}
+                  <div className="relative">
                     <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" /> Place (ಸ್ಥಳ / ಊರು) *
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" /> Place (ಸ್ಥಳ / ಗ್ರಾಮ) *
                     </label>
                     <input
                       type="text"
                       required
-                      list="new-sh-places-list"
                       value={formData.place}
                       onChange={(e) => handlePlaceChange(e.target.value)}
-                      placeholder="ಉದಾ: ಚಣೆಗಾಂವ / ಗೋಡಿಹಾಳ"
+                      placeholder="ಗ್ರಾಮದ ಹೆಸರು ಟೈಪ್ ಮಾಡಿ..."
                       className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none"
                     />
-                    <datalist id="new-sh-places-list">
-                      {villageSuggestions.map(v => (
-                        <option key={v.village_id || v.name} value={v.name}>
-                          {v.name} {v.taluk ? `(${v.taluk})` : ''}
-                        </option>
-                      ))}
-                    </datalist>
+                    {villageSuggestions.length > 0 && formData.place.trim() && (
+                      <datalist id="village-list">
+                        {villageSuggestions.map((v, i) => (
+                          <option key={i} value={v.name} />
+                        ))}
+                      </datalist>
+                    )}
                   </div>
 
                   {/* Taluk */}
                   <div>
                     <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
-                      <Building className="w-3.5 h-3.5 text-slate-400" /> Taluk (ತಾಲೂಕು)
+                      <Building className="w-3.5 h-3.5 text-slate-400" /> Taluk (ತಾಲ್ಲೂಕು)
                     </label>
                     <input
                       type="text"
                       value={formData.taluk}
                       onChange={(e) => setFormData({ ...formData, taluk: e.target.value })}
-                      placeholder="ಉದಾ: ಚಡಚಣ / ಇಂಡಿ"
+                      placeholder="ಚಡಚಣ / ಇಂಡಿ"
                       className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none"
                     />
                   </div>
 
-                  {/* Dist */}
+                  {/* District */}
                   <div>
                     <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" /> Dist (ಜಿಲ್ಲೆ)
+                      <Building className="w-3.5 h-3.5 text-slate-400" /> Dist (ಜಿಲ್ಲೆ)
                     </label>
                     <input
                       type="text"
                       value={formData.dist}
                       onChange={(e) => setFormData({ ...formData, dist: e.target.value })}
-                      placeholder="ಉದಾ: ವಿಜಯಪುರ"
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none"
-                    />
-                  </div>
-
-                  {/* Mobile No */}
-                  <div>
-                    <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-slate-400" /> Mobile No (ಮೊಬೈಲ್ ಸಂಖ್ಯೆ)
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.mobile_no}
-                      onChange={(e) => setFormData({ ...formData, mobile_no: e.target.value })}
-                      placeholder="10-digit Mobile"
+                      placeholder="ವಿಜಯಪುರ"
                       className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none"
                     />
                   </div>
@@ -402,79 +543,93 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                   {/* Aadhaar No */}
                   <div>
                     <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
-                      <CreditCard className="w-3.5 h-3.5 text-slate-400" /> Aadhar No (ಆಧಾರ್ ಸಂಖ್ಯೆ)
+                      <CreditCard className="w-3.5 h-3.5 text-slate-400" /> Aadhaar No (ಆಧಾರ್ ಕಾರ್ಡ್ ನಂ)
                     </label>
                     <input
                       type="text"
+                      maxLength={14}
                       value={formData.aadhaar_no}
                       onChange={(e) => setFormData({ ...formData, aadhaar_no: e.target.value })}
-                      placeholder="XXXX XXXX XXXX"
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none font-mono"
+                      placeholder="12 ಅಂಕಿಗಳ ಆಧಾರ್ ಸಂಖ್ಯೆ"
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none"
                     />
                   </div>
 
-                  {/* Category */}
+                  {/* Mobile No */}
                   <div>
                     <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
-                      <Hash className="w-3.5 h-3.5 text-slate-400" /> Category (ವರ್ಗ) *
+                      <Phone className="w-3.5 h-3.5 text-slate-400" /> Mobile No (ಮೊಬೈಲ್ ನಂ)
                     </label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none cursor-pointer font-medium"
-                    >
-                      <option value="ಅ ವರ್ಗ">ಅ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Class A)</option>
-                      <option value="ಬ ವರ್ಗ">ಬ - ವರ್ಗ : ಸಹಕಾರ ಸಂಘ/ ಸಂಘ ಸಂಸ್ಥೆ (Class B)</option>
-                      <option value="ಕ ವರ್ಗ">ಕ - ವರ್ಗ (Class C)</option>
-                      <option value="ಡ ವರ್ಗ">ಡ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರಲ್ಲದ ಸದಸ್ಯ (Class D)</option>
-                    </select>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      value={formData.mobile_no}
+                      onChange={(e) => setFormData({ ...formData, mobile_no: e.target.value })}
+                      placeholder="10 ಅಂಕಿಗಳ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ"
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Next step hint */}
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-slate-500">ಮುಂದಿನ ಹಂತ: ಶೇರು ಮೊತ್ತ ಮತ್ತು ಪ್ರವೇಶ ಶುಲ್ಕ ವಿವರ</span>
+              {/* Navigation button */}
+              <div className="flex justify-end pt-2">
                 <button
                   type="button"
                   onClick={() => setActiveTab('shares')}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-all shadow-md shadow-emerald-950"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-md shadow-emerald-950 flex items-center gap-2 cursor-pointer"
                 >
-                  ಮುಂದೆ (Next) ➔
+                  <span>ಮುಂದೆ: ಶೇರು & ಶುಲ್ಕ ವಿವರ (Next: Shares & Fees)</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           )}
 
-          {/* TAB 2: Shares, Fees and Calculation */}
+          {/* TAB 2: Shares & Fees */}
           {activeTab === 'shares' && (
             <div className="space-y-4 animate-in fade-in duration-150">
               <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <Coins className="w-4 h-4 text-emerald-400" />
-                    <span>ಶೇರು ಮತ್ತು ಪ್ರವೇಶ ಶುಲ್ಕದ ಲೆಕ್ಕಾಚಾರ (Statutory Share Amount & Fees)</span>
+                    <span>ಶೇರು ಮತ್ತು ಪ್ರವೇಶ ಶುಲ್ಕ ವಿವರಗಳು (Shares & Statutory Fees)</span>
                   </h3>
-                  <div className="flex items-center gap-2 text-[11px] bg-slate-900 px-3 py-1 rounded-xl border border-slate-800 text-emerald-400">
-                    <Info className="w-3.5 h-3.5" /> 1 ಶೇರು = ₹24,000 + ₹570 ಪ್ರವೇಶ ಶುಲ್ಕ = ₹24,570
-                  </div>
+                  <span className="text-[11px] text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-800">
+                    ₹24,000 / ಶೇರು • ಶುಲ್ಕ ₹570 / ಶೇರು
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* No. of Shares */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* No of Shares */}
                   <div>
                     <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
                       <Hash className="w-3.5 h-3.5 text-slate-400" /> No. Shares (ಶೇರುಗಳ ಸಂಖ್ಯೆ) *
                     </label>
                     <input
                       type="number"
-                      min="1"
-                      max="100"
+                      min={1}
+                      max={100}
                       required
                       value={formData.no_shares}
                       onChange={(e) => handleShareCountChange(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 font-bold text-sm outline-none text-center"
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 font-bold outline-none"
                     />
+                  </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="block text-slate-400 font-medium mb-1">Category (ವರ್ಗ) *</label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none cursor-pointer"
+                    >
+                      <option value="ಅ ವರ್ಗ">ಅ ವರ್ಗ (A - Class)</option>
+                      <option value="ಬ ವರ್ಗ">ಬ ವರ್ಗ (B - Class)</option>
+                      <option value="ಕ ವರ್ಗ">ಕ ವರ್ಗ (C - Class)</option>
+                      <option value="ಡ ವರ್ಗ">ಡ ವರ್ಗ (D - Class)</option>
+                    </select>
                   </div>
 
                   {/* Share Amount */}
@@ -494,7 +649,7 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                           total_amount: amt + (parseFloat(prev.admission_fee) || 0)
                         }));
                       }}
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-amber-400 font-bold text-sm outline-none"
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-emerald-400 font-bold text-sm outline-none"
                     />
                   </div>
 
@@ -531,7 +686,7 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                   </div>
 
                   {/* Receipt No */}
-                  <div className="sm:col-span-2">
+                  <div>
                     <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
                       <Receipt className="w-3.5 h-3.5 text-slate-400" /> Reciept No (ರಶೀದಿ ಸಂಖ್ಯೆ)
                     </label>
@@ -545,7 +700,7 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                   </div>
 
                   {/* Remarks */}
-                  <div className="sm:col-span-2">
+                  <div className="sm:col-span-3">
                     <label className="block text-slate-400 font-medium mb-1">ಷರಾ (Remarks / Notes)</label>
                     <input
                       type="text"
@@ -563,17 +718,21 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                 <button
                   type="button"
                   onClick={() => setActiveTab('member')}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-medium transition-all"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-medium transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  ◀ ಹಿಂದಕ್ಕೆ (Back)
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>◀ ಹಿಂದಕ್ಕೆ: ಸದಸ್ಯರ ವಿವರಗಳು</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('tharavu')}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-all shadow-md shadow-emerald-950"
-                >
-                  ಮುಂದೆ: ಮಂಡಳಿ ಠರಾವು (Next) ➔
-                </button>
+
+                {mode === 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('tharavu')}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-all shadow-md shadow-emerald-950 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>ಮುಂದೆ: ಮಂಡಳಿ ಠರಾವು ➔</span>
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -587,8 +746,8 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                     <Stamp className="w-4 h-4 text-emerald-400" />
                     <span>ಆಡಳಿತ ಮಂಡಳಿ ಠರಾವು ವಿವರಗಳು (Board Resolution & Allotment)</span>
                   </h3>
-                  <span className="text-[11px] text-amber-400 bg-amber-950/40 px-2.5 py-0.5 rounded-full border border-amber-800/40">
-                    ಮಂಡಳಿ ಮಂಜೂರಾತಿ
+                  <span className="text-[11px] text-amber-400 bg-amber-950/40 px-2.5 py-0.5 rounded-full border border-amber-800/40 font-semibold">
+                    ಮಂಡಳಿ ಮಂಜೂರಾತಿ ಹಂತ (Approval Phase)
                   </span>
                 </div>
 
@@ -596,76 +755,72 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                   {/* Tharava No */}
                   <div>
                     <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
-                      <Stamp className="w-3.5 h-3.5 text-slate-400" /> Tharava No (ಠರಾವು ಸಂಖ್ಯೆ)
+                      <Stamp className="w-3.5 h-3.5 text-slate-400" /> Tharava No (ಠರಾವು ಸಂಖ್ಯೆ) *
                     </label>
                     <input
                       type="text"
+                      required
                       value={formData.tharava_no}
                       onChange={(e) => setFormData({ ...formData, tharava_no: e.target.value })}
                       placeholder="ಉದಾ: 05(8)"
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 font-mono outline-none"
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 font-mono font-bold outline-none"
                     />
                   </div>
 
                   {/* Tharava Date */}
                   <div>
                     <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" /> Tharava Date (ಠರಾವು ದಿನಾಂಕ)
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" /> Tharava Date (ಠರಾವು ದಿನಾಂಕ) *
                     </label>
                     <input
                       type="text"
+                      required
                       value={formData.tharava_date}
                       onChange={(e) => setFormData({ ...formData, tharava_date: e.target.value })}
-                      placeholder="DD-MM-YYYY (ಉದಾ: 10-08-22)"
+                      placeholder="DD-MM-YYYY (ಉದಾ: 22-10-2026)"
                       className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none"
                     />
                   </div>
 
-                  {/* Share No */}
+                  {/* Share No - Prominently highlighted */}
                   <div>
-                    <label className="block text-slate-400 font-medium mb-1 flex items-center gap-1">
-                      <Hash className="w-3.5 h-3.5 text-slate-400" /> Share No (ಹಂಚಿಕೆಯಾದ ಶೇರು ಸಂಖ್ಯೆ)
+                    <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1">
+                      <Hash className="w-3.5 h-3.5 text-emerald-400" /> Allotted Share No (ಹಂಚಿಕೆಯಾದ ಶೇರು ಸಂಖ್ಯೆ) *
                     </label>
-                    <input
-                      type="text"
-                      value={formData.share_no}
-                      onChange={(e) => setFormData({ ...formData, share_no: e.target.value })}
-                      placeholder="ಖಾಲಿ ಬಿಡಬಹುದು (ಅಥವಾ ಸರ್ಟಿಫಿಕೇಟ್ ನಂ)"
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-emerald-400 font-mono font-bold outline-none"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={formData.share_no}
+                        onChange={(e) => setFormData({ ...formData, share_no: e.target.value })}
+                        placeholder="ಉದಾ: 18011"
+                        className="w-full bg-emerald-950/60 border-2 border-emerald-500 rounded-xl px-3 py-2 text-emerald-300 font-mono font-extrabold text-base outline-none shadow-sm"
+                      />
+                      <span className="absolute right-3 top-2.5 text-[10px] text-emerald-400 font-semibold bg-emerald-900/60 px-1.5 py-0.5 rounded">
+                        ಅಧಿಕೃತ ಶೇರು
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Approval Status */}
+                  {/* Approval Status Selector */}
                   <div className="sm:col-span-3">
                     <label className="block text-slate-400 font-medium mb-1">ಸ್ಥಿತಿ (Enrollment Workflow Status)</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {[
-                        { id: 'Application Submitted', label: 'ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ (Application Submitted)' },
-                        { id: 'Board Approved (ಠರಾವು ಮಂಜೂರು)', label: 'ಠರಾವು ಮಂಜೂರಾಗಿದೆ (Board Approved)' },
-                        { id: 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)', label: 'ಶೇರು ವಿತರಿಸಲಾಗಿದೆ (Share Certificate Issued)' }
+                        { id: 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)', label: 'ಶೇರು ಪ್ರಮಾಣಪತ್ರ ವಿತರಿಸಲಾಗಿದೆ (Share Certificate Issued)' },
+                        { id: 'Board Approved (ಠರಾವು ಮಂಜೂರು)', label: 'ಠರಾವು ಮಂಜೂರಾಗಿದೆ (Board Approved)' }
                       ].map((st) => {
                         const isSelected = formData.approval_status === st.id ||
-                          (st.id.includes('Issued') && (formData.approval_status || '').includes('Issued')) ||
-                          (st.id.includes('Approved') && !st.id.includes('Issued') && (formData.approval_status || '').includes('Approved') && !(formData.approval_status || '').includes('Issued'));
+                          (st.id.includes('Issued') && (formData.approval_status || '').includes('Issued'));
 
                         return (
                           <button
                             key={st.id}
                             type="button"
-                            onClick={async () => {
-                              let nextShare = formData.share_no;
-                              if (st.id.includes('Issued') && !nextShare) {
-                                nextShare = await ApiService.getNextAvailableShareNumber();
-                              }
-                              setFormData(prev => ({
-                                ...prev,
-                                approval_status: st.id,
-                                share_no: prev.share_no || nextShare
-                              }));
-                            }}
-                            className={`p-2.5 rounded-xl text-left border transition-all text-xs flex items-center justify-between ${
+                            onClick={() => setFormData(prev => ({ ...prev, approval_status: st.id }))}
+                            className={`p-3 rounded-xl text-left border transition-all text-xs flex items-center justify-between cursor-pointer ${
                               isSelected
-                                ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300 font-semibold shadow-sm'
+                                ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300 font-bold shadow-sm'
                                 : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
                             }`}
                           >
@@ -676,25 +831,43 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                       })}
                     </div>
                   </div>
+
+                  {/* Remarks */}
+                  <div className="sm:col-span-3">
+                    <label className="block text-slate-400 font-medium mb-1">ಮಂಡಳಿ ಠರಾವು ಷರಾ (Resolution Remarks)</label>
+                    <input
+                      type="text"
+                      value={formData.remarks}
+                      onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+                      placeholder="ಉದಾ: ಆಡಳಿತ ಮಂಡಳಿ ಸಭೆಯಲ್ಲಿ ಅಧಿಕೃತ ಅನುಮೋದನೆ ನೀಡಲಾಗಿದೆ"
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Navigation buttons */}
               <div className="flex justify-between items-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('shares')}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-medium transition-all"
-                >
-                  ◀ ಹಿಂದಕ್ಕೆ (Back)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('kyc')}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-all shadow-md shadow-emerald-950"
-                >
-                  ಮುಂದೆ: ಫೋಟೋ & ಸಹಿ (Next) ➔
-                </button>
+                {mode === 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('shares')}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-medium transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>◀ ಹಿಂದಕ್ಕೆ: ಶೇರು & ಶುಲ್ಕ ವಿವರ</span>
+                  </button>
+                )}
+                <div className="ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('kyc')}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-md shadow-emerald-950 flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>ಮುಂದೆ: ಫೋಟೋ, ಸಹಿ & ಬ್ಯಾಂಕ್ (Next)</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -724,7 +897,7 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                           <button
                             type="button"
                             onClick={() => setFormData({ ...formData, photo: '' })}
-                            className="absolute top-1 right-1 p-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full transition-colors"
+                            className="absolute top-1 right-1 p-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -750,14 +923,14 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                   {/* Signature Upload */}
                   <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 flex flex-col items-center text-center space-y-2">
                     <span className="font-semibold text-slate-300">ಸಹಿ (Signature)</span>
-                    <div className="w-28 h-32 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden relative shadow-inner p-2">
+                    <div className="w-36 h-20 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden relative shadow-inner">
                       {formData.signature ? (
                         <>
-                          <img src={formData.signature} alt="Signature" className="max-w-full max-h-full object-contain" />
+                          <img src={formData.signature} alt="Signature" className="w-full h-full object-contain p-1" />
                           <button
                             type="button"
                             onClick={() => setFormData({ ...formData, signature: '' })}
-                            className="absolute top-1 right-1 p-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full transition-colors"
+                            className="absolute top-1 right-1 p-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -783,14 +956,14 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                   {/* Thumb Impression Upload */}
                   <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 flex flex-col items-center text-center space-y-2">
                     <span className="font-semibold text-slate-300">ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು (Thumb)</span>
-                    <div className="w-28 h-32 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden relative shadow-inner p-2">
+                    <div className="w-24 h-24 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden relative shadow-inner">
                       {formData.thumb_impression ? (
                         <>
-                          <img src={formData.thumb_impression} alt="Thumb Impression" className="max-w-full max-h-full object-contain" />
+                          <img src={formData.thumb_impression} alt="Thumb" className="w-full h-full object-contain p-1" />
                           <button
                             type="button"
                             onClick={() => setFormData({ ...formData, thumb_impression: '' })}
-                            className="absolute top-1 right-1 p-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full transition-colors"
+                            className="absolute top-1 right-1 p-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -814,7 +987,7 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                   </div>
                 </div>
 
-                {/* Bank Account Info (Optional) */}
+                {/* Bank Account Info */}
                 <div className="pt-3 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-slate-400 font-medium mb-1">ಬ್ಯಾಂಕ್ ಹೆಸರು (Bank Name)</label>
@@ -849,14 +1022,15 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
                 </div>
               </div>
 
-              {/* Navigation buttons */}
+              {/* Navigation button */}
               <div className="flex justify-between items-center pt-2">
                 <button
                   type="button"
                   onClick={() => setActiveTab('tharavu')}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-medium transition-all"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-medium transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  ◀ ಹಿಂದಕ್ಕೆ (Back)
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>◀ ಹಿಂದಕ್ಕೆ: ಮಂಡಳಿ ಠರಾವು</span>
                 </button>
               </div>
             </div>
@@ -872,21 +1046,35 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors cursor-pointer"
               >
                 ರದ್ದು (Cancel)
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-lg shadow-emerald-950 flex items-center gap-2"
+                className={`px-5 py-2.5 rounded-xl text-white font-bold transition-all shadow-lg flex items-center gap-2 cursor-pointer ${
+                  mode === 'approve'
+                    ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-950'
+                    : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950'
+                }`}
               >
                 {loading ? (
-                  <span>ಉಳಿಸಲಾಗುತ್ತಿದೆ...</span>
+                  <span>ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗುತ್ತಿದೆ...</span>
+                ) : mode === 'approve' ? (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>ಅನುಮೋದಿಸಿ & ಶೇರು ವಿತರಿಸಿ (Approve & Issue Certificate)</span>
+                  </>
+                ) : editRecord && mode === 'all' ? (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>ದಾಖಲೆ ನವೀಕರಿಸಿ (Update Record)</span>
+                  </>
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    <span>{editRecord ? 'ನವೀಕರಿಸಿ (Update)' : 'ನೋಂದಾಯಿಸಿ (Save Enrollment)'}</span>
+                    <span>ಅರ್ಜಿ ನೋಂದಾಯಿಸಿ (Save Enrollment Application)</span>
                   </>
                 )}
               </button>
