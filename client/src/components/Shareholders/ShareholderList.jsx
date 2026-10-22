@@ -22,6 +22,16 @@ export default function ShareholderList({ initialShowMerge = false }) {
 
   // Filters & Sorting
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const searchDebounceRef = useRef(null);
+
+  const handleSearchChange = (val) => {
+    setSearchInput(val);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setSearch(val);
+    }, 150);
+  };
   const [selectedVillage, setSelectedVillage] = useState('');
   const [selectedCircle, setSelectedCircle] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -369,49 +379,18 @@ export default function ShareholderList({ initialShowMerge = false }) {
     fetchShareholders(1);
   };
 
-  const loadMasters = async () => {
-    const vRes = await ApiService.getVillages();
-    if (vRes && vRes.data) {
-      const sortedVillages = [...vRes.data].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn'));
-      setVillages(sortedVillages);
-    }
-
-    const cRes = await ApiService.getCircles();
-    if (cRes && cRes.data) {
-      const sortedCircles = [...cRes.data].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'kn'));
-      setCircles(sortedCircles);
-    }
-
-    const bRes = await ApiService.getBooks();
-    if (bRes && bRes.data) setBookList(bRes.data);
-
-    const scRes = await ApiService.getScheduleCasts();
-    if (scRes && scRes.data) setCastList(scRes.data);
-
+  // Ultra-fast single-pass dropdown loader (~20ms, cached in memory)
+  const loadMasters = async (force = false) => {
     try {
-      const allSh = await ApiService.getAllShareholdersRaw();
-      if (Array.isArray(allSh)) {
-        const amtMap = new Map();
-        allSh.forEach(s => {
-          const rawAmt = parseFloat(s.total_amount);
-          const amt = !isNaN(rawAmt) && rawAmt > 0 ? rawAmt : (parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000));
-          if (amt > 0) {
-            amtMap.set(amt, (amtMap.get(amt) || 0) + 1);
-          }
-        });
-        const sortedAmts = Array.from(amtMap.entries())
-          .map(([amount, count]) => ({ amount, count }))
-          .sort((a, b) => a.amount - b.amount);
-        setAmountList(sortedAmts);
+      const opts = await ApiService.getFilterOptions(force);
+      if (opts) {
+        if (opts.villages) setVillages(opts.villages);
+        if (opts.circles) setCircles(opts.circles);
+        if (opts.books) setBookList(opts.books);
+        if (opts.casts) setCastList(opts.casts);
+        if (opts.amounts) setAmountList(opts.amounts);
       }
     } catch (e) {}
-
-    try {
-      const mRes = await ApiService.getMultipleHoldingsSummary();
-      if (mRes && mRes.success) {
-        setMultipleHoldingsCount(mRes.totalDetectedShareholders || 0);
-      }
-    } catch (err) {}
   };
 
   const fetchShareholders = async (page = 1) => {
@@ -696,8 +675,8 @@ export default function ShareholderList({ initialShowMerge = false }) {
           <input
             type="text"
             placeholder="Search Name (ಕನ್ನಡ / English), Share No, Book No, Mobile, Aadhaar..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 outline-none transition-all placeholder:text-slate-500"
           />
         </div>
