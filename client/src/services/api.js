@@ -3140,6 +3140,18 @@ const newSh = {
       notes: `ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ: ${item.enrollment_id || ''}, ರಶೀದಿ ನಂ: ${item.receipt_no || '—'}. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`
     };
 
+    masterRecord._searchIndex = (
+      (masterRecord.shareholder_name || '') + ' ' +
+      (masterRecord.share_no || '') + ' ' +
+      (masterRecord.book_no || '') + ' ' +
+      (masterRecord.place || '') + ' ' +
+      (masterRecord.taluk || '') + ' ' +
+      (masterRecord.circle || '') + ' ' +
+      (masterRecord.mobile_no || '') + ' ' +
+      (masterRecord.aadhaar_card_no || '') + ' ' +
+      (masterRecord.receipt_no || '')
+    ).toLowerCase();
+
     if (existingIndex === -1) {
       mockShareholders.unshift(masterRecord);
     } else {

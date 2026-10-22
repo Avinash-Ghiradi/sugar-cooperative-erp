@@ -125,20 +125,30 @@ export const CloudDbService = {
       const offset = (page - 1) * limit;
       let queryParams = [];
 
-      // Sort
+      // Sort: default to newest first (id.desc) so newly approved shareholders appear on Page 1 Row 1!
       let orderCol = 'id';
-      if (sortBy === 'share_no') {
-        orderCol = 'share_no';
+      let dir = 'desc';
+
+      if (!sortBy) {
+        orderCol = 'id';
+        dir = 'desc';
+      } else if (sortBy === 'share_no') {
+        orderCol = 'id';
+        dir = sortOrder === 'desc' ? 'desc' : 'asc';
       } else if (sortBy === 'name' || sortBy === 'shareholder_name') {
         orderCol = 'shareholder_name';
+        dir = sortOrder === 'desc' ? 'desc' : 'asc';
       } else if (sortBy === 'place') {
         orderCol = 'place';
+        dir = sortOrder === 'desc' ? 'desc' : 'asc';
       } else if (sortBy === 'circle') {
         orderCol = 'circle';
+        dir = sortOrder === 'desc' ? 'desc' : 'asc';
       } else if (sortBy === 'address') {
         orderCol = 'address';
+        dir = sortOrder === 'desc' ? 'desc' : 'asc';
       }
-      queryParams.push(`order=${orderCol}.${sortOrder === 'desc' ? 'desc' : 'asc'}`);
+      queryParams.push(`order=${orderCol}.${dir}`);
 
       // Filters
       if (search) {
