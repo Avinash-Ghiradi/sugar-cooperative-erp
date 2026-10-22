@@ -553,19 +553,6 @@ export async function syncAllCloudWorkflows() {
       });
       mockEnrollments = Array.from(map.values());
       saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
-
-      // Auto-reconcile all approved enrollments to ensure they exist in both mockShareholders and Supabase
-      for (const item of mockEnrollments) {
-        const isApproved = (item.approval_status || '').includes('Approved') ||
-                           (item.approval_status || '').includes('Active') ||
-                           (item.approval_status || '').includes('Issued') ||
-                           (item.approval_status || '').includes('ಮಂಜೂರು') ||
-                           (item.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ') ||
-                           Boolean(item.share_no);
-        if (isApproved) {
-          await ApiService.ensureEnrollmentInMaster(item).catch(() => {});
-        }
-      }
     }
     if (Array.isArray(varasa)) {
       const map = new Map();
@@ -622,44 +609,6 @@ export async function syncAllCloudWorkflows() {
     if (Array.isArray(allotments) && allotments.length > 0) {
       mockSugarAllotments = allotments;
       saveStoredData(STORAGE_KEY_SA, mockSugarAllotments);
-    }
-
-    // Cross-browser synchronization: fetch any recently added/approved shareholders from Supabase cloud
-    try {
-      const cfg = CloudDbService.getConfig();
-      const cleanUrl = cfg.url.trim().replace(/\/+$/, '');
-      const shRes = await fetch(`${cleanUrl}/rest/v1/shareholders?order=id.desc&limit=50`, {
-        headers: {
-          'apikey': cfg.anonKey.trim(),
-          'Authorization': `Bearer ${cfg.anonKey.trim()}`
-        }
-      });
-      if (shRes.ok) {
-        const cloudShareholders = await shRes.json();
-        if (Array.isArray(cloudShareholders) && cloudShareholders.length > 0) {
-          let updated = false;
-          cloudShareholders.forEach(cSh => {
-            const cShareNo = String(cSh.share_no || '').trim();
-            if (!cShareNo) return;
-            const idx = mockShareholders.findIndex(s => String(s.share_no || s.share_number || '').trim() === cShareNo);
-            if (idx === -1) {
-              mockShareholders.unshift({
-                ...cSh,
-                share_number: cSh.share_no,
-                shareholder_id: `SH-${String(cSh.id).padStart(5, '0')}`
-              });
-              updated = true;
-            } else {
-              mockShareholders[idx] = { ...mockShareholders[idx], ...cSh };
-            }
-          });
-          if (updated) {
-            saveToIndexedDB(mockShareholders).catch(() => {});
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Sync cloud shareholders failed:', e);
     }
   } catch (err) {
     console.warn('syncAllCloudWorkflows error:', err);
@@ -1039,22 +988,11 @@ export const ApiService = {
     });
   },
 
-  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', amount = '', sortBy = 'newest', sortOrder = 'desc' }) {
+  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', amount = '', sortBy = '', sortOrder = 'asc' }) {
     if (CloudDbService.isEnabled()) {
       try {
         const cloudRes = await CloudDbService.getShareholders({ page, limit, search, village_id, circle_id, status, book_no, schedule_cast, amount, sortBy, sortOrder });
-        if (cloudRes && cloudRes.success) {
-          cloudRes.data = (cloudRes.data || []).map(s => {
-            const own = getShareholderOwnership(s);
-            return {
-              ...s,
-              ownership: own,
-              relationship: own,
-              member_type: getMemberTypeByCategory(s.schedule_cast, s.member_type)
-            };
-          });
-          return cloudRes;
-        }
+        if (cloudRes && cloudRes.success) return cloudRes;
       } catch (e) {
         console.warn('Cloud DB fetch failed, falling back:', e);
       }
@@ -1151,16 +1089,6 @@ export const ApiService = {
           const valA = (a.shareholder_name || a.name || '').trim();
           const valB = (b.shareholder_name || b.name || '').trim();
           return dir * valA.localeCompare(valB, 'kn');
-        }
-        if (sortBy === 'newest' || !sortBy) {
-          const idA = Number(a.id) || 0;
-          const idB = Number(b.id) || 0;
-          return (idB - idA);
-        }
-        if (sortBy === 'share_no_asc') {
-          const numA = parseInt(String(a.share_no || a.share_number || '').replace(/\D/g, '')) || 0;
-          const numB = parseInt(String(b.share_no || b.share_number || '').replace(/\D/g, '')) || 0;
-          return (numA - numB);
         }
         if (sortBy === 'share_no') {
           const numA = parseInt(String(a.share_no || a.share_number || '').replace(/\D/g, '')) || 0;
@@ -2865,84 +2793,6 @@ const newSh = {
     return String(Math.max(maxNum + 1, 18007));
   },
 
-  // 100% Guaranteed Automatic Reconciliation:
-  // Synchronizes all approved enrollments across Supabase PostgreSQL and local cache
-  async reconcileApprovedShareholders() {
-    await ensureDBReady();
-    try {
-      if (CloudDbService.isEnabled()) {
-        const cloudEnr = await CloudDbService.getCollection('enrollments').catch(() => null);
-        if (Array.isArray(cloudEnr)) {
-          const map = new Map();
-          cloudEnr.forEach(e => {
-            const k = String(e.enrollment_id || e.id || '').trim();
-            if (k) map.set(k, e);
-          });
-          mockEnrollments.forEach(e => {
-            const k = String(e.enrollment_id || e.id || '').trim();
-            if (k && !map.has(k)) map.set(k, e);
-          });
-          mockEnrollments = Array.from(map.values());
-          saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
-        }
-      }
-
-      for (const item of mockEnrollments) {
-        const isApproved = (item.approval_status || '').includes('Approved') ||
-                           (item.approval_status || '').includes('Active') ||
-                           (item.approval_status || '').includes('Issued') ||
-                           (item.approval_status || '').includes('ಮಂಜೂರು') ||
-                           (item.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ') ||
-                           Boolean(item.share_no);
-        if (isApproved) {
-          if (!item.share_no) {
-            item.share_no = await this.getNextAvailableShareNumber();
-          }
-          await this.ensureEnrollmentInMaster(item).catch(() => {});
-        }
-      }
-
-      if (CloudDbService.isEnabled()) {
-        const cfg = CloudDbService.getConfig();
-        const cleanUrl = cfg.url.trim().replace(/\/+$/, '');
-        const res = await fetch(`${cleanUrl}/rest/v1/shareholders?order=id.desc&limit=100`, {
-          headers: {
-            'apikey': cfg.anonKey.trim(),
-            'Authorization': `Bearer ${cfg.anonKey.trim()}`
-          }
-        });
-        if (res.ok) {
-          const cloudSh = await res.json();
-          if (Array.isArray(cloudSh) && cloudSh.length > 0) {
-            let updated = false;
-            cloudSh.forEach(c => {
-              const cNo = String(c.share_no || '').trim();
-              if (!cNo) return;
-              const idx = mockShareholders.findIndex(s => String(s.share_no || s.share_number || '').trim() === cNo);
-              if (idx === -1) {
-                mockShareholders.unshift({
-                  ...c,
-                  share_number: c.share_no,
-                  shareholder_id: `SH-${String(c.id).padStart(5, '0')}`
-                });
-                updated = true;
-              } else {
-                mockShareholders[idx] = { ...mockShareholders[idx], ...c };
-              }
-            });
-            if (updated) {
-              await saveToIndexedDB(mockShareholders).catch(() => {});
-            }
-          }
-        }
-      }
-      return { success: true };
-    } catch (err) {
-      console.warn('reconcileApprovedShareholders error:', err);
-      return { success: false, error: err.message };
-    }
-  },
-
   // Ensure an approved enrollment record is securely present in the Master Shareholder sheet
   async ensureEnrollmentInMaster(item, adminUser = 'Admin') {
     if (!item) return null;
@@ -2959,20 +2809,16 @@ const newSh = {
     const totAmt = parseFloat(item.total_amount) || (shareAmt + admFee);
 
     let maxId = 0;
-    let maxSl = 0;
     for (let i = 0; i < mockShareholders.length; i++) {
       const mid = Number(mockShareholders[i]?.id);
       if (mid > maxId) maxId = mid;
-      const msl = Number(mockShareholders[i]?.sl_no);
-      if (msl > maxSl && msl < 1000000) maxSl = msl;
     }
     const nextId = maxId + 1;
-    const nextSl = maxSl > 0 ? maxSl + 1 : nextId;
     const existingIndex = mockShareholders.findIndex(s => String(s.share_no || s.share_number || '').trim() === sNo);
 
     const masterRecord = {
       id: existingIndex !== -1 ? mockShareholders[existingIndex].id : nextId,
-      sl_no: existingIndex !== -1 ? (mockShareholders[existingIndex].sl_no || nextSl) : nextSl,
+      sl_no: parseInt(item.sl_no) || (existingIndex !== -1 ? (mockShareholders[existingIndex].sl_no || nextId) : nextId),
       share_number: sNo,
       share_no: sNo,
       shareholder_id: existingIndex !== -1 ? mockShareholders[existingIndex].shareholder_id : `SH-${String(nextId).padStart(5, '0')}`,
@@ -3009,7 +2855,7 @@ const newSh = {
       thumb_impression: item.thumb_impression || '',
       thumb_url: item.thumb_impression || '',
       date_of_joining: item.date || new Date().toLocaleDateString('en-GB'),
-      book_no: item.book_no || (item.tharava_no ? `ಠರಾವು-${item.tharava_no}` : 'B.No: 1'),
+      book_no: item.tharava_no ? `ಠರಾವು-${item.tharava_no}` : 'B.No: 1',
       notes: `ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ: ${item.enrollment_id || ''}, ರಶೀದಿ ನಂ: ${item.receipt_no || '—'}. Admin (${adminUser}) ಮಂಜೂರು ಮಾಡಿದ್ದಾರೆ.`
     };
 

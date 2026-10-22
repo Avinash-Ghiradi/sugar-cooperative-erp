@@ -28,8 +28,8 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const [selectedBook, setSelectedBook] = useState('');
   const [selectedCast, setSelectedCast] = useState('');
   const [selectedAmount, setSelectedAmount] = useState('');
-  const [sortBy, setSortBy] = useState('newest'); // 'newest' by default so newly issued/approved members appear at top of page 1
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [sortBy, setSortBy] = useState(''); // 'place', 'circle', 'address', 'name', 'share_no'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
   const [viewMode, setViewMode] = useState('ledger'); // 'ledger' (38 columns) or 'summary'
 
   // Options
@@ -90,7 +90,6 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const [uploadFileName, setUploadFileName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [autoMergeOnImport, setAutoMergeOnImport] = useState(true);
-  const [syncing, setSyncing] = useState(false);
 
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -110,25 +109,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
 
   useEffect(() => {
     loadMasters();
-    // Auto-reconcile in the background to ensure all approved shareholders from enrollments & cloud are populated
-    ApiService.reconcileApprovedShareholders().then(() => {
-      fetchShareholders(1);
-    }).catch(() => {});
   }, []);
-
-  const handleManualReconcile = async () => {
-    setSyncing(true);
-    try {
-      await ApiService.reconcileApprovedShareholders();
-      await loadMasters();
-      await fetchShareholders(1);
-      showToast('ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್ ಮತ್ತು ಹೊಸ ಶೇರುದಾರರ ನಮೂನೆ ವಹಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸಿಂಕ್ ಮಾಡಲಾಗಿದೆ! 🟢');
-    } catch (err) {
-      showToast('ಸಿಂಕ್ ದೋಷ: ' + err.message, 'error');
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   useEffect(() => {
     fetchShareholders(1);
@@ -673,41 +654,6 @@ export default function ShareholderList({ initialShowMerge = false }) {
             </button>
           </div>
 
-          {/* Sync & Reconcile Button */}
-          <button
-            type="button"
-            onClick={handleManualReconcile}
-            disabled={syncing}
-            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50"
-            title="ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್ ಮತ್ತು ಹೊಸ ಶೇರುದಾರರನ್ನು ಸಿಂಕ್ ಮಾಡಿ (Sync & Reconcile with Supabase)"
-          >
-            <RefreshCw className={`w-4 h-4 text-emerald-400 ${syncing ? 'animate-spin' : ''}`} />
-            <span>{syncing ? 'ಸಿಂಕ್ ಆಗುತ್ತಿದೆ...' : 'ಸಿಂಕ್ & ನವೀಕರಣ (Sync)'}</span>
-          </button>
-
-          {/* Newest Issued Quick Toggle */}
-          <button
-            type="button"
-            onClick={() => {
-              if (sortBy === 'newest') {
-                setSortBy('');
-                setSortOrder('asc');
-              } else {
-                setSortBy('newest');
-                setSortOrder('desc');
-              }
-            }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm border ${
-              sortBy === 'newest'
-                ? 'bg-emerald-950 border-emerald-500 text-emerald-300 shadow-md shadow-emerald-950 ring-1 ring-emerald-500'
-                : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
-            }`}
-            title="ಹೊಸದಾಗಿ ವಿತರಿಸಲಾದ ಶೇರುದಾರರನ್ನು ಮೊದಲು ವೀಕ್ಷಿಸಿ (View Newly Issued Share Certificates First)"
-          >
-            <Sparkles className={`w-4 h-4 ${sortBy === 'newest' ? 'text-amber-300 fill-amber-300' : 'text-amber-400'}`} />
-            <span>ಹೊಸ ಶೇರುಗಳು (Recent Issued)</span>
-          </button>
-
           {/* Direct Link to Detailed Reports */}
           <button
             onClick={() => setActiveModule('reports')}
@@ -798,23 +744,16 @@ export default function ShareholderList({ initialShowMerge = false }) {
         <div className="flex items-center gap-1">
           <select
             value={sortBy}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSortBy(val);
-              if (val === 'newest') {
-                setSortOrder('desc');
-              }
-            }}
+            onChange={(e) => setSortBy(e.target.value)}
             className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all"
             title="Sort alphabetically (ಅಕಾರಾದಿ ಕ್ರಮ)"
           >
-            <option value="newest">ಹೊಸದಾಗಿ ವಿತರಿಸಲಾದ ಶೇರುಗಳು (Newest / Recent First)</option>
-            <option value="share_no_asc">ಕ್ರಮಬದ್ಧ ಷೇರು ನಂ (Share No: 1, 2, 3...)</option>
-            <option value="share_no">ಷೇರು ಸಂಖ್ಯೆ (Share No: ಇಳಿಕೆ ಕ್ರಮ)</option>
+            <option value="">ಕ್ರಮಬದ್ಧ ವಿಂಗಡಣೆ (Default)</option>
             <option value="place">ಸ್ಥಳ / ಗ್ರಾಮ (Place: ಅ-ಹ / A-Z)</option>
             <option value="circle">ವಲಯ / ಸರ್ಕಲ್ (Circle: ಅ-ಹ / A-Z)</option>
             <option value="address">ವಿಳಾಸ (Address: ಅ-ಹ / A-Z)</option>
             <option value="name">ಹೆಸರು (Name: ಅ-ಹ / A-Z)</option>
+            <option value="share_no">ಷೇರು ಸಂಖ್ಯೆ (Share No)</option>
           </select>
           {sortBy && (
             <button
@@ -1079,12 +1018,6 @@ export default function ShareholderList({ initialShowMerge = false }) {
                           </div>
                         )}
                         <span className="truncate">{sh.shareholder_name || sh.name}</span>
-                        {(Number(sh.id) > 17076 || parseInt(String(sh.share_no || '').replace(/\D/g, '')) >= 18000 || (sh.notes && sh.notes.includes('ಹೊಸ'))) && (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-600 shadow-sm shrink-0 flex items-center gap-1" title="ಹೊಸದಾಗಿ ನೋಂದಣಿಯಾಗಿ ಅನುಮೋದನೆ ಪಡೆದ ಶೇರುದಾರ">
-                            <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-                            <span>ಹೊಸ ಸದಸ್ಯ (Approved)</span>
-                          </span>
-                        )}
                       </div>
                     </td>
 
