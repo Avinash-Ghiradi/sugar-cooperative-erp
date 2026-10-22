@@ -17,25 +17,29 @@ export const CloudDbService = {
           return {
             url: parsed.url || DEFAULT_SUPABASE_URL,
             anonKey: parsed.anonKey || DEFAULT_SUPABASE_ANON_KEY,
-            enabled: parsed.enabled !== undefined ? parsed.enabled : true,
+            enabled: Boolean(parsed.user_explicitly_enabled === true),
             lastSync: parsed.lastSync || null
           };
         }
       }
     } catch (e) {}
-    // Default pre-configured cloud database for instant multi-browser sync
+    // Default to LOCAL STORAGE MODE (high performance, offline client-side IndexedDB)
     return {
       url: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || DEFAULT_SUPABASE_URL,
       anonKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || DEFAULT_SUPABASE_ANON_KEY,
-      enabled: true,
-      lastSync: new Date().toISOString()
+      enabled: false,
+      lastSync: null
     };
   },
 
   // 2. Save cloud config
   saveConfig(config) {
     try {
-      localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+      const toSave = {
+        ...config,
+        user_explicitly_enabled: Boolean(config.enabled)
+      };
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(toSave));
     } catch (e) {}
   },
 

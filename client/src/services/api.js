@@ -687,7 +687,61 @@ export function ensureDBReady() {
               modified = true;
             }
           });
-          if (modified) {
+                  // Ensure all approved enrollments exist in local master shareholders
+        if (records && records.length > 0) {
+          for (const item of mockEnrollments) {
+            const isApproved = (item.approval_status || '').includes('Approved') ||
+                               (item.approval_status || '').includes('Active') ||
+                               (item.approval_status || '').includes('Issued') ||
+                               (item.approval_status || '').includes('ಮಂಜೂರು') ||
+                               (item.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ');
+            const sNo = String(item.share_no || '').trim();
+            if (isApproved && sNo) {
+              const exists = records.some(s => String(s.share_no || s.share_number || '').trim() === sNo);
+              if (!exists) {
+                const sAmt = parseFloat(item.share_amount) || 24000;
+                const aFee = parseFloat(item.admission_fee) || 570;
+                const rec = {
+                  id: Date.now() + Math.floor(Math.random() * 1000),
+                  sl_no: 17100 + (parseInt(item.sl_no, 10) || 1),
+                  share_no: sNo,
+                  share_number: sNo,
+                  shareholder_id: `SH-${sNo}`,
+                  shareholder_name: (item.full_name || '').normalize('NFC'),
+                  name: (item.full_name || '').normalize('NFC'),
+                  place: (item.place || '').normalize('NFC'),
+                  village_name: (item.place || '').normalize('NFC'),
+                  taluk: item.taluk || 'ಇಂಡಿ',
+                  district: item.dist || 'ವಿಜಯಪುರ',
+                  circle: 'ಇತರೆ (Other)',
+                  circle_name: 'ಇತರೆ (Other)',
+                  pin_code: '',
+                  number_of_shares: parseInt(item.no_shares, 10) || 1,
+                  schedule_cast: item.category || 'ಅ ವರ್ಗ',
+                  gender: item.gender || 'M',
+                  reg_date: item.date || new Date().toLocaleDateString('en-GB'),
+                  receipt_no: String(item.receipt_no || ''),
+                  receipt_amount: sAmt,
+                  total_amount: parseFloat(item.total_amount) || (sAmt + aFee),
+                  remaining_balance: 0,
+                  member_type: 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
+                  relationship: 'ಸ್ವಂತ (Self)',
+                  tharava_date: item.tharava_date || new Date().toLocaleDateString('en-GB'),
+                  tharava_no: item.tharava_no || '05(8)',
+                  status: 'Active',
+                  mobile_number: item.mobile_no || '',
+                  mobile_no: item.mobile_no || '',
+                  aadhaar_number: item.aadhaar_no || '',
+                  aadhaar_card_no: item.aadhaar_no || '',
+                  book_no: item.tharava_no ? `ಠರಾವು-${item.tharava_no}` : 'B.No: 1'
+                };
+                records.unshift(rec);
+                modified = true;
+              }
+            }
+          }
+        }
+        if (modified) {
             saveToIndexedDB(mockShareholders).catch(() => {});
           }
         }
@@ -733,8 +787,119 @@ let mockVarasaTransfers = loadStoredData(STORAGE_KEY_VT, []);
 export const initialVargavaneTransfers = [];
 let mockVargavaneTransfers = loadStoredData(STORAGE_KEY_VG, []);
 
-export const initialNewEnrollments = [];
-let mockEnrollments = loadStoredData(STORAGE_KEY_ENROLLMENT, []);
+export const initialNewEnrollments = [
+  {
+    id: 1,
+    enrollment_id: 'ENR-18009',
+    sl_no: 1,
+    date: '21-10-2026',
+    full_name: 'Bhuvi',
+    place: 'ಅಥರ್ಗಾ',
+    taluk: 'ಇಂಡಿ',
+    dist: 'ವಿಜಯಪುರ',
+    share_amount: 24000,
+    admission_fee: 570,
+    total_amount: 24570,
+    receipt_no: '265',
+    no_shares: 1,
+    category: 'ಅ ವರ್ಗ',
+    tharava_date: '21-10-2026',
+    tharava_no: '05(8)',
+    share_no: '18009',
+    approval_status: 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)',
+    mobile_no: '9900944375',
+    aadhaar_no: '1234567890001'
+  },
+  {
+    id: 2,
+    enrollment_id: 'ENR-18008',
+    sl_no: 2,
+    date: '21-10-2026',
+    full_name: 'Ashu',
+    place: 'ಅಣಚಿ',
+    taluk: 'ಚಡಚಣ',
+    dist: 'ವಿಜಯಪುರ',
+    share_amount: 24000,
+    admission_fee: 570,
+    total_amount: 24570,
+    receipt_no: '264',
+    no_shares: 1,
+    category: 'ಅ ವರ್ಗ',
+    tharava_date: '21-10-2026',
+    tharava_no: '05(8)',
+    share_no: '18008',
+    approval_status: 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)',
+    mobile_no: '9845012345',
+    aadhaar_no: '1234567890002'
+  },
+  {
+    id: 3,
+    enrollment_id: 'ENR-18007',
+    sl_no: 3,
+    date: '21-10-2026',
+    full_name: 'Mahi',
+    place: 'ಅಗಸನಾಳ',
+    taluk: 'ಇಂಡಿ',
+    dist: 'ವಿಜಯಪುರ',
+    share_amount: 24000,
+    admission_fee: 570,
+    total_amount: 24570,
+    receipt_no: '263',
+    no_shares: 1,
+    category: 'ಅ ವರ್ಗ',
+    tharava_date: '21-10-2026',
+    tharava_no: '265',
+    share_no: '18007',
+    approval_status: 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)',
+    mobile_no: '9845012346',
+    aadhaar_no: '1234567890003'
+  },
+  {
+    id: 4,
+    enrollment_id: 'ENR-18006',
+    sl_no: 4,
+    date: '20-10-2026',
+    full_name: 'Avinash Ghiradi',
+    place: 'ಇಂಡಿ',
+    taluk: 'ಇಂಡಿ',
+    dist: 'ವಿಜಯಪುರ',
+    share_amount: 24000,
+    admission_fee: 570,
+    total_amount: 24570,
+    receipt_no: '262',
+    no_shares: 1,
+    category: 'ಅ ವರ್ಗ',
+    tharava_date: '20-10-2026',
+    tharava_no: '05(8)',
+    share_no: '18006',
+    approval_status: 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)',
+    mobile_no: '9900000001',
+    aadhaar_no: '1234567890004'
+  },
+  {
+    id: 5,
+    enrollment_id: 'ENR-18005',
+    sl_no: 5,
+    date: '20-10-2026',
+    full_name: 'Ghiradi',
+    place: 'ಅಂಜುಟಿಗಿ',
+    taluk: 'ಇಂಡಿ',
+    dist: 'ವಿಜಯಪುರ',
+    share_amount: 24000,
+    admission_fee: 570,
+    total_amount: 24570,
+    receipt_no: '261',
+    no_shares: 1,
+    category: 'ಅ ವರ್ಗ',
+    tharava_date: '20-10-2026',
+    tharava_no: '05(8)',
+    share_no: '18005',
+    approval_status: 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)',
+    mobile_no: '9900000002',
+    aadhaar_no: '1234567890005'
+  }
+];
+let mockEnrollments = loadStoredData(STORAGE_KEY_ENROLLMENT, initialNewEnrollments);
 let mockEmployees = loadStoredData(STORAGE_KEY_EMP, []);
 let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
 let mockMergeRequests = loadStoredData(STORAGE_KEY_MERGE_REQ, []);
@@ -2890,7 +3055,7 @@ const newSh = {
     };
 
     if (existingIndex === -1) {
-      mockShareholders.push(masterRecord);
+      mockShareholders.unshift(masterRecord);
     } else {
       mockShareholders[existingIndex] = { ...mockShareholders[existingIndex], ...masterRecord };
     }
@@ -2903,7 +3068,7 @@ const newSh = {
         if (cloudRes?.data?.id) {
           masterRecord.id = cloudRes.data.id;
           if (existingIndex === -1 && mockShareholders.length > 0) {
-            mockShareholders[mockShareholders.length - 1].id = cloudRes.data.id;
+            mockShareholders[0].id = cloudRes.data.id;
           }
         }
       } catch (err) {
