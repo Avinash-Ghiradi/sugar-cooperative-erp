@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ApiService } from '../../services/api';
+import { ApiService, isShareholderInactive } from '../../services/api';
 import OfficialShareholderIDCard, {
   getCustomIdCardSettings,
   saveCustomIdCardSettings,
@@ -103,7 +103,8 @@ export default function IDCardGenerator() {
       limit: 24,
       search,
       circle: circleFilter,
-      place: placeFilter
+      place: placeFilter,
+      status: 'Active'
     });
     if (res && res.data) {
       setShareholders(res.data);
@@ -115,6 +116,10 @@ export default function IDCardGenerator() {
   };
 
   const toggleSelectCard = (sh) => {
+    if (isShareholderInactive(sh)) {
+      alert(`ಷೇರು #${sh.share_no} ಖಾತೆಯು ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ. ಗುರುತಿನ ಚೀಟಿ ಮುದ್ರಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ (Merged & Inactive - ID Card disabled).`);
+      return;
+    }
     const shId = sh.shareholder_id || sh.id;
     if (selectedCards.some(c => (c.shareholder_id || c.id) === shId)) {
       setSelectedCards(prev => prev.filter(c => (c.shareholder_id || c.id) !== shId));

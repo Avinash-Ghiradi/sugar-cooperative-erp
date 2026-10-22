@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService } from '../../services/api';
+import { ApiService, isShareholderInactive } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   GitMerge, Search, CheckCircle2, AlertCircle, X, ShieldCheck,
@@ -95,6 +95,10 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
 
   // Add a share record to selection
   const addRecordToSelection = (record) => {
+    if (isShareholderInactive(record)) {
+      showToast(`ಷೇರು #${record.share_no} ಈಗಾಗಲೇ ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ (Already merged and inactive - cannot select)`, 'error');
+      return;
+    }
     if (selectedShareRecords.some(r => r.id === record.id)) {
       showToast(`ಷೇರು #${record.share_no} ಈಗಾಗಲೇ ಆಯ್ಕೆಯಾಗಿದೆ (Already selected)`, 'info');
       return;
@@ -129,6 +133,10 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
           String(d.id) === cleanNo
         ) || res.data[0];
 
+        if (isShareholderInactive(exact)) {
+          showToast(`ಷೇರು #${exact.share_no} ಈಗಾಗಲೇ ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ (Already merged & inactive)`, 'error');
+          continue;
+        }
         if (!newRecords.some(r => r.id === exact.id)) {
           newRecords.push(exact);
           addedCount++;
@@ -473,11 +481,19 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                   <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-slate-900 border border-amber-500/40 rounded-xl shadow-2xl max-h-56 overflow-y-auto divide-y divide-slate-800">
                     {searchResults.map((rec) => {
                       const isAlreadySelected = selectedShareRecords.some(r => r.id === rec.id);
+                      const isInactive = isShareholderInactive(rec);
                       return (
                         <div
                           key={rec.id}
-                          onClick={() => !isAlreadySelected && addRecordToSelection(rec)}
+                          onClick={() => {
+                            if (isInactive) {
+                              showToast(`ಷೇರು #${rec.share_no} ಈಗಾಗಲೇ ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ (Merged & Inactive)`, 'error');
+                              return;
+                            }
+                            if (!isAlreadySelected) addRecordToSelection(rec);
+                          }}
                           className={`p-2.5 flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                            isInactive ? 'opacity-60 bg-rose-950/20 cursor-not-allowed' :
                             isAlreadySelected ? 'opacity-50 bg-slate-950 cursor-not-allowed' : 'hover:bg-amber-950/30'
                           }`}
                         >
@@ -485,9 +501,13 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                             <div className="flex items-center gap-2">
                               <span className="font-mono font-bold text-amber-400">#{rec.share_no}</span>
                               <strong className="text-slate-200">{rec.shareholder_name}</strong>
-                              {rec.is_merged && (
+                              {isInactive ? (
+                                <span className="px-1.5 py-0.2 rounded text-[10px] bg-rose-950 text-rose-300 border border-rose-800 font-bold">
+                                  ನಿಷ್ಕ್ರಿಯ (Inactive)
+                                </span>
+                              ) : rec.is_merged ? (
                                 <span className="px-1.5 py-0.2 rounded text-[10px] bg-sky-950 text-sky-400 border border-sky-800">ವಿಲೀನ</span>
-                              )}
+                              ) : null}
                             </div>
                             <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
                               <span>ಗ್ರಾಮ: {rec.place}</span>
@@ -499,15 +519,17 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                           </div>
                           <button
                             type="button"
-                            disabled={isAlreadySelected}
+                            disabled={isAlreadySelected || isInactive}
                             className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
-                              isAlreadySelected
-                                ? 'bg-slate-800 text-slate-500'
+                              isInactive
+                                ? 'bg-rose-900/50 text-rose-300 cursor-not-allowed'
+                                : isAlreadySelected
+                                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                                 : 'bg-amber-600 hover:bg-amber-500 text-slate-950'
                             }`}
                           >
                             <Plus className="w-3 h-3" />
-                            <span>{isAlreadySelected ? 'ಆಯ್ಕೆಯಾಗಿದೆ' : 'ಸೇರಿಸಿ'}</span>
+                            <span>{isInactive ? 'ನಿಷ್ಕ್ರಿಯ' : isAlreadySelected ? 'ಆಯ್ಕೆಯಾಗಿದೆ' : 'ಸೇರಿಸಿ'}</span>
                           </button>
                         </div>
                       );
@@ -692,6 +714,18 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                     <strong className="text-slate-100 truncate block text-xs">
                       {primarySelectedRecord?.shareholder_name} ({primarySelectedRecord?.place})
                     </strong>
+                  </div>
+                </div>
+
+                {/* Deactivation Policy Notice */}
+                <div className="p-3 bg-amber-950/40 border border-amber-600/50 rounded-xl text-xs text-amber-200 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-amber-300 font-bold">ವಿಲೀನ & ನಿಷ್ಕ್ರಿಯ ಶಾಸನಬದ್ಧ ನಿಯಮ (Merger Rule):</strong>
+                    <p className="mt-0.5 text-slate-300 text-[11px] leading-relaxed">
+                      ವಿಲೀನದ ನಂತರ ಮುಖ್ಯ ಖಾತೆಯು (#<strong className="text-amber-300">{primarySelectedRecord?.share_no}</strong>) ಎಲ್ಲಾ {totalSelectedShares} ಷೇರುಗಳು ಹಾಗೂ ₹{totalSelectedAmount.toLocaleString()} ಬಂಡವಾಳದೊಂದಿಗೆ <span className="text-emerald-400 font-bold">ಸಕ್ರಿಯವಾಗಿರುತ್ತದೆ (Active)</span>.
+                      ಉಳಿದ ಎಲ್ಲಾ ಎರಡನೇ ಖಾತೆಗಳು (#<strong className="text-rose-300">{selectedShareRecords.filter(r => r.id !== primaryRecordId).map(r => r.share_no).join(', #')}</strong>) ಕಾಯಂ ಆಗಿ <span className="text-rose-400 font-bold">ನಿಷ್ಕ್ರಿಯಗೊಳ್ಳುತ್ತವೆ (Inactive)</span> ಮತ್ತು ಎಲ್ಲ ಕಡೆ (ವಹಿವಾಟು, ಸಕ್ಕರೆ ಕೋಟಾ, ವಾರಸಾ, ವರ್ಗಾವಣೆ, ಐಡಿ ಕಾರ್ಡ್) ಸಂಪೂರ್ಣವಾಗಿ ನಿರ್ಬಂಧಿಸಲ್ಪಡುತ್ತವೆ (Disabled Everywhere).
+                    </p>
                   </div>
                 </div>
 

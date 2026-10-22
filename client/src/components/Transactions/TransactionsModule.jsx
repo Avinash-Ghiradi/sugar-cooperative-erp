@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiService } from '../../services/api';
+import { ApiService, isShareholderInactive } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { CreditCard, Search, Plus, FileSpreadsheet, Printer, ArrowUpRight, ArrowDownLeft, X, Save } from 'lucide-react';
 
@@ -38,6 +38,13 @@ export default function TransactionsModule() {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+    if (form.shareholder_id) {
+      const shCheck = await ApiService.getShareholderById(form.shareholder_id.trim());
+      if (shCheck && shCheck.shareholder && isShareholderInactive(shCheck.shareholder)) {
+        showToast(`ಈ ಷೇರುದಾರರ ಖಾತೆಯು (${form.shareholder_id}) ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ. ಯಾವುದೇ ಹಣಕಾಸು ವ್ಯವಹಾರ ನಡೆಸಲು ಸಾಧ್ಯವಿಲ್ಲ.`, 'error');
+        return;
+      }
+    }
     const res = await ApiService.addTransaction(form);
     if (res && res.success) {
       showToast(`Transaction ${res.transaction_id} recorded successfully!`);

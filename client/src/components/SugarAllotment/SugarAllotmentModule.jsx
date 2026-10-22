@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ApiService } from '../../services/api';
+import { ApiService, isShareholderInactive } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import officialCircleData from '../../services/officialCircleData.json';
 import ShareholderForm from '../Shareholders/ShareholderForm';
@@ -380,9 +380,9 @@ export default function SugarAllotmentModule() {
       columnFilters.member_type
     );
 
-    // If NO filter is active, show default initial 324 records (as in reference Image 3)
+    // If NO filter is active, show default initial 324 records (excluding inactive/merged members)
     if (!hasTopFilter && !hasColFilter) {
-      list = allShareholders.slice(0, 324);
+      list = allShareholders.filter(s => !isShareholderInactive(s)).slice(0, 324);
     }
 
     // 1. Top filter: Share number or Name (exact match for numeric or comma-separated, partial for name)
@@ -1823,8 +1823,9 @@ export default function SugarAllotmentModule() {
                   const currentMob = editedRows[s.id]?.mobile_no !== undefined ? editedRows[s.id].mobile_no : (s.mobile_no || s.mobile || '');
                   const currentRem = editedRows[s.id]?.remarks !== undefined ? editedRows[s.id].remarks : (s.remarks || '');
 
+                  const isInactive = isShareholderInactive(s);
                   return (
-                    <tr key={s.id || idx} className="hover:bg-slate-900/70 transition-colors">
+                    <tr key={s.id || idx} className={`hover:bg-slate-900/70 transition-colors ${isInactive ? 'bg-rose-950/20 text-slate-400 opacity-70' : ''}`}>
                       {/* 1. Sl No */}
                       <td className="py-2.5 px-3 text-center font-bold text-slate-300 border-r border-slate-800/60">
                         {idx + 1}

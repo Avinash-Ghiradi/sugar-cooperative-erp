@@ -63,6 +63,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const [showPinPassword, setShowPinPassword] = useState(false);
 
   const handleInitiateEdit = (sh) => {
+    if (isShareholderInactive(sh)) {
+      showToast(`ಈ ಖಾತೆಯು (#${sh.share_no}) ಮುಖ್ಯ ಶೇರು #${sh.merged_into_share_no || ''} ಗೆ ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ. ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.`, 'error');
+      return;
+    }
     setTargetEditShareholder(sh);
     setPinInput('');
     setPinError('');
@@ -928,8 +932,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                {shareholders.map((sh, idx) => (
-                  <tr key={sh.id || idx} className="hover:bg-slate-900/80 transition-colors group">
+                {shareholders.map((sh, idx) => {
+                  const isInactive = isShareholderInactive(sh);
+                  return (
+                  <tr key={sh.id || idx} className={`hover:bg-slate-900/80 transition-colors group ${isInactive ? 'bg-rose-950/10 text-slate-400 opacity-75' : ''}`}>
                     {/* Fixed Action Buttons Column */}
                     <td className="py-2.5 px-3 bg-slate-950 group-hover:bg-slate-900 sticky left-0 z-10 shadow-r">
                       <div className="flex items-center gap-1">
@@ -953,23 +959,43 @@ export default function ShareholderList({ initialShowMerge = false }) {
                         >
                           <History className="w-3.5 h-3.5 text-amber-400" />
                         </button>
-                        <button
-                          onClick={() => handleInitiateEdit(sh)}
-                          title="Edit Record (Requires Security PIN)"
-                          className="p-1 text-slate-400 hover:text-sky-400 hover:bg-slate-800 rounded transition-colors"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setActiveProfileId(sh.shareholder_id || sh.id);
-                            setActiveProfileTab('id_card');
-                          }}
-                          title="ಗುರುತಿನ ಚೀಟಿ (Print Official Statutory ID Card)"
-                          className="p-1 text-slate-400 hover:text-emerald-300 hover:bg-emerald-950/40 rounded transition-colors"
-                        >
-                          <Contact className="w-3.5 h-3.5 text-emerald-400" />
-                        </button>
+                        {isInactive ? (
+                          <button
+                            disabled
+                            title="ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯಗೊಂಡ ಖಾತೆ - ತಿದ್ದುಪಡಿ ಅಸಾಧ್ಯ (Merged and Inactive Account - Editing Disabled)"
+                            className="p-1 text-slate-600 cursor-not-allowed rounded opacity-40"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleInitiateEdit(sh)}
+                            title="Edit Record (Requires Security PIN)"
+                            className="p-1 text-slate-400 hover:text-sky-400 hover:bg-slate-800 rounded transition-colors"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {isInactive ? (
+                          <button
+                            disabled
+                            title="ನಿಷ್ಕ್ರಿಯ ಖಾತೆಗೆ ಗುರುತಿನ ಚೀಟಿ ಮುದ್ರಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ (Cannot print ID card for Inactive account)"
+                            className="p-1 text-slate-600 cursor-not-allowed rounded opacity-40"
+                          >
+                            <Contact className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setActiveProfileId(sh.shareholder_id || sh.id);
+                              setActiveProfileTab('id_card');
+                            }}
+                            title="ಗುರುತಿನ ಚೀಟಿ (Print Official Statutory ID Card)"
+                            className="p-1 text-slate-400 hover:text-emerald-300 hover:bg-emerald-950/40 rounded transition-colors"
+                          >
+                            <Contact className="w-3.5 h-3.5 text-emerald-400" />
+                          </button>
+                        )}
                       </div>
                     </td>
 
@@ -984,19 +1010,33 @@ export default function ShareholderList({ initialShowMerge = false }) {
                     {/* 3. Share No */}
                     <td className="py-2.5 px-3 font-mono font-bold text-emerald-400">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span
-                          onClick={() => handleInitiateEdit(sh)}
-                          className="cursor-pointer hover:underline hover:text-emerald-300 transition-colors"
-                          title="ಕ್ಲಿಕ್ ಮಾಡಿ ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ ಮಾಡಿ (Requires Security PIN)"
-                        >
-                          {sh.share_no || sh.share_number}
-                        </span>
-                        {(sh.is_merged || (sh.all_share_numbers && sh.all_share_numbers.length > 1) || String(sh.share_no).includes(',')) && (
+                        {isInactive ? (
+                          <span
+                            className="text-slate-400 line-through cursor-not-allowed"
+                            title={`ಈ ಖಾತೆಯು ಮುಖ್ಯ ಶೇರು #${sh.merged_into_share_no || ''} ಗೆ ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ (Inactive)`}
+                          >
+                            {sh.share_no || sh.share_number}
+                          </span>
+                        ) : (
+                          <span
+                            onClick={() => handleInitiateEdit(sh)}
+                            className="cursor-pointer hover:underline hover:text-emerald-300 transition-colors"
+                            title="ಕ್ಲಿಕ್ ಮಾಡಿ ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ ಮಾಡಿ (Requires Security PIN)"
+                          >
+                            {sh.share_no || sh.share_number}
+                          </span>
+                        )}
+                        {isInactive ? (
+                          <span className="px-1.5 py-0.5 rounded-md bg-rose-950/90 text-rose-300 border border-rose-700/60 text-[9px] font-sans font-bold flex items-center gap-1 shrink-0" title={`ಈ ಖಾತೆಯು ಮುಖ್ಯ ಶೇರು #${sh.merged_into_share_no || ''} ಗೆ ವಿಲೀನಗೊಂಡು ಕಾಯಂ ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ`}>
+                            <XCircle className="w-2.5 h-2.5 text-rose-400" />
+                            <span>ನಿಷ್ಕ್ರಿಯ</span>
+                          </span>
+                        ) : (sh.is_merged || (sh.all_share_numbers && sh.all_share_numbers.length > 1) || String(sh.share_no).includes(',')) ? (
                           <span className="px-1.5 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-700/60 text-[9px] font-sans font-bold flex items-center gap-1 shrink-0" title="ಬಹು-ಶೇರುಗಳು ಮತ್ತು ಮೊತ್ತಗಳು ವಿಲೀನಗೊಂಡಿವೆ">
                             <GitMerge className="w-2.5 h-2.5 text-amber-400" />
                             <span>ವಿಲೀನ</span>
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     </td>
 
@@ -1133,7 +1173,8 @@ export default function ShareholderList({ initialShowMerge = false }) {
                     {/* 38. Nominee Address */}
                     <td className="py-2.5 px-4 text-slate-400 max-w-[200px] truncate" title={sh.nominee_address}>{sh.nominee_address || '—'}</td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

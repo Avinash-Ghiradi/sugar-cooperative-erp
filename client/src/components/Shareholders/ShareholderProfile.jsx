@@ -146,6 +146,14 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
       <div className="bg-slate-950 border border-slate-800 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         
         {/* Profile Header */}
+        {isShareholderInactive(sh) && (
+          <div className="bg-rose-950/70 border-b border-rose-800/80 px-6 py-2.5 text-xs text-rose-200 flex items-center gap-2.5 font-medium">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>
+              <strong>ಖಾತೆ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದೆ (Account Merged & Deactivated):</strong> ಈ ಷೇರು ಖಾತೆಯನ್ನು ಮುಖ್ಯ ಷೇರು #{sh.merged_into_share_no || 'Master'} ಗೆ ಅಧಿಕೃತವಾಗಿ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ. ಈ ಖಾತೆಯು ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದ್ದು (Inactive), ಯಾವುದೇ ಹೊಸ ಆರ್ಥಿಕ ವಹಿವಾಟು, ಸಕ್ಕರೆ ಹಂಚಿಕೆ ಅಥವಾ ವರ್ಗಾವಣೆಗೆ ಅವಕಾಶವಿರುವುದಿಲ್ಲ (Disabled Everywhere).
+            </span>
+          </div>
+        )}
         <div className="p-6 bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border-b border-slate-800 flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-extrabold text-2xl shadow-lg overflow-hidden shrink-0">
@@ -157,7 +165,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
             </div>
 
             <div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <h2 className="text-xl font-bold text-slate-100">{sh.shareholder_name || sh.name}</h2>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
                   {sh.schedule_cast || 'ಅ - ವರ್ಗ'}
@@ -165,6 +173,16 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-900 text-sky-400 border border-slate-700">
                   {sh.book_no || 'B.No: 1'}
                 </span>
+                {isShareholderInactive(sh) ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-950 text-rose-300 border border-rose-700 flex items-center gap-1 shadow">
+                    <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                    <span>ನಿಷ್ಕ್ರಿಯ (Inactive - ವಿಲೀನಗೊಂಡಿದೆ)</span>
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700">
+                    ಸಕ್ರಿಯ (Active)
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-3">
                 <span>Share No: <strong className="text-emerald-400 font-mono text-sm">{sh.share_no || sh.share_number}</strong></span>

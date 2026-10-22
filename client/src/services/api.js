@@ -155,6 +155,17 @@ export function getMemberTypeByCategory(category, explicitType = null) {
 
 
 // -------------------------------------------------------------
+// Helper: Determine if a shareholder record is inactive, merged-out secondary, or disabled
+export function isShareholderInactive(sh) {
+  if (!sh) return false;
+  if (sh.is_merged_secondary || sh.is_disabled) return true;
+  const status = String(sh.status || '').toLowerCase().trim();
+  if (status === 'inactive' || status.includes('inactive') || status.includes('ನಿಷ್ಕ್ರಿಯ')) return true;
+  if (status.includes('merged') && !status.includes('active')) return true;
+  if (status.includes('ವಿಲೀನ') && !status.includes('active')) return true;
+  return false;
+}
+
 // STATUTORY SHARE VALUE & AUTOMATIC CALCULATION ENGINE
 // Rules:
 // 1. Cutoff: 28/02/2022
@@ -1313,7 +1324,13 @@ export const ApiService = {
       );
     }
     if (status) {
-      filtered = filtered.filter(s => s.status === status);
+      if (status === 'Active') {
+        filtered = filtered.filter(s => (s.status === 'Active' || !s.status) && !isShareholderInactive(s));
+      } else if (status === 'Inactive') {
+        filtered = filtered.filter(s => isShareholderInactive(s));
+      } else {
+        filtered = filtered.filter(s => s.status === status);
+      }
     }
     if (book_no) {
       const bq = book_no.trim().toLowerCase();
@@ -2211,7 +2228,17 @@ const newSh = {
     const apiRes = await fetchApi('/transactions', { method: 'POST', body: JSON.stringify(data) });
     if (apiRes && apiRes.success) return apiRes;
 
-    const sh = mockShareholders.find(s => s.shareholder_id === data.shareholder_id);
+    const sh = mockShareholders.find(s => 
+      String(s.shareholder_id || '').toLowerCase() === String(data.shareholder_id || '').toLowerCase() ||
+      String(s.share_no || '').toLowerCase() === String(data.shareholder_id || data.share_no || '').toLowerCase() ||
+      String(s.id) === String(data.shareholder_id || '')
+    );
+    if (sh && isShareholderInactive(sh)) {
+      return {
+        success: false,
+        message: `ಈ ಷೇರುದಾರರ ಖಾತೆಯು (#${sh.share_no}) ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ. ಯಾವುದೇ ಹಣಕಾಸು ವ್ಯವಹಾರ ನಡೆಸಲು ಸಾಧ್ಯವಿಲ್ಲ.`
+      };
+    }
     const newTx = {
       id: mockTransactions.length + 1,
       transaction_id: `TX-${Date.now()}`,
@@ -2516,6 +2543,7 @@ const newSh = {
     if (!query || query.trim().length < 1) return [];
     const q = query.trim().toLowerCase().normalize('NFC');
     return mockShareholders.filter(s => {
+      if (isShareholderInactive(s)) return false;
       const sNo = String(s.share_no || '').toLowerCase();
       const sName = (s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
       const sId = (s.shareholder_id || '').toLowerCase();
@@ -4424,12 +4452,65 @@ const newSh = {
       }
     });
 
-    // Remove duplicate IDs from mockShareholders
+    // Mark duplicate / secondary holdings as Inactive & Disabled everywhere
+    primary.status = 'Active';
+    const primaryShareNoStr = String(primary.primary_share_no || primary.share_no).trim();
     const duplicateIds = new Set(duplicates.map(d => d.id));
-    mockShareholders = mockShareholders.filter(s => !duplicateIds.has(s.id));
 
-    // Save consolidated master list to IndexedDB
+    duplicates.forEach(sec => {
+      sec.status = 'Inactive';
+      sec.is_disabled = true;
+      sec.is_merged_secondary = true;
+      sec.merged_into_share_no = primaryShareNoStr;
+      sec.merged_into_id = primary.id;
+      sec.merged_at = new Date().toISOString();
+      sec.notes = `ವಿಲೀನಗೊಂಡಿದೆ: ಮುಖ್ಯ ಶೇರು #${primaryShareNoStr} ಗೆ ವಿಲೀನಗೊಳಿಸಿ ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ.`;
+      if (!Array.isArray(sec.audit_history)) sec.audit_history = [];
+      sec.audit_history.unshift({
+        id: `AUD-INACTIVE-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: new Date().toISOString(),
+        performed_by: adminUser || 'Admin',
+        type: 'ACCOUNT_DEACTIVATED_MERGED',
+        title: 'ಖಾತೆಯನ್ನು ವಿಲೀನಗೊಳಿಸಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ (Account Merged & Deactivated)',
+        description: `ಈ ಷೇರು ಖಾತೆಯನ್ನು ಮುಖ್ಯ ಷೇರು #${primaryShareNoStr} (${primary.shareholder_name || primary.name}) ಗೆ ಅಧಿಕೃತವಾಗಿ ವಿಲೀನಗೊಳಿಸಿ ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ.`
+      });
+    });
+
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const item = mockShareholders[i];
+      if (item.id === primary.id) {
+        mockShareholders[i] = primary;
+      } else if (duplicateIds.has(item.id)) {
+        const dFound = duplicates.find(d => d.id === item.id);
+        if (dFound) mockShareholders[i] = dFound;
+      }
+    }
+
     await saveToIndexedDB(mockShareholders);
+
+    if (CloudDbService.isEnabled()) {
+      try {
+        if (primaryShareNoStr) {
+          await CloudDbService.updateShareholder(primaryShareNoStr, {
+            number_of_shares: primary.number_of_shares,
+            total_amount: primary.total_amount,
+            status: 'Active',
+            updated_at: new Date().toISOString()
+          });
+        }
+        for (const sec of duplicates) {
+          const secNo = String(sec.share_no || sec.share_number || '').trim();
+          if (secNo) {
+            await CloudDbService.updateShareholder(secNo, {
+              status: 'Inactive',
+              updated_at: new Date().toISOString()
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Cloud DB merge sync warning:', err);
+      }
+    }
 
     return {
       success: true,
@@ -4510,7 +4591,12 @@ const newSh = {
           schedule_cast: s.schedule_cast || 'ಅ - ವರ್ಗ',
           aadhaar_card_no: s.aadhaar_card_no || '',
           mobile_no: s.mobile_no || s.mobile || '',
-          is_merged: !!s.is_merged
+          is_merged: !!s.is_merged,
+          status: s.status || 'Active',
+          is_disabled: isShareholderInactive(s),
+          is_inactive: isShareholderInactive(s),
+          is_merged_secondary: !!s.is_merged_secondary,
+          merged_into_share_no: s.merged_into_share_no || ''
         });
         if (results.length >= 30) break;
       }
@@ -4684,18 +4770,48 @@ const newSh = {
       }
     });
 
-    // Remove secondary IDs from mockShareholders
+    // Mark all secondary accounts as Inactive & Disabled everywhere
+    const primaryShareNoStr = String(primary.primary_share_no || allShareNos[0] || primary.share_no).trim();
+    primary.status = 'Active';
+
     const secondaryIds = new Set(secondaries.map(s => s.id));
-    mockShareholders = mockShareholders.filter(s => !secondaryIds.has(s.id));
+    secondaries.forEach(sec => {
+      sec.status = 'Inactive';
+      sec.is_disabled = true;
+      sec.is_merged_secondary = true;
+      sec.merged_into_share_no = primaryShareNoStr;
+      sec.merged_into_id = primary.id;
+      sec.merged_at = new Date().toISOString();
+      sec.notes = `ವಿಲೀನಗೊಂಡಿದೆ: ಮುಖ್ಯ ಶೇರು #${primaryShareNoStr} ಗೆ ವಿಲೀನಗೊಳಿಸಿ ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ (Merged into #${primaryShareNoStr} - Inactive & Disabled everywhere).`;
+      if (!Array.isArray(sec.audit_history)) sec.audit_history = [];
+      sec.audit_history.unshift({
+        id: `AUD-INACTIVE-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: new Date().toISOString(),
+        performed_by: adminUser || 'Admin',
+        type: 'ACCOUNT_DEACTIVATED_MERGED',
+        title: 'ಖಾತೆಯನ್ನು ವಿಲೀನಗೊಳಿಸಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ (Account Merged & Deactivated)',
+        description: `ಈ ಷೇರು ಖಾತೆಯನ್ನು ಮುಖ್ಯ ಷೇರು #${primaryShareNoStr} (${primary.shareholder_name || primary.name}) ಗೆ ಅಧಿಕೃತವಾಗಿ ವಿಲೀನಗೊಳಿಸಿ ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ.`
+      });
+    });
+
+    // Update mockShareholders in place: primary remains active with consolidated shares, secondaries become inactive
+    for (let i = 0; i < mockShareholders.length; i++) {
+      const item = mockShareholders[i];
+      if (item.id === primary.id) {
+        mockShareholders[i] = primary;
+      } else if (secondaryIds.has(item.id)) {
+        const secFound = secondaries.find(s => s.id === item.id);
+        if (secFound) mockShareholders[i] = secFound;
+      }
+    }
 
     // Save to IndexedDB
     await saveToIndexedDB(mockShareholders);
 
     if (CloudDbService.isEnabled()) {
       try {
-        const primaryShareNo = String(primary.primary_share_no || primary.share_no || '').trim();
-        if (primaryShareNo) {
-          await CloudDbService.updateShareholder(primaryShareNo, {
+        if (primaryShareNoStr) {
+          await CloudDbService.updateShareholder(primaryShareNoStr, {
             number_of_shares: primary.number_of_shares,
             total_amount: primary.total_amount,
             receipt_amount: primary.receipt_amount || 0,
@@ -4711,7 +4827,7 @@ const newSh = {
           const secNo = String(sec.share_no || sec.share_number || '').trim();
           if (secNo) {
             await CloudDbService.updateShareholder(secNo, {
-              status: 'Merged (ವಿಲೀನಗೊಂಡಿದೆ)',
+              status: 'Inactive',
               updated_at: new Date().toISOString()
             });
           }
@@ -4728,9 +4844,9 @@ const newSh = {
       combinedShareNoStr: allShareNos.join(', '),
       combinedShares,
       combinedTotalAmt,
-      removedCount: secondaries.length,
+      secondaryShareNumbers: secondaries.map(s => s.share_no || s.id),
       remainingCount: mockShareholders.length,
-      message: `ಷೇರು ಸಂಖ್ಯೆಗಳು #${allShareNos.join(', #')} ಯಶಸ್ವಿಯಾಗಿ ವಿಲೀನಗೊಂಡಿವೆ!`
+      message: `ಷೇರು ಸಂಖ್ಯೆಗಳು #${allShareNos.join(', #')} ಯಶಸ್ವಿಯಾಗಿ ವಿಲೀನಗೊಂಡಿವೆ! ಮುಖ್ಯ ಖಾತೆ #${primaryShareNoStr} ಸಕ್ರಿಯವಾಗಿದೆ ಮತ್ತು ಎರಡನೇ ಖಾತೆಗಳನ್ನು ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ (Inactive).`
     };
   }
 
@@ -4799,6 +4915,14 @@ const newSh = {
 
     if (matchingRecords.length < 2) {
       return { success: false, message: 'ವಿಲೀನಗೊಳಿಸಲು ಕನಿಷ್ಠ 2 ಮಾನ್ಯ ಷೇರು ದಾಖಲೆಗಳು ಅಗತ್ಯವಿದೆ.' };
+    }
+
+    const inactiveCandidate = matchingRecords.find(r => isShareholderInactive(r));
+    if (inactiveCandidate) {
+      return {
+        success: false,
+        message: `ಷೇರು #${inactiveCandidate.share_no || inactiveCandidate.id} ಈಗಾಗಲೇ ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ. ಇದನ್ನು ಮತ್ತೆ ವಿಲೀನಗೊಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.`
+      };
     }
 
     let primary = matchingRecords[0];

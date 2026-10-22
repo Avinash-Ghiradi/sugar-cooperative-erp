@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ApiService } from '../../services/api';
+import { ApiService, isShareholderInactive } from '../../services/api';
 import {
   X, Save, User, MapPin, Phone, CreditCard, Calendar, Upload,
   Search, CheckCircle2, AlertCircle, FileText, Camera, Trash2,
@@ -126,6 +126,10 @@ export default function VargavaneTransferModal({
   }, [searchShareholderQuery]);
 
   const handleSelectShareholder = (sh) => {
+    if (isShareholderInactive(sh)) {
+      if (showToast) showToast(`ಷೇರು #${sh.share_no} ಖಾತೆಯು ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ. ವರ್ಗಾವಣೆ ಅಸಾಧ್ಯ (Merged and Inactive account - transfer disabled).`, 'error');
+      return;
+    }
     const circleInfo = ApiService.resolveCircleForPlace ? ApiService.resolveCircleForPlace(sh.place) : null;
     setForm(prev => ({
       ...prev,
