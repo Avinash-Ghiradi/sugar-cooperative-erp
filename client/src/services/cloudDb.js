@@ -14,11 +14,12 @@ export const CloudDbService = {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
+          const hasValidKey = parsed.anonKey && String(parsed.anonKey).startsWith('eyJ') && parsed.anonKey.length > 50;
           return {
-            url: parsed.url || DEFAULT_SUPABASE_URL,
-            anonKey: parsed.anonKey || DEFAULT_SUPABASE_ANON_KEY,
-            enabled: parsed.enabled !== undefined ? parsed.enabled : true,
-            lastSync: parsed.lastSync || null
+            url: (parsed.url && parsed.url.includes('supabase.co')) ? parsed.url : DEFAULT_SUPABASE_URL,
+            anonKey: hasValidKey ? parsed.anonKey : DEFAULT_SUPABASE_ANON_KEY,
+            enabled: true, // Always keep enabled so multi-browser sync works seamlessly!
+            lastSync: parsed.lastSync || new Date().toISOString()
           };
         }
       }
@@ -227,7 +228,7 @@ export const CloudDbService = {
       'relationship', 'tharava_date', 'tharava_no', 'mobile_no',
       'photo_url', 'signature_url', 'thumb_url', 'nominee_name',
       'nominee_aadhaar_no', 'nominee_mobile_no', 'nominee_address',
-      'status', 'updated_at'
+      'status', 'created_at', 'updated_at'
     ]);
 
     const sanitized = {};

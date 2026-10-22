@@ -109,9 +109,9 @@ export default function NewShareholderModule() {
       remarks: promoteModal.remarks || ''
     });
     if (res && res.success) {
-      showToast(`ಶೇರು ನಂ. #${res.share_no} ಯಶಸ್ವಿಯಾಗಿ ಕಾರ್ಖಾನೆಯ ಮಾಸ್ಟರ್ ಶೇರುದಾರರ ಪಟ್ಟಿಗೆ ಸೇರಿಸಲಾಗಿದೆ ಮತ್ತು ಆಡಿಟ್ ಇತಿಹಾಸ ದಾಖಲಾಗಿದೆ!`);
+      showToast(`ಶೇರು ನಂ. #${res.share_no} (${promoteModal.record.full_name}) ಯಶಸ್ವಿಯಾಗಿ ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿಗೆ (Shareholder Statutory Ledger) ಸೇರಿಸಲಾಗಿದೆ!`);
       setPromoteModal({ open: false, record: null, shareNo: '', tharavaNo: '', tharavaDate: '', remarks: '' });
-      loadEnrollments();
+      await loadEnrollments();
     } else {
       showToast(res?.message || 'ಕಾರ್ಯಾಚರಣೆ ವಿಫಲವಾಗಿದೆ', 'error');
     }
@@ -598,9 +598,23 @@ export default function NewShareholderModule() {
                             <ShieldCheck className="w-3.5 h-3.5" />
                           </button>
                         ) : (
-                          <span className="p-1.5 rounded-lg bg-slate-900 text-emerald-400 border border-emerald-900/50" title="ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಸಕ್ರಿಯವಾಗಿದೆ">
+                          <button
+                            onClick={async () => {
+                              try {
+                                const masterMember = await ApiService.ensureEnrollmentInMaster(item, user?.name || 'Admin');
+                                if (masterMember) {
+                                  showToast(`ಶೇರು #${item.share_no} (${item.full_name}) ರವರನ್ನು ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿಯಲ್ಲಿ ಯಶಸ್ವಿಯಾಗಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ! 🟢`);
+                                  loadEnrollments();
+                                }
+                              } catch (err) {
+                                showToast('ದೋಷ: ' + err.message, 'error');
+                              }
+                            }}
+                            className="p-1.5 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 transition-colors cursor-pointer"
+                            title="ಮಾಸ್ಟರ್ ಶೀಟ್‌ಗೆ ಸೇರ್ಪಡೆ ದೃಢೀಕರಿಸಿ / ನವೀಕರಿಸಿ (Ensure in Statutory Ledger)"
+                          >
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                          </span>
+                          </button>
                         )}
 
                         {/* Print Receipt */}

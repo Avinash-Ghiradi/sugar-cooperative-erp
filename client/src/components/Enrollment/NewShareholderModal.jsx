@@ -195,7 +195,11 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
       }
 
       if (res && res.success) {
-        showToast(editRecord ? 'ನೋಂದಣಿ ದಾಖಲೆ ನವೀಕರಿಸಲಾಗಿದೆ!' : 'ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ!');
+        showToast(
+          isIssuedOrApproved
+            ? `ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ಮತ್ತು ಶಾಸನಬದ್ಧ ವಹಿ (#${submissionData.share_no}) ಸೇರ್ಪಡೆ ಯಶಸ್ವಿಯಾಗಿದೆ! 🟢`
+            : (editRecord ? 'ನೋಂದಣಿ ದಾಖಲೆ ನವೀಕರಿಸಲಾಗಿದೆ!' : 'ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ!')
+        );
         onSuccess();
         onClose();
       } else {

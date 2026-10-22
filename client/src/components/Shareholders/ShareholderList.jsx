@@ -90,6 +90,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const [uploadFileName, setUploadFileName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [autoMergeOnImport, setAutoMergeOnImport] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -109,7 +110,25 @@ export default function ShareholderList({ initialShowMerge = false }) {
 
   useEffect(() => {
     loadMasters();
+    // Auto-reconcile in the background to ensure all approved shareholders from enrollments & cloud are populated
+    ApiService.reconcileApprovedShareholders().then(() => {
+      fetchShareholders(1);
+    }).catch(() => {});
   }, []);
+
+  const handleManualReconcile = async () => {
+    setSyncing(true);
+    try {
+      await ApiService.reconcileApprovedShareholders();
+      await loadMasters();
+      await fetchShareholders(1);
+      showToast('ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್ ಮತ್ತು ಹೊಸ ಶೇರುದಾರರ ನಮೂನೆ ವಹಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸಿಂಕ್ ಮಾಡಲಾಗಿದೆ! 🟢');
+    } catch (err) {
+      showToast('ಸಿಂಕ್ ದೋಷ: ' + err.message, 'error');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
     fetchShareholders(1);
@@ -654,6 +673,18 @@ export default function ShareholderList({ initialShowMerge = false }) {
             </button>
           </div>
 
+          {/* Sync & Reconcile Button */}
+          <button
+            type="button"
+            onClick={handleManualReconcile}
+            disabled={syncing}
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50"
+            title="ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್ ಮತ್ತು ಹೊಸ ಶೇರುದಾರರನ್ನು ಸಿಂಕ್ ಮಾಡಿ (Sync & Reconcile with Supabase)"
+          >
+            <RefreshCw className={`w-4 h-4 text-emerald-400 ${syncing ? 'animate-spin' : ''}`} />
+            <span>{syncing ? 'ಸಿಂಕ್ ಆಗುತ್ತಿದೆ...' : 'ಸಿಂಕ್ & ನವೀಕರಣ (Sync)'}</span>
+          </button>
+
           {/* Newest Issued Quick Toggle */}
           <button
             type="button"
@@ -1048,6 +1079,12 @@ export default function ShareholderList({ initialShowMerge = false }) {
                           </div>
                         )}
                         <span className="truncate">{sh.shareholder_name || sh.name}</span>
+                        {(Number(sh.id) > 17076 || parseInt(String(sh.share_no || '').replace(/\D/g, '')) >= 18000 || (sh.notes && sh.notes.includes('ಹೊಸ'))) && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-600 shadow-sm shrink-0 flex items-center gap-1" title="ಹೊಸದಾಗಿ ನೋಂದಣಿಯಾಗಿ ಅನುಮೋದನೆ ಪಡೆದ ಶೇರುದಾರ">
+                            <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                            <span>ಹೊಸ ಸದಸ್ಯ (Approved)</span>
+                          </span>
+                        )}
                       </div>
                     </td>
 
