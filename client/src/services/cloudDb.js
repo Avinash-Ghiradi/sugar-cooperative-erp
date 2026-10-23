@@ -539,7 +539,46 @@ export const CloudDbService = {
     }
   },
 
-  // 11. Ready-to-copy Supabase SQL Setup Schema
+  // 11. Clear all shareholders from Cloud DB
+  async clearAllShareholders() {
+    if (!this.isEnabled()) return false;
+    try {
+      await this.request('shareholders?id=gt.0', { method: 'DELETE' });
+      return true;
+    } catch (err) {
+      console.warn('Cloud DB clearAllShareholders failed:', err.message);
+      return false;
+    }
+  },
+
+  // 12. Clear all cloud collections (enrollments, varasa, vargavane, transactions, allotments, merges)
+  async clearAllCollections() {
+    if (!this.isEnabled()) return false;
+    try {
+      await this.request('audit_logs?id=gt.0', { method: 'DELETE' });
+      return true;
+    } catch (err) {
+      console.warn('Cloud DB clearAllCollections failed:', err.message);
+      return false;
+    }
+  },
+
+  // 13. Clear entire cloud database (both shareholders and audit_logs)
+  async clearAllData() {
+    if (!this.isEnabled()) return false;
+    try {
+      await Promise.allSettled([
+        this.clearAllShareholders(),
+        this.clearAllCollections()
+      ]);
+      return true;
+    } catch (err) {
+      console.warn('Cloud DB clearAllData failed:', err.message);
+      return false;
+    }
+  },
+
+  // 14. Ready-to-copy Supabase SQL Setup Schema
   getSqlSchema() {
     return `-- ====================================================================
 -- Shree Bheemashankar Sahakari Sakkare Karkhane Niyamit, Maragur

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import OfficialShareholderIDCard, { OfficialSocietySeal } from '../IDCards/OfficialShareholderIDCard';
 import {

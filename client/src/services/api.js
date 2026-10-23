@@ -571,6 +571,8 @@ async function fetchOfficialShareholdersFallback() {
 
 export async function syncAllCloudWorkflows() {
   if (!CloudDbService.isEnabled()) return;
+  const isBlankReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true');
+  if (isBlankReset) return;
   try {
     const [enr, varasa, varg, merges, txs, allotments] = await Promise.all([
       CloudDbService.getCollection('enrollments').catch(() => null),
@@ -688,8 +690,9 @@ export function ensureDBReady() {
         }
 
         let records = (dbData && Array.isArray(dbData)) ? dbData : [];
-        // If IndexedDB has no records, fetch official dataset once
-        if (records.length < 500) {
+        const isBlankReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true');
+        // If IndexedDB has no records, fetch official dataset once UNLESS user intentionally erased/reset
+        if (records.length < 500 && !isBlankReset) {
           const officialData = await fetchOfficialShareholdersFallback();
           if (officialData && officialData.length > 0) {
             records = officialData;
@@ -2143,11 +2146,19 @@ const newSh = {
     await clearIndexedDB(false);
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('sugar_erp_db_reset_blank', 'true');
         localStorage.removeItem(STORAGE_KEY_SH);
         localStorage.removeItem('sugar_erp_clean_shareholders_v2');
         localStorage.removeItem('sugar_erp_shareholders');
       }
     } catch (e) {}
+    if (CloudDbService.isEnabled()) {
+      try {
+        await CloudDbService.clearAllShareholders();
+      } catch (err) {
+        console.warn('Cloud DB clearAllShareholders error:', err);
+      }
+    }
     return { success: true, message: 'All shareholder records have been permanently erased.' };
   },
 
@@ -2158,30 +2169,53 @@ const newSh = {
     mockTransactions = [];
     mockSugarAllotments = [];
     mockVarasaTransfers = [];
+    mockVargavaneTransfers = [];
+    mockEnrollments = [];
+    mockMergeRequests = [];
     mockEmployees = [];
     mockAuditLogs = [];
+
     saveStoredData(STORAGE_KEY_SH, []);
     saveStoredData(STORAGE_KEY_CIRCLE_DIR, []);
     saveStoredData(STORAGE_KEY_TX, []);
     saveStoredData(STORAGE_KEY_SA, []);
     saveStoredData(STORAGE_KEY_VT, []);
+    saveStoredData(STORAGE_KEY_VG, []);
+    saveStoredData(STORAGE_KEY_ENROLLMENT, []);
+    saveStoredData(STORAGE_KEY_MERGE_REQ, []);
     saveStoredData(STORAGE_KEY_EMP, []);
     saveStoredData(STORAGE_KEY_LOGS, []);
+
     await clearIndexedDB(true);
+
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         Object.keys(localStorage).forEach(k => {
-          if (k.startsWith('sugar_erp_') && k !== 'sugar_erp_user') {
+          if (k.startsWith('sugar_erp_') && k !== 'sugar_erp_user' && k !== 'sugar_erp_cloud_config') {
             localStorage.removeItem(k);
           }
         });
+        localStorage.setItem('sugar_erp_db_reset_blank', 'true');
       }
     } catch (e) {}
-    return { success: true, message: 'Entire database wiped and reset to a clean state.' };
+
+    if (CloudDbService.isEnabled()) {
+      try {
+        await CloudDbService.clearAllData();
+      } catch (err) {
+        console.warn('Cloud DB clearAllData error:', err);
+      }
+    }
+    return { success: true, message: 'Entire database wiped and reset to a clean blank state.' };
   },
 
   async restoreOfficialData() {
     try {
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.removeItem('sugar_erp_db_reset_blank');
+        }
+      } catch (e) {}
       mockCircleDirectory = officialCircleData;
       await saveCircleDirectoryToDB(officialCircleData);
 

@@ -37,6 +37,11 @@ export default function ResetConfirmModal({ isOpen, onClose, onResetComplete }) 
         await onResetComplete();
       }
       onClose();
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          window.location.reload();
+        }, 600);
+      }
     } catch (err) {
       showToast('Error during reset: ' + err.message, 'error');
     } finally {

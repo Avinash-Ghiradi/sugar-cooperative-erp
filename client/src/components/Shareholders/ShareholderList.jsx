@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
