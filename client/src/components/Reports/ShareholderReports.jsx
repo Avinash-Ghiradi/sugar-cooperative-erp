@@ -1,3 +1,4 @@
+import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { ApiService, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
@@ -1431,7 +1432,7 @@ export default function ShareholderReports() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <TableScrollerContainer label="ಗ್ರಾಮವಾರು ಸಾರಾಂಶ (Scroll Places):">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-slate-900 print:bg-gray-100 text-slate-300 print:text-black font-bold uppercase text-[10px] border-b border-slate-800 print:border-gray-400">
                       <tr>
@@ -1495,14 +1496,14 @@ export default function ShareholderReports() {
                       </tr>
                     </tfoot>
                   </table>
-                </div>
+                </TableScrollerContainer>
               </div>
             )}
 
             {/* 2. CATEGORYWISE BREAKDOWN TABLE */}
             {reportMode === 'categorywise' && (
               <div className="space-y-4">
-                <div className="overflow-x-auto">
+                <TableScrollerContainer label="ವರ್ಗವಾರು ಸಾರಾಂಶ (Scroll Categories):">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-slate-900 print:bg-gray-100 text-slate-300 print:text-black font-bold uppercase text-[10px] border-b border-slate-800 print:border-gray-400">
                       <tr>
@@ -1566,14 +1567,14 @@ export default function ShareholderReports() {
                       </tr>
                     </tfoot>
                   </table>
-                </div>
+                </TableScrollerContainer>
               </div>
             )}
 
             {/* 3. CIRCLEWISE BREAKDOWN TABLE */}
             {reportMode === 'circlewise' && (
               <div className="space-y-4">
-                <div className="overflow-x-auto">
+                <TableScrollerContainer label="ವಲಯವಾರು ಸಾರಾಂಶ (Scroll Circles):">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-slate-900 print:bg-gray-100 text-slate-300 print:text-black font-bold uppercase text-[10px] border-b border-slate-800 print:border-gray-400">
                       <tr>
@@ -1641,14 +1642,14 @@ export default function ShareholderReports() {
                       </tr>
                     </tfoot>
                   </table>
-                </div>
+                </TableScrollerContainer>
               </div>
             )}
 
             {/* 4. SHARESWISE BREAKDOWN TABLE */}
             {reportMode === 'shareswise' && (
               <div className="space-y-4">
-                <div className="overflow-x-auto">
+                <TableScrollerContainer label="ಶೇರುವಾರು ಸಾರಾಂಶ (Scroll Shares):">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-slate-900 print:bg-gray-100 text-slate-300 print:text-black font-bold uppercase text-[10px] border-b border-slate-800 print:border-gray-400">
                       <tr>
@@ -1713,7 +1714,7 @@ export default function ShareholderReports() {
                       </tr>
                     </tfoot>
                   </table>
-                </div>
+                </TableScrollerContainer>
               </div>
             )}
 
@@ -1739,7 +1740,7 @@ export default function ShareholderReports() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <TableScrollerContainer label="ಮೊತ್ತವಾರು ಸಾರಾಂಶ (Scroll Amount):">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-slate-900 print:bg-gray-100 text-slate-300 print:text-black font-bold uppercase text-[10px] border-b border-slate-800 print:border-gray-400">
                       <tr>
@@ -1814,7 +1815,7 @@ export default function ShareholderReports() {
                       </tr>
                     </tfoot>
                   </table>
-                </div>
+                </TableScrollerContainer>
               </div>
             )}
 
@@ -1866,7 +1867,7 @@ export default function ShareholderReports() {
                   )}
                 </div>
 
-                <div className="overflow-x-auto">
+                <TableScrollerContainer label="ಸದಸ್ಯರ ಸಂಪೂರ್ಣ ವಿವರ ವರದಿ (Scroll Members):">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-slate-900 print:bg-gray-100 text-slate-300 print:text-black font-bold uppercase text-[10px] border-b border-slate-800 print:border-gray-400">
                       <tr>
@@ -1961,7 +1962,7 @@ export default function ShareholderReports() {
                       </tr>
                     </tfoot>
                   </table>
-                </div>
+                </TableScrollerContainer>
 
                 {/* Pagination footer (Screen only) */}
                 {detailedPageSize !== 'all' && totalDetailedPages > 1 && (

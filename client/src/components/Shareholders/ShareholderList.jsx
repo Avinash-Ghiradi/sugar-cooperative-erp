@@ -1,3 +1,4 @@
+import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive } from '../../services/api';
@@ -867,7 +868,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto max-h-[72vh]">
+          <TableScrollerContainer label="38 ಕಾಲಂಗಳ ಷೇರು ನಮೂನೆ ವಹಿ (Scroll Ledger):" maxHeight="max-h-[72vh]">
             <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
               <thead className="bg-emerald-800 border-b-2 border-emerald-400 text-white font-bold text-[11.5px] sticky top-0 z-20 shadow-lg select-none">
                 <tr className="border-b border-emerald-700/80">
@@ -1222,7 +1223,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </TableScrollerContainer>
         )}
 
         {/* Server Side Pagination Bar */}

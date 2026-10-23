@@ -46,6 +46,34 @@ function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.85) {
 export default function ShareholderForm({ initialData, onClose, onSaveSuccess }) {
   const { showToast, setActiveModule } = useAuth();
   const [villages, setVillages] = useState([]);
+  const [showPlaceDropdown, setShowPlaceDropdown] = useState(false);
+  const placeDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (placeDropdownRef.current && !placeDropdownRef.current.contains(e.target)) {
+        setShowPlaceDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredVillages = useMemo(() => {
+    const q = (formData.place || '').trim().toLowerCase();
+    if (!q) return villages.slice(0, 20);
+    return villages.filter(v => {
+      const name = (v.name || '').toLowerCase();
+      const taluk = (v.taluk || '').toLowerCase();
+      return name.includes(q) || taluk.includes(q);
+    });
+  }, [formData.place, villages]);
+
+  const handleSelectVillage = (v) => {
+    const placeName = typeof v === 'string' ? v : v.name;
+    handlePlaceChange(placeName);
+    setShowPlaceDropdown(false);
+  };
   const [circles, setCircles] = useState([]);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -813,16 +841,28 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
               <MapPin className="w-4 h-4 text-emerald-400" /> 3. Territorial Place & Address Details (ಸ್ಥಳ ಮತ್ತು ವಿಳಾಸ)
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-slate-400 mb-1 font-medium">Place (ಗ್ರಾಮ / ಸ್ಥಳ) *</label>
+              <div className="relative" ref={placeDropdownRef}>
+                <label className="block text-slate-400 mb-1 font-medium flex items-center justify-between">
+                  <span>Place (ಗ್ರಾಮ / ಸ್ಥಳ) *</span>
+                  {formData.place && (
+                    <span className="text-[10px] text-emerald-400 font-mono">
+                      {formData.circle || ''}
+                    </span>
+                  )}
+                </label>
                 <input
                   type="text"
                   required
                   list="sh-form-places-list"
+                  autoComplete="off"
                   placeholder="e.g. ಬಳ್ಳೊಳ್ಳಿ, ಜೇವೂರ, ಚಡಚಣ, ಅಥರ್ಗಾ..."
                   value={formData.place}
-                  onChange={(e) => handlePlaceChange(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-300 font-bold outline-none focus:border-emerald-500"
+                  onFocus={() => setShowPlaceDropdown(true)}
+                  onChange={(e) => {
+                    handlePlaceChange(e.target.value);
+                    setShowPlaceDropdown(true);
+                  }}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-300 font-bold outline-none focus:border-emerald-500 transition-all placeholder:text-slate-600"
                 />
                 <datalist id="sh-form-places-list">
                   {villages.map(v => (
@@ -831,6 +871,45 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                     </option>
                   ))}
                 </datalist>
+
+                {/* Dropdown suggestions while typing */}
+                {showPlaceDropdown && filteredVillages.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-56 overflow-y-auto z-50 py-1 divide-y divide-slate-800/60 animate-fadeIn">
+                    <div className="px-3 py-1.5 text-[10px] text-slate-400 font-bold bg-slate-950/80 sticky top-0 flex items-center justify-between">
+                      <span>ಸೂಚಿಸಿದ ಗ್ರಾಮಗಳು ({filteredVillages.length})</span>
+                      <span className="text-[9px] text-slate-500">ಕ್ಲಿಕ್ ಮಾಡಿ ಆಯ್ಕೆಮಾಡಿ</span>
+                    </div>
+                    {filteredVillages.slice(0, 30).map((v, i) => {
+                      const vName = v.name || v;
+                      const taluk = v.taluk || '';
+                      const circleRes = ApiService.resolveCircleForPlace ? ApiService.resolveCircleForPlace(vName) : null;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => handleSelectVillage(v)}
+                          className="w-full text-left px-3 py-2 hover:bg-emerald-950/60 hover:text-emerald-300 transition-colors flex items-center justify-between group cursor-pointer text-xs"
+                        >
+                          <div>
+                            <span className="font-semibold text-slate-200 group-hover:text-emerald-300">
+                              {vName}
+                            </span>
+                            {taluk && (
+                              <span className="text-[10px] text-slate-400 ml-1.5">
+                                (ತಾ: {taluk})
+                              </span>
+                            )}
+                          </div>
+                          {(v.circle_name || circleRes?.circle_name) && (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 group-hover:bg-emerald-900/50 text-slate-300 group-hover:text-emerald-200 font-mono">
+                              {v.circle_name || circleRes?.circle_name}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div>

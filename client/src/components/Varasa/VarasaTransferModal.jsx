@@ -468,7 +468,7 @@ export default function VarasaTransferModal({
                       className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-600 outline-none"
                     />
                     <datalist id="heir-places-list">
-                      {villages.slice(0, 50).map((v, i) => (
+                      {villages.map((v, i) => (
                         <option key={i} value={v.name} />
                       ))}
                     </datalist>
@@ -607,7 +607,7 @@ export default function VarasaTransferModal({
                         className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-100 outline-none"
                       />
                       <datalist id="sh-places-list">
-                        {villages.slice(0, 50).map((v, i) => (
+                        {villages.map((v, i) => (
                           <option key={i} value={v.name} />
                         ))}
                       </datalist>

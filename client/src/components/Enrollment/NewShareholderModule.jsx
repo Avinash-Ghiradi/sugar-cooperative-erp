@@ -1,3 +1,4 @@
+import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -394,7 +395,7 @@ export default function NewShareholderModule() {
 
       {/* 15-Column Statutory Register Table */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
+        <TableScrollerContainer label="15 ಕಾಲಂಗಳ ನೋಂದಣಿ ವಹಿ (Scroll Register):">
           <table className="w-full text-left text-xs text-slate-300 whitespace-nowrap">
             {/* 15 Official Table Headers matching the user's Excel sheet */}
             <thead className="bg-[#608b34] text-white font-bold text-[11px] border-b border-[#4d7228] sticky top-0 z-10 select-none">
@@ -604,7 +605,7 @@ export default function NewShareholderModule() {
               )}
             </tbody>
           </table>
-        </div>
+        </TableScrollerContainer>
 
         {/* Pagination Bar */}
         <div className="px-4 py-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">

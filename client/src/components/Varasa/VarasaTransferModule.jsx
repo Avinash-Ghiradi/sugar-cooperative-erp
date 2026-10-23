@@ -1,3 +1,4 @@
+import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -500,7 +501,7 @@ export default function VarasaTransferModule() {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <TableScrollerContainer label="22 ಕಾಲಂಗಳ ವಾರಸುದಾರರ ಶೇರು ವರ್ಗಾವಣೆ ವಹಿ (Scroll Varasa):">
             <table className="w-full text-left text-xs whitespace-nowrap">
               <thead className="bg-emerald-800 border-b-2 border-emerald-400 text-white uppercase font-bold text-[10.5px] tracking-wider">
                 <tr>
@@ -700,7 +701,7 @@ export default function VarasaTransferModule() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScrollerContainer>
         )}
       </div>
 

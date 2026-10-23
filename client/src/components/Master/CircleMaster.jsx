@@ -1,3 +1,4 @@
+import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { ApiService } from '../../services/api';
@@ -995,7 +996,7 @@ export default function CircleMaster() {
         /* View 2: All 7-Column Addresses & Villages Directory Table */
         <div className="space-y-4">
           <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-            <div className="overflow-x-auto">
+            <TableScrollerContainer label="ಸರ್ಕಲ್ & ಗ್ರಾಮಗಳ ವಹಿ (Scroll Directory):">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-900 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -1089,7 +1090,7 @@ export default function CircleMaster() {
                   )}
                 </tbody>
               </table>
-            </div>
+            </TableScrollerContainer>
           </div>
 
           {/* Pagination Controls */}

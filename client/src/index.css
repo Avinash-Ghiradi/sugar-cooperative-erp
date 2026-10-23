@@ -110,3 +110,29 @@
     background-color: #ffffff !important;
   }
 }
+
+/* Custom Top Scroller Track & Thumb */
+.top-scroller-bar::-webkit-scrollbar {
+  height: 10px;
+}
+.top-scroller-bar::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-radius: 6px;
+}
+.top-scroller-bar::-webkit-scrollbar-thumb {
+  background: #10b981;
+  border-radius: 6px;
+}
+.top-scroller-bar::-webkit-scrollbar-thumb:hover {
+  background: #34d399;
+}
+
+/* Hide only bottom horizontal scrollbar on tables where top scroller is active, preserving vertical scroll */
+.table-hide-bottom-scroller::-webkit-scrollbar:horizontal {
+  height: 0px !important;
+  display: none !important;
+}
+.table-hide-bottom-scroller {
+  /* Keep vertical scrollbar working */
+  scrollbar-width: thin;
+}
