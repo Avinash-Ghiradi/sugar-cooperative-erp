@@ -638,6 +638,16 @@ export default function ShareholderList({ initialShowMerge = false }) {
             </button>
           </div>
 
+          {/* New Shareholder Registration */}
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-950 transition-all cursor-pointer"
+            title="Add New Shareholder Record (+ ಹೊಸ ನೋಂದಣಿ)"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ ಹೊಸ ನೋಂದಣಿ (New Shareholder)</span>
+          </button>
+
           {/* Direct Link to Detailed Reports */}
           <button
             onClick={() => setActiveModule('reports')}
@@ -646,6 +656,16 @@ export default function ShareholderList({ initialShowMerge = false }) {
           >
             <BarChart3 className="w-4 h-4 text-emerald-400" />
             <span>ವಿವರ ವರದಿಗಳು (Reports)</span>
+          </button>
+
+          {/* Export Full 38-Column Ledger to Excel (.xls) */}
+          <button
+            onClick={exportFullLedgerExcel}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 text-emerald-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
+            title="Export complete 38-column statutory ledger to Excel (.xls) with 100% Kannada Unicode"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>ಎಕ್ಸೆಲ್ ರಫ್ತು (Export .xls)</span>
           </button>
 
           {/* Refresh Button */}
@@ -672,11 +692,11 @@ export default function ShareholderList({ initialShowMerge = false }) {
         </div>
       </div>
 
-      {/* Multi-Field Search, Statutory Filter & Alphabetical Sort Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+      {/* Multi-Field Search, Statutory Filter & Alphabetical Sort Bar - Single Row */}
+      <div className="flex flex-nowrap items-center gap-2 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 overflow-x-auto shadow-sm">
         {/* Search */}
-        <div className="sm:col-span-2 lg:col-span-2 relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search Name (ಕನ್ನಡ / English), Share No, Book No, Mobile, Aadhaar..."
@@ -690,7 +710,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
         <select
           value={selectedBook}
           onChange={(e) => setSelectedBook(e.target.value)}
-          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none transition-all"
+          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 cursor-pointer"
         >
           <option value="">All Books ({bookList.length})</option>
           {bookList.map(b => (
@@ -702,9 +722,9 @@ export default function ShareholderList({ initialShowMerge = false }) {
         <select
           value={selectedCast}
           onChange={(e) => setSelectedCast(e.target.value)}
-          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none transition-all"
+          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 cursor-pointer"
         >
-          <option value="">All Categories / ವರ್ಗ ({castList.length})</option>
+          <option value="">All Categories ({castList.length})</option>
           {castList.map(c => (
             <option key={c} value={c}>{c}</option>
           ))}
@@ -714,7 +734,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
         <select
           value={selectedVillage}
           onChange={(e) => setSelectedVillage(e.target.value)}
-          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none transition-all"
+          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 max-w-[160px] cursor-pointer"
         >
           <option value="">All Places ({villages.length})</option>
           {villages.map(v => (
@@ -728,7 +748,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
         <select
           value={selectedCircle}
           onChange={(e) => setSelectedCircle(e.target.value)}
-          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none transition-all"
+          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 max-w-[150px] cursor-pointer"
         >
           <option value="">All Circles ({circles.length})</option>
           {circles.map(c => (
@@ -739,11 +759,11 @@ export default function ShareholderList({ initialShowMerge = false }) {
         </select>
 
         {/* Sort By Filter (Places, Circles, Addresses, Names in Alphabetical Order) */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all"
+            className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all cursor-pointer"
             title="Sort alphabetically (ಅಕಾರಾದಿ ಕ್ರಮ)"
           >
             <option value="">ಕ್ರಮಬದ್ಧ ವಿಂಗಡಣೆ (Default)</option>
@@ -757,7 +777,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
             <button
               type="button"
               onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-emerald-400 text-xs transition-colors flex-shrink-0 cursor-pointer"
+              className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-emerald-400 text-xs transition-colors shrink-0 cursor-pointer"
               title={sortOrder === 'asc' ? 'Ascending (ಆರೋಹಣ ಕ್ರಮ: ಅ-ಹ)' : 'Descending (ಅವರೋಹಣ ಕ್ರಮ: ಹ-ಅ)'}
             >
               {sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
@@ -769,10 +789,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
         <select
           value={selectedAmount}
           onChange={(e) => setSelectedAmount(e.target.value)}
-          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none transition-all font-medium"
+          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all font-medium shrink-0 max-w-[170px] cursor-pointer"
           title="Filter by Cash Amount from Total Amount column (ಒಟ್ಟು ಮೊತ್ತ)"
         >
-          <option value="">All Cash Amounts / ಒಟ್ಟು ಮೊತ್ತ ({amountList.length})</option>
+          <option value="">All Cash Amounts ({amountList.length})</option>
           {amountList.map(a => (
             <option key={a.amount} value={a.amount}>
               ₹ {a.amount.toLocaleString('en-IN')} ({a.count} ಸದಸ್ಯರು)
@@ -784,12 +804,36 @@ export default function ShareholderList({ initialShowMerge = false }) {
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
-          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none transition-all"
+          className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 cursor-pointer"
         >
           <option value="">All Statuses</option>
           <option value="Active">Active (ಸಕ್ರಿಯ)</option>
           <option value="Inactive">Inactive</option>
         </select>
+
+        {/* Clear Filters (when any active) */}
+        {(Boolean(searchInput || selectedBook || selectedCast || selectedVillage || selectedCircle || selectedAmount || selectedStatus || sortBy)) && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchInput('');
+              setSearch('');
+              setSelectedBook('');
+              setSelectedCast('');
+              setSelectedVillage('');
+              setSelectedCircle('');
+              setSelectedAmount('');
+              setSelectedStatus('');
+              setSortBy('');
+              setSortOrder('asc');
+            }}
+            className="flex items-center gap-1 px-2.5 py-2 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white rounded-xl text-xs font-semibold border border-rose-800 transition-all shrink-0 cursor-pointer"
+            title="Clear all active filters"
+          >
+            <XCircle className="w-3.5 h-3.5" />
+            <span>Clear</span>
+          </button>
+        )}
       </div>
 
       {/* Main Table: Full 38-Column Official Cooperative Ledger View */}
