@@ -365,9 +365,7 @@ export const CloudDbService = {
 
   // 9. Batch upload all local records to Supabase Cloud
   async uploadAllToCloud(records, onProgress) {
-    if (!this.isEnabled()) {
-      throw new Error('Cloud database is not enabled or credentials not saved.');
-    }
+    if (!this.isEnabled()) return { success: false, message: 'Cloud DB is not enabled' };
     if (!Array.isArray(records) || records.length === 0) {
       return { success: true, count: 0 };
     }
@@ -380,21 +378,27 @@ export const CloudDbService = {
     const batchSize = 500;
     const total = records.length;
     let uploaded = 0;
+    const totalBatches = Math.ceil(total / batchSize);
 
     for (let i = 0; i < total; i += batchSize) {
       const chunk = records.slice(i, i + batchSize);
+      const batchNum = Math.floor(i / batchSize) + 1;
       
+      // De-duplicate chunk by share_no (keep latest) to prevent Postgres cardinality violation
+      const chunkMap = new Map();
+      chunk.forEach(r => {
+        let sn = String(r.share_no || r.share_number || '').trim();
+        if (r.schedule_cast && r.schedule_cast.includes('ಬ') && !sn.startsWith('ಬ-') && !sn.startsWith('B-')) {
+          sn = 'ಬ-' + sn;
+        }
+        if (sn) chunkMap.set(sn, { ...r, _cleanShareNo: sn });
+      });
+
       // Sanitize fields to match database columns
-      const sanitizedChunk = chunk.map(r => ({
+      const sanitizedChunk = Array.from(chunkMap.values()).map(r => ({
         book_no: r.book_no || 'B.No: 1',
         sl_no: parseInt(r.sl_no, 10) || 1,
-        share_no: (() => {
-          let sn = String(r.share_no || r.share_number || '').trim();
-          if (r.schedule_cast && r.schedule_cast.includes('ಬ') && !sn.startsWith('ಬ-') && !sn.startsWith('B-')) {
-            sn = 'ಬ-' + sn;
-          }
-          return sn;
-        })(),
+        share_no: r._cleanShareNo,
         shareholder_name: r.shareholder_name || r.name || '',
         gender: r.gender || 'M',
         aadhaar_card_no: r.aadhaar_card_no || '',
@@ -430,17 +434,44 @@ export const CloudDbService = {
         status: r.status || 'Active'
       }));
 
-      await this.request('shareholders?on_conflict=share_no', {
-        method: 'POST',
-        headers: {
-          'Prefer': 'resolution=merge-duplicates'
-        },
-        body: JSON.stringify(sanitizedChunk)
-      });
+      // Robust retry mechanism (up to 3 attempts with backoff)
+      let attempts = 0;
+      let success = false;
+      let lastErr = null;
+      while (attempts < 3 && !success) {
+        attempts++;
+        try {
+          await this.request('shareholders?on_conflict=share_no', {
+            method: 'POST',
+            headers: {
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify(sanitizedChunk)
+          });
+          success = true;
+        } catch (err) {
+          lastErr = err;
+          console.warn(`uploadAllToCloud batch ${batchNum}/${totalBatches} attempt ${attempts} error:`, err.message);
+          if (attempts < 3) {
+            await new Promise(res => setTimeout(res, 1200 * attempts));
+          }
+        }
+      }
+
+      if (!success) {
+        console.error(`uploadAllToCloud batch ${batchNum} permanently failed after 3 attempts:`, lastErr);
+        throw lastErr || new Error(`Batch ${batchNum} failed to upload`);
+      }
 
       uploaded += chunk.length;
       if (onProgress) {
-        onProgress({ uploaded, total, percentage: Math.round((uploaded / total) * 100) });
+        onProgress({
+          uploaded,
+          total,
+          percentage: Math.min(100, Math.round((uploaded / total) * 100)),
+          currentBatch: batchNum,
+          totalBatches
+        });
       }
     }
 
@@ -478,20 +509,38 @@ export const CloudDbService = {
 
       for (let offset = 0; offset < total; offset += batchSize) {
         const to = Math.min(offset + batchSize - 1, total - 1);
-        const res = await fetch(`${cleanUrl}/rest/v1/shareholders?order=id.asc`, {
-          headers: {
-            ...headers,
-            'Range': `${offset}-${to}`
-          }
-        });
-        if (res.ok) {
-          const chunk = await res.json();
-          if (Array.isArray(chunk)) {
-            allRecords.push(...chunk);
+        let chunk = null;
+        let attempts = 0;
+        while (attempts < 3 && !chunk) {
+          attempts++;
+          try {
+            const res = await fetch(`${cleanUrl}/rest/v1/shareholders?order=id.asc`, {
+              headers: {
+                ...headers,
+                'Range': `${offset}-${to}`
+              }
+            });
+            if (res.ok) {
+              const parsed = await res.json();
+              if (Array.isArray(parsed)) {
+                chunk = parsed;
+              }
+            }
+          } catch (e) {
+            if (attempts < 3) await new Promise(r => setTimeout(r, 1000));
           }
         }
+
+        if (chunk && chunk.length > 0) {
+          allRecords.push(...chunk);
+        }
+
         if (onProgress) {
-          onProgress({ downloaded: allRecords.length, total, percentage: Math.round((allRecords.length / total) * 100) });
+          onProgress({
+            downloaded: allRecords.length,
+            total,
+            percentage: Math.min(100, Math.round((allRecords.length / total) * 100))
+          });
         }
       }
 

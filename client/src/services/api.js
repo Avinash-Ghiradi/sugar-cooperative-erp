@@ -716,7 +716,7 @@ export function ensureDBReady() {
           const isBlankReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true');
 
           // If IndexedDB has no records, fetch from Cloud DB or official dataset once UNLESS user intentionally erased/reset
-          if (records.length < 500 && !isBlankReset) {
+          if (records.length < 17000 && !isBlankReset) {
             if (CloudDbService.isEnabled()) {
               try {
                 const cloudRecords = await CloudDbService.downloadAllFromCloud();
@@ -726,7 +726,7 @@ export function ensureDBReady() {
                 }
               } catch (e) {}
             }
-            if (records.length < 500) {
+            if (records.length < 17000) {
               const officialData = await fetchOfficialShareholdersFallback();
               if (officialData && officialData.length > 0) {
                 records = officialData;
@@ -2275,7 +2275,23 @@ const newSh = {
         return { success: true, count: 0, message: 'Cloud database is currently empty (0 records).' };
       }
 
+      for (let i = 0; i < cloudRecords.length; i++) {
+        const s = cloudRecords[i];
+        s._searchIndex = (
+          (s.shareholder_name || s.name || '') + ' ' +
+          (s.share_no || s.share_number || '') + ' ' +
+          (s.book_no || '') + ' ' +
+          (s.place || s.village_name || '') + ' ' +
+          (s.taluk || '') + ' ' +
+          (s.circle || s.circle_name || '') + ' ' +
+          (s.mobile_no || s.mobile || '') + ' ' +
+          (s.aadhaar_card_no || s.aadhaar_ref || '') + ' ' +
+          (s.receipt_no || '') + ' ' +
+          (s.nominee_name || '')
+        ).toLowerCase();
+      }
       mockShareholders = cloudRecords;
+      _cachedFilterOptions = null;
       await saveToIndexedDB(mockShareholders);
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('sugar_erp_db_reset_blank');

@@ -867,7 +867,13 @@ export default function SettingsModule({ initialTab = 'org' }) {
                       Syncing & Uploading to Supabase Cloud Database across all browsers...
                     </span>
                     <span className="font-mono text-emerald-400 font-bold">
-                      {uploadProgress ? `${(uploadProgress.uploaded || uploadProgress.downloaded || 0).toLocaleString()} / ${(uploadProgress.total || 0).toLocaleString()} (${uploadProgress.percentage || 0}%)` : 'Processing...'}
+                      {uploadProgress ? (
+                        uploadProgress.currentBatch ? (
+                          `Batch ${uploadProgress.currentBatch} of ${uploadProgress.totalBatches} (${(uploadProgress.uploaded || 0).toLocaleString()} / ${(uploadProgress.total || 0).toLocaleString()} - ${uploadProgress.percentage || 0}%)`
+                        ) : (
+                          `${(uploadProgress.uploaded || uploadProgress.downloaded || 0).toLocaleString()} / ${(uploadProgress.total || 0).toLocaleString()} (${uploadProgress.percentage || 0}%)`
+                        )
+                      ) : 'Processing...'}
                     </span>
                   </div>
                   <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
