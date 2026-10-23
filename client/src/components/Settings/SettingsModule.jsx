@@ -296,6 +296,18 @@ export default function SettingsModule({ initialTab = 'org' }) {
     }
   };
 
+  const handleDownloadOfficialExcel = () => {
+    const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) ? import.meta.env.BASE_URL : './';
+    const cleanBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+    const link = document.createElement('a');
+    link.href = `${cleanBase}shareholders_details1.xlsx`;
+    link.download = 'shareholders_details1.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Downloading complete 17,076 shareholder master Excel (.xlsx) file');
+  };
+
   const handleDownloadExcelTemplate = () => {
     const sampleRows = [
       OFFICIAL_38_HEADERS,
@@ -757,6 +769,14 @@ export default function SettingsModule({ initialTab = 'org' }) {
 
               {/* Template Download Buttons */}
               <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleDownloadOfficialExcel}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 hover:text-white rounded-xl text-xs font-semibold border border-emerald-500/40 transition-all shadow-sm cursor-pointer"
+                  title="Download complete official 17,076 shareholder master Excel file"
+                >
+                  <Download className="w-4 h-4 text-emerald-400" /> Download Master Excel (17,076 Records)
+                </button>
                 <button
                   type="button"
                   onClick={handleDownloadExcelTemplate}

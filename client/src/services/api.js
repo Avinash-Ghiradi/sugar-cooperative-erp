@@ -736,6 +736,8 @@ export function ensureDBReady() {
           }
 
           if (records && records.length > 0 && !isBlankReset) {
+            // Remove any legacy comma rows that artificially inflated count from 17,076 to 17,246
+            records = records.filter(r => !String(r.share_no || '').includes(','));
             // STRICT DE-DUPLICATION BY share_no: Collapses any 34,165 duplications down to exact unique records!
             const seen = new Map();
             for (let i = 0; i < records.length; i++) {
@@ -4498,8 +4500,9 @@ const newSh = {
     primary.number_of_shares = combinedShares;
     primary.total_amount = combinedTotalAmt;
     primary.share_value = combinedTotalAmt;
-    primary.share_no = shareNos.join(', ');
+    primary.share_no = shareNos[0]; // Maintain canonical statutory share number to prevent duplicate rows
     primary.primary_share_no = shareNos[0];
+    primary.merged_share_numbers_display = shareNos.join(', ');
     primary.all_share_numbers = shareNos;
     primary.all_receipt_numbers = receipts;
     primary.multiple_amounts = true;
