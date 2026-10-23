@@ -115,7 +115,13 @@ export const CloudDbService = {
     }
 
     if (res.status === 204) return true; // No content (e.g. PATCH/DELETE)
-    return await res.json();
+    const text = await res.text().catch(() => '');
+    if (!text || !text.trim()) return true; // Handles 201 Created or other success with empty body
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return text;
+    }
   },
 
   // 5. Query Shareholders with pagination & filters

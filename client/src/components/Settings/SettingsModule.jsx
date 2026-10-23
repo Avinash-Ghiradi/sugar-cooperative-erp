@@ -291,7 +291,7 @@ export default function SettingsModule({ initialTab = 'org' }) {
       showToast('Import failed: ' + err.message, 'error');
     } finally {
       setIsImporting(false);
-      setUploadProgress(null);
+      setTimeout(() => setUploadProgress(null), 2500);
     }
   };
 
