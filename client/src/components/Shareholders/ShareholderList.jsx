@@ -639,15 +639,6 @@ export default function ShareholderList({ initialShowMerge = false }) {
             </button>
           </div>
 
-          {/* New Shareholder Registration */}
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-950 transition-all cursor-pointer"
-            title="Add New Shareholder Record (+ ಹೊಸ ನೋಂದಣಿ)"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ ಹೊಸ ನೋಂದಣಿ (New Shareholder)</span>
-          </button>
 
           {/* Direct Link to Detailed Reports */}
           <button
