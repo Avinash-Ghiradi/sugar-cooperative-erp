@@ -328,13 +328,13 @@ export default function VarasaTransferModule() {
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-950/80 p-5 rounded-3xl border border-slate-800 shadow-xl">
+      <div className="bg-slate-950/80 p-5 rounded-3xl border border-slate-800 shadow-xl space-y-4">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-emerald-950 shrink-0">
             <FileSpreadsheet className="w-6 h-6 text-slate-950" />
           </div>
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-xl font-bold text-slate-100">
                 ವಾರಸುದಾರರ ಶೇರು ವರ್ಗಾವಣೆ (Varasa Legal-Heir Share Transfer)
               </h1>
@@ -342,41 +342,14 @@ export default function VarasaTransferModule() {
                 22 Columns Register
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+            <p className="text-xs text-slate-400 mt-1 max-w-4xl leading-relaxed">
               Official statutory legal-heir transfer workflow with complete 22-column records, deceased shareholder link, photo preservation, transfer fees receipt, and committee verification.
             </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <button
-            type="button"
-            onClick={handleDownloadTemplate}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer"
-            title="Download Excel Template"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-400" /> Template (.xlsx)
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer"
-            title="Upload Varasa Excel Sheet"
-          >
-            <Upload className="w-3.5 h-3.5 text-emerald-400" /> Import Excel
-          </button>
-
-          <button
-            type="button"
-            onClick={handleExportExcel}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-emerald-400 rounded-xl text-xs font-semibold border border-emerald-900/60 transition-all cursor-pointer"
-            title="Export full Varasa register with 22 columns"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" /> Export (.xlsx)
-          </button>
-
+        {/* Action Buttons below header in a single row */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-800/80">
           <button
             type="button"
             onClick={() => {
@@ -385,7 +358,34 @@ export default function VarasaTransferModule() {
             }}
             className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> New Varasa Application
+            <Plus className="w-4 h-4" /> + ಹೊಸ ವಾರಸು ಅರ್ಜಿ (New Varasa Application)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowUploadModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer shadow-sm"
+            title="Upload Varasa Excel Sheet"
+          >
+            <Upload className="w-3.5 h-3.5 text-emerald-400" /> ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್ (Import Excel)
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer shadow-sm"
+            title="Export full Varasa register with 22 columns"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-teal-400" /> ಎಕ್ಸೆಲ್ ರಫ್ತು (Export .xlsx)
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer shadow-sm"
+            title="Download Excel Template"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-400" /> Template (.xlsx)
           </button>
         </div>
       </div>

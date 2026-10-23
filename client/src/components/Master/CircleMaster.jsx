@@ -471,7 +471,7 @@ export default function CircleMaster() {
   return (
     <div className="space-y-6">
       {/* Top Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+      <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
@@ -481,12 +481,13 @@ export default function CircleMaster() {
               {circles.length} Circles • {directory.length} Mapped Villages
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-400 mt-1">
             Administrative cane circles, village mapping, regional in-charge officers and contact details
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Action Buttons below header in a single row */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-800/80">
           <button
             onClick={() => handleOpenAddModal()}
             className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
@@ -496,7 +497,7 @@ export default function CircleMaster() {
 
           <button
             onClick={() => setShowUploadModal(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-emerald-400 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-emerald-400 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-all shadow-sm cursor-pointer"
           >
             <Upload className="w-4 h-4" /> Excel Upload
           </button>
@@ -519,7 +520,7 @@ export default function CircleMaster() {
 
           <button
             onClick={handleResetCircles}
-            className="p-2 bg-slate-900 hover:bg-rose-950/60 border border-slate-800 hover:border-rose-800 text-slate-400 hover:text-rose-400 rounded-xl transition-all"
+            className="p-2 bg-slate-900 hover:bg-rose-950/60 border border-slate-800 hover:border-rose-800 text-slate-400 hover:text-rose-400 rounded-xl transition-all cursor-pointer"
             title="Reset to factory circles"
           >
             <Trash2 className="w-4 h-4" />

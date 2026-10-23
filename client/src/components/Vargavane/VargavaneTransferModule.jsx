@@ -331,13 +331,13 @@ export default function VargavaneTransferModule() {
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-950/80 p-5 rounded-3xl border border-slate-800 shadow-xl">
+      <div className="bg-slate-950/80 p-5 rounded-3xl border border-slate-800 shadow-xl space-y-4">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-500 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-sky-950 shrink-0">
             <ArrowRightLeft className="w-6 h-6 text-slate-950" />
           </div>
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-xl font-bold text-slate-100">
                 ವರ್ಗಾವಣೆ ಶೇರು ವರ್ಗಾವಣೆ (Vargavane Share Transfer)
               </h1>
@@ -345,41 +345,14 @@ export default function VargavaneTransferModule() {
                 22 Columns Register
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+            <p className="text-xs text-slate-400 mt-1 max-w-4xl leading-relaxed">
               Official statutory direct share transfer register between original members and transferees (ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು) with 22-column records, fee receipt, and complete audit tracking.
             </p>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <button
-            type="button"
-            onClick={handleDownloadTemplate}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer"
-            title="Download Excel Template"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-400" /> Template (.xlsx)
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer"
-            title="Upload Vargavane Excel Sheet"
-          >
-            <Upload className="w-3.5 h-3.5 text-sky-400" /> Import Excel
-          </button>
-
-          <button
-            type="button"
-            onClick={handleExportExcel}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-sky-400 rounded-xl text-xs font-semibold border border-sky-900/60 transition-all cursor-pointer"
-            title="Export full Vargavane register with 22 columns"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" /> Export (.xlsx)
-          </button>
-
+        {/* Actions below header in a single row */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-800/80">
           <button
             type="button"
             onClick={() => {
@@ -388,7 +361,34 @@ export default function VargavaneTransferModule() {
             }}
             className="flex items-center gap-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-sky-950 transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> New Vargavane Application
+            <Plus className="w-4 h-4" /> + ಹೊಸ ವರ್ಗಾವಣೆ ಅರ್ಜಿ (New Vargavane Application)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowUploadModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer shadow-sm"
+            title="Upload Vargavane Excel Sheet"
+          >
+            <Upload className="w-3.5 h-3.5 text-sky-400" /> ಎಕ್ಸೆಲ್ ಅಪ್ಲೋಡ್ (Import Excel)
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer shadow-sm"
+            title="Export full Vargavane register with 22 columns"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-teal-400" /> ಎಕ್ಸೆಲ್ ರಫ್ತು (Export .xlsx)
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer shadow-sm"
+            title="Download Excel Template"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-400" /> Template (.xlsx)
           </button>
         </div>
       </div>

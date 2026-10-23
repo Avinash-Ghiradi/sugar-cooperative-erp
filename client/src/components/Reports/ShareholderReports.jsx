@@ -851,29 +851,28 @@ export default function ShareholderReports() {
   return (
     <div className="space-y-6">
       {/* 1. Header Toolbar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-950/80 p-5 rounded-3xl border border-slate-800 no-print shadow-xl">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-md">
-              <BarChart3 className="w-5 h-5" />
+      <div className="bg-slate-950/80 p-5 rounded-3xl border border-slate-800 no-print shadow-xl space-y-4">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-md shrink-0">
+            <BarChart3 className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-black text-slate-100 tracking-tight">
+                ಶೇರುದಾರರ ವಿವರ ವರದಿಗಳು (Shareholders Reports)
+              </h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
+                ಅಧಿಕೃತ ಲೆಕ್ಕಪರಿಶೋಧನಾ ವರದಿ
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-slate-100 tracking-tight">
-                  ಶೇರುದಾರರ ವಿವರ ವರದಿಗಳು (Shareholders Reports)
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                  ಅಧಿಕೃತ ಲೆಕ್ಕಪರಿಶೋಧನಾ ವರದಿ
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                ಗ್ರಾಮವಾರು, ವರ್ಗವಾರು, ವಲಯವಾರು, ಶೇರುವಾರು, ಮಾಲೀಕತ್ವವಾರು, ದಿನಾಂಕವಾರು ಹಾಗೂ ಠರಾವುವಾರು ವರದಿಗಳು
-              </p>
-            </div>
+            <p className="text-xs text-slate-400 mt-1 max-w-4xl">
+              ಗ್ರಾಮವಾರು, ವರ್ಗವಾರು, ವಲಯವಾರು, ಶೇರುವಾರು, ಮಾಲೀಕತ್ವವಾರು, ದಿನಾಂಕವಾರು ಹಾಗೂ ಠರಾವುವಾರು ವರದಿಗಳು
+            </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Action Buttons below header in a single row */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-800/80">
           {/* Toggle Filter Panel */}
           <button
             onClick={() => setShowFilterDrawer(!showFilterDrawer)}
@@ -892,14 +891,14 @@ export default function ShareholderReports() {
             )}
           </button>
 
-          {/* Refresh Data */}
+          {/* Export Excel */}
           <button
-            onClick={loadData}
-            disabled={loading}
-            className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl border border-slate-800 transition-colors cursor-pointer"
-            title="Refresh Database Records"
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+            title="Export full reports to Excel spreadsheet (.xlsx)"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>ಎಕ್ಸೆಲ್ ರಫ್ತು (Excel Export)</span>
           </button>
 
           {/* Print Official Report */}
@@ -912,14 +911,14 @@ export default function ShareholderReports() {
             <span>ವರದಿ ಮುದ್ರಿಸಿ (Print Report)</span>
           </button>
 
-          {/* Export Excel */}
+          {/* Refresh Data */}
           <button
-            onClick={handleExportExcel}
-            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
-            title="Export full reports to Excel spreadsheet (.xlsx)"
+            onClick={loadData}
+            disabled={loading}
+            className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl border border-slate-800 transition-colors cursor-pointer"
+            title="Refresh Database Records"
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>ಎಕ್ಸೆಲ್ ರಫ್ತು (Excel Export)</span>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
           </button>
         </div>
       </div>
