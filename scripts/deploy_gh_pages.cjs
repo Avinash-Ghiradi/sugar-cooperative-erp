@@ -11,37 +11,47 @@ try {
     process.exit(1);
   }
 
-  // Backup dist files in memory
-  const indexHtml = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8');
-  const assetFiles = fs.readdirSync(path.join(distDir, 'assets'));
-  const assetMap = new Map();
-  assetFiles.forEach(f => {
-    assetMap.set(f, fs.readFileSync(path.join(distDir, 'assets', f)));
-  });
+  // Recursively copy all files and folders
+  const copyRecursive = (src, dest) => {
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+      if (entry.isDirectory()) {
+        copyRecursive(srcPath, destPath);
+      } else {
+        fs.copyFileSync(srcPath, destPath);
+      }
+    }
+  };
 
-  console.log(`Backed up dist files: index.html and ${assetFiles.length} assets.`);
+  // Create temporary backup of entire dist directory outside repo
+  const tempBackupDir = path.join(rootDir, '..', 'temp_dist_deploy_' + Date.now());
+  copyRecursive(distDir, tempBackupDir);
+  console.log(`Backed up entire dist directory to ${tempBackupDir}`);
 
   // Checkout gh-pages
   console.log('Checking out gh-pages...');
   execSync('git checkout gh-pages', { cwd: rootDir, stdio: 'inherit' });
   execSync('git pull origin gh-pages', { cwd: rootDir, stdio: 'inherit' });
 
-  // Write index.html and 404.html
-  fs.writeFileSync(path.join(rootDir, 'index.html'), indexHtml, 'utf8');
-  fs.writeFileSync(path.join(rootDir, '404.html'), indexHtml, 'utf8');
+  // Copy all files from tempBackupDir to rootDir
+  copyRecursive(tempBackupDir, rootDir);
+  // Also ensure 404.html is a copy of index.html for SPA routing
+  fs.copyFileSync(path.join(tempBackupDir, 'index.html'), path.join(rootDir, '404.html'));
 
-  // Copy assets
-  const targetAssetDir = path.join(rootDir, 'assets');
-  if (!fs.existsSync(targetAssetDir)) fs.mkdirSync(targetAssetDir);
-  for (const [filename, buffer] of assetMap.entries()) {
-    fs.writeFileSync(path.join(targetAssetDir, filename), buffer);
-    console.log(`Updated asset: assets/${filename}`);
-  }
+  // Clean up temp backup
+  fs.rmSync(tempBackupDir, { recursive: true, force: true });
 
   // Commit and push
   const ts = Date.now();
-  execSync('git add index.html 404.html assets', { cwd: rootDir, stdio: 'inherit' });
-  execSync(`git commit -m "Deploy statutory ledger fix and cache-busting (${ts})"`, { cwd: rootDir, stdio: 'inherit' });
+  execSync('git add -A', { cwd: rootDir, stdio: 'inherit' });
+  try {
+    execSync(`git commit -m "Deploy full 17,076 shareholders cloud sync fix (${ts})"`, { cwd: rootDir, stdio: 'inherit' });
+  } catch (e) {
+    console.log('No new changes to commit to gh-pages');
+  }
   execSync('git push origin gh-pages', { cwd: rootDir, stdio: 'inherit' });
 
   // Switch back to main
