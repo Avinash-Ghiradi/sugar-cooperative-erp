@@ -715,12 +715,23 @@ export function ensureDBReady() {
           let records = (dbData && Array.isArray(dbData)) ? dbData : [];
           const isBlankReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true');
 
-          // If IndexedDB has no records, fetch official dataset once UNLESS user intentionally erased/reset
+          // If IndexedDB has no records, fetch from Cloud DB or official dataset once UNLESS user intentionally erased/reset
           if (records.length < 500 && !isBlankReset) {
-            const officialData = await fetchOfficialShareholdersFallback();
-            if (officialData && officialData.length > 0) {
-              records = officialData;
-              await saveToIndexedDB(records).catch(() => {});
+            if (CloudDbService.isEnabled()) {
+              try {
+                const cloudRecords = await CloudDbService.downloadAllFromCloud();
+                if (cloudRecords && cloudRecords.length > 0) {
+                  records = cloudRecords;
+                  await saveToIndexedDB(records).catch(() => {});
+                }
+              } catch (e) {}
+            }
+            if (records.length < 500) {
+              const officialData = await fetchOfficialShareholdersFallback();
+              if (officialData && officialData.length > 0) {
+                records = officialData;
+                await saveToIndexedDB(records).catch(() => {});
+              }
             }
           }
 
@@ -734,7 +745,13 @@ export function ensureDBReady() {
                 seen.set(sNo, r);
               }
             }
-            records = Array.from(seen.values());
+            const dedupedRecords = Array.from(seen.values());
+            if (dedupedRecords.length !== records.length) {
+              records = dedupedRecords;
+              await saveToIndexedDB(records).catch(() => {});
+            } else {
+              records = dedupedRecords;
+            }
 
             // Build high-speed search index for 5ms lookups
             for (let i = 0; i < records.length; i++) {
@@ -1604,8 +1621,11 @@ export const ApiService = {
     };
   },
 
-  async addShareholdersBulk(records) {
+  async addShareholdersBulk(records, onProgress) {
     await ensureDBReady();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('sugar_erp_db_reset_blank');
+    }
     if (!Array.isArray(records) || records.length === 0) {
       return { success: true, count: 0 };
     }
@@ -1736,11 +1756,20 @@ export const ApiService = {
     mockShareholders = Array.from(shMap.values());
 
     // Asynchronously save to IndexedDB (handles 17k - 100k+ records instantly)
-    saveToIndexedDB(mockShareholders).catch(() => {});
+    await saveToIndexedDB(mockShareholders).catch(() => {});
 
     // Save small sets to localStorage for backwards compatibility
     if (mockShareholders.length < 2500) {
       saveStoredData(STORAGE_KEY_SH, mockShareholders);
+    }
+
+    // Automatically upload to Supabase Cloud DB if enabled!
+    if (CloudDbService.isEnabled()) {
+      try {
+        await CloudDbService.uploadAllToCloud(mockShareholders, onProgress);
+      } catch (err) {
+        console.warn('CloudDbService.uploadAllToCloud error in addShareholdersBulk:', err);
+      }
     }
 
     return { success: true, count: newShItems.length };
@@ -2202,7 +2231,7 @@ const newSh = {
     return { success: true, message: 'Entire database wiped and reset to a clean blank state.' };
   },
 
-  async restoreOfficialData() {
+  async restoreOfficialData(onProgress) {
     try {
       try {
         if (typeof window !== 'undefined' && window.localStorage) {
@@ -2216,9 +2245,42 @@ const newSh = {
       if (officialData && officialData.length > 0) {
         mockShareholders = officialData;
         await saveToIndexedDB(mockShareholders);
+
+        if (CloudDbService.isEnabled()) {
+          try {
+            await CloudDbService.uploadAllToCloud(mockShareholders, onProgress);
+          } catch (err) {
+            console.warn('CloudDbService.uploadAllToCloud error in restoreOfficialData:', err);
+          }
+        }
+
         return { success: true, count: mockShareholders.length };
       }
       return { success: false, message: 'Could not load official dataset' };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
+  },
+
+  async syncAllShareholdersFromCloud(onProgress) {
+    if (!CloudDbService.isEnabled()) {
+      return { success: false, message: 'Cloud database is not enabled or credentials not saved.' };
+    }
+    try {
+      const cloudRecords = await CloudDbService.downloadAllFromCloud(onProgress);
+      if (!cloudRecords || !Array.isArray(cloudRecords)) {
+        return { success: false, message: 'Failed to download records from cloud database.' };
+      }
+      if (cloudRecords.length === 0) {
+        return { success: true, count: 0, message: 'Cloud database is currently empty (0 records).' };
+      }
+
+      mockShareholders = cloudRecords;
+      await saveToIndexedDB(mockShareholders);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('sugar_erp_db_reset_blank');
+      }
+      return { success: true, count: mockShareholders.length };
     } catch (e) {
       return { success: false, message: e.message };
     }

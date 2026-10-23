@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { ApiService, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
+import { CloudDbService } from '../../services/cloudDb';
 import * as XLSX from 'xlsx';
 import {
   Settings, Save, Building2, Trash2, ShieldAlert, Upload, Download,
@@ -53,6 +54,7 @@ export default function SettingsModule({ initialTab = 'org' }) {
   const [uploadFileName, setUploadFileName] = useState('');
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
   const [autoMergeOnImport, setAutoMergeOnImport] = useState(true);
   const fileInputRef = useRef(null);
 
@@ -261,10 +263,14 @@ export default function SettingsModule({ initialTab = 'org' }) {
   const commitImportToRegistry = async () => {
     if (previewRecords.length === 0) return;
     setIsImporting(true);
+    setUploadProgress({ uploaded: 0, total: previewRecords.length, percentage: 0 });
     const count = previewRecords.length;
 
     try {
-      await ApiService.addShareholdersBulk(previewRecords);
+      showToast(`Saving ${count.toLocaleString()} records & syncing to Cloud Database...`);
+      await ApiService.addShareholdersBulk(previewRecords, (p) => {
+        setUploadProgress(p);
+      });
 
       if (autoMergeOnImport) {
         try {
@@ -277,7 +283,7 @@ export default function SettingsModule({ initialTab = 'org' }) {
         }
       }
 
-      showToast(`Successfully imported ${count.toLocaleString()} records into the Live Registry!`);
+      showToast(`Successfully imported & synced ${count.toLocaleString()} records across local & Cloud Database! 🟢`, 'success');
       setPreviewRecords([]);
       setUploadFileName('');
       await loadDatabaseStats();
@@ -285,6 +291,7 @@ export default function SettingsModule({ initialTab = 'org' }) {
       showToast('Import failed: ' + err.message, 'error');
     } finally {
       setIsImporting(false);
+      setUploadProgress(null);
     }
   };
 
@@ -539,11 +546,14 @@ export default function SettingsModule({ initialTab = 'org' }) {
 
   const handleSyncOfficial17076 = async () => {
     setIsProcessingFile(true);
-    showToast('Syncing official 17,076 records across all 10 circles...');
+    setUploadProgress({ uploaded: 0, total: 17076, percentage: 0 });
+    showToast('Syncing official 17,076 records across all 10 circles and Cloud Database...');
     try {
-      const res = await ApiService.restoreOfficialData();
+      const res = await ApiService.restoreOfficialData((p) => {
+        setUploadProgress(p);
+      });
       if (res.success) {
-        showToast(`Successfully synced ${res.count.toLocaleString()} official shareholders into local registry!`);
+        showToast(`Successfully synced ${res.count.toLocaleString()} official shareholders to local & Cloud DB! 🟢`, 'success');
         await loadDatabaseStats();
       } else {
         showToast(`Sync failed: ${res.message}`, 'error');
@@ -552,6 +562,29 @@ export default function SettingsModule({ initialTab = 'org' }) {
       showToast('Sync error: ' + err.message, 'error');
     } finally {
       setIsProcessingFile(false);
+      setUploadProgress(null);
+    }
+  };
+
+  const handlePullFromCloud = async () => {
+    setIsProcessingFile(true);
+    setUploadProgress({ downloaded: 0, total: 17076, percentage: 0 });
+    showToast('Pulling complete shareholder registry from Supabase Cloud Database...');
+    try {
+      const res = await ApiService.syncAllShareholdersFromCloud((p) => {
+        setUploadProgress(p);
+      });
+      if (res.success) {
+        showToast(`Successfully synced ${res.count.toLocaleString()} records from Cloud Database! 🟢`, 'success');
+        await loadDatabaseStats();
+      } else {
+        showToast(`Sync failed: ${res.message}`, 'error');
+      }
+    } catch (err) {
+      showToast('Sync error: ' + err.message, 'error');
+    } finally {
+      setIsProcessingFile(false);
+      setUploadProgress(null);
     }
   };
 
@@ -807,6 +840,7 @@ export default function SettingsModule({ initialTab = 'org' }) {
 
                 <div className="flex items-center gap-2">
                   <button
+                    disabled={isImporting}
                     onClick={() => { setPreviewRecords([]); setUploadFileName(''); }}
                     className="px-3.5 py-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs rounded-xl cursor-pointer"
                   >
@@ -823,6 +857,27 @@ export default function SettingsModule({ initialTab = 'org' }) {
                   </button>
                 </div>
               </div>
+
+              {/* Real-time Cloud Sync Progress Bar */}
+              {(isImporting || uploadProgress) && (
+                <div className="p-4 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl space-y-2 animate-fadeIn">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-emerald-300 font-semibold flex items-center gap-2">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                      Syncing & Uploading to Supabase Cloud Database across all browsers...
+                    </span>
+                    <span className="font-mono text-emerald-400 font-bold">
+                      {uploadProgress ? `${(uploadProgress.uploaded || uploadProgress.downloaded || 0).toLocaleString()} / ${(uploadProgress.total || 0).toLocaleString()} (${uploadProgress.percentage || 0}%)` : 'Processing...'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress?.percentage || 15}%` }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Scrollable Preview Table */}
               <div className="overflow-x-auto max-h-[50vh] border border-slate-800 rounded-xl">
@@ -892,15 +947,28 @@ export default function SettingsModule({ initialTab = 'org' }) {
                 </div>
               </div>
 
-              <button
-                type="button"
-                disabled={isProcessingFile}
-                onClick={handleSyncOfficial17076}
-                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer shrink-0"
-              >
-                <RefreshCw className={`w-4 h-4 ${isProcessingFile ? 'animate-spin' : ''}`} />
-                <span>Sync 17,076 Master Records</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  disabled={isProcessingFile}
+                  onClick={handlePullFromCloud}
+                  title="Download and sync all records from Supabase Cloud Database to this browser"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-sky-950 transition-all cursor-pointer"
+                >
+                  <Cloud className={`w-4 h-4 ${isProcessingFile ? 'animate-spin' : ''}`} />
+                  <span>Pull from Cloud DB</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isProcessingFile}
+                  onClick={handleSyncOfficial17076}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isProcessingFile ? 'animate-spin' : ''}`} />
+                  <span>Sync 17,076 Master Records</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

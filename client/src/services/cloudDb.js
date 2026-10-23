@@ -366,7 +366,12 @@ export const CloudDbService = {
       return { success: true, count: 0 };
     }
 
-    const batchSize = 100;
+    // Clear any previous reset marker since active database records are being populated
+    await this.request('audit_logs?module=eq.system_settings&record_id=eq.db_reset_version', {
+      method: 'DELETE'
+    }).catch(() => {});
+
+    const batchSize = 500;
     const total = records.length;
     let uploaded = 0;
 
@@ -438,6 +443,57 @@ export const CloudDbService = {
     this.saveConfig(cfg);
 
     return { success: true, count: uploaded };
+  },
+
+  // 10. Download all shareholder records from Supabase Cloud DB
+  async downloadAllFromCloud(onProgress) {
+    if (!this.isEnabled()) return null;
+    try {
+      const cfg = this.getConfig();
+      const cleanUrl = cfg.url.trim().replace(/\/+$/, '');
+      const headers = {
+        'apikey': cfg.anonKey.trim(),
+        'Authorization': `Bearer ${cfg.anonKey.trim()}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'count=exact'
+      };
+
+      const headRes = await fetch(`${cleanUrl}/rest/v1/shareholders?select=id&limit=1`, { headers });
+      if (!headRes.ok) return null;
+      let total = 0;
+      const cr = headRes.headers.get('content-range');
+      if (cr && cr.includes('/')) {
+        total = parseInt(cr.split('/')[1], 10) || 0;
+      }
+      if (total === 0) return [];
+
+      const batchSize = 1000;
+      const allRecords = [];
+
+      for (let offset = 0; offset < total; offset += batchSize) {
+        const to = Math.min(offset + batchSize - 1, total - 1);
+        const res = await fetch(`${cleanUrl}/rest/v1/shareholders?order=id.asc`, {
+          headers: {
+            ...headers,
+            'Range': `${offset}-${to}`
+          }
+        });
+        if (res.ok) {
+          const chunk = await res.json();
+          if (Array.isArray(chunk)) {
+            allRecords.push(...chunk);
+          }
+        }
+        if (onProgress) {
+          onProgress({ downloaded: allRecords.length, total, percentage: Math.round((allRecords.length / total) * 100) });
+        }
+      }
+
+      return allRecords;
+    } catch (err) {
+      console.warn('downloadAllFromCloud error:', err);
+      return null;
+    }
   },
 
   // 10. Generic Cloud Collection Operations (Multi-Browser Sync for Workflows)
