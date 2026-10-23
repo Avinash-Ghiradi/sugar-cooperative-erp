@@ -4,7 +4,7 @@ import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getSharehold
 import { useAuth } from '../../context/AuthContext';
 import OfficialShareholderIDCard, { OfficialSocietySeal } from '../IDCards/OfficialShareholderIDCard';
 import {
-  User, Coins, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
+  User, Edit, Coins, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   X, Printer, Contact, CheckCircle2, ShieldCheck, MapPin, Phone, Building2,
   BookOpen, FileText, Fingerprint, Users2, History, ArrowRightLeft, Stamp,
   Clock, ArrowRight, Award, GitMerge, SlidersHorizontal
@@ -199,6 +199,20 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Edit Record Button */}
+            <button
+              onClick={() => {
+                if (onEditRecord && sh) {
+                  onEditRecord(sh);
+                }
+              }}
+              className="px-3 py-2 text-white bg-sky-600 hover:bg-sky-500 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-sky-950"
+              title="ಶಾಸನಬದ್ಧ 38-ಕಾಲಂಗಳ ದಾಖಲೆ ತಿದ್ದುಪಡಿ (Edit Statutory Shareholder Record)"
+            >
+              <Edit className="w-4 h-4" />
+              <span>ದಾಖಲೆ ತಿದ್ದುಪಡಿ (Edit Record)</span>
+            </button>
+
             <button
               onClick={() => setActiveTab('id_card')}
               className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
