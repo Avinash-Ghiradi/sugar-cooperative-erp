@@ -283,15 +283,16 @@ export default function SettingsModule({ initialTab = 'org' }) {
         }
       }
 
-      showToast(`Successfully imported & synced ${count.toLocaleString()} records across local & Cloud Database! 🟢`, 'success');
       setPreviewRecords([]);
       setUploadFileName('');
+      setUploadProgress(null);
+      showToast(`Successfully imported & synced ${count.toLocaleString()} records across local & Cloud Database! 🟢`, 'success');
       await loadDatabaseStats();
     } catch (err) {
       showToast('Import failed: ' + err.message, 'error');
     } finally {
       setIsImporting(false);
-      setTimeout(() => setUploadProgress(null), 2500);
+      setUploadProgress(null);
     }
   };
 

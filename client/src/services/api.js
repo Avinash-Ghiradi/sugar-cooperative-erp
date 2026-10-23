@@ -4437,7 +4437,7 @@ const newSh = {
     };
   },
 
-  async mergeShareholderHoldings({ groupKey, adminUser = 'Admin' }) {
+  async mergeShareholderHoldings({ groupKey, adminUser = 'Admin', saveDb = true, syncCloud = true }) {
     await ensureDBReady();
     if (!groupKey) return { success: false, message: 'Group key required' };
 
@@ -4591,9 +4591,11 @@ const newSh = {
       }
     }
 
-    await saveToIndexedDB(mockShareholders);
+    if (saveDb) {
+      await saveToIndexedDB(mockShareholders);
+    }
 
-    if (CloudDbService.isEnabled()) {
+    if (syncCloud && CloudDbService.isEnabled()) {
       try {
         if (primaryShareNoStr) {
           await CloudDbService.updateShareholder(primaryShareNoStr, {
@@ -4637,16 +4639,29 @@ const newSh = {
     let totalSharesCombined = 0;
     let totalCapitalCombined = 0;
 
+    const allModified = [];
     for (const g of summary.data) {
-      const res = await this.mergeShareholderHoldings({ groupKey: g.key, adminUser });
+      const res = await this.mergeShareholderHoldings({ groupKey: g.key, adminUser, saveDb: false, syncCloud: false });
       if (res.success) {
         mergedCount++;
         totalSharesCombined += (res.combinedShares || 0);
         totalCapitalCombined += (res.combinedTotalAmt || 0);
+        if (res.mergedRecord) allModified.push(res.mergedRecord);
       }
     }
 
+    // Single fast save to IndexedDB for the entire batch
     await saveToIndexedDB(mockShareholders);
+    _cachedFilterOptions = null;
+
+    // Fast batch upload of modified records to Cloud DB in ONE single request
+    if (CloudDbService.isEnabled() && allModified.length > 0) {
+      try {
+        await CloudDbService.uploadAllToCloud(allModified);
+      } catch (err) {
+        console.warn('Cloud DB bulk merge sync warning:', err);
+      }
+    }
 
     return {
       success: true,
