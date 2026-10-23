@@ -25,28 +25,6 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredVillages = useMemo(() => {
-    const q = (formData.place || '').trim().toLowerCase();
-    if (!q) return villageSuggestions.slice(0, 20);
-    return villageSuggestions.filter(v => {
-      const name = (v.name || '').toLowerCase();
-      const taluk = (v.taluk || '').toLowerCase();
-      return name.includes(q) || taluk.includes(q);
-    });
-  }, [formData.place, villageSuggestions]);
-
-  const handleSelectVillage = (v) => {
-    const placeName = typeof v === 'string' ? v : v.name;
-    const circleRes = ApiService.resolveCircleForPlace(placeName);
-    setFormData(prev => ({
-      ...prev,
-      place: placeName,
-      taluk: v.taluk || circleRes?.taluk || prev.taluk,
-      dist: v.district || circleRes?.district || prev.dist
-    }));
-    setShowPlaceDropdown(false);
-  };
-
   const [formData, setFormData] = useState({
     date: new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
     full_name: '',
@@ -186,6 +164,28 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
         }));
       }
     }
+  };
+
+  const filteredVillages = useMemo(() => {
+    const q = (formData?.place || '').trim().toLowerCase();
+    if (!q) return villageSuggestions.slice(0, 20);
+    return villageSuggestions.filter(v => {
+      const name = (v.name || '').toLowerCase();
+      const taluk = (v.taluk || '').toLowerCase();
+      return name.includes(q) || taluk.includes(q);
+    });
+  }, [formData?.place, villageSuggestions]);
+
+  const handleSelectVillage = (v) => {
+    const placeName = typeof v === 'string' ? v : v.name;
+    const circleRes = ApiService.resolveCircleForPlace(placeName);
+    setFormData(prev => ({
+      ...prev,
+      place: placeName,
+      taluk: v.taluk || circleRes?.taluk || prev.taluk,
+      dist: v.district || circleRes?.district || prev.dist
+    }));
+    setShowPlaceDropdown(false);
   };
 
   // Client-side Canvas Image Compression

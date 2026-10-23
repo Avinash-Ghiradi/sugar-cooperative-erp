@@ -58,22 +58,6 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const filteredVillages = useMemo(() => {
-    const q = (formData.place || '').trim().toLowerCase();
-    if (!q) return villages.slice(0, 20);
-    return villages.filter(v => {
-      const name = (v.name || '').toLowerCase();
-      const taluk = (v.taluk || '').toLowerCase();
-      return name.includes(q) || taluk.includes(q);
-    });
-  }, [formData.place, villages]);
-
-  const handleSelectVillage = (v) => {
-    const placeName = typeof v === 'string' ? v : v.name;
-    handlePlaceChange(placeName);
-    setShowPlaceDropdown(false);
-  };
   const [circles, setCircles] = useState([]);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -190,6 +174,22 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
       pin_code: (circleInfo?.pincode) || (matchedV ? matchedV.pin_code : prev.pin_code),
       district: (circleInfo?.district) || prev.district
     }));
+  };
+
+  const filteredVillages = useMemo(() => {
+    const q = (formData?.place || '').trim().toLowerCase();
+    if (!q) return villages.slice(0, 20);
+    return villages.filter(v => {
+      const name = (v.name || '').toLowerCase();
+      const taluk = (v.taluk || '').toLowerCase();
+      return name.includes(q) || taluk.includes(q);
+    });
+  }, [formData?.place, villages]);
+
+  const handleSelectVillage = (v) => {
+    const placeName = typeof v === 'string' ? v : v.name;
+    handlePlaceChange(placeName);
+    setShowPlaceDropdown(false);
   };
 
   const [uploadingState, setUploadingState] = useState({ photo: false, signature: false, thumb: false });
