@@ -598,30 +598,31 @@ export default function ShareholderList({ initialShowMerge = false }) {
       </div>
 
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+      <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-emerald-400" /> Shareholder Statutory Ledger (ಷೇರುದಾರರ ನಮೂನೆ ವಹಿ)
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">
               38 Columns Official Format
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800/80 text-emerald-300 border border-slate-700 font-mono">
               Total: {pagination.total.toLocaleString()} Members • {villages.length} Places • {circles.length} Circles • {castList.length} Categories • {bookList.length} Books
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-400 mt-1 max-w-4xl">
             Shareholders Statutory Registry with Book No, Share No, Aadhaar, Receipt, Place, Taluk, Circle, Tharava & Nominee Details
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Action Buttons below header in a single row */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-800/80">
           {/* View Mode Toggle */}
           <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
             <button
               onClick={() => setViewMode('ledger')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
                 viewMode === 'ledger' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -629,7 +630,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
             </button>
             <button
               onClick={() => setViewMode('summary')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
                 viewMode === 'summary' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
