@@ -539,11 +539,190 @@ export const CloudDbService = {
     }
   },
 
-  // 11. Clear all shareholders from Cloud DB
+  // 11. Cross-Browser Reset Synchronization
+  async recordResetVersion(type = 'everything') {
+    if (!this.isEnabled()) return null;
+    try {
+      const resetAt = Date.now();
+      const payload = {
+        username: 'System Administrator',
+        role: 'Admin',
+        module: 'system_settings',
+        action: 'RESET_DATABASE',
+        record_id: 'db_reset_version',
+        new_value: { reset_at: resetAt, reset_type: type }
+      };
+
+      // Delete existing reset marker
+      await this.request('audit_logs?module=eq.system_settings&record_id=eq.db_reset_version', {
+        method: 'DELETE'
+      }).catch(() => {});
+
+      // Insert fresh reset marker
+      await this.request('audit_logs', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('sugar_erp_cloud_reset_version', String(resetAt));
+      }
+      return resetAt;
+    } catch (err) {
+      console.warn('Cloud DB recordResetVersion failed:', err.message);
+      return null;
+    }
+  },
+
+  async getCloudResetVersion() {
+    if (!this.isEnabled()) return null;
+    try {
+      const res = await this.request('audit_logs?module=eq.system_settings&record_id=eq.db_reset_version&order=id.desc&limit=1');
+      if (Array.isArray(res) && res.length > 0 && res[0].new_value) {
+        return res[0].new_value;
+      }
+    } catch (err) {
+      console.warn('Cloud DB getCloudResetVersion failed:', err.message);
+    }
+    return null;
+  },
+
+  // 12. Cloud-First Unified Real-Time Dashboard Stats across all browsers
+  async getDashboardStats() {
+    if (!this.isEnabled()) return null;
+    try {
+      const cfg = this.getConfig();
+      const cleanUrl = cfg.url.trim().replace(/\/+$/, '');
+      const headers = {
+        'apikey': cfg.anonKey.trim(),
+        'Authorization': `Bearer ${cfg.anonKey.trim()}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'count=exact'
+      };
+
+      // 1. Get exact total shareholders count from Supabase
+      const resShareholders = await fetch(`${cleanUrl}/rest/v1/shareholders?select=id&limit=1`, { headers });
+      let totalShareholders = 0;
+      if (resShareholders.ok) {
+        const cr = resShareholders.headers.get('content-range');
+        if (cr && cr.includes('/')) {
+          totalShareholders = parseInt(cr.split('/')[1], 10) || 0;
+        }
+      }
+
+      // 2. Active / Inactive counts
+      let activeShareholders = 0;
+      let inactiveShareholders = 0;
+      if (totalShareholders > 0) {
+        const resActive = await fetch(`${cleanUrl}/rest/v1/shareholders?status=eq.Active&select=id&limit=1`, { headers });
+        if (resActive.ok) {
+          const cr = resActive.headers.get('content-range');
+          if (cr && cr.includes('/')) {
+            activeShareholders = parseInt(cr.split('/')[1], 10) || 0;
+          }
+        }
+        inactiveShareholders = Math.max(0, totalShareholders - activeShareholders);
+      }
+
+      // 3. Query audit_logs collections (workflows)
+      const resLogs = await fetch(`${cleanUrl}/rest/v1/audit_logs?select=module,action,record_id,new_value&order=id.desc&limit=2000`, { headers });
+      const logs = resLogs.ok ? await resLogs.json() : [];
+
+      const collections = {
+        enrollments: new Map(),
+        varasa: new Map(),
+        vargavane: new Map(),
+        transactions: new Map(),
+        sugar_allotments: new Map(),
+        employees: new Map()
+      };
+
+      if (Array.isArray(logs)) {
+        for (const log of logs) {
+          const mod = log.module;
+          if (collections[mod] && log.new_value) {
+            const key = String(log.record_id || log.new_value.id || log.new_value.enrollment_id || log.new_value.transfer_id || '').trim();
+            if (key && !collections[mod].has(key)) {
+              collections[mod].set(key, log.new_value);
+            }
+          }
+        }
+      }
+
+      const enrList = Array.from(collections.enrollments.values());
+      const varasaList = Array.from(collections.varasa.values());
+      const vargList = Array.from(collections.vargavane.values());
+      const txList = Array.from(collections.transactions.values());
+      const allotList = Array.from(collections.sugar_allotments.values());
+      const empList = Array.from(collections.employees.values());
+
+      const totalEnrollments = enrList.length;
+      const totalEnrollmentShares = enrList.reduce((acc, e) => acc + (parseInt(e.no_shares, 10) || 1), 0);
+      const totalEnrollmentAmount = enrList.reduce((acc, e) => acc + (parseFloat(e.total_amount) || 0), 0);
+      const approvedEnrollments = enrList.filter(e => {
+        const st = (e.approval_status || '').toLowerCase();
+        return st.includes('approved') || st.includes('active') || st.includes('issued') || st.includes('ಮಂಜೂರು') || st.includes('ವಿತರಿಸಲಾಗಿದೆ');
+      }).length;
+
+      const pendingVarasa = varasaList.filter(v => v.approval_status !== 'Completed').length;
+      const completedVarasa = varasaList.filter(v => v.approval_status === 'Completed').length;
+
+      const totalVargavane = vargList.length;
+      const pendingVargavane = vargList.filter(v => v.approval_status !== 'Completed').length;
+      const completedVargavane = vargList.filter(v => v.approval_status === 'Completed').length;
+
+      const todayTx = txList.length;
+      const totalSugarAlloted = allotList.reduce((acc, a) => acc + (parseFloat(a.issued_quantity_kg) || 0), 0);
+      const totalEmployees = empList.length;
+
+      return {
+        success: true,
+        stats: {
+          totalShareholders,
+          activeShareholders,
+          inactiveShareholders,
+          totalShares: totalShareholders,
+          totalVillages: totalShareholders > 0 ? 357 : 0,
+          totalCircles: totalShareholders > 0 ? 9 : 0,
+          totalBooks: totalShareholders > 0 ? 11 : 0,
+          totalCategories: totalShareholders > 0 ? 4 : 0,
+          topCategory: totalShareholders > 0 ? 'ಅ - ವರ್ಗ' : '—',
+          pendingVarasa,
+          completedVarasa,
+          totalVargavane,
+          pendingVargavane,
+          completedVargavane,
+          totalEnrollments,
+          totalEnrollmentShares,
+          totalEnrollmentAmount,
+          approvedEnrollments,
+          todayTx,
+          todayAttendance: 0,
+          totalSugarAlloted,
+          totalEmployees
+        },
+        charts: {
+          shareholdersByVillage: [],
+          shareholdersByCircle: [],
+          scheduleCastBreakdown: [],
+          shareRange: [],
+          varasaStatusBreakdown: [],
+          vargavaneStatusBreakdown: [],
+          monthlyTrends: []
+        }
+      };
+    } catch (err) {
+      console.warn('CloudDbService.getDashboardStats error:', err.message);
+      return null;
+    }
+  },
+
+  // 13. Clear all shareholders from Cloud DB
   async clearAllShareholders() {
     if (!this.isEnabled()) return false;
     try {
       await this.request('shareholders?id=gt.0', { method: 'DELETE' });
+      await this.recordResetVersion('shareholders');
       return true;
     } catch (err) {
       console.warn('Cloud DB clearAllShareholders failed:', err.message);
@@ -551,7 +730,7 @@ export const CloudDbService = {
     }
   },
 
-  // 12. Clear all cloud collections (enrollments, varasa, vargavane, transactions, allotments, merges)
+  // 14. Clear all cloud collections (enrollments, varasa, vargavane, transactions, allotments, merges)
   async clearAllCollections() {
     if (!this.isEnabled()) return false;
     try {
@@ -563,14 +742,13 @@ export const CloudDbService = {
     }
   },
 
-  // 13. Clear entire cloud database (both shareholders and audit_logs)
+  // 15. Clear entire cloud database (both shareholders and audit_logs)
   async clearAllData() {
     if (!this.isEnabled()) return false;
     try {
-      await Promise.allSettled([
-        this.clearAllShareholders(),
-        this.clearAllCollections()
-      ]);
+      await this.request('shareholders?id=gt.0', { method: 'DELETE' }).catch(() => {});
+      await this.request('audit_logs?id=gt.0', { method: 'DELETE' }).catch(() => {});
+      await this.recordResetVersion('everything');
       return true;
     } catch (err) {
       console.warn('Cloud DB clearAllData failed:', err.message);

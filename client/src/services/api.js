@@ -569,10 +569,67 @@ async function fetchOfficialShareholdersFallback() {
   return null;
 }
 
+export async function checkAndApplyCloudReset() {
+  if (!CloudDbService.isEnabled()) return false;
+  try {
+    const cloudReset = await CloudDbService.getCloudResetVersion();
+    if (!cloudReset || !cloudReset.reset_at) return false;
+
+    const localResetVersion = parseInt(
+      (typeof localStorage !== 'undefined' && localStorage.getItem('sugar_erp_cloud_reset_version')) || '0',
+      10
+    );
+
+    if (cloudReset.reset_at > localResetVersion) {
+      console.log(`[Sync] Cloud reset detected from another device/browser (${new Date(cloudReset.reset_at).toISOString()}). Purging local cache.`);
+
+      mockShareholders = [];
+      mockTransactions = [];
+      mockSugarAllotments = [];
+      mockVarasaTransfers = [];
+      mockVargavaneTransfers = [];
+      mockEnrollments = [];
+      mockMergeRequests = [];
+      mockEmployees = [];
+      mockAuditLogs = [];
+      if (cloudReset.reset_type === 'everything') {
+        mockCircleDirectory = [];
+      }
+
+      saveStoredData(STORAGE_KEY_SH, []);
+      saveStoredData(STORAGE_KEY_TX, []);
+      saveStoredData(STORAGE_KEY_SA, []);
+      saveStoredData(STORAGE_KEY_VT, []);
+      saveStoredData(STORAGE_KEY_VG, []);
+      saveStoredData(STORAGE_KEY_ENROLLMENT, []);
+      saveStoredData(STORAGE_KEY_MERGE_REQ, []);
+      saveStoredData(STORAGE_KEY_EMP, []);
+      saveStoredData(STORAGE_KEY_LOGS, []);
+      if (cloudReset.reset_type === 'everything') {
+        saveStoredData(STORAGE_KEY_CIRCLE_DIR, []);
+      }
+
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('sugar_erp_cloud_reset_version', String(cloudReset.reset_at));
+        localStorage.setItem('sugar_erp_db_reset_blank', 'true');
+      }
+
+      await clearIndexedDB(cloudReset.reset_type === 'everything');
+      return true;
+    }
+  } catch (err) {
+    console.warn('checkAndApplyCloudReset error:', err);
+  }
+  return false;
+}
+
 export async function syncAllCloudWorkflows() {
   if (!CloudDbService.isEnabled()) return;
+  // Check for any cloud reset performed from another browser first
+  await checkAndApplyCloudReset().catch(() => {});
+
   const isBlankReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true');
-  if (isBlankReset) return;
+
   try {
     const [enr, varasa, varg, merges, txs, allotments] = await Promise.all([
       CloudDbService.getCollection('enrollments').catch(() => null),
@@ -583,92 +640,52 @@ export async function syncAllCloudWorkflows() {
       CloudDbService.getCollection('sugar_allotments').catch(() => null)
     ]);
 
+    // Update local state strictly from Cloud DB (Strictly ONE-WAY sync from Cloud to Local)
     if (Array.isArray(enr)) {
-      const map = new Map();
-      enr.forEach(e => {
-        const k = String(e.enrollment_id || e.id || '').trim();
-        if (k) map.set(k, e);
-      });
-      mockEnrollments.forEach(e => {
-        const k = String(e.enrollment_id || e.id || '').trim();
-        if (k && !map.has(k)) {
-          map.set(k, e);
-          CloudDbService.saveCollectionItem('enrollments', k, e).catch(() => {});
-        }
-      });
-      mockEnrollments = Array.from(map.values());
+      mockEnrollments = enr;
       saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
 
-      // Reconcile approved enrollments into mockShareholders and Supabase across browsers
-      for (const item of mockEnrollments) {
-        const isApproved = ((item.approval_status || '').includes('Approved') ||
-                           (item.approval_status || '').includes('Active') ||
-                           (item.approval_status || '').includes('Issued') ||
-                           (item.approval_status || '').includes('ಮಂಜೂರು') ||
-                           (item.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ')) &&
-                           Boolean(item.share_no && String(item.share_no).trim());
-        if (isApproved) {
-          const sNo = String(item.share_no).trim();
-          const exists = mockShareholders.some(s => String(s.share_no || s.share_number || '').trim() === sNo);
-          if (!exists) {
-            await ApiService.ensureEnrollmentInMaster(item).catch(() => {});
+      // Reconcile approved enrollments into mockShareholders across browsers
+      if (!isBlankReset && enr.length > 0) {
+        for (const item of mockEnrollments) {
+          const isApproved = ((item.approval_status || '').includes('Approved') ||
+                             (item.approval_status || '').includes('Active') ||
+                             (item.approval_status || '').includes('Issued') ||
+                             (item.approval_status || '').includes('ಮಂಜೂರು') ||
+                             (item.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ')) &&
+                             Boolean(item.share_no && String(item.share_no).trim());
+          if (isApproved) {
+            const sNo = String(item.share_no).trim();
+            const exists = mockShareholders.some(s => String(s.share_no || s.share_number || '').trim() === sNo);
+            if (!exists) {
+              await ApiService.ensureEnrollmentInMaster(item).catch(() => {});
+            }
           }
         }
       }
     }
+
     if (Array.isArray(varasa)) {
-      const map = new Map();
-      varasa.forEach(v => {
-        const k = String(v.transfer_id || v.id || '').trim();
-        if (k) map.set(k, v);
-      });
-      mockVarasaTransfers.forEach(v => {
-        const k = String(v.transfer_id || v.id || '').trim();
-        if (k && !map.has(k)) {
-          map.set(k, v);
-          CloudDbService.saveCollectionItem('varasa', k, v).catch(() => {});
-        }
-      });
-      mockVarasaTransfers = Array.from(map.values());
+      mockVarasaTransfers = varasa;
       saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
     }
+
     if (Array.isArray(varg)) {
-      const map = new Map();
-      varg.forEach(v => {
-        const k = String(v.transfer_id || v.id || '').trim();
-        if (k) map.set(k, v);
-      });
-      mockVargavaneTransfers.forEach(v => {
-        const k = String(v.transfer_id || v.id || '').trim();
-        if (k && !map.has(k)) {
-          map.set(k, v);
-          CloudDbService.saveCollectionItem('vargavane', k, v).catch(() => {});
-        }
-      });
-      mockVargavaneTransfers = Array.from(map.values());
+      mockVargavaneTransfers = varg;
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
     }
+
     if (Array.isArray(merges)) {
-      const map = new Map();
-      merges.forEach(m => {
-        const k = String(m.request_id || m.id || '').trim();
-        if (k) map.set(k, m);
-      });
-      mockMergeRequests.forEach(m => {
-        const k = String(m.request_id || m.id || '').trim();
-        if (k && !map.has(k)) {
-          map.set(k, m);
-          CloudDbService.saveCollectionItem('merge_requests', k, m).catch(() => {});
-        }
-      });
-      mockMergeRequests = Array.from(map.values());
+      mockMergeRequests = merges;
       saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
     }
-    if (Array.isArray(txs) && txs.length > 0) {
+
+    if (Array.isArray(txs)) {
       mockTransactions = txs;
       saveStoredData(STORAGE_KEY_TX, mockTransactions);
     }
-    if (Array.isArray(allotments) && allotments.length > 0) {
+
+    if (Array.isArray(allotments)) {
       mockSugarAllotments = allotments;
       saveStoredData(STORAGE_KEY_SA, mockSugarAllotments);
     }
@@ -680,123 +697,74 @@ export async function syncAllCloudWorkflows() {
 export function ensureDBReady() {
   if (isDBReady) return Promise.resolve(mockShareholders);
   if (!dbInitPromise) {
-    if (typeof window !== 'undefined' && window.indexedDB) {
-      dbInitPromise = Promise.all([
-        loadFromIndexedDB(),
-        loadCircleDirectoryFromDB()
-      ]).then(async ([dbData, circleData]) => {
-        if (circleData && Array.isArray(circleData) && circleData.length > 0) {
-          mockCircleDirectory = circleData;
-        }
+    dbInitPromise = (async () => {
+      // Check if remote cloud reset occurred before loading local database
+      await checkAndApplyCloudReset().catch(() => {});
 
-        let records = (dbData && Array.isArray(dbData)) ? dbData : [];
-        const isBlankReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true');
-        // If IndexedDB has no records, fetch official dataset once UNLESS user intentionally erased/reset
-        if (records.length < 500 && !isBlankReset) {
-          const officialData = await fetchOfficialShareholdersFallback();
-          if (officialData && officialData.length > 0) {
-            records = officialData;
-            await saveToIndexedDB(records).catch(() => {});
+      if (typeof window !== 'undefined' && window.indexedDB) {
+        try {
+          const [dbData, circleData] = await Promise.all([
+            loadFromIndexedDB(),
+            loadCircleDirectoryFromDB()
+          ]);
+
+          if (circleData && Array.isArray(circleData) && circleData.length > 0) {
+            mockCircleDirectory = circleData;
           }
-        }
 
-        if (records && records.length > 0) {
-          // Reconcile any approved enrollments that may be missing in records
-          for (const item of mockEnrollments) {
-            const isApproved = (item.approval_status || '').includes('Approved') ||
-                               (item.approval_status || '').includes('Active') ||
-                               (item.approval_status || '').includes('Issued') ||
-                               (item.approval_status || '').includes('ಮಂಜೂರು') ||
-                               (item.approval_status || '').includes('ವಿತರಿಸಲಾಗಿದೆ');
-            const sNo = String(item.share_no || '').trim();
-            if (isApproved && sNo) {
-              const exists = records.some(s => String(s.share_no || s.share_number || '').trim() === sNo);
-              if (!exists) {
-                const sAmt = parseFloat(item.share_amount) || 24000;
-                const aFee = parseFloat(item.admission_fee) || 570;
-                const rec = {
-                  id: Date.now() + Math.floor(Math.random() * 1000),
-                  sl_no: 17100 + (parseInt(item.sl_no, 10) || 1),
-                  share_no: sNo,
-                  share_number: sNo,
-                  shareholder_id: `SH-${sNo}`,
-                  shareholder_name: (item.full_name || '').normalize('NFC'),
-                  name: (item.full_name || '').normalize('NFC'),
-                  place: (item.place || '').normalize('NFC'),
-                  village_name: (item.place || '').normalize('NFC'),
-                  taluk: item.taluk || 'ಇಂಡಿ',
-                  district: item.dist || 'ವಿಜಯಪುರ',
-                  circle: 'ಇತರೆ (Other)',
-                  circle_name: 'ಇತರೆ (Other)',
-                  pin_code: '',
-                  number_of_shares: parseInt(item.no_shares, 10) || 1,
-                  schedule_cast: item.category || 'ಅ ವರ್ಗ',
-                  gender: item.gender || 'M',
-                  reg_date: item.date || new Date().toLocaleDateString('en-GB'),
-                  receipt_no: String(item.receipt_no || ''),
-                  receipt_amount: sAmt,
-                  total_amount: parseFloat(item.total_amount) || (sAmt + aFee),
-                  remaining_balance: 0,
-                  member_type: 'ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯ (Cane Grower)',
-                  relationship: 'ಸ್ವಂತ (Self)',
-                  tharava_date: item.tharava_date || new Date().toLocaleDateString('en-GB'),
-                  tharava_no: item.tharava_no || '05(8)',
-                  status: 'Active',
-                  mobile_number: item.mobile_no || '',
-                  mobile_no: item.mobile_no || '',
-                  aadhaar_number: item.aadhaar_no || '',
-                  aadhaar_card_no: item.aadhaar_no || '',
-                  book_no: item.tharava_no ? `ಠರಾವು-${item.tharava_no}` : 'B.No: 1'
-                };
-                records.unshift(rec);
-                upsertSingleRecordToIndexedDB(rec).catch(() => {});
-              }
+          let records = (dbData && Array.isArray(dbData)) ? dbData : [];
+          const isBlankReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true');
+
+          // If IndexedDB has no records, fetch official dataset once UNLESS user intentionally erased/reset
+          if (records.length < 500 && !isBlankReset) {
+            const officialData = await fetchOfficialShareholdersFallback();
+            if (officialData && officialData.length > 0) {
+              records = officialData;
+              await saveToIndexedDB(records).catch(() => {});
             }
           }
 
-          // Build high-speed search index for 5ms lookups
-          for (let i = 0; i < records.length; i++) {
-            const s = records[i];
-            s._searchIndex = (
-              (s.shareholder_name || s.name || '') + ' ' +
-              (s.share_no || s.share_number || '') + ' ' +
-              (s.book_no || '') + ' ' +
-              (s.place || s.village_name || '') + ' ' +
-              (s.taluk || '') + ' ' +
-              (s.circle || s.circle_name || '') + ' ' +
-              (s.mobile_no || s.mobile || '') + ' ' +
-              (s.aadhaar_card_no || s.aadhaar_ref || '') + ' ' +
-              (s.receipt_no || '') + ' ' +
-              (s.nominee_name || '')
-            ).toLowerCase();
-          }
+          if (records && records.length > 0 && !isBlankReset) {
+            // STRICT DE-DUPLICATION BY share_no: Collapses any 34,165 duplications down to exact unique records!
+            const seen = new Map();
+            for (let i = 0; i < records.length; i++) {
+              const r = records[i];
+              const sNo = String(r.share_no || r.share_number || '').trim();
+              if (sNo && !seen.has(sNo)) {
+                seen.set(sNo, r);
+              }
+            }
+            records = Array.from(seen.values());
 
-          mockShareholders = records;
-        }
-        isDBReady = true;
-        return mockShareholders;
-      }).catch(async () => {
-        if (mockShareholders.length < 500) {
-          const officialData = await fetchOfficialShareholdersFallback();
-          if (officialData && officialData.length > 0) {
-            mockShareholders = officialData;
+            // Build high-speed search index for 5ms lookups
+            for (let i = 0; i < records.length; i++) {
+              const s = records[i];
+              s._searchIndex = (
+                (s.shareholder_name || s.name || '') + ' ' +
+                (s.share_no || s.share_number || '') + ' ' +
+                (s.book_no || '') + ' ' +
+                (s.place || s.village_name || '') + ' ' +
+                (s.taluk || '') + ' ' +
+                (s.circle || s.circle_name || '') + ' ' +
+                (s.mobile_no || s.mobile || '') + ' ' +
+                (s.aadhaar_card_no || s.aadhaar_ref || '') + ' ' +
+                (s.receipt_no || '') + ' ' +
+                (s.nominee_name || '')
+              ).toLowerCase();
+            }
+
+            mockShareholders = records;
+          } else {
+            mockShareholders = [];
           }
+        } catch (e) {
+          console.warn('ensureDBReady indexedDB error:', e);
         }
-        isDBReady = true;
-        return mockShareholders;
-      });
-    } else {
-      dbInitPromise = (async () => {
-        if (mockShareholders.length < 500) {
-          const officialData = await fetchOfficialShareholdersFallback();
-          if (officialData && officialData.length > 0) {
-            mockShareholders = officialData;
-          }
-        }
-        isDBReady = true;
-        return mockShareholders;
-      })();
-    }
+      }
+
+      isDBReady = true;
+      return mockShareholders;
+    })();
   }
   return dbInitPromise;
 }
@@ -926,7 +894,7 @@ export const initialNewEnrollments = [
     aadhaar_no: '1234567890005'
   }
 ];
-let mockEnrollments = loadStoredData(STORAGE_KEY_ENROLLMENT, initialNewEnrollments);
+let mockEnrollments = loadStoredData(STORAGE_KEY_ENROLLMENT, []);
 let mockEmployees = loadStoredData(STORAGE_KEY_EMP, []);
 let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
 let mockMergeRequests = loadStoredData(STORAGE_KEY_MERGE_REQ, []);
@@ -1125,14 +1093,21 @@ export const ApiService = {
     return _cachedFilterOptions;
   },
 
-  async getDashboardStats() {
-    await ensureDBReady();
-    const apiRes = await fetchApi('/dashboard/stats');
-    if (apiRes && apiRes.success) return apiRes;
+  _computeDashboardCharts(shList = [], varasaList = [], vargList = []) {
+    if (!shList || shList.length === 0) {
+      return {
+        shareholdersByVillage: [],
+        shareholdersByCircle: [],
+        scheduleCastBreakdown: [],
+        shareRange: [],
+        varasaStatusBreakdown: [],
+        vargavaneStatusBreakdown: []
+      };
+    }
 
     // Village breakdown
     const vCounts = {};
-    mockShareholders.forEach(s => {
+    shList.forEach(s => {
       const v = (s.place || s.village_name || '').trim() || 'ಇತರೆ (Other)';
       vCounts[v] = (vCounts[v] || 0) + 1;
     });
@@ -1161,9 +1136,8 @@ export const ApiService = {
       return 'ಇತರೆ (Other)';
     };
 
-    // Circle breakdown - STRICT RULE: Never consider circle column from shareholder list. Derive strictly from Place -> Circle Directory
     const cCounts = {};
-    mockShareholders.forEach(s => {
+    shList.forEach(s => {
       const pl = (s.place || s.village_name || '').trim();
       const c = getCircleFromPlace(pl);
       cCounts[c] = (cCounts[c] || 0) + 1;
@@ -1172,10 +1146,9 @@ export const ApiService = {
       .map(c => ({ circle_name: c, total: cCounts[c] }))
       .sort((a, b) => b.total - a.total);
 
-    // Schedule Cast / ವರ್ಗ breakdown (Statutory Cooperative Demographics)
     const scCounts = {};
     const scShares = {};
-    mockShareholders.forEach(s => {
+    shList.forEach(s => {
       const rawSc = (s.schedule_cast || 'ಅ - ವರ್ಗ').trim().normalize('NFC');
       const sc = rawSc || 'ಅ - ವರ್ಗ';
       const shares = parseInt(s.number_of_shares) || 1;
@@ -1188,48 +1161,79 @@ export const ApiService = {
       name: sc,
       count: scCounts[sc],
       shares: scShares[sc],
-      percentage: mockShareholders.length > 0 ? ((scCounts[sc] / mockShareholders.length) * 100).toFixed(1) : '0'
+      percentage: shList.length > 0 ? ((scCounts[sc] / shList.length) * 100).toFixed(1) : '0'
     })).sort((a, b) => b.count - a.count);
 
-    // Dynamic unique collections across actual dataset and uploaded circle directory
-    const uniquePlaces = new Set();
-    const uniqueCircles = new Set();
-    const uniqueBooks = new Set();
+    return {
+      shareholdersByVillage,
+      shareholdersByCircle,
+      scheduleCastBreakdown,
+      shareRange: [
+        { range: '1 Share (ಅ)', count: shList.filter(s => (parseInt(s.number_of_shares) || 1) === 1).length },
+        { range: '2-4 Shares', count: shList.filter(s => (parseInt(s.number_of_shares) || 1) >= 2 && (parseInt(s.number_of_shares) || 1) <= 4).length },
+        { range: '5-10 Shares', count: shList.filter(s => (parseInt(s.number_of_shares) || 1) >= 5 && (parseInt(s.number_of_shares) || 1) <= 10).length },
+        { range: '14+ Shares', count: shList.filter(s => (parseInt(s.number_of_shares) || 1) > 10).length }
+      ],
+      varasaStatusBreakdown: [
+        { status: 'Application Received', count: varasaList.filter(v => v.approval_status === 'Application Received').length },
+        { status: 'Under Verification', count: varasaList.filter(v => v.approval_status === 'Under Verification').length },
+        { status: 'Approved', count: varasaList.filter(v => v.approval_status === 'Approved').length },
+        { status: 'Completed', count: varasaList.filter(v => v.approval_status === 'Completed').length }
+      ],
+      vargavaneStatusBreakdown: [
+        { status: 'Application Received', count: vargList.filter(v => v.approval_status === 'Application Received').length },
+        { status: 'Under Verification', count: vargList.filter(v => v.approval_status === 'Under Verification').length },
+        { status: 'Approved', count: vargList.filter(v => v.approval_status === 'Approved').length },
+        { status: 'Completed', count: vargList.filter(v => v.approval_status === 'Completed').length }
+      ]
+    };
+  },
 
-    mockShareholders.forEach(s => {
-      const p = (s.place || s.village_name || '').trim();
-      if (p) {
-        uniquePlaces.add(p.toLowerCase().normalize('NFC'));
-        const resolvedC = getCircleFromPlace(p);
-        if (resolvedC && resolvedC !== 'ಇತರೆ (Other)') {
-          uniqueCircles.add(resolvedC.toLowerCase().normalize('NFC'));
+  async getDashboardStats() {
+    await ensureDBReady();
+    await checkAndApplyCloudReset().catch(() => {});
+
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudStats = await CloudDbService.getDashboardStats();
+        if (cloudStats && cloudStats.success) {
+          if (mockShareholders.length > 0 && cloudStats.stats.totalShareholders > 0) {
+            cloudStats.charts = this._computeDashboardCharts(mockShareholders, mockVarasaTransfers, mockVargavaneTransfers);
+            cloudStats.stats.totalShares = mockShareholders.reduce((acc, s) => acc + (parseInt(s.number_of_shares) || 1), 0);
+          } else if (cloudStats.stats.totalShareholders === 0) {
+            cloudStats.stats.totalShares = 0;
+            cloudStats.stats.totalVillages = 0;
+            cloudStats.stats.totalCircles = 0;
+            cloudStats.stats.totalBooks = 0;
+            cloudStats.stats.totalCategories = 0;
+            cloudStats.charts = this._computeDashboardCharts([], [], []);
+          }
+          return cloudStats;
         }
+      } catch (e) {
+        console.warn('CloudDbService.getDashboardStats error:', e);
       }
-      const b = (s.book_no || '').trim();
-      if (b) uniqueBooks.add(b);
-    });
+    }
 
-    mockCircleDirectory.forEach(cd => {
-      if (cd.address) uniquePlaces.add(cd.address.trim().toLowerCase().normalize('NFC'));
-      if (cd.circle_name) uniqueCircles.add(cd.circle_name.trim().toLowerCase().normalize('NFC'));
-    });
+    const apiRes = await fetchApi('/dashboard/stats');
+    if (apiRes && apiRes.success) return apiRes;
 
-    const calculatedVillages = uniquePlaces.size;
-    const calculatedCircles = uniqueCircles.size;
-    const calculatedBooks = uniqueBooks.size;
+    const isReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true') || mockShareholders.length === 0;
+
+    const charts = this._computeDashboardCharts(isReset ? [] : mockShareholders, mockVarasaTransfers, mockVargavaneTransfers);
 
     return {
       success: true,
       stats: {
-        totalShareholders: mockShareholders.length,
-        activeShareholders: mockShareholders.filter(s => s.status === 'Active').length,
-        inactiveShareholders: mockShareholders.filter(s => s.status === 'Inactive').length,
-        totalShares: mockShareholders.reduce((acc, s) => acc + (parseInt(s.number_of_shares) || 1), 0),
-        totalVillages: calculatedVillages,
-        totalCircles: calculatedCircles,
-        totalBooks: calculatedBooks,
-        totalCategories: scheduleCastBreakdown.length,
-        topCategory: scheduleCastBreakdown.length > 0 ? `${scheduleCastBreakdown[0].category} (${scheduleCastBreakdown[0].count.toLocaleString()})` : '—',
+        totalShareholders: isReset ? 0 : mockShareholders.length,
+        activeShareholders: isReset ? 0 : mockShareholders.filter(s => s.status === 'Active').length,
+        inactiveShareholders: isReset ? 0 : mockShareholders.filter(s => s.status === 'Inactive').length,
+        totalShares: isReset ? 0 : mockShareholders.reduce((acc, s) => acc + (parseInt(s.number_of_shares) || 1), 0),
+        totalVillages: isReset ? 0 : (mockCircleDirectory.length || 0),
+        totalCircles: isReset ? 0 : 9,
+        totalBooks: isReset ? 0 : 11,
+        totalCategories: isReset ? 0 : charts.scheduleCastBreakdown.length,
+        topCategory: isReset || charts.scheduleCastBreakdown.length === 0 ? '—' : `${charts.scheduleCastBreakdown[0].category} (${charts.scheduleCastBreakdown[0].count.toLocaleString()})`,
         pendingVarasa: mockVarasaTransfers.filter(v => v.approval_status !== 'Completed').length,
         completedVarasa: mockVarasaTransfers.filter(v => v.approval_status === 'Completed').length,
         totalVargavane: mockVargavaneTransfers.length,
@@ -1244,29 +1248,7 @@ export const ApiService = {
         totalSugarAlloted: mockSugarAllotments.reduce((acc, a) => acc + (parseFloat(a.issued_quantity_kg) || 0), 0),
         totalEmployees: mockEmployees.length
       },
-      charts: {
-        shareholdersByVillage,
-        shareholdersByCircle,
-        scheduleCastBreakdown,
-        shareRange: [
-          { range: '1 Share (ಅ)', count: mockShareholders.filter(s => (parseInt(s.number_of_shares) || 1) === 1).length },
-          { range: '2-4 Shares', count: mockShareholders.filter(s => (parseInt(s.number_of_shares) || 1) >= 2 && (parseInt(s.number_of_shares) || 1) <= 4).length },
-          { range: '5-10 Shares', count: mockShareholders.filter(s => (parseInt(s.number_of_shares) || 1) >= 5 && (parseInt(s.number_of_shares) || 1) <= 10).length },
-          { range: '14+ Shares', count: mockShareholders.filter(s => (parseInt(s.number_of_shares) || 1) > 10).length }
-        ],
-        varasaStatusBreakdown: [
-          { status: 'Application Received', count: mockVarasaTransfers.filter(v => v.approval_status === 'Application Received').length },
-          { status: 'Under Verification', count: mockVarasaTransfers.filter(v => v.approval_status === 'Under Verification').length },
-          { status: 'Approved', count: mockVarasaTransfers.filter(v => v.approval_status === 'Approved').length },
-          { status: 'Completed', count: mockVarasaTransfers.filter(v => v.approval_status === 'Completed').length }
-        ],
-        vargavaneStatusBreakdown: [
-          { status: 'Application Received', count: mockVargavaneTransfers.filter(v => v.approval_status === 'Application Received').length },
-          { status: 'Under Verification', count: mockVargavaneTransfers.filter(v => v.approval_status === 'Under Verification').length },
-          { status: 'Approved', count: mockVargavaneTransfers.filter(v => v.approval_status === 'Approved').length },
-          { status: 'Completed', count: mockVargavaneTransfers.filter(v => v.approval_status === 'Completed').length }
-        ]
-      }
+      charts
     };
   },
 
@@ -1739,8 +1721,19 @@ export const ApiService = {
       };
     });
 
-    // Instant in-memory batch prepend
-    mockShareholders = [...newShItems, ...mockShareholders];
+    // In-memory batch merge with strict de-duplication by share_no
+    const shMap = new Map();
+    newShItems.forEach(s => {
+      const k = String(s.share_no || s.share_number || '').trim();
+      if (k) shMap.set(k, s);
+    });
+    mockShareholders.forEach(s => {
+      const k = String(s.share_no || s.share_number || '').trim();
+      if (k && !shMap.has(k)) {
+        shMap.set(k, s);
+      }
+    });
+    mockShareholders = Array.from(shMap.values());
 
     // Asynchronously save to IndexedDB (handles 17k - 100k+ records instantly)
     saveToIndexedDB(mockShareholders).catch(() => {});
@@ -2191,7 +2184,7 @@ const newSh = {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         Object.keys(localStorage).forEach(k => {
-          if (k.startsWith('sugar_erp_') && k !== 'sugar_erp_user' && k !== 'sugar_erp_cloud_config') {
+          if (k.startsWith('sugar_erp_') && k !== 'sugar_erp_user' && k !== 'sugar_erp_cloud_config' && k !== 'sugar_erp_cloud_reset_version') {
             localStorage.removeItem(k);
           }
         });

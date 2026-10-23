@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { syncAllCloudWorkflows, checkAndApplyCloudReset } from './services/api';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -28,6 +29,33 @@ function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loginUsername, setLoginUsername] = useState('admin');
   const [loginPassword, setLoginPassword] = useState('admin123');
+
+  useEffect(() => {
+    // 1. Initial sync on app load
+    syncAllCloudWorkflows().catch(() => {});
+
+    // 2. Real-time multi-browser sync when switching tabs/windows
+    const handleSyncOnActive = () => {
+      checkAndApplyCloudReset().then(wiped => {
+        if (wiped) {
+          if (typeof window !== 'undefined') window.location.reload();
+        } else {
+          syncAllCloudWorkflows().catch(() => {});
+        }
+      }).catch(() => {});
+    };
+
+    window.addEventListener('focus', handleSyncOnActive);
+    const handleVisibility = () => {
+      if (!document.hidden) handleSyncOnActive();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleSyncOnActive);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   if (!user) {
     return (
