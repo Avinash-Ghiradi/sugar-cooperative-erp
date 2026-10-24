@@ -1748,104 +1748,204 @@ export const ApiService = {
   },
 
   async getShareholderById(id) {
+    let cloudSh = null;
     if (CloudDbService.isEnabled()) {
       try {
         const cloudRes = await CloudDbService.getShareholderById(id);
-        if (cloudRes && cloudRes.success) return cloudRes;
+        if (cloudRes && cloudRes.success && cloudRes.shareholder) {
+          cloudSh = cloudRes.shareholder;
+        }
       } catch (e) {}
     }
     await ensureDBReady();
-    const apiRes = await fetchApi(`/shareholders/${id}`);
-    if (apiRes && apiRes.success) return apiRes;
 
-    const sh = mockShareholders.find(s => 
-      s.shareholder_id === id || 
-      String(s.id) === String(id) || 
-      String(s.share_no) === String(id) || 
-      String(s.share_number) === String(id)
+    const cleanId = String(id || '').trim();
+    const localSh = mockShareholders.find(s => 
+      s.shareholder_id === cleanId || 
+      String(s.id) === cleanId || 
+      String(s.share_no) === cleanId || 
+      String(s.share_number) === cleanId ||
+      (Array.isArray(s.all_share_numbers) && s.all_share_numbers.map(String).includes(cleanId))
     );
-    if (!sh) return { success: false, message: 'Not found' };
+
+    const sh = cloudSh ? { ...localSh, ...cloudSh } : localSh;
+    if (!sh) return { success: false, message: 'Shareholder not found' };
 
     const shNo = String(sh.share_no || sh.share_number || '').trim();
     const shName = (sh.shareholder_name || sh.name || '').trim().toLowerCase().normalize('NFC');
 
-    const txs = mockTransactions.filter(t => t.shareholder_id === sh.shareholder_id);
-    const allotments = mockSugarAllotments.filter(a => a.shareholder_id === sh.shareholder_id);
+    // Collect all share numbers related to this shareholder (merged, primary, secondary)
+    const allShareNos = Array.from(new Set([
+      shNo,
+      cleanId,
+      ...(Array.isArray(sh.all_share_numbers) ? sh.all_share_numbers.map(String) : (shNo.includes(',') ? shNo.split(',').map(s => s.trim()) : [])),
+      ...(sh.primary_share_no ? [String(sh.primary_share_no)] : []),
+      ...(sh.merged_into_share_no ? [String(sh.merged_into_share_no)] : []),
+      ...(Array.isArray(sh.merged_holdings) ? sh.merged_holdings.map(h => String(h.share_no)) : [])
+    ].filter(Boolean)));
 
-    // Find any Varasa transfers where this shareholder is either deceased holder or heir
-    const varasaMatches = mockVarasaTransfers.filter(v => {
-      const vShareNo = String(v.share_no || v.existing_share_number || '').trim();
-      const vShName = (v.shareholder_name || v.existing_shareholder_name || '').trim().toLowerCase().normalize('NFC');
-      const vHeirName = (v.heir_name || v.varasa_member || '').trim().toLowerCase().normalize('NFC');
-      return (shNo && vShareNo === shNo) || (shName && (vShName.includes(shName) || shName.includes(vShName) || vHeirName.includes(shName) || shName.includes(vHeirName)));
-    });
-
-    // Find any Vargavane transfers where this shareholder is either transferor or transferee
-    const vargavaneMatches = mockVargavaneTransfers.filter(v => {
-      const vShareNo = String(v.share_no || '').trim();
-      const vTransferor = (v.transferor_name || v.shareholder_name || '').trim().toLowerCase().normalize('NFC');
-      const vTransferee = (v.transferee_name || '').trim().toLowerCase().normalize('NFC');
-      return (shNo && vShareNo === shNo) || (shName && (vTransferor.includes(shName) || shName.includes(vTransferor) || vTransferee.includes(shName) || shName.includes(vTransferee)));
-    });
-
-    // Find any Enrollment application
-    const enrollmentMatches = mockEnrollments.filter(e => {
-      const eShareNo = String(e.share_no || '').trim();
-      const eName = (e.full_name || '').trim().toLowerCase().normalize('NFC');
-      return (shNo && eShareNo === shNo) || (shName && (eName.includes(shName) || shName.includes(eName)));
-    });
+    const txs = mockTransactions.filter(t => t.shareholder_id === sh.shareholder_id || allShareNos.includes(String(t.share_no)));
+    const allotments = mockSugarAllotments.filter(a => a.shareholder_id === sh.shareholder_id || allShareNos.includes(String(a.share_no)));
 
     // Unified Chronological Audit Trail
     const timeline = [];
 
-    // 1. Any direct audit_history entries
-    if (Array.isArray(sh.audit_history)) {
-      sh.audit_history.forEach(aud => {
+    // 1. ALL MERGE APPROVALS & REQUESTS (with 2-step confirmation)
+    const mergeReqMatches = mockMergeRequests.filter(m => {
+      const pNo = String(m.primary_share_no || '').trim();
+      const sNos = (m.share_numbers || []).map(String);
+      const cStr = String(m.combined_share_no_str || '');
+      const recs = (m.records_to_merge || []).map(r => String(r.share_no || r.id));
+      return allShareNos.some(no => 
+        no === pNo || sNos.includes(no) || cStr.includes(no) || recs.includes(no)
+      );
+    });
+
+    mergeReqMatches.forEach(m => {
+      const isApproved = (m.approval_status || '').includes('Approved');
+      const isRejected = (m.approval_status || '').includes('Rejected');
+      const isPending = (m.approval_status || '').includes('Pending');
+
+      if (isApproved) {
         timeline.push({
-          id: aud.id || `aud-${Math.random()}`,
-          date: aud.timestamp || aud.date || '—',
-          type: aud.type || 'AUDIT_LOG',
-          title: aud.title || 'ಮಾಹಿತಿ ದಾಖಲಾತಿ',
-          description: aud.description || '',
-          performed_by: aud.performed_by || 'Admin',
-          details: aud.details || {},
+          id: `merge-app-${m.id || m.request_id}`,
+          date: m.approved_at || m.step2_confirmed_at || m.request_date || '—',
+          type: 'MERGE_REQUEST_APPROVED_DOUBLE_CONFIRMED',
+          title: 'ಷೇರುಗಳ ಅಧಿಕೃತ ವಿಲೀನ ಮತ್ತು ಅಡ್ಮಿನ್ ಮಂಜೂರಾತಿ (೨-ಹಂತದ ಪರಿಶೀಲನೆ)',
+          description: `ವಿಲೀನ ವಿನಂತಿ #${m.request_id || m.id}: ಷೇರು ಸಂಖ್ಯೆಗಳು #${m.combined_share_no_str || (m.share_numbers || []).join(', #')} ಅನ್ನು ೨ ಬಾರಿ ಪರಿಶೀಲಿಸಿ (Double-Confirmed: 2/2) ಅಧಿಕೃತವಾಗಿ ಅನುಮೋದಿಸಲಾಗಿದೆ. ಒಟ್ಟು ${m.combined_shares} ಷೇರುಗಳು, ₹${Number(m.combined_total_amount || 4000).toLocaleString()}. ಉಳಿಯುವ ಮುಖ್ಯ ಖಾತೆ: #${m.primary_share_no}. ಅಡ್ಮಿನ್ ಷರಾ: "${m.approval_remarks || 'ಅಧಿಕೃತ ೨-ಹಂತದ ಪರಿಶೀಲನೆ ನಡೆಸಿ ಮಾಸ್ಟರ್ ಶೀಟ್‌ಗೆ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ'}"`,
+          performed_by: `${m.approved_by || 'Admin'} (ಅಧಿಕೃತ ಅಡ್ಮಿನ್)`,
+          details: {
+            request_id: m.request_id || m.id,
+            confirmation_steps: '೨ / ೨ ಹಂತಗಳು (Double Confirmed)',
+            step1_time: m.step1_verified_at,
+            step2_time: m.step2_confirmed_at || m.approved_at,
+            combined_share_no_str: m.combined_share_no_str,
+            shares: m.combined_shares,
+            total_amount: m.combined_total_amount,
+            approved_by: m.approved_by,
+            remarks: m.approval_remarks,
+            holdings: m.records_to_merge || m.merged_result?.holdings
+          },
           badgeColor: 'emerald'
         });
+      } else if (isPending) {
+        timeline.push({
+          id: `merge-pend-${m.id || m.request_id}`,
+          date: m.request_date || '—',
+          type: 'MERGE_REQUEST_PENDING',
+          title: 'ವಿಲೀನ ವಿನಂತಿ - ಅಡ್ಮಿನ್ ಅನುಮೋದನೆ ಬಾಕಿ (Pending Admin Approval)',
+          description: `ಷೇರುಗಳು #${m.combined_share_no_str || (m.share_numbers || []).join(', #')} (ಒಟ್ಟು ${m.combined_shares} ಷೇರುಗಳು, ₹${Number(m.combined_total_amount || 4000).toLocaleString()}) ವಿಲೀನಗೊಳಿಸಲು ವಿನಂತಿ ಸಲ್ಲಿಸಲಾಗಿದೆ. ೨-ಹಂತದ ಅಡ್ಮಿನ್ ಅನುಮೋದನೆ ಬಾಕಿ ಉಳಿದಿದೆ.`,
+          performed_by: `${m.requested_by || 'Operator'} (ಸಲ್ಲಿಕೆ)`,
+          details: {
+            request_id: m.request_id || m.id,
+            confirmation_steps: '೦ / ೨ ಬಾಕಿ (Pending)',
+            shares: m.combined_shares,
+            total_amount: m.combined_total_amount,
+            remarks: m.remarks
+          },
+          badgeColor: 'amber'
+        });
+      } else if (isRejected) {
+        timeline.push({
+          id: `merge-rej-${m.id || m.request_id}`,
+          date: m.rejected_at || m.request_date || '—',
+          type: 'MERGE_REQUEST_REJECTED',
+          title: 'ವಿಲೀನ ವಿನಂತಿ ತಿರಸ್ಕಾರ (Merge Request Rejected)',
+          description: `ವಿಲೀನ ವಿನಂತಿ #${m.request_id || m.id} ಅನ್ನು ಅಡ್ಮಿನ್ ಪರಿಶೀಲನೆಯಲ್ಲಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ. ಕಾರಣ: "${m.rejection_remarks || 'ದಾಖಲೆಗಳಲ್ಲಿ ವ್ಯತ್ಯಾಸ ಕಂಡುಬಂದಿದೆ'}"`,
+          performed_by: `${m.rejected_by || 'Admin'} (ತಿರಸ್ಕಾರ)`,
+          details: {
+            request_id: m.request_id || m.id,
+            remarks: m.rejection_remarks
+          },
+          badgeColor: 'rose'
+        });
+      }
+    });
+
+    // 2. SECONDARY MERGED ACCOUNT STATUS
+    if (sh.is_merged_secondary || sh.status === 'Inactive' || sh.merged_into_share_no) {
+      timeline.push({
+        id: `merge-sec-${sh.id || shNo}`,
+        date: sh.merged_at || sh.updated_at || '—',
+        type: 'MERGED_INTO_PRIMARY',
+        title: 'ಖಾತೆ ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ (Merged into Master Shareholder)',
+        description: `ಈ ಷೇರು ಖಾತೆಯನ್ನು ಮುಖ್ಯ ಷೇರು #${sh.merged_into_share_no || 'Master'} ಗೆ ಅಧಿಕೃತವಾಗಿ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ. ಈ ಖಾತೆಯು ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದ್ದು (Inactive), ಸದಸ್ಯರ ಎಲ್ಲಾ ಷೇರುಗಳು ಮತ್ತು ಬಂಡವಾಳ ಮುಖ್ಯ ಖಾತೆಗೆ ವರ್ಗಾವಣೆಯಾಗಿದೆ.`,
+        performed_by: 'Admin (System Administrator)',
+        details: {
+          merged_into_share_no: sh.merged_into_share_no,
+          status: 'ನಿಷ್ಕ್ರಿಯ (Inactive)'
+        },
+        badgeColor: 'rose'
       });
     }
 
-    // 2. Varasa transfers
+    // 3. PRIMARY MERGED ACCOUNT HOLDINGS (e.g. #3653, #3654 or #3256)
+    if ((sh.is_merged || (Array.isArray(sh.merged_holdings) && sh.merged_holdings.length > 1)) && !timeline.some(t => t.type.includes('MERGE'))) {
+      timeline.push({
+        id: `merge-holdings-${sh.id || shNo}`,
+        date: sh.merged_holdings?.[1]?.receipt_date || sh.reg_date || '—',
+        type: 'MERGE_SHARES',
+        title: 'ಬಹು-ಷೇರುಗಳು ಮತ್ತು ಮೊತ್ತಗಳ ಅಧಿಕೃತ ಏಕೀಕರಣ (Combined Shareholdings)',
+        description: `ಶೇರುದಾರರ ಹೆಸರಿನಲ್ಲಿದ್ದ ${sh.merged_holdings?.length || 2} ಪ್ರತ್ಯೇಕ ಷೇರು ಸರ್ಟಿಫಿಕೇಟ್‌ಗಳು (#${allShareNos.join(', #')}) ಮತ್ತು ಮೊತ್ತಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ ಏಕೀಕೃತ ಖಾತೆಯಾಗಿ (ಒಟ್ಟು ${sh.number_of_shares || 2} ಷೇರುಗಳು, ₹${Number(sh.total_amount || 4000).toLocaleString()}) ನವೀಕರಿಸಲಾಗಿದೆ.`,
+        performed_by: 'Admin (System Administrator)',
+        details: {
+          merged_certificates: allShareNos,
+          shares: sh.number_of_shares || 2,
+          total_amount: sh.total_amount || 4000,
+          holdings: sh.merged_holdings
+        },
+        badgeColor: 'amber'
+      });
+    }
+
+    // 4. VARASA TRANSFERS (Legal-Heir Succession)
+    const varasaMatches = mockVarasaTransfers.filter(v => {
+      const vShareNo = String(v.share_no || v.existing_share_number || '').trim();
+      const vShName = (v.shareholder_name || v.existing_shareholder_name || '').trim().toLowerCase().normalize('NFC');
+      const vHeirName = (v.heir_name || v.varasa_member || '').trim().toLowerCase().normalize('NFC');
+      return allShareNos.includes(vShareNo) || (shName && (vShName.includes(shName) || shName.includes(vShName) || vHeirName.includes(shName) || shName.includes(vHeirName)));
+    });
+
     varasaMatches.forEach(v => {
       timeline.push({
         id: `var-${v.transfer_id || v.id}`,
         date: v.receipt_date || v.application_date || '—',
         type: 'VARASA_TRANSFER',
-        title: `ವಾರಸುದಾರರ ವರ್ಗಾವಣೆ (${v.approval_status || 'ನೋಂದಣಿ'})`,
-        description: `ಮೂಲ ಶೇರುದಾರರು: ${v.shareholder_name || '—'} (${v.dod ? `ನಿಧನ: ${v.dod}` : ''}) ➔ ವಾರಸುದಾರರು: ${v.heir_name} (${v.heir_relationship || 'ವಾರಸುದಾರರು'}). ರಶೀದಿ ನಂ: ${v.receipt_no || '—'}, ಶುಲ್ಕ: ₹${v.fees || 570}.`,
-        performed_by: v.approved_by || 'Admin (System Administrator)',
+        title: `ವಾರಸುದಾರರ ಶಾಸನಬದ್ಧ ವರ್ಗಾವಣೆ (${v.approval_status || 'ಮಂಜೂರಾಗಿದೆ'})`,
+        description: `ಮೂಲ ಶೇರುದಾರರು: ${v.shareholder_name || v.existing_shareholder_name || '—'} (${v.dod ? `ನಿಧನ: ${v.dod}` : ''}) ➔ ವಾರಸುದಾರರು: ${v.heir_name || v.varasa_member} (${v.heir_relationship || 'ವಾರಸುದಾರರು'}). ರಶೀದಿ ನಂ: #${v.receipt_no || '—'}, ಶುಲ್ಕ: ₹${v.fees || 570}, ಠರಾವು ನಂ: ${v.tharava_no || '—'} (${v.tharava_date || '—'}).`,
+        performed_by: `${v.approved_by || 'Admin'} (ಅಧಿಕೃತ ಮಂಜೂರಾತಿ)`,
         details: {
           transfer_id: v.transfer_id,
           share_no: v.share_no,
-          deceased_holder: v.shareholder_name,
-          heir_name: v.heir_name,
-          relationship: v.heir_relationship,
+          deceased_holder: v.shareholder_name || v.existing_shareholder_name,
+          heir_name: v.heir_name || v.varasa_member,
+          relationship: v.heir_relationship || v.relationship,
           dod: v.dod,
           receipt_no: v.receipt_no,
+          tharava_no: v.tharava_no,
+          tharava_date: v.tharava_date,
           status: v.approval_status
         },
-        badgeColor: 'amber'
+        badgeColor: 'purple'
       });
     });
 
-    // 3. Vargavane transfers
+    // 5. VARGAVANE TRANSFERS (Direct Share Transfers)
+    const vargavaneMatches = mockVargavaneTransfers.filter(v => {
+      const vShareNo = String(v.share_no || '').trim();
+      const vTransferor = (v.transferor_name || v.shareholder_name || '').trim().toLowerCase().normalize('NFC');
+      const vTransferee = (v.transferee_name || '').trim().toLowerCase().normalize('NFC');
+      return allShareNos.includes(vShareNo) || (shName && (vTransferor.includes(shName) || shName.includes(vTransferor) || vTransferee.includes(shName) || shName.includes(vTransferee)));
+    });
+
     vargavaneMatches.forEach(v => {
       timeline.push({
         id: `vg-${v.transfer_id || v.id}`,
         date: v.receipt_date || v.application_date || '—',
         type: 'VARGAVANE_TRANSFER',
-        title: `ನೇರ ಶೇರು ವರ್ಗಾವಣೆ (${v.approval_status || 'ನೋಂದಣಿ'})`,
-        description: `ವರ್ಗಾವಣೆದಾರರು: ${v.transferor_name || '—'} ➔ ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು: ${v.transferee_name} (${v.transferee_relationship || 'ಸಂಬಂಧ'}). ${v.no_of_shares || 1} ಶೇರು, ರಶೀದಿ ನಂ: ${v.receipt_no || '—'}.`,
-        performed_by: v.approved_by || 'Admin (System Administrator)',
+        title: `ನೇರ ಶೇರು ವರ್ಗಾವಣೆ (${v.approval_status || 'ಮಂಜೂರಾಗಿದೆ'})`,
+        description: `ವರ್ಗಾವಣೆದಾರರು: ${v.transferor_name || '—'} ➔ ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು: ${v.transferee_name} (${v.transferee_relationship || 'ಸಂಬಂಧ'}). ${v.no_of_shares || 1} ಶೇರು, ರಶೀದಿ ನಂ: #${v.receipt_no || '—'}, ಶುಲ್ಕ: ₹${v.transfer_fee || 570}, ಠರಾವು ನಂ: ${v.tharava_no || '—'}.`,
+        performed_by: `${v.approved_by || 'Admin'} (ಅಧಿಕೃತ ಮಂಜೂರಾತಿ)`,
         details: {
           transfer_id: v.transfer_id,
           share_no: v.share_no,
@@ -1853,13 +1953,69 @@ export const ApiService = {
           transferee: v.transferee_name,
           relationship: v.transferee_relationship,
           receipt_no: v.receipt_no,
+          tharava_no: v.tharava_no,
           status: v.approval_status
         },
         badgeColor: 'cyan'
       });
     });
 
-    // 4. Enrollment record
+    // 6. SHAREHOLDER AMENDMENTS & REVISION HISTORY
+    const allRevs = [
+      ...(Array.isArray(sh.history) ? sh.history : []),
+      ...(Array.isArray(sh.change_history) ? sh.change_history : []),
+      ...(Array.isArray(sh.audit_history) ? sh.audit_history : [])
+    ];
+    const seenRevKeys = new Set();
+    allRevs.forEach((rev, idx) => {
+      const key = `${rev.timestamp || rev.dateFormatted}-${rev.operator || rev.performed_by}`;
+      if (seenRevKeys.has(key)) return;
+      seenRevKeys.add(key);
+
+      timeline.push({
+        id: rev.id || `rev-${idx}`,
+        date: rev.dateFormatted || rev.timestamp || '—',
+        type: rev.type || 'SHAREHOLDER_UPDATE',
+        title: rev.title || 'ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ (Statutory Amendment)',
+        description: rev.notes || rev.description || 'ದಾಖಲೆ ಪರಿಷ್ಕರಣೆ',
+        performed_by: `${rev.operator || rev.performed_by || 'Admin'} (ಆಪರೇಟರ್)`,
+        details: {
+          changes: rev.changes || [],
+          changesCount: rev.changesCount || (rev.changes ? rev.changes.length : 0),
+          notes: rev.notes
+        },
+        badgeColor: 'sky'
+      });
+    });
+
+    // 7. IMMUTABLE SYSTEM AUDIT LOGS MATCHING THIS SHAREHOLDER
+    const matchedAuditLogs = mockAuditLogs.filter(log => {
+      const sNo = String(log.share_no || log.record_id || log.target_id || '').trim();
+      const desc = String(log.details || log.description || '');
+      return allShareNos.some(no => no === sNo || desc.includes(`#${no}`) || desc.includes(` ${no} `));
+    });
+
+    matchedAuditLogs.forEach(log => {
+      if (timeline.some(t => t.id === log.id || (t.details?.request_id && t.details.request_id === log.details?.request_id))) return;
+      timeline.push({
+        id: log.id || `aud-${Math.random()}`,
+        date: log.dateFormatted || log.timestamp || '—',
+        type: log.action || log.type || 'AUDIT_LOG',
+        title: log.title || (log.action?.includes('MERGE') ? 'ಷೇರುಗಳ ವಿಲೀನ ಆಡಿಟ್ ಲಾಗ್' : 'ಸಿಸ್ಟಮ್ ಆಡಿಟ್ ಲಾಗ್ (System Audit)'),
+        description: log.description || (typeof log.details === 'string' ? log.details : JSON.stringify(log.details || '')),
+        performed_by: `${log.username || log.performed_by || log.operator || 'Admin'}`,
+        details: log.details || {},
+        badgeColor: 'emerald'
+      });
+    });
+
+    // 8. ENROLLMENT APPLICATION (if exists)
+    const enrollmentMatches = mockEnrollments.filter(e => {
+      const eShareNo = String(e.share_no || '').trim();
+      const eName = (e.full_name || '').trim().toLowerCase().normalize('NFC');
+      return (shNo && eShareNo === shNo) || (shName && (eName.includes(shName) || shName.includes(eName)));
+    });
+
     enrollmentMatches.forEach(e => {
       timeline.push({
         id: `enr-${e.enrollment_id || e.id}`,
@@ -1880,50 +2036,11 @@ export const ApiService = {
       });
     });
 
-    // If no explicit enrollment entry exists yet, synthesize default admission entry from member details
-    if (timeline.length === 0) {
-      timeline.push({
-        id: `orig-${sh.id || 1}`,
-        date: sh.date_of_joining || sh.admission_date || 'ಮೂಲ ಸದಸ್ಯತ್ವ',
-        type: 'INITIAL_MEMBERSHIP',
-        title: 'ಮೂಲ ಸದಸ್ಯತ್ವ ನೋಂದಣಿ (Original Statutory Membership)',
-        description: `ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204 ಅಧಿಕೃತ ಶೇರುದಾರರಾಗಿ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿದ್ದಾರೆ. ಶೇರು ನಂ: #${shNo}, ಶೇರುಗಳು: ${sh.number_of_shares || 1}, ವರ್ಗ: ${sh.schedule_cast || 'ಅ - ವರ್ಗ'}, ಪುಸ್ತಕ ನಂ: ${sh.book_no || '1'}.`,
-        performed_by: 'Authorized Secretary / Admin',
-        details: {
-          share_no: shNo,
-          shares: sh.number_of_shares || 1,
-          category: sh.schedule_cast || 'ಅ - ವರ್ಗ',
-          book_no: sh.book_no
-        },
-        badgeColor: 'emerald'
-      });
-    }
-
-    // If shareholder has merged holdings or multiple amounts, ensure timeline displays it
-    if (sh.merged_holdings && sh.merged_holdings.length > 0) {
-      const alreadyLogged = timeline.some(t => t.type === 'MERGE_SHARES');
-      if (!alreadyLogged) {
-        timeline.unshift({
-          id: `merge-${sh.id}`,
-          date: sh.merged_holdings[1]?.receipt_date || sh.reg_date || '—',
-          type: 'MERGE_SHARES',
-          title: 'ಬಹು-ಶೇರುಗಳು ಮತ್ತು ಮೊತ್ತಗಳ ಅಧಿಕೃತ ವಿಲೀನ (Multiple Shares Merged)',
-          description: `ಶೇರುದಾರರ ಹೆಸರಿನಲ್ಲಿದ್ದ ${sh.merged_holdings.length} ಪ್ರತ್ಯೇಕ ಶೇರು ಸರ್ಟಿಫಿಕೇಟ್‌ಗಳು (#${(sh.all_share_numbers || [sh.share_no]).join(', #')}) ಮತ್ತು ಮೊತ್ತಗಳನ್ನು ವಿಲೀನಗೊಳಿಸಿ ಏಕೀಕೃತ ಖಾತೆಯಾಗಿ (ಒಟ್ಟು ${sh.number_of_shares} ಶೇರುಗಳು, ₹${Number(sh.total_amount || 0).toLocaleString()}) ನವೀಕರಿಸಲಾಗಿದೆ.`,
-          performed_by: 'Admin (System Administrator)',
-          details: {
-            merged_certificates: sh.all_share_numbers || [sh.share_no],
-            total_shares: sh.number_of_shares,
-            total_amount: sh.total_amount,
-            holdings: sh.merged_holdings
-          },
-          badgeColor: 'amber'
-        });
-      }
-    } else if ((parseFloat(sh.receipt_amount) > 0 && parseFloat(sh.amount) > 0) || parseFloat(sh.total_amount) > parseFloat(sh.receipt_amount)) {
-      const hasInstallment = timeline.some(t => t.type === 'MULTIPLE_AMOUNTS');
-      if (!hasInstallment) {
+    // 9. MULTIPLE INSTALLMENTS (if applicable)
+    if ((parseFloat(sh.receipt_amount) > 0 && parseFloat(sh.amount) > 0) || parseFloat(sh.total_amount) > parseFloat(sh.receipt_amount)) {
+      if (!timeline.some(t => t.type === 'MULTIPLE_AMOUNTS')) {
         timeline.push({
-          id: `amt-${sh.id}`,
+          id: `amt-${sh.id || shNo}`,
           date: sh.date || sh.reg_date || '—',
           type: 'MULTIPLE_AMOUNTS',
           title: 'ಬಹು ಕಂತುಗಳ ಶೇರು ಪಾವತಿ (Multiple Share Installments Recorded)',
@@ -1934,12 +2051,47 @@ export const ApiService = {
             amount_1: sh.receipt_amount,
             receipt_2: sh.reciept,
             amount_2: sh.amount,
-            total: sh.total_amount
+            total_amount: sh.total_amount
           },
           badgeColor: 'cyan'
         });
       }
     }
+
+    // 10. ORIGINAL STATUTORY MEMBERSHIP (Initial Entry)
+    timeline.push({
+      id: `orig-${sh.id || shNo}`,
+      date: sh.date_of_joining || sh.reg_date || sh.admission_date || 'ಮೂಲ ಸದಸ್ಯತ್ವ',
+      type: 'INITIAL_MEMBERSHIP',
+      title: 'ಮೂಲ ಸದಸ್ಯತ್ವ ನೋಂದಣಿ (Original Statutory Membership)',
+      description: `ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204 ಅಧಿಕೃತ ಶೇರುದಾರರಾಗಿ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿದ್ದಾರೆ. ಶೇರು ನಂ: #${shNo}, ಶೇರುಗಳು: ${sh.number_of_shares || 1}, ವರ್ಗ: ${sh.schedule_cast || 'ಅ - ವರ್ಗ'}, ಪುಸ್ತಕ ನಂ: ${sh.book_no || '1'}, ರಶೀದಿ ನಂ: #${sh.receipt_no || '—'}.`,
+      performed_by: 'Authorized Secretary / Admin',
+      details: {
+        share_no: shNo,
+        shares: sh.number_of_shares || 1,
+        category: sh.schedule_cast || 'ಅ - ವರ್ಗ',
+        book_no: sh.book_no,
+        receipt_no: sh.receipt_no
+      },
+      badgeColor: 'emerald'
+    });
+
+    // De-duplicate and sort chronologically (initial membership at bottom, newest first)
+    const seenEventKeys = new Set();
+    const cleanTimeline = [];
+    timeline.forEach(t => {
+      const key = `${t.type}-${t.title}-${t.date}`;
+      if (!seenEventKeys.has(key)) {
+        seenEventKeys.add(key);
+        cleanTimeline.push(t);
+      }
+    });
+
+    cleanTimeline.sort((a, b) => {
+      if (a.type === 'INITIAL_MEMBERSHIP') return 1;
+      if (b.type === 'INITIAL_MEMBERSHIP') return -1;
+      return 0;
+    });
 
     return {
       success: true,
@@ -1955,7 +2107,7 @@ export const ApiService = {
         varasaHistory: varasaMatches,
         vargavaneHistory: vargavaneMatches,
         enrollmentHistory: enrollmentMatches,
-        timeline,
+        timeline: cleanTimeline,
         attendance: []
       }
     };
@@ -2479,12 +2631,23 @@ const newSh = {
         id: `LOG-${Date.now()}`,
         timestamp: now.toISOString(),
         dateFormatted,
-        action: 'SHAREHOLDER_UPDATE',
+        username: operatorName,
+        performed_by: operatorName,
         operator: operatorName,
-        details: `ಶೇರುದಾರ #${updated.share_no} (${updated.shareholder_name}) ತಿದ್ದುಪಡಿ [${summaryDiff}${changes.length > 3 ? ` +${changes.length - 3} ಇತರೆ` : ''}]`,
+        role: 'Admin',
+        module: 'Shareholders (ಷೇರುದಾರರ ವಿವರಗಳು)',
+        action: 'SHAREHOLDER_UPDATE',
+        record_id: `#${updated.share_no}`,
         share_no: updated.share_no,
         target_id: updated.id,
-        changesCount: changes.length
+        description: `ಶೇರುದಾರ #${updated.share_no} (${updated.shareholder_name}) ತಿದ್ದುಪಡಿ [${summaryDiff}${changes.length > 3 ? ` +${changes.length - 3} ಇತರೆ` : ''}]. ಷರಾ: "${(data.history_notes || '').trim() || 'ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ'}"`,
+        changesCount: changes.length,
+        details: {
+          changes,
+          notes: (data.history_notes || '').trim(),
+          shareholder_name: updated.shareholder_name,
+          share_no: updated.share_no
+        }
       };
       mockAuditLogs.unshift(auditEntry);
       if (mockAuditLogs.length > 500) mockAuditLogs.pop();
@@ -4935,12 +5098,103 @@ const newSh = {
   },
 
   async getAuditLogs() {
-    const apiRes = await fetchApi('/audit-logs');
-    if (apiRes && apiRes.success) return apiRes;
+    await ensureDBReady();
+    const allLogs = [...mockAuditLogs];
+
+    // Ensure all mockMergeRequests are present in audit logs
+    mockMergeRequests.forEach(m => {
+      const isApproved = (m.approval_status || '').includes('Approved');
+      const isRejected = (m.approval_status || '').includes('Rejected');
+      const action = isApproved 
+        ? 'MERGE_REQUEST_APPROVED_DOUBLE_CONFIRMED' 
+        : (isRejected ? 'MERGE_REQUEST_REJECTED' : 'MERGE_REQUEST_SUBMITTED');
+      const time = m.approved_at || m.step2_confirmed_at || m.rejected_at || m.request_date || new Date().toISOString();
+      const existing = allLogs.find(l => l.details?.request_id === m.request_id || l.id === `LOG-MERGE-${m.id || m.request_id}`);
+      if (!existing) {
+        allLogs.push({
+          id: `LOG-MERGE-${m.id || m.request_id}`,
+          timestamp: time,
+          username: m.approved_by || m.requested_by || 'Admin',
+          performed_by: m.approved_by || m.requested_by || 'Admin',
+          role: 'Admin',
+          module: 'Merge Shares (ಷೇರುಗಳ ವಿಲೀನ)',
+          action,
+          record_id: `#${m.combined_share_no_str || m.primary_share_no}`,
+          share_no: m.primary_share_no,
+          description: `ವಿಲೀನ ವಿನಂತಿ #${m.request_id || m.id}: ಷೇರುಗಳು #${m.combined_share_no_str} (ಒಟ್ಟು ${m.combined_shares} ಷೇರುಗಳು, ₹${Number(m.combined_total_amount || 4000).toLocaleString()}). ೨ ಬಾರಿ ಪರಿಶೀಲಿಸಿ (2-Step Verified) ${isApproved ? 'ಅನುಮೋದಿಸಲಾಗಿದೆ' : (isRejected ? 'ತಿರಸ್ಕರಿಸಲಾಗಿದೆ' : 'ಸಲ್ಲಿಸಲಾಗಿದೆ')}. ಉಳಿಯುವ ಮುಖ್ಯ ಖಾತೆ: #${m.primary_share_no}. ಷರಾ: "${m.approval_remarks || m.remarks || ''}"`,
+          details: m
+        });
+      }
+    });
+
+    // Ensure Varasa transfers are present
+    mockVarasaTransfers.forEach(v => {
+      const existing = allLogs.find(l => l.record_id === `#${v.share_no}` && l.action === 'VARASA_TRANSFER_APPROVED');
+      if (!existing && v.approval_status === 'Approved') {
+        allLogs.push({
+          id: `LOG-VAR-${v.transfer_id || v.id}`,
+          timestamp: v.approval_date || v.receipt_date || v.application_date || new Date().toISOString(),
+          username: v.approved_by || 'Admin',
+          performed_by: v.approved_by || 'Admin',
+          role: 'Admin',
+          module: 'Varasa Legal-Heir (ವಾರಸು)',
+          action: 'VARASA_TRANSFER_APPROVED',
+          record_id: `#${v.share_no}`,
+          share_no: v.share_no,
+          description: `ವಾರಸು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ: ಮೂಲ ಶೇರುದಾರರು: ${v.shareholder_name || v.existing_shareholder_name || '—'} ➔ ವಾರಸುದಾರರು: ${v.heir_name || v.varasa_member} (${v.heir_relationship || 'ವಾರಸುದಾರರು'}). ರಶೀದಿ ನಂ: #${v.receipt_no}, ಶುಲ್ಕ: ₹${v.fees || 570}, ಠರಾವು ನಂ: ${v.tharava_no}`,
+          details: v
+        });
+      }
+    });
+
+    // Ensure Vargavane transfers are present
+    mockVargavaneTransfers.forEach(v => {
+      const existing = allLogs.find(l => l.record_id === `#${v.share_no}` && l.action === 'VARGAVANE_TRANSFER_APPROVED');
+      if (!existing && v.approval_status === 'Approved') {
+        allLogs.push({
+          id: `LOG-VG-${v.transfer_id || v.id}`,
+          timestamp: v.approval_date || v.receipt_date || v.application_date || new Date().toISOString(),
+          username: v.approved_by || 'Admin',
+          performed_by: v.approved_by || 'Admin',
+          role: 'Admin',
+          module: 'Vargavane Transfer (ವರ್ಗಾವಣೆ)',
+          action: 'VARGAVANE_TRANSFER_APPROVED',
+          record_id: `#${v.share_no}`,
+          share_no: v.share_no,
+          description: `ನೇರ ಶೇರು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ: ವರ್ಗಾವಣೆದಾರರು: ${v.transferor_name || '—'} ➔ ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು: ${v.transferee_name}. ರಶೀದಿ ನಂ: #${v.receipt_no}, ಶುಲ್ಕ: ₹${v.transfer_fee || 570}, ಠರಾವು ನಂ: ${v.tharava_no}`,
+          details: v
+        });
+      }
+    });
+
+    // Ensure shareholder edit revisions are present
+    mockShareholders.forEach(s => {
+      const revs = Array.isArray(s.history) ? s.history : (Array.isArray(s.change_history) ? s.change_history : []);
+      revs.forEach(r => {
+        const existing = allLogs.find(l => l.id === r.id);
+        if (!existing) {
+          allLogs.push({
+            id: r.id || `LOG-REV-${s.share_no}-${r.timestamp}`,
+            timestamp: r.timestamp || r.dateFormatted || new Date().toISOString(),
+            username: r.operator || 'Admin',
+            performed_by: r.operator || 'Admin',
+            role: 'Admin',
+            module: 'Shareholders (ಷೇರುದಾರರ ವಿವರಗಳು)',
+            action: 'SHAREHOLDER_UPDATE',
+            record_id: `#${s.share_no}`,
+            share_no: s.share_no,
+            description: `ಶೇರುದಾರ #${s.share_no} (${s.shareholder_name || s.name}) ದಾಖಲೆ ತಿದ್ದುಪಡಿ. ಷರಾ: "${r.notes || 'ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ'}"`,
+            details: r
+          });
+        }
+      });
+    });
+
+    allLogs.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
 
     return {
       success: true,
-      data: mockAuditLogs
+      data: allLogs
     };
   },
 

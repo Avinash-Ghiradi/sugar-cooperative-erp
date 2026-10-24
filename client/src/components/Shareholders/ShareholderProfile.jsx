@@ -798,7 +798,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                     <span>ಶೇರುದಾರರ ಸಮಗ್ರ ಇತಿಹಾಸ ಮತ್ತು ಲೆಕ್ಕಪರಿಶೋಧನಾ ದಾಖಲೆ (Shareholder Lifecycle Audit Trail)</span>
                   </h3>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    ಮೂಲ ನೋಂದಣಿ, ವಾರಸು ವರ್ಗಾವಣೆ, ನೇರ ವರ್ಗಾವಣೆ ಮತ್ತು Admin ಮಂಜೂರಾತಿಗಳ ಅಧಿಕೃತ ದಾಖಲಾತಿ
+                    ಮೂಲ ನೋಂದಣಿ, ಷೇರುಗಳ ವಿಲೀನ, ೨-ಹಂತದ ಅಡ್ಮಿನ್ ಅನುಮೋದನೆ, ವಾರಸು ವರ್ಗಾವಣೆ, ನೇರ ವರ್ಗಾವಣೆ ಮತ್ತು ಶಾಸನಬದ್ಧ ತಿದ್ದುಪಡಿಗಳ ಇತಿಹಾಸ
                   </p>
                 </div>
                 <span className="text-[11px] px-2.5 py-1 rounded-full font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
@@ -816,30 +816,45 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                     const isEnrollment = evt.type === 'NEW_ENROLLMENT' || evt.type === 'INITIAL_MEMBERSHIP';
                     const isVarasa = evt.type === 'VARASA_TRANSFER';
                     const isVargavane = evt.type === 'VARGAVANE_TRANSFER';
+                    const isMerge = evt.type === 'MERGE_SHARES' || (evt.type && evt.type.includes('MERGE'));
+                    const isEdit = evt.type === 'SHAREHOLDER_UPDATE' || evt.type === 'STATUTORY_AMENDMENT' || evt.type === 'REVISION';
+                    const isInstallment = evt.type === 'MULTIPLE_AMOUNTS';
 
-                    const dotColor = isEnrollment
-                      ? 'bg-emerald-500 ring-emerald-950'
+                    const dotColor = isMerge
+                      ? 'bg-amber-400 ring-amber-950'
                       : isVarasa
-                      ? 'bg-amber-500 ring-amber-950'
+                      ? 'bg-purple-500 ring-purple-950'
                       : isVargavane
                       ? 'bg-cyan-500 ring-cyan-950'
-                      : 'bg-purple-500 ring-purple-950';
+                      : isEdit
+                      ? 'bg-sky-500 ring-sky-950'
+                      : isInstallment
+                      ? 'bg-indigo-500 ring-indigo-950'
+                      : 'bg-emerald-500 ring-emerald-950';
 
-                    const borderColor = isEnrollment
-                      ? 'border-emerald-800/60 bg-emerald-950/20'
+                    const borderColor = isMerge
+                      ? 'border-amber-700/60 bg-amber-950/25'
                       : isVarasa
-                      ? 'border-amber-800/60 bg-amber-950/20'
+                      ? 'border-purple-800/60 bg-purple-950/20'
                       : isVargavane
                       ? 'border-cyan-800/60 bg-cyan-950/20'
-                      : 'border-slate-800 bg-slate-900/60';
+                      : isEdit
+                      ? 'border-sky-800/60 bg-sky-950/20'
+                      : isInstallment
+                      ? 'border-indigo-800/60 bg-indigo-950/20'
+                      : 'border-emerald-800/60 bg-emerald-950/20';
 
-                    const iconColor = isEnrollment
-                      ? 'text-emerald-400'
-                      : isVarasa
+                    const iconColor = isMerge
                       ? 'text-amber-400'
+                      : isVarasa
+                      ? 'text-purple-400'
                       : isVargavane
                       ? 'text-cyan-400'
-                      : 'text-purple-400';
+                      : isEdit
+                      ? 'text-sky-400'
+                      : isInstallment
+                      ? 'text-indigo-400'
+                      : 'text-emerald-400';
 
                     return (
                       <div key={evt.id || idx} className="relative">
@@ -849,10 +864,15 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                         <div className={`p-4 rounded-2xl border ${borderColor} shadow-lg space-y-3`}>
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-800/60 pb-2">
                             <div className="flex items-center gap-2">
-                              {isEnrollment && <Coins className={`w-4 h-4 ${iconColor}`} />}
+                              {isMerge && <GitMerge className={`w-4 h-4 ${iconColor}`} />}
                               {isVarasa && <FileSpreadsheet className={`w-4 h-4 ${iconColor}`} />}
                               {isVargavane && <ArrowRightLeft className={`w-4 h-4 ${iconColor}`} />}
-                              {!isEnrollment && !isVarasa && !isVargavane && <Clock className={`w-4 h-4 ${iconColor}`} />}
+                              {isEdit && <FileText className={`w-4 h-4 ${iconColor}`} />}
+                              {isInstallment && <Coins className={`w-4 h-4 ${iconColor}`} />}
+                              {isEnrollment && <ShieldCheck className={`w-4 h-4 ${iconColor}`} />}
+                              {!isMerge && !isVarasa && !isVargavane && !isEdit && !isInstallment && !isEnrollment && (
+                                <Clock className={`w-4 h-4 ${iconColor}`} />
+                              )}
                               <span className="font-bold text-slate-100 text-xs">{evt.title}</span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -874,24 +894,40 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                           {/* Key details tags */}
                           {evt.details && Object.keys(evt.details).length > 0 && (
                             <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-800/40 text-[11px]">
-                              {evt.details.receipt_no && (
-                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 font-mono">
-                                  ರಶೀದಿ: #{evt.details.receipt_no}
+                              {evt.details.confirmation_steps && (
+                                <span className="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700/60 font-bold flex items-center gap-1">
+                                  <ShieldCheck className="w-3 h-3 text-amber-400" />
+                                  {evt.details.confirmation_steps}
                                 </span>
                               )}
-                              {evt.details.tharava_no && (
-                                <span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 font-mono">
-                                  ಠರಾವು: {evt.details.tharava_no}
+                              {evt.details.combined_share_no_str && (
+                                <span className="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-mono font-bold">
+                                  ವಿಲೀನ ಷೇರುಗಳು: #{evt.details.combined_share_no_str}
                                 </span>
                               )}
-                              {evt.details.tharava_date && (
-                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-400 font-mono">
-                                  ದಿನಾಂಕ: {evt.details.tharava_date}
+                              {evt.details.merged_into_share_no && (
+                                <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 font-mono font-bold">
+                                  ವಿಲೀನಗೊಂಡ ಮುಖ್ಯ ಖಾತೆ: #{evt.details.merged_into_share_no}
                                 </span>
                               )}
-                              {evt.details.transfer_id && (
-                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 font-mono">
-                                  ID: {evt.details.transfer_id}
+                              {evt.details.deceased_holder && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300">
+                                  ಮೂಲ/ಹಳೆಯ ಶೇರುದಾರರು: <strong className="text-white">{evt.details.deceased_holder}</strong>
+                                </span>
+                              )}
+                              {evt.details.heir_name && (
+                                <span className="px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
+                                  ವಾರಸುದಾರರು: <strong className="text-white">{evt.details.heir_name}</strong>
+                                </span>
+                              )}
+                              {evt.details.transferor && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300">
+                                  ವರ್ಗಾವಣೆದಾರರು: <strong className="text-white">{evt.details.transferor}</strong>
+                                </span>
+                              )}
+                              {evt.details.transferee && (
+                                <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                                  ವರ್ಗಾವಣೆ ಪಡೆದವರು: <strong className="text-white">{evt.details.transferee}</strong>
                                 </span>
                               )}
                               {evt.details.relationship && (
@@ -906,8 +942,43 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                               )}
                               {evt.details.total_amount && (
                                 <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold font-mono">
-                                  ಜಮಾ: ₹{Number(evt.details.total_amount).toLocaleString()}
+                                  ಬಂಡವಾಳ: ₹{Number(evt.details.total_amount).toLocaleString()}
                                 </span>
+                              )}
+                              {evt.details.receipt_no && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 font-mono">
+                                  ರಶೀದಿ: #{evt.details.receipt_no}
+                                </span>
+                              )}
+                              {evt.details.receipt_1 && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 font-mono">
+                                  1ನೇ ರಶೀದಿ: #{evt.details.receipt_1} (₹{evt.details.amount_1})
+                                </span>
+                              )}
+                              {evt.details.receipt_2 && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 font-mono">
+                                  2ನೇ ರಶೀದಿ: #{evt.details.receipt_2} (₹{evt.details.amount_2})
+                                </span>
+                              )}
+                              {evt.details.tharava_no && (
+                                <span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 font-mono">
+                                  ಠರಾವು: {evt.details.tharava_no}
+                                </span>
+                              )}
+                              {evt.details.tharava_date && (
+                                <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-400 font-mono">
+                                  ದಿನಾಂಕ: {evt.details.tharava_date}
+                                </span>
+                              )}
+                              {/* Edit diff tags */}
+                              {evt.details.changes && Array.isArray(evt.details.changes) && evt.details.changes.length > 0 && (
+                                <div className="w-full pt-1.5 flex flex-wrap gap-1.5">
+                                  {evt.details.changes.map((c, cIdx) => (
+                                    <span key={cIdx} className="px-2 py-0.5 rounded bg-sky-950/80 text-sky-200 border border-sky-800/60 text-[10px] font-mono">
+                                      {c.field}: <span className="line-through text-slate-400">{c.from || '—'}</span> ➔ <strong className="text-white">{c.to}</strong>
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           )}

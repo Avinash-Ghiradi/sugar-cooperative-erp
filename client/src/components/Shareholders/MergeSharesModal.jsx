@@ -1571,8 +1571,18 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-slate-400 block font-medium">ದೃಢೀಕರಣ ಹಂತಗಳು</span>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-950 border border-amber-700 text-amber-300">
-                    {historyModal.request.confirmation_steps || 2} / 2 ಹಂತಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ
+                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                    (historyModal.request.approval_status || '').includes('Approved')
+                      ? 'bg-emerald-950 border-emerald-700 text-emerald-300'
+                      : (historyModal.request.approval_status || '').includes('Pending')
+                      ? 'bg-amber-950 border-amber-700 text-amber-300'
+                      : 'bg-rose-950 border-rose-700 text-rose-300'
+                  }`}>
+                    {(historyModal.request.approval_status || '').includes('Approved')
+                      ? `${historyModal.request.confirmation_steps || 2} / 2 ಹಂತಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ (Double-Confirmed)`
+                      : (historyModal.request.approval_status || '').includes('Pending')
+                      ? (historyModal.request.step1_verified_at ? '೧ / ೨ ಹಂತ ಪೂರ್ಣಗೊಂಡಿದೆ (1/2 Step 1 Verified)' : '೦ / ೨ ಹಂತಗಳು ಬಾಕಿ (0/2 Pending Approval)')
+                      : 'ತಿರಸ್ಕರಿಸಲಾಗಿದೆ (Rejected)'}
                   </span>
                 </div>
               </div>
