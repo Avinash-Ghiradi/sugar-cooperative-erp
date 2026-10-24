@@ -453,12 +453,12 @@ export default function ShareholderList({ initialShowMerge = false }) {
       `"${s.aadhaar_card_no || s.aadhaar_ref || ''}"`,
       `"${s.reg_date || s.registration_date || ''}"`,
       s.receipt_no || '',
-      s.receipt_amount || 2000,
+      isShareholderInactive(s) ? 0 : (s.receipt_amount || 2000),
       `"${hasSecondInstallment(s) ? (s.date || '') : ''}"`,
       hasSecondInstallment(s) ? (s.reciept || '') : '',
       hasSecondInstallment(s) ? (s.amount || 0) : '',
-      s.total_amount || s.share_value || 2000,
-      s.number_of_shares || 1,
+      isShareholderInactive(s) ? 0 : (s.total_amount || s.share_value || 2000),
+      isShareholderInactive(s) ? 0 : (s.number_of_shares || 1),
       `"${s.schedule_cast || 'ಅ - ವರ್ಗ'}"`,
       `"${s.address || ''}"`,
       `"${s.nagara || ''}"`,
@@ -527,12 +527,12 @@ export default function ShareholderList({ initialShowMerge = false }) {
       tableHtml += `<td>${s.aadhaar_card_no || s.aadhaar_ref || ''}</td>`;
       tableHtml += `<td>${s.reg_date || s.registration_date || ''}</td>`;
       tableHtml += `<td>${s.receipt_no || ''}</td>`;
-      tableHtml += `<td>${s.receipt_amount || 2000}</td>`;
+      tableHtml += `<td>${isShareholderInactive(s) ? 0 : (s.receipt_amount || 2000)}</td>`;
       tableHtml += `<td>${hasSecondInstallment(s) ? (s.date || '') : ''}</td>`;
       tableHtml += `<td>${hasSecondInstallment(s) ? (s.reciept || '') : ''}</td>`;
       tableHtml += `<td>${hasSecondInstallment(s) ? (s.amount || 0) : ''}</td>`;
-      tableHtml += `<td>${s.total_amount || s.share_value || 2000}</td>`;
-      tableHtml += `<td>${s.number_of_shares || 1}</td>`;
+      tableHtml += `<td>${isShareholderInactive(s) ? 0 : (s.total_amount || s.share_value || 2000)}</td>`;
+      tableHtml += `<td>${isShareholderInactive(s) ? 0 : (s.number_of_shares || 1)}</td>`;
       tableHtml += `<td>${s.schedule_cast || 'ಅ - ವರ್ಗ'}</td>`;
       tableHtml += `<td>${s.address || ''}</td>`;
       tableHtml += `<td>${s.nagara || ''}</td>`;
@@ -1130,12 +1130,31 @@ export default function ShareholderList({ initialShowMerge = false }) {
                     </td>
 
                     {/* 13. Total Amount */}
-                    <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-400">
-                      ₹ {(sh.total_amount || sh.share_value || 2000).toLocaleString()}
+                    <td className="py-2.5 px-3 text-right font-mono font-bold">
+                      {isInactive ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-slate-500 line-through text-xs font-mono">₹ 0</span>
+                          <span className="text-[10px] text-rose-400 font-sans font-medium whitespace-nowrap">
+                            ವರ್ಗಾವಣೆ ➔ #{sh.merged_into_share_no || 'ಮುಖ್ಯ'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-amber-400">
+                          ₹ {(Number(sh.total_amount ?? sh.share_value ?? 2000)).toLocaleString()}
+                        </span>
+                      )}
                     </td>
 
                     {/* 14. No. of Shares */}
-                    <td className="py-2.5 px-2 text-center font-extrabold text-emerald-400">{sh.number_of_shares || 1}</td>
+                    <td className="py-2.5 px-2 text-center font-extrabold">
+                      {isInactive ? (
+                        <span className="text-slate-500 line-through text-xs" title={`ವರ್ಗಾವಣೆಗೊಂಡಿದೆ ➔ #${sh.merged_into_share_no || ''}`}>
+                          0
+                        </span>
+                      ) : (
+                        <span className="text-emerald-400">{sh.number_of_shares || 1}</span>
+                      )}
+                    </td>
 
                     {/* 15. Schedule Cast / ವರ್ಗ */}
                     <td className="py-2.5 px-3 text-center">

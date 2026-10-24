@@ -884,20 +884,90 @@ export function reconcileApprovedMergesIntoMaster(shareholdersList = mockShareho
 
       if (changed) fixedCount++;
 
-      // Deactivate secondary records
+      // Deactivate secondary records & transfer amount to primary into master sheet
       const secNos = allTargetNos.filter(n => n !== primaryNo);
       for (const secNo of secNos) {
         const sec = shareholdersList.find(s => {
           const sNo = String(s.share_no || s.share_number || '').trim();
           return sNo === secNo && s.id !== primary.id;
         });
-        if (sec && (sec.status !== 'Inactive' || !sec.is_merged_secondary)) {
-          sec.status = 'Inactive';
-          sec.is_disabled = true;
-          sec.is_merged_secondary = true;
-          sec.merged_into_share_no = primaryNo;
-          sec.merged_into_id = primary.id;
-          fixedCount++;
+        if (sec) {
+          let secChanged = false;
+          if (sec.original_total_amount === undefined) {
+            sec.original_total_amount = sec.total_amount || 2000;
+            secChanged = true;
+          }
+          if (sec.original_shares === undefined) {
+            sec.original_shares = sec.number_of_shares || 1;
+            secChanged = true;
+          }
+          if (sec.original_receipt_amount === undefined) {
+            sec.original_receipt_amount = sec.receipt_amount || 2000;
+            secChanged = true;
+          }
+          if (sec.original_receipt_no === undefined) {
+            sec.original_receipt_no = sec.receipt_no || '—';
+            secChanged = true;
+          }
+          if (sec.original_receipt_date === undefined) {
+            sec.original_receipt_date = sec.reg_date || sec.receipt_date || '—';
+            secChanged = true;
+          }
+          if (sec.original_book_no === undefined) {
+            sec.original_book_no = sec.book_no || 'B.No: 1';
+            secChanged = true;
+          }
+          if (sec.transferred_amount === undefined || sec.transferred_amount !== sec.original_total_amount) {
+            sec.transferred_amount = sec.original_total_amount;
+            secChanged = true;
+          }
+          if (sec.transferred_to_share_no !== primaryNo) {
+            sec.transferred_to_share_no = primaryNo;
+            secChanged = true;
+          }
+          if (sec.total_amount !== 0) {
+            sec.total_amount = 0;
+            sec.share_value = 0;
+            secChanged = true;
+          }
+          if (sec.number_of_shares !== 0) {
+            sec.number_of_shares = 0;
+            secChanged = true;
+          }
+          if (sec.receipt_amount !== 0) {
+            sec.receipt_amount = 0;
+            secChanged = true;
+          }
+          if (sec.amount !== 0) {
+            sec.amount = 0;
+            secChanged = true;
+          }
+          if (sec.status !== 'Inactive') {
+            sec.status = 'Inactive';
+            secChanged = true;
+          }
+          if (!sec.is_disabled) {
+            sec.is_disabled = true;
+            secChanged = true;
+          }
+          if (!sec.is_merged_secondary) {
+            sec.is_merged_secondary = true;
+            secChanged = true;
+          }
+          if (sec.merged_into_share_no !== primaryNo) {
+            sec.merged_into_share_no = primaryNo;
+            secChanged = true;
+          }
+          if (sec.merged_into_id !== primary.id) {
+            sec.merged_into_id = primary.id;
+            secChanged = true;
+          }
+          const expectedNotes = `ವಿಲೀನಗೊಂಡಿದೆ: ಈ ಖಾತೆಯ ₹${sec.original_total_amount.toLocaleString()} ಮೊತ್ತ ಹಾಗೂ ${sec.original_shares} ಷೇರುಗಳನ್ನು ಮುಖ್ಯ ಶೇರು #${primaryNo} ಗೆ ವರ್ಗಾಯಿಸಲಾಗಿದೆ. ಈ ಖಾತೆಯನ್ನು ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ (Amount transferred to #${primaryNo} & Account Disabled Everywhere).`;
+          if (sec.notes !== expectedNotes) {
+            sec.notes = expectedNotes;
+            secChanged = true;
+          }
+          if (secChanged) fixedCount++;
         }
       }
     }
@@ -927,6 +997,15 @@ export function reconcileApprovedMergesIntoMaster(shareholdersList = mockShareho
         { id: 3230, share_no: '3654', shares: 1, amount: 2000, receipt_no: '3220', receipt_date: '06/08/1994', book_no: 'B.No: 19', place: 'ಸೊನ್ನಗಿ', taluk: '' }
       ];
       if (sh3654) {
+        sh3654.original_total_amount = sh3654.original_total_amount || 2000;
+        sh3654.original_shares = sh3654.original_shares || 1;
+        sh3654.transferred_amount = 2000;
+        sh3654.transferred_to_share_no = '3653';
+        sh3654.total_amount = 0;
+        sh3654.share_value = 0;
+        sh3654.number_of_shares = 0;
+        sh3654.receipt_amount = 0;
+        sh3654.amount = 0;
         sh3654.status = 'Inactive';
         sh3654.is_disabled = true;
         sh3654.is_merged_secondary = true;
@@ -935,6 +1014,38 @@ export function reconcileApprovedMergesIntoMaster(shareholdersList = mockShareho
       }
       fixedCount++;
     }
+  }
+
+  // 3. Specific safety auto-heal for Share #18008 and #18007 if merged
+  const sh18008 = shareholdersList.find(s => String(s.share_no || s.share_number || '').trim() === '18008');
+  const sh18007 = shareholdersList.find(s => String(s.share_no || s.share_number || '').trim() === '18007');
+
+  if (sh18008 && (sh18008.is_merged || (sh18007 && (sh18007.status === 'Inactive' || sh18007.is_merged_secondary)))) {
+    sh18008.total_amount = 4000;
+    sh18008.share_value = 4000;
+    sh18008.number_of_shares = 2;
+    sh18008.is_merged = true;
+    sh18008.status = 'Active';
+    sh18008.primary_share_no = '18008';
+    sh18008.all_share_numbers = ['18008', '18007'];
+    sh18008.merged_share_numbers_display = '18008, 18007';
+    if (sh18007) {
+      sh18007.original_total_amount = sh18007.original_total_amount || 2000;
+      sh18007.original_shares = sh18007.original_shares || 1;
+      sh18007.transferred_amount = 2000;
+      sh18007.transferred_to_share_no = '18008';
+      sh18007.total_amount = 0;
+      sh18007.share_value = 0;
+      sh18007.number_of_shares = 0;
+      sh18007.receipt_amount = 0;
+      sh18007.amount = 0;
+      sh18007.status = 'Inactive';
+      sh18007.is_disabled = true;
+      sh18007.is_merged_secondary = true;
+      sh18007.merged_into_share_no = '18008';
+      sh18007.merged_into_id = sh18008.id;
+    }
+    fixedCount++;
   }
 
   return fixedCount;
@@ -1556,7 +1667,10 @@ export const ApiService = {
         if (cloudStats && cloudStats.success) {
           if (mockShareholders.length > 0 && cloudStats.stats.totalShareholders > 0) {
             cloudStats.charts = this._computeDashboardCharts(mockShareholders, mockVarasaTransfers, mockVargavaneTransfers);
-            cloudStats.stats.totalShares = mockShareholders.reduce((acc, s) => acc + (parseInt(s.number_of_shares) || 1), 0);
+            cloudStats.stats.totalShares = mockShareholders.reduce((acc, s) => {
+              if (isShareholderInactive(s)) return acc;
+              return acc + (parseInt(s.number_of_shares) || 1);
+            }, 0);
           } else if (cloudStats.stats.totalShareholders === 0) {
             cloudStats.stats.totalShares = 0;
             cloudStats.stats.totalVillages = 0;
@@ -1585,7 +1699,10 @@ export const ApiService = {
         totalShareholders: isReset ? 0 : mockShareholders.length,
         activeShareholders: isReset ? 0 : mockShareholders.filter(s => s.status === 'Active').length,
         inactiveShareholders: isReset ? 0 : mockShareholders.filter(s => s.status === 'Inactive').length,
-        totalShares: isReset ? 0 : mockShareholders.reduce((acc, s) => acc + (parseInt(s.number_of_shares) || 1), 0),
+        totalShares: isReset ? 0 : mockShareholders.reduce((acc, s) => {
+        if (isShareholderInactive(s)) return acc;
+        return acc + (parseInt(s.number_of_shares) || 1);
+      }, 0),
         totalVillages: isReset ? 0 : (mockCircleDirectory.length || 0),
         totalCircles: isReset ? 0 : 9,
         totalBooks: isReset ? 0 : 11,
@@ -1908,16 +2025,26 @@ export const ApiService = {
 
     // 2. SECONDARY MERGED ACCOUNT STATUS
     if (sh.is_merged_secondary || sh.status === 'Inactive' || sh.merged_into_share_no) {
+      const origAmt = sh.original_total_amount || sh.transferred_amount || 2000;
+      const origShares = sh.original_shares || 1;
+      const masterNo = sh.merged_into_share_no || 'Master';
+
       timeline.push({
         id: `merge-sec-${sh.id || shNo}`,
         date: sh.merged_at || sh.updated_at || '—',
         type: 'MERGED_INTO_PRIMARY',
-        title: 'ಖಾತೆ ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ (Merged into Master Shareholder)',
-        description: `ಈ ಷೇರು ಖಾತೆಯನ್ನು ಮುಖ್ಯ ಷೇರು #${sh.merged_into_share_no || 'Master'} ಗೆ ಅಧಿಕೃತವಾಗಿ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ. ಈ ಖಾತೆಯು ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದ್ದು (Inactive), ಸದಸ್ಯರ ಎಲ್ಲಾ ಷೇರುಗಳು ಮತ್ತು ಬಂಡವಾಳ ಮುಖ್ಯ ಖಾತೆಗೆ ವರ್ಗಾವಣೆಯಾಗಿದೆ.`,
+        title: 'ಖಾತೆ ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ ಮತ್ತು ಬಂಡವಾಳ ವರ್ಗಾವಣೆಯಾಗಿದೆ (Merged into Master Shareholder & Amount Transferred)',
+        description: `ಈ ಷೇರು ಖಾತೆಯ ಮೂಲ ಬಂಡವಾಳ (₹${Number(origAmt).toLocaleString()}) ಮತ್ತು ${origShares} ಷೇರುಗಳನ್ನು ಮುಖ್ಯ ಷೇರು #${masterNo} ಗೆ ಅಧಿಕೃತವಾಗಿ ವರ್ಗಾಯಿಸಲಾಗಿದೆ. ಈ ಖಾತೆಯು ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದ್ದು (Inactive & Disabled everywhere), ಇದರ ಮೊತ್ತವನ್ನು ಲೆಕ್ಕಾಚಾರದಲ್ಲಿ ಪರಿಗಣಿಸಲಾಗುವುದಿಲ್ಲ (Amount Not Considered - Transferred to 1st Account).`,
         performed_by: 'Admin (System Administrator)',
         details: {
-          merged_into_share_no: sh.merged_into_share_no,
-          status: 'ನಿಷ್ಕ್ರಿಯ (Inactive)'
+          merged_into_share_no: masterNo,
+          transferred_amount: origAmt,
+          transferred_shares: origShares,
+          original_receipt_no: sh.original_receipt_no || sh.receipt_no || '—',
+          original_receipt_date: sh.original_receipt_date || sh.reg_date || '—',
+          original_book_no: sh.original_book_no || sh.book_no || 'B.No: 1',
+          original_place: sh.place || '—',
+          status: 'ನಿಷ್ಕ್ರಿಯ (Inactive - Disabled everywhere)'
         },
         badgeColor: 'rose'
       });
@@ -5918,13 +6045,27 @@ const newSh = {
 
     const secondaryIds = new Set(secondaries.map(s => s.id));
     secondaries.forEach(sec => {
+      sec.original_total_amount = sec.total_amount || 2000;
+      sec.original_shares = sec.number_of_shares || 1;
+      sec.original_receipt_amount = sec.receipt_amount || 2000;
+      sec.original_receipt_no = sec.receipt_no || '—';
+      sec.original_receipt_date = sec.reg_date || sec.receipt_date || '—';
+      sec.original_book_no = sec.book_no || 'B.No: 1';
+      sec.transferred_amount = sec.original_total_amount;
+      sec.transferred_to_share_no = primaryShareNoStr;
+
+      sec.total_amount = 0;
+      sec.share_value = 0;
+      sec.number_of_shares = 0;
+      sec.receipt_amount = 0;
+      sec.amount = 0;
       sec.status = 'Inactive';
       sec.is_disabled = true;
       sec.is_merged_secondary = true;
       sec.merged_into_share_no = primaryShareNoStr;
       sec.merged_into_id = primary.id;
       sec.merged_at = new Date().toISOString();
-      sec.notes = `ವಿಲೀನಗೊಂಡಿದೆ: ಮುಖ್ಯ ಶೇರು #${primaryShareNoStr} ಗೆ ವಿಲೀನಗೊಳಿಸಿ ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ (Merged into #${primaryShareNoStr} - Inactive & Disabled everywhere).`;
+      sec.notes = `ವಿಲೀನಗೊಂಡಿದೆ: ಈ ಖಾತೆಯ ₹${sec.original_total_amount.toLocaleString()} ಮೊತ್ತ ಹಾಗೂ ${sec.original_shares} ಷೇರುಗಳನ್ನು ಮುಖ್ಯ ಶೇರು #${primaryShareNoStr} ಗೆ ವರ್ಗಾಯಿಸಲಾಗಿದೆ. ಈ ಖಾತೆಯನ್ನು ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ (Amount transferred to #${primaryShareNoStr} & Account Disabled Everywhere).`;
       if (!Array.isArray(sec.audit_history)) sec.audit_history = [];
       sec.audit_history.unshift({
         id: `AUD-INACTIVE-${Date.now()}-${Math.floor(Math.random() * 1000)}`,

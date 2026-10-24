@@ -147,10 +147,15 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
         
         {/* Profile Header */}
         {isShareholderInactive(sh) && (
-          <div className="bg-rose-950/70 border-b border-rose-800/80 px-6 py-2.5 text-xs text-rose-200 flex items-center gap-2.5 font-medium">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>
-              <strong>ಖಾತೆ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದೆ (Account Merged & Deactivated):</strong> ಈ ಷೇರು ಖಾತೆಯನ್ನು ಮುಖ್ಯ ಷೇರು #{sh.merged_into_share_no || 'Master'} ಗೆ ಅಧಿಕೃತವಾಗಿ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ. ಈ ಖಾತೆಯು ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದ್ದು (Inactive), ಯಾವುದೇ ಹೊಸ ಆರ್ಥಿಕ ವಹಿವಾಟು, ಸಕ್ಕರೆ ಹಂಚಿಕೆ ಅಥವಾ ವರ್ಗಾವಣೆಗೆ ಅವಕಾಶವಿರುವುದಿಲ್ಲ (Disabled Everywhere).
+          <div className="bg-rose-950/80 border-b border-rose-800 px-6 py-3 text-xs text-rose-200 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>
+                <strong>ದ್ವಿತೀಯ ಖಾತೆ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದೆ (Second Account Merged & Disabled):</strong> ಈ ಖಾತೆಯ ಮೊತ್ತ (₹{(sh.original_total_amount || sh.transferred_amount || 2000).toLocaleString()}) ಹಾಗೂ ಷೇರುಗಳನ್ನು ಮುಖ್ಯ ಷೇರು <strong>#{sh.merged_into_share_no || 'Master'}</strong> ಗೆ ಅಧಿಕೃತವಾಗಿ ವರ್ಗಾಯಿಸಲಾಗಿದೆ. ಈ ಖಾತೆಯು ಕಾಯಂ ಆಗಿ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದ್ದು, ಎಲ್ಲೆಡೆ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ (Disabled Everywhere).
+              </span>
+            </div>
+            <span className="px-2.5 py-1 rounded bg-rose-900/90 text-rose-200 font-bold text-[10px] whitespace-nowrap border border-rose-700">
+              ಮೊತ್ತ ಪರಿಗಣಿಸಲಾಗುವುದಿಲ್ಲ (Transferred to #{sh.merged_into_share_no || 'Master'})
             </span>
           </div>
         )}
@@ -189,9 +194,19 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                 <span>•</span>
                 <span>Sl. No: <strong className="text-slate-200 font-mono">{sh.sl_no || sh.id}</strong></span>
                 <span>•</span>
-                <span>Shares: <strong className="text-slate-200">{sh.number_of_shares || 1}</strong></span>
+                <span>Shares: {isShareholderInactive(sh) ? (
+                  <strong className="text-slate-400 line-through">0 ಷೇರು (ವರ್ಗಾವಣೆ ➔ #{sh.merged_into_share_no || 'ಮುಖ್ಯ'})</strong>
+                ) : (
+                  <strong className="text-slate-200">{sh.number_of_shares || 1}</strong>
+                )}</span>
                 <span>•</span>
-                <span>Total Capital: <strong className="text-amber-400">₹ {(sh.total_amount || sh.share_value || 2000).toLocaleString()}</strong></span>
+                <span>Total Capital: {isShareholderInactive(sh) ? (
+                  <span className="text-slate-400 line-through">
+                    ₹ 0 <span className="text-[10px] text-amber-300 font-sans">(ಮೂಲ: ₹{(sh.original_total_amount || sh.transferred_amount || 2000).toLocaleString()} ವರ್ಗಾವಣೆ ➔ #{sh.merged_into_share_no})</span>
+                  </span>
+                ) : (
+                  <strong className="text-amber-400">₹ {(sh.total_amount || sh.share_value || 2000).toLocaleString()}</strong>
+                )}</span>
                 <span>•</span>
                 <span>Place: <strong className="text-emerald-300">{sh.place || sh.village_name}</strong></span>
               </p>
@@ -200,18 +215,29 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
 
           <div className="flex items-center gap-2">
             {/* Edit Record Button */}
-            <button
-              onClick={() => {
-                if (onEditRecord && sh) {
-                  onEditRecord(sh);
-                }
-              }}
-              className="px-3 py-2 text-white bg-sky-600 hover:bg-sky-500 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-sky-950"
-              title="ಶಾಸನಬದ್ಧ 38-ಕಾಲಂಗಳ ದಾಖಲೆ ತಿದ್ದುಪಡಿ (Edit Statutory Shareholder Record)"
-            >
-              <Edit className="w-4 h-4" />
-              <span>ದಾಖಲೆ ತಿದ್ದುಪಡಿ (Edit Record)</span>
-            </button>
+            {isShareholderInactive(sh) ? (
+              <button
+                disabled
+                className="px-3 py-2 text-slate-500 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed opacity-50"
+                title="ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯಗೊಂಡ ಖಾತೆ - ತಿದ್ದುಪಡಿ ಅಸಾಧ್ಯ (Editing disabled for merged inactive account)"
+              >
+                <Edit className="w-4 h-4" />
+                <span>ಖಾತೆ ನಿಷ್ಕ್ರಿಯ (Disabled)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  if (onEditRecord && sh) {
+                    onEditRecord(sh);
+                  }
+                }}
+                className="px-3 py-2 text-white bg-sky-600 hover:bg-sky-500 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-sky-950"
+                title="ಶಾಸನಬದ್ಧ 38-ಕಾಲಂಗಳ ದಾಖಲೆ ತಿದ್ದುಪಡಿ (Edit Statutory Shareholder Record)"
+              >
+                <Edit className="w-4 h-4" />
+                <span>ದಾಖಲೆ ತಿದ್ದುಪಡಿ (Edit Record)</span>
+              </button>
+            )}
 
             <button
               onClick={() => setActiveTab('id_card')}
@@ -310,7 +336,16 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Book. No:</span><span className="text-sky-400 font-bold font-mono">{sh.book_no || 'B.No: 1'}</span></div>
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Sl. No:</span><span className="text-slate-100 font-mono">{sh.sl_no || sh.id}</span></div>
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Share No:</span><span className="text-emerald-400 font-bold font-mono text-sm">{sh.share_no || sh.share_number}</span></div>
-                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">No. of Shares:</span><span className="text-slate-100 font-bold">{sh.number_of_shares || 1} Shares</span></div>
+                <div className="flex justify-between py-1 border-b border-slate-800/40">
+                  <span className="text-slate-400">No. of Shares:</span>
+                  <span className="text-slate-100 font-bold">
+                    {isShareholderInactive(sh) ? (
+                      <span className="text-slate-400 line-through">0 Shares (ವರ್ಗಾವಣೆ ➔ #{sh.merged_into_share_no || 'ಮುಖ್ಯ'})</span>
+                    ) : (
+                      `${sh.number_of_shares || 1} Shares`
+                    )}
+                  </span>
+                </div>
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Schedule Cast / Class:</span><span className="text-emerald-400 font-semibold">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</span></div>
                 <div className="flex justify-between py-1"><span className="text-slate-400">Member Type (ಸದಸ್ಯರ ಪ್ರಕಾರ):</span><span className="text-slate-200 font-medium">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</span></div>
               </div>
@@ -319,7 +354,21 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                 <h3 className="font-semibold text-slate-200 text-sm border-b border-slate-800 pb-2 flex items-center gap-2">
                   <Coins className="w-4 h-4 text-amber-400" /> Share Capital & Receipt Details
                 </h3>
-                <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Total Share Amount (ಒಟ್ಟು ಮೊತ್ತ):</span><span className="text-amber-400 font-bold text-sm font-mono">₹ {(sh.total_amount || sh.share_value || 2000).toLocaleString()}</span></div>
+                <div className="flex justify-between py-1 border-b border-slate-800/40">
+                  <span className="text-slate-400">Total Share Amount (ಒಟ್ಟು ಮೊತ್ತ):</span>
+                  <span className="font-bold text-sm font-mono">
+                    {isShareholderInactive(sh) ? (
+                      <div className="text-right">
+                        <span className="text-slate-500 line-through">₹ 0</span>
+                        <div className="text-[10px] text-amber-300 font-sans font-normal">
+                          ಮೂಲ: ₹{(sh.original_total_amount || sh.transferred_amount || 2000).toLocaleString()} ಮುಖ್ಯ ಖಾತೆ #{sh.merged_into_share_no || 'ಮುಖ್ಯ'} ಗೆ ವರ್ಗಾವಣೆಗೊಂಡಿದೆ
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-amber-400">₹ {(Number(sh.total_amount ?? sh.share_value ?? 2000)).toLocaleString()}</span>
+                    )}
+                  </span>
+                </div>
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">1st Receipt No (1ನೇ ರಶೀದಿ ನಂ):</span><span className="text-slate-200 font-mono font-semibold">#{sh.receipt_no || sh.id}</span></div>
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">1st Installment (1ನೇ ಕಂತು ಜಮೆ):</span><span className="text-emerald-400 font-mono font-bold">₹ {(sh.receipt_amount || sh.total_amount || 2000).toLocaleString()}</span></div>
                 <div className="flex justify-between py-1 border-b border-slate-800/40"><span className="text-slate-400">Registration Date (ದಿನಾಂಕ):</span><span className="text-slate-200">{sh.reg_date || sh.registration_date}</span></div>
@@ -1207,7 +1256,11 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
               </div>
               <div>
                 <span>ಸದಸ್ಯತ್ವ ಸ್ಥಿತಿ: </span>
-                <span className="font-bold text-emerald-800">ಸಕ್ರಿಯ (Active)</span>
+                {isShareholderInactive(sh) ? (
+                  <span className="font-bold text-rose-800">ನಿಷ್ಕ್ರಿಯ (Inactive - ವಿಲೀನಗೊಂಡಿದೆ)</span>
+                ) : (
+                  <span className="font-bold text-emerald-800">ಸಕ್ರಿಯ (Active)</span>
+                )}
               </div>
             </div>
 

@@ -1870,7 +1870,13 @@ export default function SugarAllotmentModule() {
 
                       {/* 7. Share Qty */}
                       <td className="py-2.5 px-3 text-center font-bold text-emerald-400 border-r border-slate-800/60">
-                        {s.number_of_shares || 1}
+                        {isInactive ? (
+                          <span className="text-slate-500 line-through text-xs" title={`ವರ್ಗಾವಣೆಗೊಂಡಿದೆ ➔ #${s.merged_into_share_no || ''}`}>
+                            0
+                          </span>
+                        ) : (
+                          s.number_of_shares || 1
+                        )}
                       </td>
 
                       {/* 8. Member Type Dropdown */}
@@ -1913,13 +1919,19 @@ export default function SugarAllotmentModule() {
 
                       {/* 12. Receipt Purple Button */}
                       <td className="py-2.5 px-3.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => setActiveReceiptModal(s)}
-                          className="px-3 py-1 bg-[#5925dc] hover:bg-purple-600 text-white font-bold rounded-md text-[11px] shadow transition-all cursor-pointer"
-                        >
-                          ರಶೀದಿ
-                        </button>
+                        {isInactive ? (
+                          <span className="text-[10px] text-slate-500 font-bold px-2 py-0.5 rounded bg-slate-900 border border-slate-800" title="ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ - ಸಕ್ಕರೆ ಕೋಟಾ ಮುಖ್ಯ ಖಾತೆಗೆ ವರ್ಗಾವಣೆಯಾಗಿದೆ">
+                            ನಿಷ್ಕ್ರಿಯ
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setActiveReceiptModal(s)}
+                            className="px-3 py-1 bg-[#5925dc] hover:bg-purple-600 text-white font-bold rounded-md text-[11px] shadow transition-all cursor-pointer"
+                          >
+                            ರಶೀದಿ
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
