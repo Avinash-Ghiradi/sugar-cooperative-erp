@@ -983,96 +983,113 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                             </div>
                           )}
 
-                          {/* Merged Shareholders Full Details Breakdown Section */}
-                          {((evt.details?.merged_shareholders && evt.details.merged_shareholders.length > 0) || (evt.details?.holdings && Array.isArray(evt.details.holdings) && evt.details.holdings.length > 0)) && (
-                            <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5">
-                              <div className="flex items-center justify-between">
-                                <h4 className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                                  <Users2 className="w-3.5 h-3.5 text-amber-400" />
-                                  <span>ವಿಲೀನಗೊಂಡ ಷೇರುದಾರರ ಸಮಗ್ರ ವಿವರಗಳು (Merged Shareholders Breakdown):</span>
-                                </h4>
-                                <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold bg-amber-950/80 border border-amber-800 text-amber-300">
-                                  {(evt.details.merged_shareholders || evt.details.holdings).length} ಖಾತೆಗಳು ಒಟ್ಟುಗೂಡಿಸಲಾಗಿದೆ
-                                </span>
-                              </div>
+                          {/* Merged Shareholders Full Details Breakdown Section (Shows ONLY Second Account details) */}
+                          {(() => {
+                            const currentShareNo = String(sh.share_no || sh.share_number || '').trim();
+                            const primaryShareNo = String(evt.details?.primary_share_no || currentShareNo).trim();
+                            const rawMergedList = evt.details?.merged_shareholders || evt.details?.holdings || [];
+                            if (!Array.isArray(rawMergedList) || rawMergedList.length === 0) return null;
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                                {(evt.details.merged_shareholders || evt.details.holdings).map((mRec, mIdx) => {
-                                  const isPrimary = mRec.isPrimary || String(mRec.share_no) === String(evt.details.primary_share_no || sh.share_no);
-                                  return (
-                                    <div
-                                      key={mIdx}
-                                      className={`p-3 rounded-xl border text-xs space-y-2 transition-all ${
-                                        isPrimary
-                                          ? 'bg-slate-950/90 border-emerald-500/50 shadow-md shadow-emerald-950/20 ring-1 ring-emerald-500/30'
-                                          : 'bg-slate-950/70 border-slate-800 hover:border-amber-500/40'
-                                      }`}
-                                    >
-                                      {/* Header: Share No, Name, Role badge */}
-                                      <div className="flex items-start justify-between gap-2 border-b border-slate-800/80 pb-1.5">
-                                        <div>
-                                          <div className="flex items-center gap-1.5">
-                                            <span className="font-mono font-bold text-amber-400 text-sm">
-                                              #{mRec.share_no}
-                                            </span>
-                                            <strong className="text-slate-100 text-xs font-bold">
-                                              {mRec.shareholder_name || mRec.name}
-                                            </strong>
+                            // User instruction: "only second account details show"
+                            // Filter to show ONLY the secondary / merged account(s), excluding the primary account being viewed
+                            const secondAccounts = rawMergedList.filter(mRec => {
+                              const mShareNo = String(mRec.share_no || '').trim();
+                              const isPrimary = mRec.isPrimary || mShareNo === primaryShareNo || mShareNo === currentShareNo;
+                              return !isPrimary;
+                            });
+
+                            const accountsToShow = secondAccounts.length > 0
+                              ? secondAccounts
+                              : rawMergedList.filter(mRec => String(mRec.share_no || '').trim() !== currentShareNo);
+
+                            if (accountsToShow.length === 0) return null;
+
+                            return (
+                              <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                    <Users2 className="w-3.5 h-3.5 text-amber-400" />
+                                    <span>ವಿಲೀನಗೊಂಡ ದ್ವಿತೀಯ ಖಾತೆಯ ವಿವರಗಳು (Merged Secondary Account Details):</span>
+                                  </h4>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold bg-amber-950/80 border border-amber-800 text-amber-300">
+                                    {accountsToShow.length} ದ್ವಿತೀಯ ಖಾತೆ ವಿಲೀನಗೊಂಡಿದೆ
+                                  </span>
+                                </div>
+
+                                <div className={`grid grid-cols-1 ${accountsToShow.length > 1 ? 'md:grid-cols-2' : ''} gap-2.5`}>
+                                  {accountsToShow.map((mRec, mIdx) => {
+                                    const isPrimary = mRec.isPrimary || String(mRec.share_no).trim() === primaryShareNo;
+                                    return (
+                                      <div
+                                        key={mIdx}
+                                        className="p-3 rounded-xl border text-xs space-y-2 transition-all bg-slate-950/70 border-slate-800 hover:border-amber-500/40"
+                                      >
+                                        {/* Header: Share No, Name, Role badge */}
+                                        <div className="flex items-start justify-between gap-2 border-b border-slate-800/80 pb-1.5">
+                                          <div>
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="font-mono font-bold text-amber-400 text-sm">
+                                                #{mRec.share_no}
+                                              </span>
+                                              <strong className="text-slate-100 text-xs font-bold">
+                                                {mRec.shareholder_name || mRec.name}
+                                              </strong>
+                                            </div>
+                                            <div className="text-[11px] text-slate-400 mt-0.5">
+                                              ಸ್ಥಳ: <strong className="text-slate-300">{mRec.place || '—'}</strong>
+                                              {mRec.taluk ? ` (ತಾ: ${mRec.taluk})` : ''}
+                                            </div>
                                           </div>
-                                          <div className="text-[11px] text-slate-400 mt-0.5">
-                                            ಸ್ಥಳ: <strong className="text-slate-300">{mRec.place || '—'}</strong>
-                                            {mRec.taluk ? ` (ತಾ: ${mRec.taluk})` : ''}
+
+                                          <div>
+                                            {isPrimary ? (
+                                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 flex items-center gap-1 shadow-sm whitespace-nowrap">
+                                                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                                <span>ಮುಖ್ಯ ಖಾತೆ (ಸಕ್ರಿಯ)</span>
+                                              </span>
+                                            ) : (
+                                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 text-amber-300 border border-amber-800/80 flex items-center gap-1 whitespace-nowrap">
+                                                <GitMerge className="w-3 h-3 text-amber-400" />
+                                                <span>ದ್ವಿತೀಯ ಖಾತೆ (ವಿಲೀನಗೊಂಡಿದೆ)</span>
+                                              </span>
+                                            )}
                                           </div>
                                         </div>
 
-                                        <div>
-                                          {isPrimary ? (
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 flex items-center gap-1 shadow-sm whitespace-nowrap">
-                                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                                              <span>ಮುಖ್ಯ ಖಾತೆ (ಸಕ್ರಿಯ)</span>
+                                        {/* Details Grid */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/50">
+                                          <div>
+                                            <span className="text-[10px] text-slate-400 block font-medium">ಷೇರುಗಳ ಸಂಖ್ಯೆ</span>
+                                            <span className="font-mono font-bold text-slate-200">
+                                              {mRec.shares || 1} ಷೇರು
                                             </span>
-                                          ) : (
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 text-amber-300 border border-amber-800/80 flex items-center gap-1 whitespace-nowrap">
-                                              <GitMerge className="w-3 h-3 text-amber-400" />
-                                              <span>ದ್ವಿತೀಯ ಖಾತೆ (ವಿಲೀನಗೊಂಡಿದೆ)</span>
+                                          </div>
+                                          <div>
+                                            <span className="text-[10px] text-slate-400 block font-medium">ಶೇರು ಬಂಡವಾಳ</span>
+                                            <span className="font-mono font-bold text-emerald-400">
+                                              ₹{Number(mRec.amount || 0).toLocaleString()}
                                             </span>
-                                          )}
+                                          </div>
+                                          <div>
+                                            <span className="text-[10px] text-slate-400 block font-medium">ರಶೀದಿ ಸಂಖ್ಯೆ & ದಿನಾಂಕ</span>
+                                            <span className="font-mono text-slate-300">
+                                              #{mRec.receipt_no || '—'} {mRec.receipt_date && mRec.receipt_date !== '—' ? `(${mRec.receipt_date})` : ''}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-[10px] text-slate-400 block font-medium">ಪುಸ್ತಕ / ಠರಾವು ನಂ</span>
+                                            <span className="text-slate-300 font-mono">
+                                              {mRec.book_no || 'B.No: 1'} {mRec.tharava_no && mRec.tharava_no !== '—' ? `/ ಠರಾವು: ${mRec.tharava_no}` : ''}
+                                            </span>
+                                          </div>
                                         </div>
                                       </div>
-
-                                      {/* Details Grid */}
-                                      <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-900/60 p-2 rounded-lg border border-slate-800/50">
-                                        <div>
-                                          <span className="text-[10px] text-slate-400 block font-medium">ಷೇರುಗಳ ಸಂಖ್ಯೆ</span>
-                                          <span className="font-mono font-bold text-slate-200">
-                                            {mRec.shares || 1} ಷೇರು
-                                          </span>
-                                        </div>
-                                        <div>
-                                          <span className="text-[10px] text-slate-400 block font-medium">ಶೇರು ಬಂಡವಾಳ</span>
-                                          <span className="font-mono font-bold text-emerald-400">
-                                            ₹{Number(mRec.amount || 0).toLocaleString()}
-                                          </span>
-                                        </div>
-                                        <div>
-                                          <span className="text-[10px] text-slate-400 block font-medium">ರಶೀದಿ ಸಂಖ್ಯೆ & ದಿನಾಂಕ</span>
-                                          <span className="font-mono text-slate-300">
-                                            #{mRec.receipt_no || '—'} {mRec.receipt_date && mRec.receipt_date !== '—' ? `(${mRec.receipt_date})` : ''}
-                                          </span>
-                                        </div>
-                                        <div>
-                                          <span className="text-[10px] text-slate-400 block font-medium">ಪುಸ್ತಕ / ಠರಾವು ನಂ</span>
-                                          <span className="text-slate-300 font-mono">
-                                            {mRec.book_no || 'B.No: 1'} {mRec.tharava_no && mRec.tharava_no !== '—' ? `/ ಠರಾವು: ${mRec.tharava_no}` : ''}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                    );
+                                  })}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
                         </div>
                       </div>
                     );
