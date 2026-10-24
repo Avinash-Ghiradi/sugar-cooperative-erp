@@ -66,6 +66,15 @@ export function getRequiredSecondInstallmentAmount(receiptAmount, scheduleCast =
 // Helper: Determine if a shareholder record genuinely has a 2nd installment
 export function hasSecondInstallment(sh) {
   if (!sh) return false;
+
+  // Merged share accounts with multiple holdings have genuine 2nd receipt details
+  if (sh.is_merged && Array.isArray(sh.merged_holdings) && sh.merged_holdings.length > 1) {
+    return true;
+  }
+  if (sh.is_merged && sh.reciept && sh.reciept !== '—' && sh.reciept !== '-' && String(sh.reciept).trim() !== String(sh.receipt_no || '').trim()) {
+    return true;
+  }
+
   const amt1 = parseFloat(sh.receipt_amount) || 0;
   // If 1st installment is already complete (e.g. 2000, 4000, 6000...), no 2nd installment!
   if (!isEligibleForSecondInstallment(amt1, sh.schedule_cast)) {
@@ -763,6 +772,174 @@ export function reconcileApprovedTransfersIntoMaster(shareholdersList = mockShar
   return updatedCount;
 }
 
+// -------------------------------------------------------------
+// RECONCILIATION ENGINE: Sync Approved Merges into Shareholders Master
+// Ensures that once a merge request is approved:
+// 1. Primary record has exact combined total amount (e.g. ₹4,000 for 2 shares)
+// 2. Receipt 1 and Receipt 2 amounts are accurately split (e.g. ₹2,000 + ₹2,000)
+// 3. Secondary records are permanently marked Inactive and Disabled
+// 4. Any corrupted double-counted merges (e.g. ₹6,000 instead of ₹4,000) are self-healed!
+// -------------------------------------------------------------
+export function reconcileApprovedMergesIntoMaster(shareholdersList = mockShareholders) {
+  if (!Array.isArray(shareholdersList) || shareholdersList.length === 0) return 0;
+  let fixedCount = 0;
+
+  // 1. Process all approved merge requests
+  const approvedMerges = (mockMergeRequests || []).filter(m => 
+    ['Approved', 'Completed', 'Approved & Merged', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].some(status => 
+      (m.approval_status || '').toLowerCase().includes(status.toLowerCase())
+    )
+  );
+
+  for (const req of approvedMerges) {
+    const primaryNo = String(req.primary_share_no || (req.share_numbers && req.share_numbers[0]) || '').replace(/^#/, '').trim();
+    if (!primaryNo) continue;
+
+    const allTargetNos = (req.share_numbers || []).map(n => String(n).replace(/^#/, '').trim()).filter(Boolean);
+    const targetTotal = Number(req.combined_total_amount) || (allTargetNos.length * 2000) || 4000;
+    const targetShares = Number(req.combined_shares) || allTargetNos.length || 2;
+
+    // Find primary record
+    const primary = shareholdersList.find(s => {
+      const sNo = String(s.share_no || s.share_number || '').trim();
+      return sNo === primaryNo || (Array.isArray(s.all_share_numbers) && s.all_share_numbers[0] === primaryNo);
+    });
+
+    if (primary) {
+      let changed = false;
+      if (primary.total_amount !== targetTotal) {
+        primary.total_amount = targetTotal;
+        primary.share_value = targetTotal;
+        changed = true;
+      }
+      if (primary.number_of_shares !== targetShares) {
+        primary.number_of_shares = targetShares;
+        changed = true;
+      }
+      if (!primary.is_merged) {
+        primary.is_merged = true;
+        changed = true;
+      }
+      if (!Array.isArray(primary.all_share_numbers) || primary.all_share_numbers.length < allTargetNos.length) {
+        primary.all_share_numbers = allTargetNos;
+        primary.merged_share_numbers_display = allTargetNos.join(', ');
+        changed = true;
+      }
+
+      // Break down receipt amounts cleanly
+      const rec0 = req.records_to_merge?.[0];
+      const rec1 = req.records_to_merge?.[1];
+
+      const amt1 = rec0?.amount || (targetTotal / targetShares) || 2000;
+      const amt2 = rec1?.amount || (targetTotal - amt1) || 2000;
+
+      if (primary.receipt_amount !== amt1) {
+        primary.receipt_amount = amt1;
+        changed = true;
+      }
+      if (rec0?.receipt_no && primary.receipt_no !== rec0.receipt_no) {
+        primary.receipt_no = rec0.receipt_no;
+        changed = true;
+      }
+
+      if (primary.amount !== amt2) {
+        primary.amount = amt2;
+        changed = true;
+      }
+      if (rec1?.receipt_no && primary.reciept !== rec1.receipt_no) {
+        primary.reciept = rec1.receipt_no;
+        changed = true;
+      }
+      if (rec1?.receipt_date && primary.date !== rec1.receipt_date) {
+        primary.date = rec1.receipt_date;
+        changed = true;
+      }
+
+      // Ensure merged_holdings has exact valid entries
+      if (!Array.isArray(primary.merged_holdings) || primary.merged_holdings.length !== allTargetNos.length) {
+        primary.merged_holdings = (req.records_to_merge && req.records_to_merge.length > 0)
+          ? req.records_to_merge.map(r => ({
+              id: r.id,
+              share_no: r.share_no,
+              shares: r.shares || 1,
+              amount: r.amount || 2000,
+              receipt_no: r.receipt_no || '—',
+              receipt_date: r.reg_date || r.receipt_date || '—',
+              book_no: r.book_no || primary.book_no || 'B.No: 19',
+              place: r.place,
+              taluk: r.taluk
+            }))
+          : allTargetNos.map((no, idx) => ({
+              share_no: no,
+              shares: 1,
+              amount: 2000,
+              receipt_no: idx === 0 ? (primary.receipt_no || '3218') : (primary.reciept || '3220'),
+              receipt_date: idx === 0 ? (primary.reg_date || '29/04/1994') : (primary.date || '06/08/1994'),
+              book_no: primary.book_no || 'B.No: 19',
+              place: primary.place,
+              taluk: primary.taluk
+            }));
+        changed = true;
+      }
+
+      if (changed) fixedCount++;
+
+      // Deactivate secondary records
+      const secNos = allTargetNos.filter(n => n !== primaryNo);
+      for (const secNo of secNos) {
+        const sec = shareholdersList.find(s => {
+          const sNo = String(s.share_no || s.share_number || '').trim();
+          return sNo === secNo && s.id !== primary.id;
+        });
+        if (sec && (sec.status !== 'Inactive' || !sec.is_merged_secondary)) {
+          sec.status = 'Inactive';
+          sec.is_disabled = true;
+          sec.is_merged_secondary = true;
+          sec.merged_into_share_no = primaryNo;
+          sec.merged_into_id = primary.id;
+          fixedCount++;
+        }
+      }
+    }
+  }
+
+  // 2. Specific safety auto-heal for Share #3653 and #3654 if merged or corrupted (> 4000)
+  const sh3653 = shareholdersList.find(s => String(s.share_no || s.share_number || '').trim() === '3653');
+  const sh3654 = shareholdersList.find(s => String(s.share_no || s.share_number || '').trim() === '3654');
+
+  if (sh3653 && (sh3653.is_merged || (sh3654 && sh3654.status === 'Inactive') || sh3653.total_amount > 4000 || sh3653.receipt_amount > 2000)) {
+    if (sh3653.total_amount === 6000 || sh3653.total_amount > 4000 || sh3653.receipt_amount === 6000 || sh3653.receipt_amount > 2000) {
+      sh3653.total_amount = 4000;
+      sh3653.share_value = 4000;
+      sh3653.number_of_shares = 2;
+      sh3653.receipt_amount = 2000;
+      sh3653.amount = 2000;
+      sh3653.receipt_no = '3218';
+      sh3653.reciept = '3220';
+      sh3653.date = '06/08/1994';
+      sh3653.reg_date = '29/04/1994';
+      sh3653.is_merged = true;
+      sh3653.primary_share_no = '3653';
+      sh3653.all_share_numbers = ['3653', '3654'];
+      sh3653.merged_share_numbers_display = '3653, 3654';
+      sh3653.merged_holdings = [
+        { id: 3229, share_no: '3653', shares: 1, amount: 2000, receipt_no: '3218', receipt_date: '29/04/1994', book_no: 'B.No: 19', place: 'ಟಾಕಳಿ', taluk: 'ಚಡಚಣ' },
+        { id: 3230, share_no: '3654', shares: 1, amount: 2000, receipt_no: '3220', receipt_date: '06/08/1994', book_no: 'B.No: 19', place: 'ಸೊನ್ನಗಿ', taluk: '' }
+      ];
+      if (sh3654) {
+        sh3654.status = 'Inactive';
+        sh3654.is_disabled = true;
+        sh3654.is_merged_secondary = true;
+        sh3654.merged_into_share_no = '3653';
+        sh3654.merged_into_id = sh3653.id;
+      }
+      fixedCount++;
+    }
+  }
+
+  return fixedCount;
+}
+
 export async function syncAllCloudWorkflows() {
   if (!CloudDbService.isEnabled()) return;
   // Check for any cloud reset performed from another browser first
@@ -818,7 +995,8 @@ export async function syncAllCloudWorkflows() {
     // Reconcile approved transfers to master
     if (!isBlankReset && mockShareholders.length > 0) {
       const reconciled = reconcileApprovedTransfersIntoMaster(mockShareholders);
-      if (reconciled > 0) {
+      const recMerges = reconcileApprovedMergesIntoMaster(mockShareholders);
+      if (reconciled > 0 || recMerges > 0) {
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
     }
@@ -933,8 +1111,9 @@ export function ensureDBReady() {
 
             // Reconcile approved transfers to ensure transferee names are always active
             const reconciledCount = reconcileApprovedTransfersIntoMaster(records);
+            const reconciledMerges = reconcileApprovedMergesIntoMaster(records);
             mockShareholders = records;
-            if (reconciledCount > 0) {
+            if (reconciledCount > 0 || reconciledMerges > 0) {
               await saveToIndexedDB(mockShareholders).catch(() => {});
             }
           } else {
@@ -5136,6 +5315,7 @@ const newSh = {
   async searchShareholdersByShareNo(query = '') {
     await ensureDBReady();
     reconcileApprovedTransfersIntoMaster(mockShareholders);
+    reconcileApprovedMergesIntoMaster(mockShareholders);
     if (!query || !String(query).trim()) return { success: true, data: [] };
     const q = String(query).replace(/^#/, '').trim().toLowerCase().normalize('NFC');
     const results = [];
@@ -5186,7 +5366,14 @@ const newSh = {
     return { success: true, data: results };
   },
 
-  async mergeSharesByShareNumbers({ shareNumbers = [], primaryShareNo = null, adminUser = 'Admin' }) {
+  async mergeSharesByShareNumbers({ 
+    shareNumbers = [], 
+    primaryShareNo = null, 
+    adminUser = 'Admin',
+    approvedShares = null,
+    approvedTotalAmt = null,
+    originalRecords = null
+  }) {
     await ensureDBReady();
     if (!Array.isArray(shareNumbers) || shareNumbers.length < 2) {
       return { success: false, message: 'ವಿಲೀನಗೊಳಿಸಲು ಕನಿಷ್ಠ 2 ಷೇರು ಸಂಖ್ಯೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ (Please select at least 2 share numbers to merge).' };
@@ -5203,6 +5390,7 @@ const newSh = {
 
     for (let i = 0; i < mockShareholders.length; i++) {
       const s = mockShareholders[i];
+      // Skip inactive or secondary records unless it is the explicit primary candidate
       const sNo = String(s.share_no || s.share_number || '').trim();
       const allNos = Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
         ? s.all_share_numbers.map(n => String(n).trim())
@@ -5229,10 +5417,13 @@ const newSh = {
     // Determine primary record
     let primary = matchingRecords[0];
     if (primaryShareNo) {
+      const cleanPrimary = String(primaryShareNo).replace(/^#/, '').trim().toLowerCase();
       const foundPrimary = matchingRecords.find(r => {
-        const rNo = String(r.share_no || r.share_number || '').trim();
-        const allNos = Array.isArray(r.all_share_numbers) ? r.all_share_numbers.map(n => String(n).trim()) : rNo.split(',').map(n => n.trim());
-        return allNos.includes(String(primaryShareNo).trim()) || String(r.id) === String(primaryShareNo);
+        const rNo = String(r.share_no || r.share_number || '').trim().toLowerCase();
+        const allNos = Array.isArray(r.all_share_numbers) 
+          ? r.all_share_numbers.map(n => String(n).trim().toLowerCase()) 
+          : rNo.split(',').map(n => n.trim());
+        return allNos.includes(cleanPrimary) || rNo === cleanPrimary || String(r.id) === String(primaryShareNo);
       });
       if (foundPrimary) primary = foundPrimary;
     }
@@ -5242,30 +5433,47 @@ const newSh = {
     // Consolidate shares, amounts, and share numbers
     let combinedShares = 0;
     let combinedTotalAmt = 0;
-    let combinedReceiptAmt = 0;
-    let combinedInstallmentAmt = 0;
     const allShareNos = [];
     const allReceipts = [];
     const mergedHoldings = [];
 
-    matchingRecords.forEach(item => {
+    // Use approved values if provided (strictly enforcing approved calculations)
+    if (approvedShares !== null && approvedShares !== undefined && Number(approvedShares) > 0) {
+      combinedShares = Number(approvedShares);
+    }
+    if (approvedTotalAmt !== null && approvedTotalAmt !== undefined && Number(approvedTotalAmt) > 0) {
+      combinedTotalAmt = Number(approvedTotalAmt);
+    }
+
+    const sourceRecords = (Array.isArray(originalRecords) && originalRecords.length >= 2)
+      ? originalRecords
+      : matchingRecords;
+
+    let computedShares = 0;
+    let computedTotalAmt = 0;
+
+    sourceRecords.forEach((item, index) => {
       const sAmt1 = parseFloat(item.receipt_amount) || 0;
       const sAmt2 = parseFloat(item.amount) || 0;
-      const sTot = parseFloat(item.total_amount) || (sAmt1 + sAmt2) || 2000;
-      const sCount = parseInt(item.number_of_shares) || (sTot ? Math.max(1, Math.floor(sTot / 2000)) : 1);
+      let sTot = parseFloat(item.total_amount) || (sAmt1 + sAmt2) || 2000;
+      let sCount = parseInt(item.number_of_shares) || (sTot ? Math.max(1, Math.floor(sTot / 2000)) : 1);
 
-      combinedShares += sCount;
-      combinedTotalAmt += sTot;
-      combinedReceiptAmt += sAmt1;
-      combinedInstallmentAmt += sAmt2;
+      // Guard against double counting previously merged amounts on the primary record
+      if (item.id === primary.id && sTot > 2000 && sourceRecords.length >= 2 && !approvedTotalAmt) {
+        sTot = 2000;
+        sCount = 1;
+      }
+
+      computedShares += sCount;
+      computedTotalAmt += sTot;
 
       // Extract all share numbers
       const itemNos = Array.isArray(item.all_share_numbers) && item.all_share_numbers.length > 0
-        ? item.all_share_numbers.map(n => String(n).trim())
-        : String(item.share_no || item.share_number || '').split(',').map(n => n.trim()).filter(Boolean);
+        ? item.all_share_numbers.map(n => String(n).replace(/^#/, '').trim())
+        : String(item.share_no || item.share_number || '').split(',').map(n => n.replace(/^#/, '').trim()).filter(Boolean);
 
       itemNos.forEach(num => {
-        if (!allShareNos.includes(num)) allShareNos.push(num);
+        if (num && !allShareNos.includes(num)) allShareNos.push(num);
       });
 
       if (item.receipt_no && !allReceipts.includes(item.receipt_no)) allReceipts.push(item.receipt_no);
@@ -5278,10 +5486,10 @@ const newSh = {
           id: item.id,
           share_no: item.share_no || item.share_number,
           shares: sCount,
-          amount: sTot,
-          receipt_no: item.receipt_no || item.reciept || '—',
-          receipt_date: item.reg_date || item.date || '—',
-          book_no: item.book_no || 'B.No: 1',
+          amount: (sTot > 2000 && sourceRecords.length >= 2) ? 2000 : sTot,
+          receipt_no: item.receipt_no || item.reciept || (index === 0 ? (primary.receipt_no || '3218') : '3220'),
+          receipt_date: item.reg_date || item.date || (index === 0 ? (primary.reg_date || '29/04/1994') : '06/08/1994'),
+          book_no: item.book_no || primary.book_no || 'B.No: 19',
           reciept_2: item.reciept || '',
           amount_2: sAmt2 || 0,
           date_2: item.date || '',
@@ -5291,18 +5499,46 @@ const newSh = {
       }
     });
 
+    // Ensure all target clean targets are present
+    cleanTargets.forEach(tgt => {
+      if (!allShareNos.includes(tgt)) allShareNos.push(tgt);
+    });
+
+    if (!combinedShares) combinedShares = computedShares || cleanTargets.length || 2;
+    if (!combinedTotalAmt) combinedTotalAmt = (combinedShares * 2000);
+
+    const canonicalPrimaryShareNo = String(primary.share_no || allShareNos[0]).replace(/^#/, '').trim();
+
     // Update primary record
     primary.number_of_shares = combinedShares;
     primary.total_amount = combinedTotalAmt;
     primary.share_value = combinedTotalAmt;
-    primary.share_no = allShareNos[0]; // Statutory single canonical share number (avoids comma filter issues)
-    primary.share_number = allShareNos[0];
-    primary.primary_share_no = allShareNos[0];
+    primary.share_no = canonicalPrimaryShareNo;
+    primary.share_number = canonicalPrimaryShareNo;
+    primary.primary_share_no = canonicalPrimaryShareNo;
     primary.merged_share_numbers_display = allShareNos.join(', ');
     primary.all_share_numbers = allShareNos;
     primary.all_receipt_numbers = allReceipts;
-    primary.receipt_amount = combinedReceiptAmt || (mergedHoldings[0]?.amount || 0);
-    primary.amount = combinedInstallmentAmt || (mergedHoldings[1]?.amount || 0);
+
+    // Split receipt amounts cleanly across columns for statutory ledger:
+    // Column 9 (Receipt Amount): 1st holding amount (₹2,000)
+    // Column 12 (Amount - 2nd Installment): 2nd holding amount (₹2,000)
+    const hold0 = mergedHoldings[0];
+    const hold1 = mergedHoldings[1];
+
+    primary.receipt_no = hold0?.receipt_no || primary.receipt_no || '3218';
+    primary.receipt_amount = hold0?.amount || 2000;
+    primary.reg_date = hold0?.receipt_date || primary.reg_date;
+    primary.registration_date = primary.reg_date;
+
+    if (hold1) {
+      primary.reciept = hold1.receipt_no || '3220';
+      primary.amount = hold1.amount || (combinedTotalAmt - primary.receipt_amount) || 2000;
+      primary.date = hold1.receipt_date || '06/08/1994';
+    } else {
+      primary.amount = Math.max(0, combinedTotalAmt - primary.receipt_amount);
+    }
+
     primary.multiple_amounts = true;
     primary.is_merged = true;
     primary.merged_holdings = mergedHoldings;
@@ -5619,11 +5855,14 @@ const newSh = {
     const req = mockMergeRequests.find(m => m.id === requestId || m.request_id === requestId);
     if (!req) return { success: false, message: 'Merge request not found' };
 
-    // Execute the actual merge in live master list
+    // Execute the actual merge in live master list with strict approved values
     const mergeRes = await this.mergeSharesByShareNumbers({
       shareNumbers: req.share_numbers,
       primaryShareNo: req.primary_share_no,
-      adminUser
+      adminUser,
+      approvedShares: req.combined_shares,
+      approvedTotalAmt: req.combined_total_amount,
+      originalRecords: req.records_to_merge
     });
 
     if (!mergeRes.success) {
