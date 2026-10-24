@@ -5833,7 +5833,24 @@ const newSh = {
       combined_share_nos: allShareNos,
       combined_share_no_str: allShareNos.join(', '),
       approval_status: 'Pending Admin Approval',
-      remarks: remarks || 'ಆಡಳಿತ ಮಂಡಳಿ / ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಸಲ್ಲಿಸಲಾದ ಬಹು-ಶೇರುಗಳ ವಿಲೀನ ವಿನಂತಿ.'
+      remarks: remarks || 'ಆಡಳಿತ ಮಂಡಳಿ / ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಸಲ್ಲಿಸಲಾದ ಬಹು-ಶೇರುಗಳ ವಿಲೀನ ವಿನಂತಿ.',
+      history_log: [
+        {
+          step: 1,
+          stage: 'SUBMISSION',
+          title: 'ವಿಲೀನ ವಿನಂತಿ ಸಲ್ಲಿಕೆ (Merge Request Submitted)',
+          timestamp: new Date().toISOString(),
+          performed_by: requestedBy || 'Operator',
+          status: 'Pending Admin Approval',
+          details: {
+            share_numbers: allShareNos,
+            primary_share_no: primary.share_no,
+            combined_shares: combinedShares,
+            combined_total_amount: combinedTotalAmt,
+            remarks: remarks || 'ಆಡಳಿತ ಮಂಡಳಿ / ಅಡ್ಮಿನ್ ಅನುಮೋದನೆಗೆ ಸಲ್ಲಿಸಲಾದ ಬಹು-ಶೇರುಗಳ ವಿಲೀನ ವಿನಂತಿ.'
+          }
+        }
+      ]
     };
 
     mockMergeRequests.unshift(newReq);
@@ -5850,7 +5867,14 @@ const newSh = {
     };
   },
 
-  async approveMergeRequestByAdmin({ requestId, adminUser = 'Admin', remarks = '' }) {
+  async approveMergeRequestByAdmin({
+    requestId,
+    adminUser = 'Admin',
+    remarks = '',
+    confirmationSteps = 2,
+    step1Timestamp = null,
+    step2Timestamp = null
+  }) {
     await ensureDBReady();
     const req = mockMergeRequests.find(m => m.id === requestId || m.request_id === requestId);
     if (!req) return { success: false, message: 'Merge request not found' };
@@ -5869,28 +5893,119 @@ const newSh = {
       return mergeRes;
     }
 
+    const now = new Date().toISOString();
+    const t1 = step1Timestamp || req.step1_verified_at || now;
+    const t2 = step2Timestamp || now;
+    const finalRemarks = remarks || 'ಅಡ್ಮಿನ್ ಅಧಿಕೃತ 2-ಹಂತದ ಪರಿಶೀಲನೆ ನಡೆಸಿ ಮಾಸ್ಟರ್ ಶೀಟ್‌ಗೆ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ.';
+
     // Update request status to Approved & Merged
     req.approval_status = 'Approved & Merged (ಅನುಮೋದಿಸಿ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ)';
     req.approved_by = adminUser;
-    req.approved_at = new Date().toISOString();
-    req.approval_remarks = remarks || 'ಅಡ್ಮಿನ್ ಅಧಿಕೃತ ಅನುಮೋದನೆ ನೀಡಿ ಮಾಸ್ಟರ್ ಶೀಟ್‌ಗೆ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ.';
+    req.approved_at = t2;
+    req.approval_remarks = finalRemarks;
+    req.confirmation_steps = confirmationSteps || 2;
+    req.step1_verified_at = t1;
+    req.step2_confirmed_at = t2;
+
+    if (!Array.isArray(req.history_log)) {
+      req.history_log = [];
+    }
+    // Ensure initial submission exists in log
+    if (!req.history_log.some(h => h.stage === 'SUBMISSION')) {
+      req.history_log.push({
+        step: 1,
+        stage: 'SUBMISSION',
+        title: 'ವಿಲೀನ ವಿನಂತಿ ಸಲ್ಲಿಕೆ (Merge Request Submitted)',
+        timestamp: req.request_date || now,
+        performed_by: req.requested_by || 'Operator',
+        status: 'Submitted',
+        details: {
+          share_numbers: req.share_numbers,
+          combined_shares: req.combined_shares,
+          combined_total_amount: req.combined_total_amount,
+          remarks: req.remarks
+        }
+      });
+    }
+    // Step 1 review event
+    req.history_log.push({
+      step: 2,
+      stage: 'STEP_1_REVIEW',
+      title: '1ನೇ ಹಂತ: ಅಡ್ಮಿನ್ ಪ್ರಾಥಮಿಕ ಪರಿಶೀಲನೆ ಮತ್ತು ದೃಢೀಕರಣ (Step 1 Verification Passed)',
+      timestamp: t1,
+      performed_by: adminUser,
+      status: 'Step 1 Verified',
+      details: {
+        shares_reviewed: req.share_numbers,
+        primary_account: req.primary_record?.name || req.primary_share_no,
+        target_capital: req.combined_total_amount,
+        target_shares: req.combined_shares
+      }
+    });
+    // Step 2 final authorization event
+    req.history_log.push({
+      step: 3,
+      stage: 'STEP_2_FINAL_APPROVAL',
+      title: '2ನೇ ಹಂತ: ಅಂತಿಮ ಭದ್ರತಾ ದೃಢೀಕರಣ & ಅಧಿಕೃತ ವಿಲೀನ (Step 2 Final Authorized & Merged)',
+      timestamp: t2,
+      performed_by: adminUser,
+      status: 'Approved & Merged',
+      details: {
+        combined_shares: mergeRes.combinedShares || req.combined_shares,
+        combined_total_amount: mergeRes.combinedTotalAmt || req.combined_total_amount,
+        combined_share_no_str: mergeRes.combinedShareNoStr || req.combined_share_no_str,
+        confirmation_steps: 2,
+        remarks: finalRemarks
+      }
+    });
+
     req.merged_result = {
       combinedShares: mergeRes.combinedShares,
       combinedTotalAmt: mergeRes.combinedTotalAmt,
-      combinedShareNoStr: mergeRes.combinedShareNoStr
+      combinedShareNoStr: mergeRes.combinedShareNoStr,
+      holdings: mergeRes.mergedHoldings || req.records_to_merge
     };
+
+    // System-wide persistent Audit History Log
+    const auditLogEntry = {
+      id: 'AUD-MERGE-APP-' + Date.now(),
+      timestamp: t2,
+      performed_by: adminUser,
+      type: 'MERGE_REQUEST_APPROVED_DOUBLE_CONFIRMED',
+      title: 'ಷೇರುಗಳ ವಿಲೀನ ಅಧಿಕೃತ ಅನುಮೋದನೆ (2-ಹಂತದ ಭದ್ರತಾ ದೃಢೀಕರಣದೊಂದಿಗೆ)',
+      description: 'ವಿಲೀನ ವಿನಂತಿ #' + req.request_id + ' (ಷೇರುಗಳು #' + req.combined_share_no_str + ') ಅನ್ನು 2-ಹಂತದ ಭದ್ರತಾ ದೃಢೀಕರಣದೊಂದಿಗೆ ಯಶಸ್ವಿಯಾಗಿ ಅನುಮೋದಿಸಿ ಮಾಸ್ಟರ್ ಶಾಸನಬದ್ಧ ಶೀಟ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ. ಒಟ್ಟು ' + req.combined_shares + ' ಷೇರುಗಳು, ₹ ' + (req.combined_total_amount ? req.combined_total_amount.toLocaleString() : '4,000') + '.',
+      details: {
+        request_id: req.request_id,
+        share_numbers: req.share_numbers,
+        primary_share_no: req.primary_share_no,
+        primary_name: req.primary_record?.name || '',
+        combined_shares: req.combined_shares,
+        combined_total_amount: req.combined_total_amount,
+        approved_by: adminUser,
+        approval_remarks: finalRemarks,
+        confirmation_steps: 2,
+        step1_verified_at: t1,
+        step2_confirmed_at: t2,
+        records_merged: req.records_to_merge
+      }
+    };
+    mockAuditLogs.unshift(auditLogEntry);
+    if (mockAuditLogs.length > 500) mockAuditLogs.pop();
+    saveStoredData(STORAGE_KEY_LOGS, mockAuditLogs);
 
     saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
     if (CloudDbService.isEnabled()) {
       CloudDbService.saveCollectionItem('merge_requests', req.request_id, req)
         .catch(err => console.warn('Cloud DB approveMerge error:', err));
+      CloudDbService.saveCollectionItem('audit_logs', auditLogEntry.id, auditLogEntry)
+        .catch(err => console.warn('Cloud DB auditLog error:', err));
     }
 
     return {
       success: true,
       data: req,
       mergeRes,
-      message: `ವಿಲೀನ ವಿನಂತಿ #${req.request_id} ಯಶಸ್ವಿಯಾಗಿ ಅನುಮೋದನೆಗೊಂಡು, ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಷೇರುಗಳು #${req.combined_share_no_str} ಅಧಿಕೃತವಾಗಿ ವಿಲೀನಗೊಂಡಿವೆ!`
+      message: 'ವಿಲೀನ ವಿನಂತಿ #' + req.request_id + ' 2-ಹಂತದ ಭದ್ರತಾ ದೃಢೀಕರಣದೊಂದಿಗೆ ಯಶಸ್ವಿಯಾಗಿ ಅನುಮೋದನೆಗೊಂಡು, ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಷೇರುಗಳು #' + req.combined_share_no_str + ' ಅಧಿಕೃತವಾಗಿ ವಿಲೀನಗೊಂಡಿವೆ!'
     };
   },
 
@@ -5899,21 +6014,59 @@ const newSh = {
     const req = mockMergeRequests.find(m => m.id === requestId || m.request_id === requestId);
     if (!req) return { success: false, message: 'Merge request not found' };
 
+    const now = new Date().toISOString();
+    const rejectRemarks = remarks || 'ಅಡ್ಮಿನ್ ಪರಿಶೀಲನೆಯಲ್ಲಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.';
+
     req.approval_status = 'Rejected (ತಿರಸ್ಕರಿಸಲಾಗಿದೆ)';
     req.rejected_by = adminUser;
-    req.rejected_at = new Date().toISOString();
-    req.rejection_remarks = remarks || 'ಅಡ್ಮಿನ್ ಪರಿಶೀಲನೆಯಲ್ಲಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.';
+    req.rejected_at = now;
+    req.rejection_remarks = rejectRemarks;
+
+    if (!Array.isArray(req.history_log)) {
+      req.history_log = [];
+    }
+    req.history_log.push({
+      step: req.history_log.length + 1,
+      stage: 'REJECTION',
+      title: 'ಅಡ್ಮಿನ್ ವಿನಂತಿ ತಿರಸ್ಕಾರ (Merge Request Rejected)',
+      timestamp: now,
+      performed_by: adminUser,
+      status: 'Rejected',
+      details: {
+        remarks: rejectRemarks
+      }
+    });
+
+    const auditLogEntry = {
+      id: 'AUD-MERGE-REJ-' + Date.now(),
+      timestamp: now,
+      performed_by: adminUser,
+      type: 'MERGE_REQUEST_REJECTED',
+      title: 'ಷೇರುಗಳ ವಿಲೀನ ವಿನಂತಿ ತಿರಸ್ಕಾರ',
+      description: 'ವಿಲೀನ ವಿನಂತಿ #' + req.request_id + ' (ಷೇರುಗಳು #' + (req.combined_share_no_str || (req.share_numbers || []).join(', ')) + ') ಅನ್ನು ಅಡ್ಮಿನ್ ತಿರಸ್ಕರಿಸಿದ್ದಾರೆ. ಕಾರಣ: ' + rejectRemarks,
+      details: {
+        request_id: req.request_id,
+        share_numbers: req.share_numbers,
+        rejected_by: adminUser,
+        remarks: rejectRemarks
+      }
+    };
+    mockAuditLogs.unshift(auditLogEntry);
+    if (mockAuditLogs.length > 500) mockAuditLogs.pop();
+    saveStoredData(STORAGE_KEY_LOGS, mockAuditLogs);
 
     saveStoredData(STORAGE_KEY_MERGE_REQ, mockMergeRequests);
     if (CloudDbService.isEnabled()) {
       CloudDbService.saveCollectionItem('merge_requests', req.request_id, req)
         .catch(err => console.warn('Cloud DB rejectMerge error:', err));
+      CloudDbService.saveCollectionItem('audit_logs', auditLogEntry.id, auditLogEntry)
+        .catch(err => console.warn('Cloud DB auditLog error:', err));
     }
 
     return {
       success: true,
       data: req,
-      message: `ವಿಲೀನ ವಿನಂತಿ #${req.request_id} ಅನ್ನು ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.`
+      message: 'ವಿಲೀನ ವಿನಂತಿ #' + req.request_id + ' ಅನ್ನು ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.'
     };
   },
 

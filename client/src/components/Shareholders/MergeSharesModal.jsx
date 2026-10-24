@@ -5,7 +5,8 @@ import {
   GitMerge, Search, CheckCircle2, AlertCircle, X, ShieldCheck,
   RefreshCw, Layers, Coins, Award, Check, Filter, ChevronRight,
   Plus, Trash2, ArrowRight, CheckSquare, Sparkles, UserCheck, HelpCircle,
-  Clock, XCircle, Send, CheckCircle, FileText
+  Clock, XCircle, Send, CheckCircle, FileText,
+  ShieldAlert, AlertTriangle, History, ArrowLeft, Eye
 } from 'lucide-react';
 
 export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, initialSelectedShares = [] }) {
@@ -29,6 +30,31 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
   const [approvalFilter, setApprovalFilter] = useState('all'); // 'all', 'pending', 'approved', 'rejected'
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [processingRequestId, setProcessingRequestId] = useState(null);
+
+  // 2-Step Approval Modal state ("ಅನುಮೋದನೆ ಬಾಕಿ ask for two times")
+  const [approvalModal, setApprovalModal] = useState({
+    isOpen: false,
+    step: 1, // 1: First verification, 2: Second confirmation
+    request: null,
+    adminRemarks: '',
+    doubleConfirmChecked: false,
+    step1Timestamp: null,
+    isProcessing: false
+  });
+
+  // History & Audit Trail Modal state ("save the details in the history")
+  const [historyModal, setHistoryModal] = useState({
+    isOpen: false,
+    request: null
+  });
+
+  // Rejection Confirmation Modal state
+  const [rejectModal, setRejectModal] = useState({
+    isOpen: false,
+    request: null,
+    remarks: '',
+    isProcessing: false
+  });
 
   // Auto-detected mode states
   const [loadingAuto, setLoadingAuto] = useState(false);
@@ -177,21 +203,24 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
     setIsSubmitting(true);
     try {
       if (directApprove) {
-        // Direct execution by Admin
-        const res = await ApiService.mergeSharesByShareNumbers({
+        // Direct execution by Admin - Must ALSO adhere to "ask for two times and save the details in the history"
+        const res = await ApiService.submitMergeRequest({
           shareNumbers,
           primaryShareNo: primaryRecord.share_no || primaryRecord.id,
-          adminUser: user?.name || 'Admin'
+          requestedBy: user?.name || 'Admin',
+          remarks: mergeRemarks || 'ಅಡ್ಮಿನ್ ನೇರ ವಿಲೀನ ವಿನಂತಿ (2-ಹಂತದ ದೃಢೀಕರಣಕ್ಕೆ ಒಳಪಟ್ಟಿದೆ).'
         });
 
-        if (res && res.success) {
-          showToast(`ಅಭಿನಂದನೆಗಳು! ಷೇರುಗಳು #${res.combinedShareNoStr} ಯಶಸ್ವಿಯಾಗಿ ಏಕೀಕೃತಗೊಂಡಿವೆ! ಒಟ್ಟು: ${res.combinedShares} ಷೇರುಗಳು, ₹${res.combinedTotalAmt?.toLocaleString()}.`);
+        if (res && res.success && res.data) {
+          showToast('ವಿಲೀನ ವಿನಂತಿಯನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ೨-ಹಂತದ ಅಂತಿಮ ಅನುಮೋದನೆ ಪೂರ್ಣಗೊಳಿಸಿ.');
           setSelectedShareRecords([]);
           setPrimaryRecordId(null);
-          if (onMergeSuccess) await onMergeSuccess();
-          onClose();
+          setMergeRemarks('');
+          await loadMergeRequests();
+          // Open 2-step approval modal immediately
+          startApprovalFlow(res.data);
         } else {
-          showToast(res?.message || 'ವಿಲೀನಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ', 'error');
+          showToast(res?.message || 'ವಿನಂತಿ ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ', 'error');
         }
       } else {
         // Submit for Admin Approval Gate
@@ -220,52 +249,119 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
     }
   };
 
-  // ADMIN APPROVE MERGE REQUEST
-  const handleApproveRequest = async (request) => {
-    setProcessingRequestId(request.id);
+  // START 2-STEP APPROVAL FLOW ("ಅನುಮೋದನೆ ಬಾಕಿ ask for two times")
+  const startApprovalFlow = (request) => {
+    setApprovalModal({
+      isOpen: true,
+      step: 1,
+      request,
+      adminRemarks: request.remarks ? `ಪರಿಶೀಲಿಸಲಾಗಿದೆ: ${request.remarks}` : 'ವಿಲೀನ ವಿನಂತಿಯನ್ನು ಕೂಲಂಕಷವಾಗಿ ಪರಿಶೀಲಿಸಲಾಗಿದೆ ಮತ್ತು ಷೇರು ವಿವರಗಳು ನಿಯಮಾನುಸಾರ ಸರಿಯಾಗಿವೆ.',
+      doubleConfirmChecked: false,
+      step1Timestamp: new Date().toISOString(),
+      isProcessing: false
+    });
+  };
+
+  // MOVE FROM STEP 1 TO STEP 2 (FIRST CONFIRMATION PASSED)
+  const proceedToStep2 = () => {
+    setApprovalModal(prev => ({
+      ...prev,
+      step: 2,
+      step1Timestamp: prev.step1Timestamp || new Date().toISOString()
+    }));
+  };
+
+  // BACK TO STEP 1
+  const backToStep1 = () => {
+    setApprovalModal(prev => ({
+      ...prev,
+      step: 1,
+      doubleConfirmChecked: false
+    }));
+  };
+
+  // STEP 2: FINAL CONFIRMATION & EXECUTE MERGE ("save the details in the history")
+  const confirmFinalApproval = async () => {
+    if (!approvalModal.doubleConfirmChecked || !approvalModal.request) return;
+    setApprovalModal(prev => ({ ...prev, isProcessing: true }));
     try {
+      const req = approvalModal.request;
+      const step2Time = new Date().toISOString();
       const res = await ApiService.approveMergeRequestByAdmin({
-        requestId: request.id,
+        requestId: req.id,
         adminUser: user?.name || 'Admin',
-        remarks: 'ಅಡ್ಮಿನ್ ಅಧಿಕೃತ ಅನುಮೋದನೆ ನೀಡಿ ಮಾಸ್ಟರ್ ಶಾಸನಬದ್ಧ ಶೀಟ್‌ಗೆ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ.'
+        remarks: approvalModal.adminRemarks || 'ಅಡ್ಮಿನ್ ಅಧಿಕೃತ 2-ಹಂತದ ಪರಿಶೀಲನೆ ನಡೆಸಿ ಮಾಸ್ಟರ್ ಶೀಟ್‌ಗೆ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ.',
+        confirmationSteps: 2,
+        step1Timestamp: approvalModal.step1Timestamp,
+        step2Timestamp: step2Time
       });
 
       if (res && res.success) {
-        showToast(`ಅಭಿನಂದನೆಗಳು! ವಿನಂತಿ #${request.request_id} ಯಶಸ್ವಿಯಾಗಿ ಅನುಮೋದನೆಗೊಂಡು, ಷೇರುಗಳು #${request.combined_share_no_str} ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಏಕೀಕೃತಗೊಂಡಿವೆ!`);
+        showToast(`ಅಭಿನಂದನೆಗಳು! ೨ ಬಾರಿ ಪರಿಶೀಲಿಸಿ ಅನುಮೋದಿಸಲಾಗಿದೆ. ಷೇರುಗಳು #${req.combined_share_no_str} ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ಏಕೀಕೃತಗೊಂಡಿವೆ ಮತ್ತು ವಿವರಗಳನ್ನು ಇತಿಹಾಸದಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ!`);
+        setApprovalModal({
+          isOpen: false,
+          step: 1,
+          request: null,
+          adminRemarks: '',
+          doubleConfirmChecked: false,
+          step1Timestamp: null,
+          isProcessing: false
+        });
         await loadMergeRequests();
         await loadAutoHoldings();
         if (onMergeSuccess) await onMergeSuccess();
       } else {
         showToast(res?.message || 'ಅನುಮೋದನೆ ವಿಫಲವಾಗಿದೆ', 'error');
+        setApprovalModal(prev => ({ ...prev, isProcessing: false }));
       }
     } catch (err) {
       showToast('ದೋಷ: ' + err.message, 'error');
-    } finally {
-      setProcessingRequestId(null);
+      setApprovalModal(prev => ({ ...prev, isProcessing: false }));
     }
   };
 
-  // ADMIN REJECT MERGE REQUEST
-  const handleRejectRequest = async (request) => {
-    setProcessingRequestId(request.id);
+  // OPEN REJECTION MODAL
+  const startRejectFlow = (request) => {
+    setRejectModal({
+      isOpen: true,
+      request,
+      remarks: 'ದಾಖಲೆಗಳಲ್ಲಿ ವ್ಯತ್ಯಾಸ ಕಂಡುಬಂದಿದ್ದರಿಂದ ಅಡ್ಮಿನ್ ಪರಿಶೀಲನೆಯಲ್ಲಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.',
+      isProcessing: false
+    });
+  };
+
+  // CONFIRM REJECTION & SAVE IN HISTORY
+  const confirmRejection = async () => {
+    if (!rejectModal.request) return;
+    setRejectModal(prev => ({ ...prev, isProcessing: true }));
     try {
+      const req = rejectModal.request;
       const res = await ApiService.rejectMergeRequestByAdmin({
-        requestId: request.id,
+        requestId: req.id,
         adminUser: user?.name || 'Admin',
-        remarks: 'ಅಡ್ಮಿನ್ ಪರಿಶೀಲನೆಯಲ್ಲಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.'
+        remarks: rejectModal.remarks || 'ಅಡ್ಮಿನ್ ಪರಿಶೀಲನೆಯಲ್ಲಿ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.'
       });
 
       if (res && res.success) {
-        showToast(`ವಿನಂತಿ #${request.request_id} ಅನ್ನು ತಿರಸ್ಕರಿಸಲಾಗಿದೆ.`);
+        showToast(`ವಿನಂತಿ #${req.request_id} ಅನ್ನು ತಿರಸ್ಕರಿಸಲಾಗಿದೆ ಮತ್ತು ಇತಿಹಾಸದಲ್ಲಿ ದಾಖಲಿಸಲಾಗಿದೆ.`);
+        setRejectModal({ isOpen: false, request: null, remarks: '', isProcessing: false });
         await loadMergeRequests();
       } else {
         showToast(res?.message || 'ಪ್ರಕ್ರಿಯೆ ವಿಫಲವಾಗಿದೆ', 'error');
+        setRejectModal(prev => ({ ...prev, isProcessing: false }));
       }
     } catch (err) {
       showToast('ದೋಷ: ' + err.message, 'error');
-    } finally {
-      setProcessingRequestId(null);
+      setRejectModal(prev => ({ ...prev, isProcessing: false }));
     }
+  };
+
+  // OPEN HISTORY MODAL ("save the details in the history" - Viewer)
+  const openHistoryModal = (request) => {
+    setHistoryModal({
+      isOpen: true,
+      request
+    });
   };
 
   // Auto-detected logic
@@ -910,39 +1006,52 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                         </p>
                       )}
 
-                      {/* Action buttons for Admin */}
-                      {isPending && (
-                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+                      {/* Action buttons & History viewer */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-slate-800/80">
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => handleRejectRequest(req)}
-                            disabled={isProcessing}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                            onClick={() => openHistoryModal(req)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                            title="ಸಂಪೂರ್ಣ ಇತಿಹಾಸ ಮತ್ತು ಆಡಿಟ್ ವಿವರಗಳನ್ನು ವೀಕ್ಷಿಸಿ"
                           >
-                            <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                            <span>ತಿರಸ್ಕರಿಸಿ (Reject)</span>
+                            <History className="w-3.5 h-3.5 text-amber-400" />
+                            <span>📜 ಇತಿಹಾಸ ಮತ್ತು ವಿವರಗಳು (History & Audit Trail)</span>
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleApproveRequest(req)}
-                            disabled={isProcessing}
-                            className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
-                          >
-                            {isProcessing ? (
-                              <>
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                <span>ಅನುಮೋದಿಸಲಾಗುತ್ತಿದೆ...</span>
-                              </>
-                            ) : (
-                              <>
-                                <ShieldCheck className="w-4 h-4" />
-                                <span>ಅನುಮೋದಿಸಿ ಮತ್ತು ಮಾಸ್ಟರ್ ಶೀಟ್‌ಗೆ ಸೇರಿಸಿ (Approve & Merge)</span>
-                              </>
-                            )}
-                          </button>
+                          {isApproved && (
+                            <span className="text-[11px] text-emerald-400 flex items-center gap-1 bg-emerald-950/40 px-2 py-1 rounded-lg border border-emerald-900/60">
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <span>೨ ಬಾರಿ ಪರಿಶೀಲಿಸಿ ಅನುಮೋದಿಸಲಾಗಿದೆ (Double-Confirmed: {req.confirmation_steps || 2}/2)</span>
+                            </span>
+                          )}
                         </div>
-                      )}
+
+                        {isPending && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startRejectFlow(req)}
+                              disabled={isProcessing}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                            >
+                              <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                              <span>ತಿರಸ್ಕರಿಸಿ (Reject)</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => startApprovalFlow(req)}
+                              disabled={isProcessing}
+                              className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer ring-1 ring-emerald-400/40"
+                              title="೨-ಹಂತದ ಭದ್ರತಾ ಪರಿಶೀಲನೆಯೊಂದಿಗೆ ಅನುಮೋದಿಸಿ"
+                            >
+                              <ShieldCheck className="w-4 h-4 text-emerald-100" />
+                              <span>ಅನುಮೋದಿಸಿ (2-ಹಂತದ ಪರಿಶೀಲನೆ ➔)</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })
@@ -1153,6 +1262,559 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
           )}
         </div>
       </div>
+
+
+      {/* 2-STEP CONFIRMATION APPROVAL MODAL ("ಅನುಮೋದನೆ ಬಾಕಿ ask for two times") */}
+      {approvalModal.isOpen && approvalModal.request && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-amber-500/60 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Header with Step indicator */}
+            <div className="p-4 bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/40 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${
+                  approvalModal.step === 1 
+                    ? 'bg-amber-500/10 border-amber-500/40 text-amber-400' 
+                    : 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400'
+                }`}>
+                  {approvalModal.step === 1 ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-white text-sm sm:text-base">
+                      {approvalModal.step === 1 
+                        ? 'ವಿಲೀನ ಅನುಮೋದನೆ ಹಂತ ೧/೨: ಪ್ರಾಥಮಿಕ ದಾಖಲೆಗಳ ಪರಿಶೀಲನೆ (Step 1 Review)' 
+                        : 'ವಿಲೀನ ಅನುಮೋದನೆ ಹಂತ ೨/೨: ಅಂತಿಮ ಭದ್ರತಾ ದೃಢೀಕರಣ (Step 2 Final Gate)'}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {approvalModal.step === 1 
+                      ? '೧ನೇ ಬಾರಿಯ ಪರಿಶೀಲನೆ: ಷೇರು ವಿವರಗಳು ಮತ್ತು ಖಾತೆಗಳನ್ನು ದೃಢೀಕರಿಸಿ' 
+                      : '೨ನೇ ಬಾರಿಯ ಅಂತಿಮ ದೃಢೀಕರಣ: ಮಾಸ್ಟರ್ ಶಾಸನಬದ್ಧ ಶೀಟ್‌ಗೆ ಸೇರಿಸುವ ಮುನ್ನ ಅಂತಿಮ ಒಪ್ಪಿಗೆ'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Step Badge */}
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-950 border border-amber-500/40 text-amber-300">
+                <span>ಹಂತ {approvalModal.step} / ೨</span>
+              </div>
+            </div>
+
+            {/* Stepper Progress Bar */}
+            <div className="grid grid-cols-2 bg-slate-950 text-xs border-b border-slate-800">
+              <div className={`p-2.5 text-center flex items-center justify-center gap-2 border-r border-slate-800 font-semibold ${
+                approvalModal.step === 1 ? 'text-amber-300 bg-amber-950/30' : 'text-emerald-400 bg-emerald-950/20'
+              }`}>
+                {approvalModal.step > 1 ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center text-[11px]">1</span>}
+                <span>೧ನೇ ಪರಿಶೀಲನೆ (1st Review)</span>
+              </div>
+              <div className={`p-2.5 text-center flex items-center justify-center gap-2 font-semibold ${
+                approvalModal.step === 2 ? 'text-amber-300 bg-amber-950/40' : 'text-slate-500'
+              }`}>
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] ${
+                  approvalModal.step === 2 ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-800 text-slate-500'
+                }`}>2</span>
+                <span>೨ನೇ ಅಂತಿಮ ದೃಢೀಕರಣ (2nd Gate)</span>
+              </div>
+            </div>
+
+            {/* Body Content */}
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+              {approvalModal.step === 1 ? (
+                /* STEP 1 CONTENT */
+                <>
+                  <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                    <div className="flex justify-between items-center text-slate-400 border-b border-slate-800/80 pb-2">
+                      <span>ವಿನಂತಿ ಸಂಖ್ಯೆ: <strong className="text-amber-300 font-mono">#{approvalModal.request.request_id || approvalModal.request.id}</strong></span>
+                      <span>ಸಲ್ಲಿಸಿದವರು: <strong className="text-slate-200">{approvalModal.request.requested_by}</strong></span>
+                      <span>ದಿನಾಂಕ: <strong className="text-slate-200">{new Date(approvalModal.request.request_date).toLocaleDateString()}</strong></span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">ವಿಲೀನಗೊಳ್ಳುವ ಷೇರುಗಳು</span>
+                        <span className="font-mono font-bold text-amber-300">#{approvalModal.request.combined_share_no_str}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">ಒಟ್ಟು ಸಂಯೋಜಿತ ಷೇರು</span>
+                        <span className="font-mono font-bold text-emerald-300">{approvalModal.request.combined_shares} ಷೇರುಗಳು</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">ಒಟ್ಟು ಮೊತ್ತ</span>
+                        <span className="font-mono font-bold text-emerald-400">₹{approvalModal.request.combined_total_amount?.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">ಉಳಿಯುವ ಮುಖ್ಯ ಖಾತೆ</span>
+                        <span className="font-semibold text-white truncate block">{approvalModal.request.primary_record?.name || 'ಮುಖ್ಯ ಖಾತೆ'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Holdings to be merged breakdown */}
+                  <div className="space-y-1.5">
+                    <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-amber-400" />
+                      <span>ವಿಲೀನಗೊಳ್ಳುತ್ತಿರುವ ಷೇರು ದಾಖಲೆಗಳ ಪರಿಶೀಲನೆ (Records Breakdown):</span>
+                    </h4>
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {(approvalModal.request.records_to_merge || []).map((r, idx) => {
+                        const isPrimary = String(r.share_no) === String(approvalModal.request.primary_share_no);
+                        return (
+                          <div key={idx} className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
+                            isPrimary 
+                              ? 'bg-emerald-950/20 border-emerald-500/40' 
+                              : 'bg-slate-950/60 border-slate-800'
+                          }`}>
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-amber-400">ಷೇರು #{r.share_no}</span>
+                                <span className="font-medium text-slate-200">{r.shareholder_name || r.name}</span>
+                                {isPrimary ? (
+                                  <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-emerald-900/60 text-emerald-300 border border-emerald-700">
+                                    ಮುಖ್ಯ ಖಾತೆ (ಸಕ್ರಿಯವಾಗಿ ಉಳಿಯಲಿದೆ)
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                                    ದ್ವಿತೀಯ ಖಾತೆ (ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಲಿದೆ)
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-400">
+                                ಸ್ಥಳ: {r.place || '—'} | ರಸೀದಿ: {r.receipt_no || '—'} | ದಿನಾಂಕ: {r.reg_date || r.receipt_date || '—'}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-mono font-bold text-emerald-400">₹{(r.amount || 2000).toLocaleString()}</div>
+                              <div className="text-[10px] text-slate-400">{r.shares || 1} ಷೇರು</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Remarks Input */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-300">
+                      ಅಡ್ಮಿನ್ ಪರಿಶೀಲನಾ ಟಿಪ್ಪಣಿ / ಷರಾ (Admin Verification Remarks):
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={approvalModal.adminRemarks}
+                      onChange={(e) => setApprovalModal(prev => ({ ...prev, adminRemarks: e.target.value }))}
+                      placeholder="ಪರಿಶೀಲನಾ ಟಿಪ್ಪಣಿ ನಮೂದಿಸಿ..."
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </>
+              ) : (
+                /* STEP 2 CONTENT (ASK FOR SECOND TIME) */
+                <>
+                  {/* Warning Banner */}
+                  <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-600/50 flex items-start gap-3">
+                    <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1 text-xs">
+                      <h4 className="font-bold text-amber-300">
+                        ಅಂತಿಮ ಭದ್ರತಾ ಎಚ್ಚರಿಕೆ (೨ನೇ ಬಾರಿಯ ದೃಢೀಕರಣ / 2nd Time Final Gate)
+                      </h4>
+                      <p className="text-slate-300 leading-relaxed">
+                        ನೀವು ಈ ವಿಲೀನವನ್ನು ೨ನೇ ಬಾರಿ ಅನುಮೋದಿಸಲು ಹೊರಟಿದ್ದೀರಿ. ಈ ಅನುಮೋದನೆಯು ತಕ್ಷಣವೇ ಮಾಸ್ಟರ್ ಶಾಸನಬದ್ಧ ಶೀಟ್‌ನಲ್ಲಿ 
+                        ಷೇರುಗಳನ್ನು ಒಗ್ಗೂಡಿಸುತ್ತದೆ (ಒಟ್ಟು <strong>{approvalModal.request.combined_shares} ಷೇರುಗಳು, ₹{approvalModal.request.combined_total_amount?.toLocaleString()}</strong>) 
+                        ಮತ್ತು ದ್ವಿತೀಯ ಖಾತೆಗಳನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸುತ್ತದೆ. ಈ ಕ್ರಿಯೆಯು ಸಂಪೂರ್ಣ ಇತಿಹಾಸದೊಂದಿಗೆ ದಾಖಲಾಗುತ್ತದೆ.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Summary Confirmation Box */}
+                  <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3 text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <span className="text-slate-400">1ನೇ ಹಂತ ಪರಿಶೀಲಿಸಿದ ಸಮಯ:</span>
+                      <span className="font-mono text-amber-400 font-semibold">
+                        {new Date(approvalModal.step1Timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                        <span className="text-[10px] text-slate-400 block font-medium">ಅಂತಿಮ ಸಂಯೋಜಿತ ಷೇರು ಸಂಖ್ಯೆ</span>
+                        <span className="font-mono font-bold text-sm text-amber-300">#{approvalModal.request.combined_share_no_str}</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                        <span className="text-[10px] text-slate-400 block font-medium">ಅಂತಿಮ ಸಂಯೋಜಿತ ಮೊತ್ತ</span>
+                        <span className="font-mono font-bold text-sm text-emerald-400">₹{approvalModal.request.combined_total_amount?.toLocaleString()} ({approvalModal.request.combined_shares} ಷೇರುಗಳು)</span>
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/60 text-slate-300">
+                      <span className="text-[10px] text-slate-400 block font-medium">ಅಡ್ಮಿನ್ ಅಂತಿಮ ಷರಾ:</span>
+                      <span className="italic font-medium">"{approvalModal.adminRemarks || 'ಪರಿಶೀಲಿಸಲಾಗಿದೆ ಮತ್ತು ಅನುಮೋದಿಸಲಾಗಿದೆ'}"</span>
+                    </div>
+                  </div>
+
+                  {/* MANDATORY DOUBLE CONFIRMATION CHECKBOX */}
+                  <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-600/40 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={approvalModal.doubleConfirmChecked}
+                      onChange={(e) => setApprovalModal(prev => ({ ...prev, doubleConfirmChecked: e.target.checked }))}
+                      className="w-5 h-5 mt-0.5 rounded text-emerald-500 focus:ring-emerald-400 bg-slate-900 border-slate-700 cursor-pointer"
+                    />
+                    <div className="space-y-0.5">
+                      <span className="font-bold text-xs text-emerald-300 block">
+                        ☑ ನಾನು ಈ ಎಲ್ಲಾ ವಿವರಗಳನ್ನು ೨ ಬಾರಿ (2 times) ಕೂಲಂಕಷವಾಗಿ ಪರಿಶೀಲಿಸಿದ್ದೇನೆ.
+                      </span>
+                      <p className="text-[11px] text-slate-400">
+                        ಈ ವಿಲೀನವನ್ನು ಮಾಸ್ಟರ್ ಶಾಸನಬದ್ಧ ಶೀಟ್‌ನಲ್ಲಿ ಅಧಿಕೃತವಾಗಿ ಅನ್ವಯಿಸಲು ಮತ್ತು ಸಂಪೂರ್ಣ ವಿವರಗಳನ್ನು ಆಡಿಟ್ ಇತಿಹಾಸದಲ್ಲಿ ಉಳಿಸಲು ನಾನು ಒಪ್ಪಿಗೆ ನೀಡುತ್ತೇನೆ.
+                      </p>
+                    </div>
+                  </label>
+                </>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-4 bg-slate-950/90 border-t border-slate-800 flex items-center justify-between">
+              {approvalModal.step === 1 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setApprovalModal({ isOpen: false, step: 1, request: null, adminRemarks: '', doubleConfirmChecked: false, step1Timestamp: null, isProcessing: false })}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    ರದ್ದುಮಾಡಿ (Cancel)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={proceedToStep2}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shadow-lg shadow-amber-950/60 transition-all cursor-pointer ring-1 ring-amber-400/50"
+                  >
+                    <span>ಮುಂದಿನ ಹಂತಕ್ಕೆ ಮುಂದುವರಿಯಿರಿ (ಹಂತ ೨: ಅಂತಿಮ ದೃಢೀಕರಣ)</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={backToStep1}
+                    disabled={approvalModal.isProcessing}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>ಹಿಂದಿನ ಹಂತ (Back to Step 1)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={confirmFinalApproval}
+                    disabled={!approvalModal.doubleConfirmChecked || approvalModal.isProcessing}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all cursor-pointer ${
+                      approvalModal.doubleConfirmChecked && !approvalModal.isProcessing
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950 ring-2 ring-emerald-400'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                    }`}
+                  >
+                    {approvalModal.isProcessing ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                        <span>೨ ಬಾರಿ ಪರಿಶೀಲಿಸಿ ದಾಖಲಿಸಲಾಗುತ್ತಿದೆ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>ಅಂತಿಮ ಅನುಮೋದನೆ ನೀಡಿ & ಇತಿಹಾಸದಲ್ಲಿ ಉಳಿಸಿ (Final Approve & Save History)</span>
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* HISTORY & AUDIT TRAIL MODAL ("save the details in the history" - Viewer) */}
+      {historyModal.isOpen && historyModal.request && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="p-4 bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/30 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+                  <History className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm sm:text-base flex items-center gap-2">
+                    <span>ವಿಲೀನ ವಿನಂತಿ ಇತಿಹಾಸ ಮತ್ತು ಆಡಿಟ್ ವಿವರಗಳು</span>
+                    <span className="font-mono text-xs text-amber-400">#{historyModal.request.request_id || historyModal.request.id}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    ೨-ಹಂತದ ಪರಿಶೀಲನೆ, ಸಲ್ಲಿಕೆ, ಮತ್ತು ಸಿಸ್ಟಮ್ ಆಡಿಟ್ ಟ್ರಯಲ್‌ನ ಸಂಪೂರ್ಣ ಕಾಲಾನುಕ್ರಮ
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoryModal({ isOpen: false, request: null })}
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body: Status Banner + Timeline + Holdings Table */}
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+              {/* Status banner */}
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-medium">ಸ್ಥಿತಿ (Current Status)</span>
+                  <strong className="text-white text-xs">{historyModal.request.approval_status}</strong>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 block font-medium">ದೃಢೀಕರಣ ಹಂತಗಳು</span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-950 border border-amber-700 text-amber-300">
+                    {historyModal.request.confirmation_steps || 2} / 2 ಹಂತಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ
+                  </span>
+                </div>
+              </div>
+
+              {/* Chronological Timeline */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>ಕಾಲಾನುಕ್ರಮದ ಆಡಿಟ್ ಇತಿಹಾಸ (Audit History Timeline):</span>
+                </h4>
+
+                <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+                  {/* Stage 1: Submission */}
+                  <div className="relative">
+                    <div className="absolute -left-6 top-1 w-5 h-5 rounded-full bg-slate-800 border-2 border-amber-400 flex items-center justify-center text-[10px] font-bold text-amber-300">
+                      1
+                    </div>
+                    <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-slate-200">ವಿಲೀನ ವಿನಂತಿ ಸಲ್ಲಿಕೆ (Submitted)</span>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {historyModal.request.request_date ? new Date(historyModal.request.request_date).toLocaleString() : '—'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        ಸಲ್ಲಿಸಿದವರು: <strong className="text-slate-300">{historyModal.request.requested_by}</strong>
+                      </p>
+                      {historyModal.request.remarks && (
+                        <p className="text-[11px] text-slate-400 italic bg-slate-900/60 p-1.5 rounded">
+                          "{historyModal.request.remarks}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Stage 2: Step 1 Review */}
+                  {(historyModal.request.step1_verified_at || historyModal.request.approved_at) && (
+                    <div className="relative">
+                      <div className="absolute -left-6 top-1 w-5 h-5 rounded-full bg-slate-800 border-2 border-sky-400 flex items-center justify-center text-[10px] font-bold text-sky-300">
+                        2
+                      </div>
+                      <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-sky-300">೧ನೇ ಹಂತ: ಪ್ರಾಥಮಿಕ ಪರಿಶೀಲನೆ (Step 1 Verification Passed)</span>
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            {new Date(historyModal.request.step1_verified_at || historyModal.request.approved_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400">
+                          ಪರಿಶೀಲಿಸಿದವರು: <strong className="text-slate-300">{historyModal.request.approved_by || 'Admin'}</strong>
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          ಷೇರು ಸಂಖ್ಯೆಗಳು, ಪ್ರಮಾಣಪತ್ರಗಳು ಮತ್ತು ಮೊತ್ತವನ್ನು ಮೊದಲ ಬಾರಿಗೆ ದೃಢೀಕರಿಸಲಾಗಿದೆ.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stage 3: Step 2 Final Approval */}
+                  {historyModal.request.approved_at && (
+                    <div className="relative">
+                      <div className="absolute -left-6 top-1 w-5 h-5 rounded-full bg-emerald-950 border-2 border-emerald-400 flex items-center justify-center text-[10px] font-bold text-emerald-300">
+                        3
+                      </div>
+                      <div className="bg-emerald-950/20 p-3 rounded-xl border border-emerald-600/40 text-xs space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-emerald-300">೨ನೇ ಹಂತ: ಅಂತಿಮ ಭದ್ರತಾ ದೃಢೀಕರಣ & ಅಧಿಕೃತ ವಿಲೀನ (Step 2 Final Authorized)</span>
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            {new Date(historyModal.request.approved_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300">
+                          ಅಧಿಕೃತಗೊಳಿಸಿದವರು: <strong className="text-white">{historyModal.request.approved_by}</strong> (೨-ಹಂತದ ಭದ್ರತಾ ಒಪ್ಪಿಗೆಯೊಂದಿಗೆ)
+                        </p>
+                        {historyModal.request.approval_remarks && (
+                          <p className="text-[11px] text-emerald-200 italic bg-emerald-950/50 p-1.5 rounded border border-emerald-800/40">
+                            "{historyModal.request.approval_remarks}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* If Rejected */}
+                  {historyModal.request.rejected_at && (
+                    <div className="relative">
+                      <div className="absolute -left-6 top-1 w-5 h-5 rounded-full bg-rose-950 border-2 border-rose-400 flex items-center justify-center text-[10px] font-bold text-rose-300">
+                        ✕
+                      </div>
+                      <div className="bg-rose-950/20 p-3 rounded-xl border border-rose-600/40 text-xs space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-rose-300">ವಿನಂತಿ ತಿರಸ್ಕಾರ (Rejected by Admin)</span>
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            {new Date(historyModal.request.rejected_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300">
+                          ತಿರಸ್ಕರಿಸಿದವರು: <strong className="text-white">{historyModal.request.rejected_by}</strong>
+                        </p>
+                        {historyModal.request.rejection_remarks && (
+                          <p className="text-[11px] text-rose-200 italic bg-rose-950/50 p-1.5 rounded border border-rose-800/40">
+                            "{historyModal.request.rejection_remarks}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Holdings Table */}
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-amber-400" />
+                  <span>ವಿಲೀನಗೊಂಡ ಷೇರುಗಳ ವಿವರಗಳು (Merged Holdings Details):</span>
+                </h4>
+                <div className="overflow-x-auto rounded-xl border border-slate-800">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 text-[11px]">
+                        <th className="p-2 font-semibold">ಷೇರು ನಂ.</th>
+                        <th className="p-2 font-semibold">ಪಾತ್ರ (Role)</th>
+                        <th className="p-2 font-semibold">ಷೇರು ಸಂಖ್ಯೆ</th>
+                        <th className="p-2 font-semibold">ಮೊತ್ತ</th>
+                        <th className="p-2 font-semibold">ರಸೀದಿ ನಂ. & ದಿನಾಂಕ</th>
+                        <th className="p-2 font-semibold">ಸ್ಥಳ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+                      {(historyModal.request.records_to_merge || []).map((r, idx) => {
+                        const isPrimary = String(r.share_no) === String(historyModal.request.primary_share_no);
+                        return (
+                          <tr key={idx} className={isPrimary ? 'bg-emerald-950/10' : ''}>
+                            <td className="p-2 font-mono font-bold text-amber-400">#{r.share_no}</td>
+                            <td className="p-2">
+                              {isPrimary ? (
+                                <span className="text-emerald-400 font-semibold text-[11px]">ಮುಖ್ಯ ಖಾತೆ (ಸಕ್ರಿಯ)</span>
+                              ) : (
+                                <span className="text-slate-400 text-[11px]">ದ್ವಿತೀಯ ಖಾತೆ (ವಿಲೀನಗೊಂಡಿದೆ)</span>
+                              )}
+                            </td>
+                            <td className="p-2 font-mono text-white">{r.shares || 1}</td>
+                            <td className="p-2 font-mono font-bold text-emerald-400">₹{(r.amount || 2000).toLocaleString()}</td>
+                            <td className="p-2 text-slate-300 text-[11px]">{r.receipt_no || '—'} ({r.reg_date || r.receipt_date || '—'})</td>
+                            <td className="p-2 text-slate-300 text-[11px]">{r.place || '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Audit Footnote */}
+              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>
+                  ಈ ವಿವರಗಳು ಸಿಸ್ಟಮ್ ಆಡಿಟ್ ಲಾಗ್ (System Audit Trail) ಮತ್ತು IndexedDB ಲೋಕಲ್ ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಶಾಶ್ವತವಾಗಿ ಸಂರಕ್ಷಿಸಲ್ಪಟ್ಟಿವೆ.
+                </span>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 bg-slate-950 border-t border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setHistoryModal({ isOpen: false, request: null })}
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              >
+                ಮುಚ್ಚಿ (Close)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REJECTION CONFIRMATION MODAL */}
+      {rejectModal.isOpen && rejectModal.request && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-rose-800/60 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-4 bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950/40 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center">
+                  <XCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">ವಿಲೀನ ವಿನಂತಿ ತಿರಸ್ಕಾರ (Reject Merge Request)</h3>
+                  <p className="text-xs text-slate-400">ವಿನಂತಿ #{rejectModal.request.request_id || rejectModal.request.id}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRejectModal({ isOpen: false, request: null, remarks: '', isProcessing: false })}
+                className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3 text-xs">
+              <p className="text-slate-300">
+                ನೀವು ಷೇರುಗಳು <strong className="text-amber-400 font-mono">#{rejectModal.request.combined_share_no_str}</strong> ನ ವಿಲೀನ ವಿನಂತಿಯನ್ನು ತಿರಸ್ಕರಿಸಲು ಹೊರಟಿದ್ದೀರಿ.
+              </p>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-300">ತಿರಸ್ಕರಿಸಲು ಕಾರಣ / ಷರಾ (Reason for Rejection):</label>
+                <textarea
+                  rows={3}
+                  value={rejectModal.remarks}
+                  onChange={(e) => setRejectModal(prev => ({ ...prev, remarks: e.target.value }))}
+                  placeholder="ತಿರಸ್ಕರಿಸಲು ಕಾರಣವನ್ನು ನಮೂದಿಸಿ..."
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                />
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRejectModal({ isOpen: false, request: null, remarks: '', isProcessing: false })}
+                className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                ರದ್ದುಮಾಡಿ
+              </button>
+              <button
+                type="button"
+                onClick={confirmRejection}
+                disabled={rejectModal.isProcessing}
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                {rejectModal.isProcessing ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5" />
+                )}
+                <span>ಖಚಿತವಾಗಿ ತಿರಸ್ಕರಿಸಿ & ಇತಿಹಾಸದಲ್ಲಿ ಉಳಿಸಿ</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
