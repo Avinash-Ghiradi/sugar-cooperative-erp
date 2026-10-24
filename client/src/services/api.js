@@ -1806,16 +1806,53 @@ export const ApiService = {
       const isRejected = (m.approval_status || '').includes('Rejected');
       const isPending = (m.approval_status || '').includes('Pending');
 
+      // Resolve detailed records for all merged shares
+      const targetShareNos = Array.from(new Set([
+        ...(m.share_numbers ? m.share_numbers.map(s => String(s).trim().replace(/^#/, '')) : []),
+        ...(m.combined_share_nos ? m.combined_share_nos.map(s => String(s).trim().replace(/^#/, '')) : []),
+        ...(m.combined_share_no_str ? m.combined_share_no_str.split(/[,;\s]+/).map(s => s.trim().replace(/^#/, '')) : []),
+        String(m.primary_share_no || '').trim().replace(/^#/, '')
+      ].filter(Boolean)));
+
+      const detailedMergedRecords = targetShareNos.map(sNo => {
+        const found = mockShareholders.find(s => {
+          const num = String(s.share_no || s.share_number || '').trim();
+          return num === sNo;
+        });
+        const recFromM = (m.records_to_merge || []).find(r => String(r.share_no || r.id).trim().replace(/^#/, '') === sNo);
+        const isPrimary = String(sNo) === String(m.primary_share_no).trim().replace(/^#/, '');
+
+        return {
+          share_no: sNo,
+          shareholder_name: found?.shareholder_name || found?.name || recFromM?.name || m.primary_record?.name || sh.shareholder_name || sh.name || 'ಶೇರುದಾರರು',
+          role: isPrimary ? 'ಮುಖ್ಯ ಖಾತೆ (ಸಕ್ರಿಯವಾಗಿ ಉಳಿಯಲಿದೆ - Preserved Master)' : 'ದ್ವಿತೀಯ ಖಾತೆ (ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ - Merged Secondary)',
+          isPrimary,
+          shares: found?.number_of_shares || recFromM?.shares || 1,
+          amount: found?.total_amount || recFromM?.amount || (m.combined_total_amount ? m.combined_total_amount / (targetShareNos.length || 2) : (sh.total_amount || 24570)),
+          receipt_no: found?.receipt_no || recFromM?.receipt_no || (isPrimary ? (sh.receipt_no || '450') : (sh.reciept || '449')) || '—',
+          receipt_date: found?.reg_date || found?.receipt_date || recFromM?.receipt_date || recFromM?.reg_date || (isPrimary ? sh.reg_date : sh.date) || '—',
+          place: found?.place || found?.village_name || recFromM?.place || m.primary_record?.place || sh.place || '—',
+          taluk: found?.taluk || recFromM?.taluk || m.primary_record?.taluk || sh.taluk || '—',
+          circle: found?.circle || found?.circle_name || recFromM?.circle || sh.circle || '—',
+          book_no: found?.book_no || recFromM?.book_no || sh.book_no || 'B.No: 1',
+          tharava_no: found?.tharava_no || recFromM?.tharava_no || sh.tharava_no || '—',
+          tharava_date: found?.tharava_date || recFromM?.tharava_date || sh.tharava_date || '—',
+          schedule_cast: found?.schedule_cast || sh.schedule_cast || 'ಅ - ವರ್ಗ',
+          status: isPrimary ? 'ಸಕ್ರಿಯ (Active)' : 'ನಿಷ್ಕ್ರಿಯ (Inactive - ವಿಲೀನಗೊಂಡಿದೆ)'
+        };
+      });
+
       if (isApproved) {
         timeline.push({
           id: `merge-app-${m.id || m.request_id}`,
           date: m.approved_at || m.step2_confirmed_at || m.request_date || '—',
           type: 'MERGE_REQUEST_APPROVED_DOUBLE_CONFIRMED',
           title: 'ಷೇರುಗಳ ಅಧಿಕೃತ ವಿಲೀನ ಮತ್ತು ಅಡ್ಮಿನ್ ಮಂಜೂರಾತಿ (೨-ಹಂತದ ಪರಿಶೀಲನೆ)',
-          description: `ವಿಲೀನ ವಿನಂತಿ #${m.request_id || m.id}: ಷೇರು ಸಂಖ್ಯೆಗಳು #${m.combined_share_no_str || (m.share_numbers || []).join(', #')} ಅನ್ನು ೨ ಬಾರಿ ಪರಿಶೀಲಿಸಿ (Double-Confirmed: 2/2) ಅಧಿಕೃತವಾಗಿ ಅನುಮೋದಿಸಲಾಗಿದೆ. ಒಟ್ಟು ${m.combined_shares} ಷೇರುಗಳು, ₹${Number(m.combined_total_amount || 4000).toLocaleString()}. ಉಳಿಯುವ ಮುಖ್ಯ ಖಾತೆ: #${m.primary_share_no}. ಅಡ್ಮಿನ್ ಷರಾ: "${m.approval_remarks || 'ಅಧಿಕೃತ ೨-ಹಂತದ ಪರಿಶೀಲನೆ ನಡೆಸಿ ಮಾಸ್ಟರ್ ಶೀಟ್‌ಗೆ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ'}"`,
+          description: `ವಿಲೀನ ದಿನಾಂಕ #${m.request_id || m.id}: ಷೇರು ಸಂಖ್ಯೆಗಳು #${m.combined_share_no_str || (m.share_numbers || []).join(', #')} ಅನ್ನು ೨ ಬಾರಿ ಪರಿಶೀಲಿಸಿ (Double-Confirmed: 2/2) ಅಧಿಕೃತವಾಗಿ ಅನುಮೋದಿಸಲಾಗಿದೆ. ಒಟ್ಟು ${m.combined_shares} ಷೇರುಗಳು, ₹${Number(m.combined_total_amount || 4000).toLocaleString()}. ಉಳಿಯುವ ಮುಖ್ಯ ಖಾತೆ: #${m.primary_share_no}. ಅಡ್ಮಿನ್ ಷರಾ: "${m.approval_remarks || 'ಅಡ್ಮಿನ್ ಅಧಿಕೃತ ಅನುಮೋದನೆ ನೀಡಿ ಮಾಸ್ಟರ್ ಶಾಸನಬದ್ಧ ಶೀಟ್‌ಗೆ ವಿಲೀನಗೊಳಿಸಲಾಗಿದೆ.'}"`,
           performed_by: `${m.approved_by || 'Admin'} (ಅಧಿಕೃತ ಅಡ್ಮಿನ್)`,
           details: {
             request_id: m.request_id || m.id,
+            primary_share_no: m.primary_share_no,
             confirmation_steps: '೨ / ೨ ಹಂತಗಳು (Double Confirmed)',
             step1_time: m.step1_verified_at,
             step2_time: m.step2_confirmed_at || m.approved_at,
@@ -1824,7 +1861,8 @@ export const ApiService = {
             total_amount: m.combined_total_amount,
             approved_by: m.approved_by,
             remarks: m.approval_remarks,
-            holdings: m.records_to_merge || m.merged_result?.holdings
+            holdings: detailedMergedRecords,
+            merged_shareholders: detailedMergedRecords
           },
           badgeColor: 'emerald'
         });
@@ -1838,10 +1876,13 @@ export const ApiService = {
           performed_by: `${m.requested_by || 'Operator'} (ಸಲ್ಲಿಕೆ)`,
           details: {
             request_id: m.request_id || m.id,
+            primary_share_no: m.primary_share_no,
             confirmation_steps: '೦ / ೨ ಬಾಕಿ (Pending)',
             shares: m.combined_shares,
             total_amount: m.combined_total_amount,
-            remarks: m.remarks
+            remarks: m.remarks,
+            holdings: detailedMergedRecords,
+            merged_shareholders: detailedMergedRecords
           },
           badgeColor: 'amber'
         });
@@ -1855,7 +1896,10 @@ export const ApiService = {
           performed_by: `${m.rejected_by || 'Admin'} (ತಿರಸ್ಕಾರ)`,
           details: {
             request_id: m.request_id || m.id,
-            remarks: m.rejection_remarks
+            primary_share_no: m.primary_share_no,
+            remarks: m.rejection_remarks,
+            holdings: detailedMergedRecords,
+            merged_shareholders: detailedMergedRecords
           },
           badgeColor: 'rose'
         });
