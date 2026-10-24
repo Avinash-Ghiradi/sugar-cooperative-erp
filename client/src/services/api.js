@@ -541,6 +541,11 @@ export const mockVillages = [];
 
 // Real Live Datasets (Initialized as clean empty arrays - zero mock records)
 let mockShareholders = loadStoredData(STORAGE_KEY_SH, []);
+let mockTransactions = loadStoredData(STORAGE_KEY_TX, []);
+let mockSugarAllotments = loadStoredData(STORAGE_KEY_SA, []);
+let mockVarasaTransfers = loadStoredData(STORAGE_KEY_VT, []);
+let mockVargavaneTransfers = loadStoredData(STORAGE_KEY_VG, []);
+// Initialized at top of module
 let isDBReady = false;
 let dbInitPromise = null;
 
@@ -623,6 +628,141 @@ export async function checkAndApplyCloudReset() {
   return false;
 }
 
+// -------------------------------------------------------------
+// RECONCILIATION ENGINE: Sync Approved Transfers into Shareholders Master
+// Ensures that once a transfer (Vargavane or Varasa) is Approved/Completed,
+// the shareholder master ALWAYS reflects the legal transferee/heir name and details,
+// and old deceased/transferred member names never reappear anywhere.
+// -------------------------------------------------------------
+export function reconcileApprovedTransfersIntoMaster(shareholdersList = mockShareholders) {
+  if (!Array.isArray(shareholdersList) || shareholdersList.length === 0) return 0;
+  let updatedCount = 0;
+
+  // 1. Process all approved Vargavane transfers
+  const approvedVarg = (mockVargavaneTransfers || []).filter(v =>
+    ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) &&
+    v.transferee_name && String(v.transferee_name).trim()
+  );
+
+  for (const v of approvedVarg) {
+    const targetNo = String(v.share_no || '').trim();
+    if (!targetNo) continue;
+    const newName = String(v.transferee_name).trim();
+
+    const matchedShs = shareholdersList.filter(s => {
+      const sNo = String(s.share_no || s.share_number || '').trim();
+      const allNos = Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
+        ? s.all_share_numbers.map(n => String(n).trim())
+        : sNo.split(',').map(n => n.trim()).filter(Boolean);
+      return allNos.includes(targetNo) || String(s.primary_share_no || '').trim() === targetNo || sNo === targetNo;
+    });
+
+    for (const sh of matchedShs) {
+      const prevName = sh.shareholder_name || sh.name;
+      if (prevName !== newName) {
+        sh.shareholder_name = newName;
+        sh.name = newName;
+        updatedCount++;
+      }
+      if (v.transferee_place) {
+        sh.place = v.transferee_place;
+        sh.village_name = v.transferee_place;
+      }
+      if (v.transferee_taluk) sh.taluk = v.transferee_taluk;
+      if (v.transferee_district) sh.district = v.transferee_district;
+      if (v.transferee_mobile) {
+        sh.mobile_no = v.transferee_mobile;
+        sh.mobile_number = v.transferee_mobile;
+        sh.mobile = v.transferee_mobile;
+      }
+      if (v.transferee_aadhaar) {
+        sh.aadhaar_card_no = v.transferee_aadhaar;
+        sh.aadhaar_number = v.transferee_aadhaar;
+        sh.aadhaar_ref = v.transferee_aadhaar;
+      }
+      if (v.transferee_photo) {
+        sh.photo_url = v.transferee_photo;
+        sh.photo = v.transferee_photo;
+      }
+      const rel = (v.transferee_relationship || 'ವರ್ಗಾವಣೆ').trim();
+      sh.ownership = `ವಾರಸದಾರರು (${rel})`;
+      sh.relationship = `ವಾರಸದಾರರು (${rel})`;
+      sh._searchIndex = (
+        (sh.shareholder_name || '') + ' ' +
+        (sh.share_no || '') + ' ' +
+        (sh.book_no || '') + ' ' +
+        (sh.place || '') + ' ' +
+        (sh.taluk || '') + ' ' +
+        (sh.mobile_no || '') + ' ' +
+        (sh.aadhaar_card_no || '')
+      ).toLowerCase();
+    }
+  }
+
+  // 2. Process all approved Varasa transfers
+  const approvedVar = (mockVarasaTransfers || []).filter(vt =>
+    ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(vt.approval_status) &&
+    vt.heir_name && String(vt.heir_name).trim()
+  );
+
+  for (const vt of approvedVar) {
+    const targetNo = String(vt.share_no || vt.existing_share_number || '').trim();
+    if (!targetNo) continue;
+    const newName = String(vt.heir_name).trim();
+
+    const matchedShs = shareholdersList.filter(s => {
+      const sNo = String(s.share_no || s.share_number || '').trim();
+      const allNos = Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
+        ? s.all_share_numbers.map(n => String(n).trim())
+        : sNo.split(',').map(n => n.trim()).filter(Boolean);
+      return allNos.includes(targetNo) || String(s.primary_share_no || '').trim() === targetNo || sNo === targetNo;
+    });
+
+    for (const sh of matchedShs) {
+      const prevName = sh.shareholder_name || sh.name;
+      if (prevName !== newName) {
+        sh.shareholder_name = newName;
+        sh.name = newName;
+        updatedCount++;
+      }
+      if (vt.heir_place) {
+        sh.place = vt.heir_place;
+        sh.village_name = vt.heir_place;
+      }
+      if (vt.heir_taluk) sh.taluk = vt.heir_taluk;
+      if (vt.heir_district) sh.district = vt.heir_district;
+      if (vt.heir_mobile) {
+        sh.mobile_no = vt.heir_mobile;
+        sh.mobile_number = vt.heir_mobile;
+        sh.mobile = vt.heir_mobile;
+      }
+      if (vt.heir_aadhaar) {
+        sh.aadhaar_card_no = vt.heir_aadhaar;
+        sh.aadhaar_number = vt.heir_aadhaar;
+        sh.aadhaar_ref = vt.heir_aadhaar;
+      }
+      if (vt.heir_photo) {
+        sh.photo_url = vt.heir_photo;
+        sh.photo = vt.heir_photo;
+      }
+      const rel = (vt.heir_relationship || 'ಮಗ').trim();
+      sh.ownership = `ವಾರಸದಾರರು (${rel})`;
+      sh.relationship = `ವಾರಸದಾರರು (${rel})`;
+      sh._searchIndex = (
+        (sh.shareholder_name || '') + ' ' +
+        (sh.share_no || '') + ' ' +
+        (sh.book_no || '') + ' ' +
+        (sh.place || '') + ' ' +
+        (sh.taluk || '') + ' ' +
+        (sh.mobile_no || '') + ' ' +
+        (sh.aadhaar_card_no || '')
+      ).toLowerCase();
+    }
+  }
+
+  return updatedCount;
+}
+
 export async function syncAllCloudWorkflows() {
   if (!CloudDbService.isEnabled()) return;
   // Check for any cloud reset performed from another browser first
@@ -673,6 +813,14 @@ export async function syncAllCloudWorkflows() {
     if (Array.isArray(varg)) {
       mockVargavaneTransfers = varg;
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+    }
+
+    // Reconcile approved transfers to master
+    if (!isBlankReset && mockShareholders.length > 0) {
+      const reconciled = reconcileApprovedTransfersIntoMaster(mockShareholders);
+      if (reconciled > 0) {
+        saveToIndexedDB(mockShareholders).catch(() => {});
+      }
     }
 
     if (Array.isArray(merges)) {
@@ -736,8 +884,19 @@ export function ensureDBReady() {
           }
 
           if (records && records.length > 0 && !isBlankReset) {
-            // Remove any legacy comma rows that artificially inflated count from 17,076 to 17,246
-            records = records.filter(r => !String(r.share_no || '').includes(','));
+            // Remove legacy corrupted duplicate comma rows, but preserve and normalize valid merged records
+            records = records.filter(r => {
+              const sNo = String(r.share_no || '');
+              if (!sNo.includes(',')) return true;
+              if (r.is_merged) {
+                r.primary_share_no = r.primary_share_no || (r.all_share_numbers && r.all_share_numbers[0]) || sNo.split(',')[0].trim();
+                r.merged_share_numbers_display = sNo;
+                r.share_no = r.primary_share_no;
+                r.share_number = r.primary_share_no;
+                return true;
+              }
+              return false;
+            });
             // STRICT DE-DUPLICATION BY share_no: Collapses any 34,165 duplications down to exact unique records!
             const seen = new Map();
             for (let i = 0; i < records.length; i++) {
@@ -772,7 +931,12 @@ export function ensureDBReady() {
               ).toLowerCase();
             }
 
+            // Reconcile approved transfers to ensure transferee names are always active
+            const reconciledCount = reconcileApprovedTransfersIntoMaster(records);
             mockShareholders = records;
+            if (reconciledCount > 0) {
+              await saveToIndexedDB(mockShareholders).catch(() => {});
+            }
           } else {
             mockShareholders = [];
           }
@@ -794,12 +958,7 @@ if (typeof window !== 'undefined') {
 }
 
 export const initialVarasaTransfers = [];
-let mockTransactions = loadStoredData(STORAGE_KEY_TX, []);
-let mockSugarAllotments = loadStoredData(STORAGE_KEY_SA, []);
-let mockVarasaTransfers = loadStoredData(STORAGE_KEY_VT, []);
-
 export const initialVargavaneTransfers = [];
-let mockVargavaneTransfers = loadStoredData(STORAGE_KEY_VG, []);
 
 export const initialNewEnrollments = [
   {
@@ -1954,14 +2113,21 @@ const newSh = {
 
     let index = -1;
     if (targetShareNo) {
-      index = mockShareholders.findIndex(s => String(s.share_no || s.share_number || '').trim() === targetShareNo);
+      index = mockShareholders.findIndex(s => {
+        const sNo = String(s.share_no || s.share_number || '').trim();
+        const allNos = Array.isArray(s.all_share_numbers) ? s.all_share_numbers.map(n => String(n).trim()) : sNo.split(',').map(n => n.trim());
+        return allNos.includes(targetShareNo) || sNo === targetShareNo;
+      });
     }
     if (index === -1 && cleanId) {
-      index = mockShareholders.findIndex(s =>
-        String(s.share_no || s.share_number || '').trim() === cleanId ||
-        s.shareholder_id === cleanId ||
-        (s.id !== undefined && String(s.id) === cleanId)
-      );
+      index = mockShareholders.findIndex(s => {
+        const sNo = String(s.share_no || s.share_number || '').trim();
+        const allNos = Array.isArray(s.all_share_numbers) ? s.all_share_numbers.map(n => String(n).trim()) : sNo.split(',').map(n => n.trim());
+        return allNos.includes(cleanId) ||
+          sNo === cleanId ||
+          s.shareholder_id === cleanId ||
+          (s.id !== undefined && String(s.id) === cleanId);
+      });
     }
 
     if (index === -1) {
@@ -2146,6 +2312,18 @@ const newSh = {
       saveStoredData(STORAGE_KEY_LOGS, mockAuditLogs);
     } catch (e) {}
 
+    updated._searchIndex = (
+      (updated.shareholder_name || updated.name || '') + ' ' +
+      (updated.share_no || updated.share_number || '') + ' ' +
+      (updated.book_no || '') + ' ' +
+      (updated.place || updated.village_name || '') + ' ' +
+      (updated.taluk || '') + ' ' +
+      (updated.circle || updated.circle_name || '') + ' ' +
+      (updated.mobile_no || updated.mobile || '') + ' ' +
+      (updated.aadhaar_card_no || updated.aadhaar_ref || '') + ' ' +
+      (updated.receipt_no || '') + ' ' +
+      (updated.nominee_name || '')
+    ).toLowerCase();
     mockShareholders[index] = updated;
     await saveToIndexedDB(mockShareholders);
     if (mockShareholders.length < 2500) {
@@ -2567,6 +2745,10 @@ const newSh = {
     if (item) {
       item.approval_status = approval_status;
       saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
+        reconcileApprovedTransfersIntoMaster(mockShareholders);
+        saveToIndexedDB(mockShareholders).catch(() => {});
+      }
     }
     return { success: true };
   },
@@ -2635,6 +2817,8 @@ const newSh = {
           sh.ownership = own;
           sh.relationship = own;
           if (r.heir_name) {
+            sh.shareholder_name = r.heir_name;
+            sh.name = r.heir_name;
             sh.notes = `ವಾರಸು ವರ್ಗಾವಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ: ${r.shareholder_name || 'ಮೂಲ ಶೇರುದಾರರು'} ➔ ವಾರಸುದಾರರು: ${r.heir_name} (${rel}).`;
           }
         }
@@ -2648,14 +2832,20 @@ const newSh = {
   async searchShareholderForVarasa(query) {
     await ensureDBReady();
     if (!query || query.trim().length < 1) return [];
+    reconcileApprovedTransfersIntoMaster(mockShareholders);
     const q = query.trim().toLowerCase().normalize('NFC');
     return mockShareholders.filter(s => {
       if (isShareholderInactive(s)) return false;
-      const sNo = String(s.share_no || '').toLowerCase();
+      const sNo = String(s.share_no || s.share_number || '').toLowerCase();
+      const allNos = (Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
+        ? s.all_share_numbers
+        : [s.share_no, s.share_number]
+      ).map(n => String(n || '').trim().toLowerCase()).filter(Boolean);
       const sName = (s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
       const sId = (s.shareholder_id || '').toLowerCase();
       const sMob = String(s.mobile_no || s.mobile || '');
-      return sNo === q || sNo.startsWith(q) || sName.includes(q) || sId === q || sMob.includes(q);
+      const matchShareNo = allNos.some(num => num === q || num.startsWith(q));
+      return matchShareNo || sName.includes(q) || sId === q || sMob.includes(q);
     }).slice(0, 8);
   },
 
@@ -2813,6 +3003,10 @@ const newSh = {
     if (item) {
       item.approval_status = approval_status;
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
+        reconcileApprovedTransfersIntoMaster(mockShareholders);
+        saveToIndexedDB(mockShareholders).catch(() => {});
+      }
       return { success: true };
     }
     return { success: false };
@@ -2879,6 +3073,8 @@ const newSh = {
           sh.ownership = own;
           sh.relationship = own;
           if (r.transferee_name) {
+            sh.shareholder_name = r.transferee_name;
+            sh.name = r.transferee_name;
             sh.notes = `ವರ್ಗಾವಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ: ${r.transferor_name || 'ಮೂಲ ಶೇರುದಾರರು'} ➔ ${r.transferee_name} (${rel}).`;
           }
         }
@@ -3480,7 +3676,10 @@ const newSh = {
     // Find original shareholder in master database
     let sh = mockShareholders.find(s => {
       const sNo = String(s.share_no || s.share_number || '').trim();
-      return targetShareNo && sNo === targetShareNo;
+      const allNos = Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
+        ? s.all_share_numbers.map(n => String(n).trim())
+        : sNo.split(',').map(n => n.trim()).filter(Boolean);
+      return targetShareNo && (allNos.includes(targetShareNo) || String(s.primary_share_no || '').trim() === targetShareNo || sNo === targetShareNo);
     });
 
     if (!sh && rawTargetName) {
@@ -3650,7 +3849,10 @@ const newSh = {
     // Find original transferor in master database
     let sh = mockShareholders.find(s => {
       const sNo = String(s.share_no || s.share_number || '').trim();
-      return targetShareNo && sNo === targetShareNo;
+      const allNos = Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
+        ? s.all_share_numbers.map(n => String(n).trim())
+        : sNo.split(',').map(n => n.trim()).filter(Boolean);
+      return targetShareNo && (allNos.includes(targetShareNo) || String(s.primary_share_no || '').trim() === targetShareNo || sNo === targetShareNo);
     });
 
     if (!sh && rawTransferor) {
@@ -4751,6 +4953,31 @@ const newSh = {
       primary.date = mergedHoldings[1].receipt_date;
     }
 
+    // Inherit legal transferee name and details if any merged share was transferred
+    const approvedHoldingsTransfers = [
+      ...(mockVargavaneTransfers || []).filter(v => ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)),
+      ...(mockVarasaTransfers || []).filter(vt => ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(vt.approval_status))
+    ];
+    for (const t of approvedHoldingsTransfers) {
+      const tNo = String(t.share_no || t.existing_share_number || '').trim();
+      if (shareNos.includes(tNo)) {
+        const legalName = t.transferee_name || t.heir_name;
+        if (legalName) {
+          primary.shareholder_name = legalName;
+          primary.name = legalName;
+          if (t.transferee_place || t.heir_place) primary.place = t.transferee_place || t.heir_place;
+          if (t.transferee_taluk || t.heir_taluk) primary.taluk = t.transferee_taluk || t.heir_taluk;
+          if (t.transferee_district || t.heir_district) primary.district = t.transferee_district || t.heir_district;
+          if (t.transferee_mobile || t.heir_mobile) primary.mobile_no = t.transferee_mobile || t.heir_mobile;
+          if (t.transferee_aadhaar || t.heir_aadhaar) primary.aadhaar_card_no = t.transferee_aadhaar || t.heir_aadhaar;
+          const rel = t.transferee_relationship || t.heir_relationship || 'ವಾರಸದಾರರು';
+          primary.ownership = `ವಾರಸದಾರರು (${rel})`;
+          primary.relationship = `ವಾರಸದಾರರು (${rel})`;
+          break;
+        }
+      }
+    }
+
     // Populate best phone / aadhaar if primary was missing
     items.forEach(it => {
       if (!primary.mobile_no && (it.mobile_no || it.mobile)) {
@@ -4908,6 +5135,7 @@ const newSh = {
 
   async searchShareholdersByShareNo(query = '') {
     await ensureDBReady();
+    reconcileApprovedTransfersIntoMaster(mockShareholders);
     if (!query || !String(query).trim()) return { success: true, data: [] };
     const q = String(query).replace(/^#/, '').trim().toLowerCase().normalize('NFC');
     const results = [];
@@ -4982,7 +5210,6 @@ const newSh = {
 
       const matchesTarget = cleanTargets.some(target => 
         allNos.some(num => num.toLowerCase() === target.toLowerCase()) ||
-        String(s.id) === String(target) ||
         sNo.toLowerCase() === target.toLowerCase()
       );
 
@@ -5068,9 +5295,10 @@ const newSh = {
     primary.number_of_shares = combinedShares;
     primary.total_amount = combinedTotalAmt;
     primary.share_value = combinedTotalAmt;
-    primary.share_no = allShareNos.join(', ');
-    primary.share_number = allShareNos.join(', ');
+    primary.share_no = allShareNos[0]; // Statutory single canonical share number (avoids comma filter issues)
+    primary.share_number = allShareNos[0];
     primary.primary_share_no = allShareNos[0];
+    primary.merged_share_numbers_display = allShareNos.join(', ');
     primary.all_share_numbers = allShareNos;
     primary.all_receipt_numbers = allReceipts;
     primary.receipt_amount = combinedReceiptAmt || (mergedHoldings[0]?.amount || 0);
@@ -5078,6 +5306,32 @@ const newSh = {
     primary.multiple_amounts = true;
     primary.is_merged = true;
     primary.merged_holdings = mergedHoldings;
+
+    // Inherit legal transferee name and details if any merged share was transferred
+    const approvedTransfersForMerge = [
+      ...(mockVargavaneTransfers || []).filter(v => ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)),
+      ...(mockVarasaTransfers || []).filter(vt => ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(vt.approval_status))
+    ];
+    for (const t of approvedTransfersForMerge) {
+      const tNo = String(t.share_no || t.existing_share_number || '').trim();
+      if (allShareNos.includes(tNo)) {
+        const legalName = t.transferee_name || t.heir_name;
+        if (legalName) {
+          primary.shareholder_name = legalName;
+          primary.name = legalName;
+          if (t.transferee_place || t.heir_place) primary.place = t.transferee_place || t.heir_place;
+          if (t.transferee_taluk || t.heir_taluk) primary.taluk = t.transferee_taluk || t.heir_taluk;
+          if (t.transferee_district || t.heir_district) primary.district = t.transferee_district || t.heir_district;
+          if (t.transferee_mobile || t.heir_mobile) primary.mobile_no = t.transferee_mobile || t.heir_mobile;
+          if (t.transferee_aadhaar || t.heir_aadhaar) primary.aadhaar_card_no = t.transferee_aadhaar || t.heir_aadhaar;
+          if (t.transferee_photo || t.heir_photo) primary.photo_url = t.transferee_photo || t.heir_photo;
+          const rel = t.transferee_relationship || t.heir_relationship || 'ವಾರಸದಾರರು';
+          primary.ownership = `ವಾರಸದಾರರು (${rel})`;
+          primary.relationship = `ವಾರಸದಾರರು (${rel})`;
+          break;
+        }
+      }
+    }
 
     // Fill missing KYC from secondaries
     secondaries.forEach(sec => {
@@ -5257,7 +5511,6 @@ const newSh = {
 
       const matchesTarget = cleanTargets.some(target => 
         allNos.some(num => num.toLowerCase() === target.toLowerCase()) ||
-        String(s.id) === String(target) ||
         sNo.toLowerCase() === target.toLowerCase()
       );
 

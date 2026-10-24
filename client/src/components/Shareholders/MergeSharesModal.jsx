@@ -129,9 +129,8 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
       if (res && res.success && res.data.length > 0) {
         const exact = res.data.find(d => 
           String(d.share_no) === cleanNo || 
-          (d.all_share_numbers || []).includes(cleanNo) ||
-          String(d.id) === cleanNo
-        ) || res.data[0];
+          (d.all_share_numbers || []).includes(cleanNo)
+        ) || res.data.find(d => String(d.id) === cleanNo) || res.data[0];
 
         if (isShareholderInactive(exact)) {
           showToast(`ಷೇರು #${exact.share_no} ಈಗಾಗಲೇ ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ (Already merged & inactive)`, 'error');
