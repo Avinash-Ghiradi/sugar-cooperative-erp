@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Printer, X, FileText, CheckCircle2, ChevronRight, Layers, UserCheck } from 'lucide-react';
+import { Printer, X, FileText, CheckCircle2, ChevronRight, Layers, UserCheck, Users } from 'lucide-react';
 
 // Classic Cooperative Handshake Icon (Two Clasped Hands with Suit Sleeves)
 export function CooperativeHandshakeIcon({ className = "w-20 h-12" }) {
@@ -53,6 +53,10 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'p1'...'p12'
   const logoSrc = './id_assets/bsskn_logo.png';
 
+  // Dynamic Persons Count (default from data or 4)
+  const initialCount = parseInt(varasaData?.family_count || varasaData?.heir_count) || 4;
+  const [personsCount, setPersonsCount] = useState(initialCount);
+
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add('varasa-printing');
@@ -102,7 +106,16 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   const heirAadhaar = v.heir_aadhaar || v.aadhaar || '';
   const shareholderAadhaar = v.shareholder_aadhaar || '';
   const relationship = (v.heir_relationship || 'ಮಗ').trim();
+
+  // Photos for both persons
   const photo = v.heir_photo || v.photo || null;
+  const shareholderPhoto = v.shareholder_photo || v.existing_shareholder_photo || (v.existing_shareholder && v.existing_shareholder.photo) || null;
+
+  // Dynamic Row Indices for Page 8 & Page 9
+  const page8Count = Math.min(personsCount, 4);
+  const page8Indices = Array.from({ length: page8Count }, (_, i) => i + 1);
+  const page9Count = Math.max(0, personsCount - 4);
+  const page9Indices = page9Count > 0 ? Array.from({ length: page9Count }, (_, i) => i + 5) : [];
 
   const handlePrint = () => {
     document.body.classList.add('varasa-printing');
@@ -232,7 +245,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   );
 
   // =========================================================================
-  // PAGE 2: Share Varasha Transation Details
+  // PAGE 2: Share Varasha Transation Details (With Photo paste for BOTH persons)
   // =========================================================================
   const renderPage2 = () => (
     <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
@@ -284,7 +297,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
           </tbody>
         </table>
 
-        {/* Table 2: Name & Address Details */}
+        {/* Table 2: Name & Address Details with Photo Paste Options for BOTH persons */}
         <table className="w-full border-[1.5px] border-black text-xs text-left mb-2.5">
           <thead>
             <tr className="border-b border-black font-bold bg-slate-100 text-center">
@@ -294,19 +307,54 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
           </thead>
           <tbody>
             <tr>
-              <td className="p-2 border-r border-black align-top space-y-1 text-[12px]">
-                <div className="font-bold">ದಿ. {shareholderName}</div>
-                <div>ಸಾ :- {shareholderPlace}</div>
-                <div>ತಾಲೂಕ: {shareholderTaluk} ಜಿಲ್ಲೆ: {shareholderDistrict}</div>
-                <div>ಆಧಾರ್ ಸಂಖ್ಯೆ:- {shareholderAadhaar || '—'}</div>
-                <div>ಮೊಬೈಲ್ ನಂ:- —</div>
+              {/* Deceased Member with Photo Box */}
+              <td className="p-2 border-r border-black align-top">
+                <div className="flex gap-2 justify-between items-start">
+                  <div className="space-y-1 text-[12px] flex-1">
+                    <div className="font-bold">ದಿ. {shareholderName}</div>
+                    <div>ಸಾ :- {shareholderPlace}</div>
+                    <div>ತಾಲೂಕ: {shareholderTaluk} ಜಿಲ್ಲೆ: {shareholderDistrict}</div>
+                    <div>ಆಧಾರ್ ಸಂಖ್ಯೆ:- {shareholderAadhaar || '—'}</div>
+                    <div>ಮೊಬೈಲ್ ನಂ:- —</div>
+                  </div>
+                  {/* Photo Box for Deceased Shareholder */}
+                  <div className="w-[76px] h-[96px] border border-black rounded flex flex-col items-center justify-center p-0.5 bg-slate-50 shrink-0 text-center overflow-hidden">
+                    {shareholderPhoto ? (
+                      <img src={shareholderPhoto} alt="Deceased Photo" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-[9px] font-bold text-black space-y-0.5 leading-tight">
+                        <div>ಮೃತ ಸದಸ್ಯರ</div>
+                        <div>ಭಾವಚಿತ್ರ</div>
+                        <div>ಲಗತ್ತಿಸುವದು</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </td>
-              <td className="p-2 align-top space-y-1 text-[12px]">
-                <div className="font-bold">{heirName}</div>
-                <div>ಸಾ :- {heirPlace}</div>
-                <div>ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲೆ: {heirDistrict}</div>
-                <div>ಆಧಾರ್ ಸಂಖ್ಯೆ:- {heirAadhaar || '—'}</div>
-                <div>ಮೊಬೈಲ್ ನಂ:- <strong className="font-bold font-mono">{heirMobile}</strong></div>
+
+              {/* Legal Heir with Photo Box */}
+              <td className="p-2 align-top">
+                <div className="flex gap-2 justify-between items-start">
+                  <div className="space-y-1 text-[12px] flex-1">
+                    <div className="font-bold">{heirName}</div>
+                    <div>ಸಾ :- {heirPlace}</div>
+                    <div>ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲೆ: {heirDistrict}</div>
+                    <div>ಆಧಾರ್ ಸಂಖ್ಯೆ:- {heirAadhaar || '—'}</div>
+                    <div>ಮೊಬೈಲ್ ನಂ:- <strong className="font-bold font-mono">{heirMobile}</strong></div>
+                  </div>
+                  {/* Photo Box for Legal Heir */}
+                  <div className="w-[76px] h-[96px] border border-black rounded flex flex-col items-center justify-center p-0.5 bg-slate-50 shrink-0 text-center overflow-hidden">
+                    {photo ? (
+                      <img src={photo} alt="Heir Photo" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-[9px] font-bold text-black space-y-0.5 leading-tight">
+                        <div>ವಾರಸುದಾರರ</div>
+                        <div>ಭಾವಚಿತ್ರ</div>
+                        <div>ಲಗತ್ತಿಸುವದು</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -566,7 +614,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   );
 
   // =========================================================================
-  // PAGE 6: ಸದಸ್ಯರು ಗುರುತಿನ ಚೀಟಿ ಪಡೆಯಲು ತುಂಬುವ ಅರ್ಜಿ ನಮೂನೆ
+  // PAGE 6: ಸದಸ್ಯರು ಗುರುತಿನ ಚೀಟಿ ಪಡೆಯಲು ತುಂಬುವ ಅರ್ಜಿ ನಮೂನೆ (With Photo paste box)
   // =========================================================================
   const renderPage6 = () => (
     <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
@@ -588,24 +636,38 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
           </div>
         </div>
 
-        {/* Table 1: Member Particulars */}
+        {/* Table 1: Member Particulars with Dedicated Photo Paste Option */}
         <table className="w-full border-[1.5px] border-black text-xs text-left mb-2">
           <tbody>
             <tr className="border-b border-black">
               <td className="w-8 p-1.5 border-r border-black text-center font-bold">1</td>
-              <td className="w-48 p-1.5 border-r border-black font-semibold">ಸದಸ್ಯತ್ವ “{cleanCategory}”ವರ್ಗ</td>
-              <td className="w-28 p-1.5 border-r border-black font-semibold">ಶೇರು ಖಾತೆ ನಂ:</td>
-              <td className="p-1.5 font-bold font-mono text-[14px]">{shareNo}</td>
+              <td className="w-44 p-1.5 border-r border-black font-semibold">ಸದಸ್ಯತ್ವ “{cleanCategory}”ವರ್ಗ</td>
+              <td className="w-24 p-1.5 border-r border-black font-semibold">ಶೇರು ಖಾತೆ ನಂ:</td>
+              <td className="p-1.5 border-r border-black font-bold font-mono text-[14px]">{shareNo}</td>
+              {/* Photo Paste Box spanning 3 rows */}
+              <td rowSpan={3} className="w-28 p-1 text-center align-middle bg-slate-50">
+                <div className="w-[84px] h-[104px] border border-black mx-auto rounded flex flex-col items-center justify-center p-0.5 bg-white text-center overflow-hidden">
+                  {photo ? (
+                    <img src={photo} alt="Member Photo" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-[9px] font-bold text-black space-y-0.5 leading-tight">
+                      <div>ಸದಸ್ಯರ</div>
+                      <div>ಭಾವಚಿತ್ರ</div>
+                      <div>ಲಗತ್ತಿಸುವದು</div>
+                    </div>
+                  )}
+                </div>
+              </td>
             </tr>
             <tr className="border-b border-black">
               <td className="p-1.5 border-r border-black text-center font-bold">2</td>
               <td className="p-1.5 border-r border-black font-semibold">ಸದಸ್ಯರ ಪೂರ್ಣ ಹೆಸರು :</td>
-              <td colSpan="2" className="p-1.5 font-bold text-[13px]">{heirName}</td>
+              <td colSpan="2" className="p-1.5 border-r border-black font-bold text-[13px]">{heirName}</td>
             </tr>
             <tr className="border-b border-black">
               <td className="p-1.5 border-r border-black text-center font-bold align-top">3</td>
               <td className="p-1.5 border-r border-black font-semibold align-top">ಖಾಯಂ ವಿಳಾಸ :</td>
-              <td colSpan="2" className="p-1.5 space-y-0.5">
+              <td colSpan="2" className="p-1.5 border-r border-black space-y-0.5">
                 <div>ಮುಕ್ಕಾಂ :- <strong>{heirPlace}</strong> & ಪೋಷ್ಟ :- </div>
                 <div>PIN CODE:- </div>
                 <div>ತಾಲೂಕ: <strong>{heirTaluk}</strong> ಜಿಲ್ಲಾ: <strong>{heirDistrict}</strong></div>
@@ -615,17 +677,17 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
             <tr className="border-b border-black">
               <td className="p-1.5 border-r border-black text-center font-bold">4</td>
               <td className="p-1.5 border-r border-black font-semibold">ಲಿಂಗ : <strong className="underline">ಗಂಡು/ಹೆಣ್ಣು</strong></td>
-              <td className="p-1.5 border-r border-black">ಜನ್ಮ ದಿನಾಂಕ : _____ / _____ / _________</td>
+              <td colSpan="2" className="p-1.5 border-r border-black">ಜನ್ಮ ದಿನಾಂಕ : _____ / _____ / _________</td>
               <td className="p-1.5">ವಯಸ್ಸು : _________</td>
             </tr>
             <tr className="border-b border-black">
               <td className="p-1.5 border-r border-black text-center font-bold">5</td>
               <td className="p-1.5 border-r border-black font-semibold">ಗುರುತಿನ ಚೀಟಿ ಮಾಡಲು ಕಾರಣ:</td>
-              <td colSpan="2" className="p-1.5 font-bold">ಶೇರ ವಾರಸಾ ಇರುವದು.</td>
+              <td colSpan="3" className="p-1.5 font-bold">ಶೇರ ವಾರಸಾ ಇರುವದು.</td>
             </tr>
             <tr>
               <td className="p-1.5 border-r border-black text-center font-bold">6</td>
-              <td colSpan="3" className="p-1.5 font-bold">ಮೂಲ ಶೇರ ಸರ್ಟಿಫಿಕೇಟ ಝರಾಕ್ಸ್ ಪ್ರತಿ ಕಡ್ಡಾಯವಾಗಿ ಲಗತ್ತಿಸುವದು.</td>
+              <td colSpan="4" className="p-1.5 font-bold">ಮೂಲ ಶೇರ ಸರ್ಟಿಫಿಕೇಟ ಝರಾಕ್ಸ್ ಪ್ರತಿ ಕಡ್ಡಾಯವಾಗಿ ಲಗತ್ತಿಸುವದು.</td>
             </tr>
           </tbody>
         </table>
@@ -780,7 +842,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   );
 
   // =========================================================================
-  // PAGE 8: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ (ಪುಟ 1)
+  // PAGE 8: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ (ಪುಟ 1 - Dynamic Rows 1 to page8Count)
   // =========================================================================
   const renderPage8 = () => (
     <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
@@ -811,7 +873,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
           </p>
         </div>
 
-        {/* Table of Legal Heirs / Family Consent (Rows 1 to 4) */}
+        {/* Dynamic Table of Legal Heirs / Family Consent (Rows 1 to page8Count) */}
         <table className="w-full border-[1.5px] border-black text-xs text-left">
           <thead>
             <tr className="border-b border-black font-bold bg-slate-100 text-center">
@@ -824,20 +886,46 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
             </tr>
           </thead>
           <tbody>
-            {[1, 2, 3, 4].map(idx => (
+            {page8Indices.map(idx => (
               <tr key={idx} className="border-b border-black">
                 <td className="p-1 border-r border-black text-center font-bold align-top">{idx})</td>
                 <td className="p-1 border-r border-black space-y-0.5 text-[11px]">
-                  <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: ___________________</div>
-                  <div>ವಯಸ್ಸು :- _________</div>
-                  <div>ಸಾ:- _________________________</div>
-                  <div>ಆಧಾರ್ ನಂ:- ___________________</div>
-                  <div>ಮೊಬೈಲ್ ನಂ:- _________________</div>
+                  {idx === 1 ? (
+                    <>
+                      <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: <strong className="font-bold underline">{heirName}</strong></div>
+                      <div>ವಯಸ್ಸು :- <strong>{v.heir_age || '_____'}</strong></div>
+                      <div>ಸಾ:- <strong>{heirPlace}</strong></div>
+                      <div>ಆಧಾರ್ ನಂ:- <strong className="font-mono">{heirAadhaar || '___________________'}</strong></div>
+                      <div>ಮೊಬೈಲ್ ನಂ:- <strong className="font-mono">{heirMobile || '_________________'}</strong></div>
+                    </>
+                  ) : (
+                    <>
+                      <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: ___________________</div>
+                      <div>ವಯಸ್ಸು :- _________</div>
+                      <div>ಸಾ:- _________________________</div>
+                      <div>ಆಧಾರ್ ನಂ:- ___________________</div>
+                      <div>ಮೊಬೈಲ್ ನಂ:- _________________</div>
+                    </>
+                  )}
+                </td>
+                <td className="p-1 border-r border-black text-center align-middle font-bold">
+                  {idx === 1 ? relationship : ''}
+                </td>
+                <td className="p-1 border-r border-black text-center align-middle">
+                  {idx === 1 && photo ? (
+                    <img src={photo} alt="Photo" className="w-14 h-16 object-cover mx-auto rounded border border-black" />
+                  ) : (
+                    <div className="w-14 h-16 border border-dashed border-black mx-auto rounded flex items-center justify-center text-[9px] text-slate-400">
+                      ಭಾವಚಿತ್ರ
+                    </div>
+                  )}
                 </td>
                 <td className="p-1 border-r border-black"></td>
-                <td className="p-1 border-r border-black"></td>
-                <td className="p-1 border-r border-black"></td>
-                <td className="p-1"></td>
+                <td className="p-1 text-center align-middle">
+                  <div className="w-14 h-16 border border-dashed border-black mx-auto rounded flex items-center justify-center text-[9px] text-slate-400">
+                    ಥಂಬ್
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -849,34 +937,58 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   );
 
   // =========================================================================
-  // PAGE 9: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ (ಪುಟ 2) & ಸಾಕ್ಷಿದಾರರು
+  // PAGE 9: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ (ಪುಟ 2 - Continuation & Witnesses)
   // =========================================================================
   const renderPage9 = () => (
     <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
       <div>
         {renderHeaderBox()}
 
-        {/* Continuation Table Rows 5 to 9 */}
-        <table className="w-full border-[1.5px] border-black text-xs text-left mb-3">
-          <tbody>
-            {[5, 6, 7, 8, 9].map(idx => (
-              <tr key={idx} className="border-b border-black">
-                <td className="w-8 p-1 border-r border-black text-center font-bold align-top">{idx})</td>
-                <td className="p-1 border-r border-black space-y-0.5 text-[11px]">
-                  <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: ___________________</div>
-                  <div>ವಯಸ್ಸು :- _________</div>
-                  <div>ಸಾ:- _________________________</div>
-                  <div>ಆಧಾರ್ ನಂ:- ___________________</div>
-                  <div>ಮೊಬೈಲ್ ನಂ:- _________________</div>
-                </td>
-                <td className="w-24 p-1 border-r border-black"></td>
-                <td className="w-20 p-1 border-r border-black"></td>
-                <td className="w-24 p-1 border-r border-black"></td>
-                <td className="w-24 p-1"></td>
+        {/* Continuation Table Rows (If personsCount > 4, render rows 5 to personsCount) */}
+        {page9Indices.length > 0 ? (
+          <table className="w-full border-[1.5px] border-black text-xs text-left mb-3">
+            <thead>
+              <tr className="border-b border-black font-bold bg-slate-100 text-center">
+                <th className="w-8 p-1 border-r border-black">ಅ. ಸಂ.</th>
+                <th className="p-1 border-r border-black">ವಾರಸುದಾರರ ಹೆಸರು</th>
+                <th className="w-24 p-1 border-r border-black">ಮೃತರಿಗೆ ಸಂಬಂಧ</th>
+                <th className="w-20 p-1 border-r border-black">ಭಾವ ಚಿತ್ರ</th>
+                <th className="w-24 p-1 border-r border-black">ಸಹಿ</th>
+                <th className="w-24 p-1">ಎಡಗೈ ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು(ಥಂಬ)</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {page9Indices.map(idx => (
+                <tr key={idx} className="border-b border-black">
+                  <td className="w-8 p-1 border-r border-black text-center font-bold align-top">{idx})</td>
+                  <td className="p-1 border-r border-black space-y-0.5 text-[11px]">
+                    <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: ___________________</div>
+                    <div>ವಯಸ್ಸು :- _________</div>
+                    <div>ಸಾ:- _________________________</div>
+                    <div>ಆಧಾರ್ ನಂ:- ___________________</div>
+                    <div>ಮೊಬೈಲ್ ನಂ:- _________________</div>
+                  </td>
+                  <td className="w-24 p-1 border-r border-black"></td>
+                  <td className="w-20 p-1 border-r border-black text-center align-middle">
+                    <div className="w-14 h-16 border border-dashed border-black mx-auto rounded flex items-center justify-center text-[9px] text-slate-400">
+                      ಭಾವಚಿತ್ರ
+                    </div>
+                  </td>
+                  <td className="w-24 p-1 border-r border-black"></td>
+                  <td className="w-24 p-1 text-center align-middle">
+                    <div className="w-14 h-16 border border-dashed border-black mx-auto rounded flex items-center justify-center text-[9px] text-slate-400">
+                      ಥಂಬ್
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="border border-black p-2 text-center text-xs font-bold bg-slate-50 mb-3">
+            ಕುಟುಂಬದ ವಾರಸುದಾರರ ಪೂರ್ಣ ವಿವರಗಳನ್ನು ಪುಟ 8 ರಲ್ಲಿ ನಮೂದಿಸಲಾಗಿದೆ (ಒಟ್ಟು ವಾರಸುದಾರರು: {personsCount}).
+          </div>
+        )}
 
         {/* Witnesses Table */}
         <table className="w-full border-[1.5px] border-black text-xs text-left mb-3">
@@ -1272,8 +1384,33 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* Action Buttons & Dynamic Persons Count Selector */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* Dynamic Family Members / Persons Counter */}
+              <div className="flex items-center gap-1.5 bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700 text-xs shadow-inner">
+                <Users className="w-3.5 h-3.5 text-purple-400" />
+                <span className="text-slate-300 font-semibold whitespace-nowrap">ವಾರಸುದಾರರ ಸಂಖ್ಯೆ:</span>
+                <button
+                  type="button"
+                  onClick={() => setPersonsCount(prev => Math.max(1, prev - 1))}
+                  className="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 active:scale-95 text-white font-bold flex items-center justify-center cursor-pointer transition-all"
+                  title="Decrease person rows"
+                >
+                  -
+                </button>
+                <span className="w-6 text-center font-bold text-emerald-400 font-mono text-sm">
+                  {personsCount}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPersonsCount(prev => Math.min(15, prev + 1))}
+                  className="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 active:scale-95 text-white font-bold flex items-center justify-center cursor-pointer transition-all"
+                  title="Increase person rows"
+                >
+                  +
+                </button>
+              </div>
+
               <button
                 onClick={handlePrint}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-950 transition-all cursor-pointer"
@@ -1323,7 +1460,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                 activeTab === 'p2' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              ಪುಟ 2: ಟ್ರಾನ್ಸಾಕ್ಷನ್
+              ಪುಟ 2: ಟ್ರಾನ್ಸಾಕ್ಷನ್ (Photos)
             </button>
             <button
               type="button"
@@ -1359,7 +1496,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                 activeTab === 'p6' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              ಪುಟ 6: ID ಕಾರ್ಡ್ ಅರ್ಜಿ
+              ಪುಟ 6: ID ಕಾರ್ಡ್ ಅರ್ಜಿ (Photo)
             </button>
             <button
               type="button"
@@ -1377,7 +1514,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                 activeTab === 'p8' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              ಪುಟ 8: ಕ್ಷೇತ್ರ ಚೌಕಾಸಿ (1)
+              ಪುಟ 8: ಕ್ಷೇತ್ರ ಚೌಕಾಸಿ ({page8Count} ಸಾಲು)
             </button>
             <button
               type="button"
@@ -1386,7 +1523,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                 activeTab === 'p9' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              ಪುಟ 9: ಕ್ಷೇತ್ರ ಚೌಕಾಸಿ (2)
+              ಪುಟ 9: ಕ್ಷೇತ್ರ ಚೌಕಾಸಿ (ಮುಂದುವರಿಕೆ & ಸಾಕ್ಷಿ)
             </button>
             <button
               type="button"
@@ -1468,6 +1605,8 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               {' • ಶೇರು ನಂ: '}
               <strong className="text-emerald-400 font-mono">#{shareNo}</strong>
               {v.receipt_no ? ` • ರಶೀದಿ: #${v.receipt_no}` : ''}
+              {' • ವಾರಸುದಾರರು: '}
+              <strong className="text-amber-400 font-mono">{personsCount}</strong>
             </span>
             <div className="flex items-center gap-2">
               <button

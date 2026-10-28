@@ -58,12 +58,15 @@ export default function VarasaTransferModal({
   const [printRecord, setPrintRecord] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const fileInputRef = useRef(null);
+  const shFileInputRef = useRef(null);
+  const [uploadingShPhoto, setUploadingShPhoto] = useState(false);
 
   // 22 Official Statutory Cooperative Varasa Ledger Fields
   const [form, setForm] = useState({
     // Sl. No
     sl_no: initialData?.sl_no || '',
     transfer_id: initialData?.transfer_id || '',
+    family_count: initialData?.family_count || 4,
 
     // 1. Varasa Member (ವಾರಸುದಾರರ ವಿವರಗಳು)
     varasa_member: initialData?.varasa_member || initialData?.heir_name || '',
@@ -82,6 +85,8 @@ export default function VarasaTransferModal({
     shareholder_taluk: initialData?.shareholder_taluk || 'ಇಂಡಿ',
     shareholder_district: initialData?.shareholder_district || 'ವಿಜಯಪುರ',
     shareholder_relationship: initialData?.shareholder_relationship || 'ತಂದೆ',
+    shareholder_aadhaar: initialData?.shareholder_aadhaar || '',
+    shareholder_photo: initialData?.shareholder_photo || '',
     dod: initialData?.dod || '', // B. D.o.D (Date of Death)
     existing_shareholder_id: initialData?.existing_shareholder_id || '',
 
@@ -138,6 +143,8 @@ export default function VarasaTransferModal({
       ...prev,
       existing_shareholder_id: sh.shareholder_id || '',
       shareholder_name: sh.shareholder_name || sh.name || '',
+      shareholder_aadhaar: sh.aadhaar || sh.aadhar_no || prev.shareholder_aadhaar,
+      shareholder_photo: sh.photo || prev.shareholder_photo,
       share_no: String(sh.share_no || ''),
       category: sh.schedule_cast || prev.category,
       no_of_shares: parseInt(sh.number_of_shares) || 1,
@@ -174,6 +181,25 @@ export default function VarasaTransferModal({
       shareholder_taluk: circleInfo?.taluk || (vMatch ? vMatch.taluk : prev.shareholder_taluk),
       shareholder_district: circleInfo?.district || (vMatch ? vMatch.district : prev.shareholder_district)
     }));
+  };
+
+  const handleShPhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      if (showToast) showToast('Please select an image file (JPG, PNG).', 'error');
+      return;
+    }
+    setUploadingShPhoto(true);
+    try {
+      const dataUrl = await compressImage(file, 400, 400, 0.85);
+      setForm(prev => ({ ...prev, shareholder_photo: dataUrl }));
+      if (showToast) showToast('Shareholder photo uploaded successfully!');
+    } catch (err) {
+      if (showToast) showToast('Failed to process image: ' + err.message, 'error');
+    } finally {
+      setUploadingShPhoto(false);
+    }
   };
 
   const handlePhotoUpload = async (e) => {
@@ -470,6 +496,37 @@ export default function VarasaTransferModal({
                 </div>
               </div>
 
+              {/* Family Count Selector */}
+              <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-200">
+                    ಕುಟುಂಬದ ವಾರಸುದಾರರ ಒಟ್ಟು ಸಂಖ್ಯೆ (Total Family Members / Heirs)
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    ಪುಟ 8 ಮತ್ತು 9 ರಲ್ಲಿ ಕ್ಷೇತ್ರ ಚೌಕಾಸಿ ತನಿಖಾ ಪಟ್ಟಿಯಲ್ಲಿ ಬರುವ ಒಟ್ಟು ಸಾಲುಗಳು (ಉದಾ: 3, 4, 10)
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, family_count: Math.max(1, (parseInt(prev.family_count) || 4) - 1) }))}
+                    className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center cursor-pointer transition-all"
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center font-bold text-emerald-400 font-mono text-base">
+                    {form.family_count || 4}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, family_count: Math.min(15, (parseInt(prev.family_count) || 4) + 1) }))}
+                    className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center cursor-pointer transition-all"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
               {/* Heir Address & Place */}
               <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3">
                 <h3 className="text-xs font-bold text-slate-300 flex items-center gap-2">
@@ -567,47 +624,108 @@ export default function VarasaTransferModal({
                 </div>
               </div>
 
-              {/* Shareholder Form Inputs */}
+              {/* Shareholder Form Inputs with Photo */}
               <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="sm:col-span-2">
-                    <label className="block text-slate-300 font-semibold mb-1">
-                      2. Share Holder (ಮೂಲ ಶೇರುದಾರರ ಹೆಸರು) <span className="text-rose-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="ಉದಾ: ಮಲ್ಲಪ್ಪ ಈರಣ್ಣ ತಾರಾಪೂರ"
-                      value={form.shareholder_name}
-                      onChange={(e) => setForm({ ...form, shareholder_name: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-slate-100 font-medium placeholder-slate-600 outline-none"
-                    />
+                <div className="flex flex-col md:flex-row gap-5 items-start">
+                  {/* Shareholder Photo */}
+                  <div className="flex flex-col items-center gap-2.5 shrink-0 self-center md:self-start">
+                    <div className="relative group w-24 h-28 rounded-2xl overflow-hidden border-2 border-dashed border-slate-700 bg-slate-900 flex items-center justify-center text-slate-500 shadow-inner">
+                      {form.shareholder_photo ? (
+                        <img src={form.shareholder_photo} alt="Shareholder" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="text-center p-2">
+                          <User className="w-8 h-8 mx-auto text-slate-600 mb-1" />
+                          <span className="text-[10px] text-slate-500 font-medium">ದಿ. ಶೇರುದಾರರ ಭಾವಚಿತ್ರ</span>
+                        </div>
+                      )}
+                      {uploadingShPhoto && (
+                        <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center text-[10px] text-emerald-400 font-bold">
+                          Compressing...
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="file"
+                        ref={shFileInputRef}
+                        onChange={handleShPhotoUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => shFileInputRef.current?.click()}
+                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Camera className="w-3 h-3 text-emerald-400" /> Upload
+                      </button>
+                      {form.shareholder_photo && (
+                        <button
+                          type="button"
+                          onClick={() => setForm(prev => ({ ...prev, shareholder_photo: '' }))}
+                          className="p-1 bg-rose-950/60 hover:bg-rose-900 text-rose-300 rounded-lg text-[10px] cursor-pointer"
+                          title="Remove photo"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-slate-300 font-semibold mb-1">
-                      2.4 Relationship (ಮೂಲ ಶೇರುದಾರರಿಗೆ ಸಂಬಂಧ) <span className="text-rose-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="ಉದಾ: ತಂದೆ, ಪತಿ, ಅಜ್ಜ, ತಾಯಿ"
-                      value={form.shareholder_relationship}
-                      onChange={(e) => setForm({ ...form, shareholder_relationship: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-slate-100 outline-none"
-                    />
-                  </div>
+                  {/* Shareholder Inputs */}
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
+                    <div className="sm:col-span-2">
+                      <label className="block text-slate-300 font-semibold mb-1">
+                        2. Share Holder (ಮೂಲ ಶೇರುದಾರರ ಹೆಸರು) <span className="text-rose-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="ಉದಾ: ಮಲ್ಲಪ್ಪ ಈರಣ್ಣ ತಾರಾಪೂರ"
+                        value={form.shareholder_name}
+                        onChange={(e) => setForm({ ...form, shareholder_name: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-slate-100 font-medium placeholder-slate-600 outline-none"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-slate-300 font-semibold mb-1">
-                      B. D.o.D (ಮೂಲ ಶೇರುದಾರರ ನಿಧನ ದಿನಾಂಕ / Date of Death) <span className="text-rose-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="DD/MM/YYYY (ಉದಾ: 05/11/2021)"
-                      value={form.dod}
-                      onChange={(e) => setForm({ ...form, dod: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-slate-100 font-mono outline-none"
-                    />
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">
+                        2.4 Relationship (ಮೂಲ ಶೇರುದಾರರಿಗೆ ಸಂಬಂಧ) <span className="text-rose-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="ಉದಾ: ತಂದೆ, ಪತಿ, ಅಜ್ಜ, ತಾಯಿ"
+                        value={form.shareholder_relationship}
+                        onChange={(e) => setForm({ ...form, shareholder_relationship: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-slate-100 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">
+                        B. D.o.D (ಮೂಲ ಶೇರುದಾರರ ನಿಧನ ದಿನಾಂಕ / Date of Death) <span className="text-rose-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="DD/MM/YYYY (ಉದಾ: 05/11/2021)"
+                        value={form.dod}
+                        onChange={(e) => setForm({ ...form, dod: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-slate-100 font-mono outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">
+                        ಆಧಾರ್ ಕಾರ್ಡ್ ಸಂಖ್ಯೆ (Aadhaar Card No)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="ಉದಾ: 2288 3046 0600"
+                        value={form.shareholder_aadhaar}
+                        onChange={(e) => setForm({ ...form, shareholder_aadhaar: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-slate-100 font-mono outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
 
