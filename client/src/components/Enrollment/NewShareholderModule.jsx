@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import NewShareholderModal from './NewShareholderModal';
+import OfficeNotePrintModal from './OfficeNotePrintModal';
 import * as XLSX from 'xlsx';
 import {
   Coins, Search, Plus, Download, Upload, Printer, RefreshCw,
@@ -42,6 +43,7 @@ export default function NewShareholderModule() {
   const [modalMode, setModalMode] = useState('register'); // 'register' | 'approve' | 'all'
   const [editingRecord, setEditingRecord] = useState(null);
   const [printingRecord, setPrintingRecord] = useState(null);
+  const [officeNoteRecord, setOfficeNoteRecord] = useState(null);
 
   useEffect(() => {
     loadEnrollments();
@@ -568,11 +570,11 @@ export default function NewShareholderModule() {
                           </span>
                         )}
 
-                        {/* Print Receipt */}
+                        {/* Print Office Note (ಕಛೇರಿ ಟಿಪ್ಪಣಿ) */}
                         <button
-                          onClick={() => setPrintingRecord(item)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
-                          title="ಅಧಿಕೃತ ಪ್ರವೇಶ ರಶೀದಿ ಪ್ರಿಂಟ್"
+                          onClick={() => setOfficeNoteRecord(item)}
+                          className="p-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/60 text-emerald-300 transition-colors cursor-pointer shadow-sm"
+                          title="ಕಛೇರಿ ಟಿಪ್ಪಣಿ ಮುದ್ರಿಸಿ (Print Office Note Sheet)"
                         >
                           <Printer className="w-3.5 h-3.5" />
                         </button>
@@ -646,165 +648,12 @@ export default function NewShareholderModule() {
         mode={modalMode}
       />
 
-      {/* Official Printable Admission Receipt Slip */}
-      {printingRecord && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white text-slate-900 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 print:p-0 print:shadow-none print:w-full">
-            
-            {/* Top Modal Close Button (hidden on print) */}
-            <div className="flex items-center justify-between border-b pb-3 no-print">
-              <span className="font-bold text-sm text-slate-700">ಅಧಿಕೃತ ಪ್ರವೇಶ ರಶೀದಿ ಮುದ್ರಣ (Official Printable Receipt)</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => window.print()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-500"
-                >
-                  <Printer className="w-3.5 h-3.5" /> ಮುದ್ರಿಸಿ (Print)
-                </button>
-                <button
-                  onClick={() => setPrintingRecord(null)}
-                  className="p-1 rounded-lg text-slate-500 hover:bg-slate-100"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Printable Content */}
-            <div className="border-2 border-slate-800 p-6 rounded-xl space-y-4 bg-amber-50/20 text-xs">
-              {/* Header */}
-              <div className="text-center border-b-2 border-slate-800 pb-3 space-y-1">
-                <h2 className="text-base font-extrabold text-slate-900 tracking-wide">
-                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204
-                </h2>
-                <p className="text-[11px] text-slate-700 font-medium">
-                  ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ. | Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204, Tq|| Chadachan, Dist|| Vijayapur
-                </p>
-                <div className="inline-block mt-1 px-3 py-0.5 rounded-full bg-slate-900 text-white font-bold text-[11px]">
-                  ಹೊಸ ಶೇರುದಾರರ ಪ್ರವೇಶ ರಶೀದಿ ಮತ್ತು ಠರಾವು ನಮೂನೆ (New Shareholder Admission Receipt)
-                </div>
-              </div>
-
-              {/* Receipt Info Row */}
-              <div className="flex justify-between items-center text-xs border-b border-dashed border-slate-400 pb-2">
-                <div>
-                  <span className="text-slate-600">ನೋಂದಣಿ ಸಂಖ್ಯೆ (Enrollment ID): </span>
-                  <span className="font-mono font-bold text-slate-900">{printingRecord.enrollment_id}</span>
-                </div>
-                <div>
-                  <span className="text-slate-600">ರಶೀದಿ ನಂ (Receipt No): </span>
-                  <span className="font-mono font-bold text-slate-900">{printingRecord.receipt_no || '—'}</span>
-                </div>
-                <div>
-                  <span className="text-slate-600">ದಿನಾಂಕ (Date): </span>
-                  <span className="font-bold text-slate-900">{printingRecord.date}</span>
-                </div>
-              </div>
-
-              {/* Member Details */}
-              <div className="grid grid-cols-3 gap-3 bg-white p-3 rounded-lg border border-slate-300">
-                <div className="col-span-2 space-y-1.5">
-                  <div>
-                    <span className="text-slate-500">ಶೇರುದಾರರ ಹೆಸರು: </span>
-                    <span className="font-bold text-sm text-slate-900">{printingRecord.full_name}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">ಸ್ಥಳ / ಗ್ರಾಮ: </span>
-                    <span className="font-semibold text-slate-900">{printingRecord.place}</span>
-                  </div>
-                  <div className="flex gap-4">
-                    <div>
-                      <span className="text-slate-500">ತಾಲೂಕು: </span>
-                      <span className="font-semibold text-slate-900">{printingRecord.taluk}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">ಜಿಲ್ಲೆ: </span>
-                      <span className="font-semibold text-slate-900">{printingRecord.dist}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Photo box */}
-                <div className="flex justify-end">
-                  <div className="w-24 h-28 border border-slate-400 rounded bg-slate-50 flex items-center justify-center overflow-hidden text-[10px] text-slate-400">
-                    {printingRecord.photo ? (
-                      <img src={printingRecord.photo} alt="Photo" className="w-full h-full object-cover" />
-                    ) : (
-                      <span>ಭಾವಚಿತ್ರ</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Shares & Statutory Fees Table */}
-              <table className="w-full border border-slate-400 text-xs text-left">
-                <thead className="bg-slate-100 border-b border-slate-400 font-bold">
-                  <tr>
-                    <th className="p-2 border-r border-slate-400">ವಿವರ (Particulars)</th>
-                    <th className="p-2 border-r border-slate-400 text-center">ಶೇರುಗಳ ಸಂಖ್ಯೆ</th>
-                    <th className="p-2 border-r border-slate-400 text-center">ವರ್ಗ</th>
-                    <th className="p-2 text-right">ಮೊತ್ತ (₹)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-300">
-                  <tr>
-                    <td className="p-2 border-r border-slate-400 font-medium">ಶೇರು ಬಂಡವಾಳ ಠೇವಣಿ (Share Capital Amount)</td>
-                    <td className="p-2 border-r border-slate-400 text-center font-bold">{printingRecord.no_shares}</td>
-                    <td className="p-2 border-r border-slate-400 text-center">{printingRecord.category}</td>
-                    <td className="p-2 text-right font-mono font-bold">₹ {Number(printingRecord.share_amount).toLocaleString()}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-400 font-medium">ಶೇರು ಪ್ರವೇಶ ಶುಲ್ಕ (Admission Fee)</td>
-                    <td className="p-2 border-r border-slate-400 text-center font-bold">{printingRecord.no_shares}</td>
-                    <td className="p-2 border-r border-slate-400 text-center">—</td>
-                    <td className="p-2 text-right font-mono font-bold">₹ {Number(printingRecord.admission_fee).toLocaleString()}</td>
-                  </tr>
-                  <tr className="bg-slate-100 font-bold text-sm">
-                    <td colSpan="3" className="p-2 border-r border-slate-400 text-right">ಒಟ್ಟು ಪಾವತಿಸಿದ ಮೊತ್ತ (Total Amount Received):</td>
-                    <td className="p-2 text-right text-emerald-800 font-mono">₹ {Number(printingRecord.total_amount).toLocaleString()}</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {/* Board Resolution & Share Number */}
-              <div className="bg-white p-3 rounded-lg border border-slate-300 grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  <span className="text-slate-500">ಠರಾವು ಸಂಖ್ಯೆ: </span>
-                  <span className="font-mono font-bold text-slate-900">{printingRecord.tharava_no || '05(8)'}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500">ಠರಾವು ದಿನಾಂಕ: </span>
-                  <span className="font-mono font-bold text-slate-900">{printingRecord.tharava_date || '—'}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500">ಹಂಚಿಕೆಯಾದ ಶೇರು ನಂ: </span>
-                  <span className="font-mono font-bold text-emerald-700">{printingRecord.share_no ? `#${printingRecord.share_no}` : 'ಬಾಕಿ (Pending)'}</span>
-                </div>
-              </div>
-
-              {/* Signatures */}
-              <div className="pt-8 flex justify-between items-end text-center text-xs">
-                <div className="space-y-1">
-                  <div className="w-36 border-t border-slate-800 pt-1 font-semibold text-slate-700">
-                    ಶೇರುದಾರರ ಸಹಿ / ಹೆಬ್ಬೆಟ್ಟು
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="w-36 border-t border-slate-800 pt-1 font-semibold text-slate-700">
-                    ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿಗಳು
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="w-36 border-t border-slate-800 pt-1 font-semibold text-slate-700">
-                    ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು (MD)
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Official Printable Office Note & Receipt Modal */}
+      <OfficeNotePrintModal
+        isOpen={Boolean(officeNoteRecord)}
+        onClose={() => setOfficeNoteRecord(null)}
+        enrollment={officeNoteRecord}
+      />
     </div>
   );
 }

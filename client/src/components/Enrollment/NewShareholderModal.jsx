@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import OfficeNotePrintModal from './OfficeNotePrintModal';
 import {
   X, Save, User, MapPin, Coins, Receipt, FileText, CheckCircle2,
   Calendar, Phone, CreditCard, Camera, Upload, Trash2, Building,
@@ -11,6 +12,7 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
   const { user, showToast } = useAuth();
   const [activeTab, setActiveTab] = useState(mode === 'approve' ? 'tharavu' : 'member');
   const [loading, setLoading] = useState(false);
+  const [officeNoteRecord, setOfficeNoteRecord] = useState(null);
   const [villageSuggestions, setVillageSuggestions] = useState([]);
   const [showPlaceDropdown, setShowPlaceDropdown] = useState(false);
   const placeDropdownRef = useRef(null);
@@ -316,7 +318,12 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
             : 'ಅರ್ಜಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ನೋಂದಾಯಿಸಲಾಗಿದೆ! (ಮಂಡಳಿ ಅನುಮೋದನೆಗೆ ಬಾಕಿ ಇದೆ)'
         );
         onSuccess();
-        onClose();
+        const recordForNote = res.data || {
+          ...submissionData,
+          id: res.enrollment_id || Date.now(),
+          enrollment_id: res.enrollment_id
+        };
+        setOfficeNoteRecord(recordForNote);
       } else {
         showToast(res?.message || 'ಕಾರ್ಯಾಚರಣೆ ವಿಫಲವಾಗಿದೆ', 'error');
       }
@@ -326,6 +333,20 @@ export default function NewShareholderModal({ isOpen, onClose, onSuccess, editRe
       setLoading(false);
     }
   };
+
+  if (officeNoteRecord) {
+    return (
+      <OfficeNotePrintModal
+        isOpen={Boolean(officeNoteRecord)}
+        onClose={() => {
+          setOfficeNoteRecord(null);
+          onClose();
+        }}
+        enrollment={officeNoteRecord}
+        isNewSubmission={true}
+      />
+    );
+  }
 
   if (!isOpen) return null;
 
