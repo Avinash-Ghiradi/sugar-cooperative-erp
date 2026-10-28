@@ -672,7 +672,7 @@ export default function VargavaneTransferModule() {
                           type="button"
                           onClick={() => setPrintSlipTransfer(v)}
                           className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                          title="ಅಧಿಕೃತ 5 ಪುಟಗಳ ಶೇರು ವರ್ಗಾವಣೆ ಮುದ್ರಣ (Print 5-Page Vargavane Transfer Application Dossier)"
+                          title="ಶೇರು ವರ್ಗಾವಣೆ ದಾಖಲಾತಿ ಕಡತ ಮುದ್ರಣ (Vargavane 5-Page Complete Bundle Print)"
                         >
                           <Printer className="w-3.5 h-3.5 text-teal-400" />
                         </button>
