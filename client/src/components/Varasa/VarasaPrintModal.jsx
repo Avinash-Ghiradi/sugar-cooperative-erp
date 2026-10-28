@@ -842,210 +842,240 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   );
 
   // =========================================================================
-  // PAGE 8: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ (ಪುಟ 1 - Dynamic Rows 1 to page8Count)
+  // PAGE 8: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ (ಪುಟ 1 - Dynamic Rows 1 to page8Count with increased row height for passport photos)
   // =========================================================================
-  const renderPage8 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
-      <div>
-        {renderHeaderBox()}
+  const renderPage8 = () => {
+    // Dynamic row height and photo box sizing to comfortably stick passport photos
+    const rowHeightClass = page8Count <= 1
+      ? 'h-[48mm]'
+      : page8Count === 2
+        ? 'h-[42mm]'
+        : page8Count === 3
+          ? 'h-[36mm]'
+          : 'h-[31mm]';
 
-        {/* Top Header Row */}
-        <div className="flex justify-between items-center text-xs font-bold text-black mb-1">
-          <div>ಸಲ್ಲಿಸಲಾಗಿದೆ:-</div>
-          <div className="border-[2px] border-amber-600 rounded-lg px-6 py-1 bg-amber-500/15 text-center text-sm font-bold">
-            -:: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ ::-
+    const photoBoxClass = page8Count <= 2
+      ? 'w-[30mm] h-[38mm]'
+      : page8Count === 3
+        ? 'w-[28mm] h-[34mm]'
+        : 'w-[26mm] h-[29mm]';
+
+    return (
+      <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+        <div>
+          {renderHeaderBox()}
+
+          {/* Top Header Row */}
+          <div className="flex justify-between items-center text-xs font-bold text-black mb-1">
+            <div>ಸಲ್ಲಿಸಲಾಗಿದೆ:-</div>
+            <div className="border-[2px] border-amber-600 rounded-lg px-6 py-1 bg-amber-500/15 text-center text-sm font-bold">
+              -:: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ ::-
+            </div>
+            <div>{applicationDate}</div>
           </div>
-          <div>{applicationDate}</div>
-        </div>
 
-        <div className="my-2 text-xs font-bold text-black">
-          ವಿಷಯ:-“ವಾರಸುದಾರರ ಒಪ್ಪಿಗೆ ಬಗ್ಗೆ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ಮಾಡಿದ ವರದಿ ಕುರಿತು”
-        </div>
+          <div className="my-1.5 text-xs font-bold text-black">
+            ವಿಷಯ:-“ವಾರಸುದಾರರ ಒಪ್ಪಿಗೆ ಬಗ್ಗೆ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ಮಾಡಿದ ವರದಿ ಕುರಿತು”
+          </div>
 
-        <div className="text-xs font-bold text-black mb-1">
-          ಮಾನ್ಯರೇ,
-        </div>
+          <div className="text-xs font-bold text-black mb-1">
+            ಮಾನ್ಯರೇ,
+          </div>
 
-        {/* Body Paragraph */}
-        <div className="text-[12px] leading-[1.8] text-justify text-black mb-3">
-          <p className="indent-6">
-            ಮೇಲ್ಕಾಣಿಸಿದ ವಿಷಯದನ್ವಯ, <strong>ದಿವಂಗತ. {shareholderName} ಸಾ: {shareholderPlace} ತಾಲೂಕ: {shareholderTaluk} ಜಿಲ್ಲಾ: {shareholderDistrict}</strong> ಇವರು ಕಾರ್ಖಾನೆಯಲ್ಲಿ ‘<strong>{cleanCategory}</strong>’ ಗಣದ ಶೇರು ಹೊಂದಿದ್ದು, ಖಾತೆ ನಂ: <strong>{shareNo}</strong> ಇರುತ್ತದೆ. ಸದರಿಯವರು ದಿನಾಂಕ: <strong>{dod}</strong> ರಂದು ಮೃತರಾದ ಪ್ರಯುಕ್ತ, ಮೃತ ಸದಸ್ಯರ ವಾರಸುದಾರರು ಸದಸ್ಯತ್ವ ವಾರಸಾ ಮಾಡಿಕೊಳ್ಳಲು ವಿನಂತಿಸಿಕೊಂಡಿದ್ದರನ್ವಯ, ಕಾರ್ಖಾನೆಯ ಆದೇಶ ದಿನಾಂಕ: _____ / _____ /2022 ರ ಪ್ರಕಾರ ಮೃತ ಸದಸ್ಯರ ವಾರಸುದಾರರ ಸಂಪೂರ್ಣ ಒಪ್ಪಿಗೆ ಇರುವ ಬಗ್ಗೆ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ಮಾಡಿ ವರದಿ ಸಲ್ಲಿಸಲು ನಿರ್ದೇಶನ ನೀಡಲಾಗಿರುತ್ತದೆ. ಅದರನ್ವಯ, ಸದರಿಯವರ ಸ್ವಗ್ರಾಮಕ್ಕೆ ದಿನಾಂಕ: _____ / _____ /2022 ರಂದು ನಾನೇ ಸ್ವತಃ ಖುದ್ದಾಗಿ ಹೋಗಿ ಈ ಕೆಳಕಾಣಿಸಿದ ಪಂಚರ ಸಮಕ್ಷಮದಲ್ಲಿ ಹಾಗು ಗ್ರಾಮದ ಪ್ರಮುಖರ ಜೊತೆಗೆ ಕೂಲಂಕೂಷವಾಗಿ ವಿಚಾರಣೆ ಮಾಡಲಾಗಿ ಮೃತ ಸದಸ್ಯರಿಗೆ ಉತ್ತರ ಜೀವಿತ ಪ್ರಮಾಣ ಪತ್ರದಲ್ಲಿ ನಮೂದಿಸಿದ ಸದಸ್ಯರು ಮಾತ್ರ ನೇರ ವಾರಸುದಾರರಾಗಿರುತ್ತಾರೆ, ಇವರನ್ನು ಹೊರತು ಪಡಿಸಿ ಬೇರೆ ಯಾರೂ ನೇರ ವಾರಸುದಾರರು ಇರುವುದಿಲ್ಲ. ಆದುದರಿಂದ, ಮೃತ ಸದಸ್ಯರ <strong>{relationship}</strong> ನಾದ <strong>{heirName} ಸಾ: {heirPlace} ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲಾ: {heirDistrict}</strong> ಇವರ ಹೆಸರಿಗೆ ಮರಣೋತ್ತರ ನಿಧಿ ಮಂಜೂರಿಗಾಗಿ ಹಾಗು ಸದಸ್ಯತ್ವ ವಾರಸಾ ಮಾಡುವುದಕ್ಕೆ ಕುಟುಂಬದ ಎಲ್ಲ ಸದಸ್ಯರು ಸ್ವ-ಇಚ್ಛೆಯಿಂದ ಸಹಿ ಮತ್ತು ಎಡಗೈ ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು(ಥಂಬ) ನೀಡಿ ಒಪ್ಪಿಗೆ ಸೂಚಿಸಿರುತ್ತಾರೆ. ಒಂದು ವೇಳೆ ಇದರಲ್ಲಿ ಯಾವುದೇ ತರಹದ ಲೋಪದೋಷವಾಗಿದ್ದಲ್ಲಿ ಅದಕ್ಕೆ ನಾನೇ ಸಂಪೂರ್ಣ ಜವಾಬ್ದಾರಿಯಾಗಿರುತ್ತೇನೆ ಅಂತಾ ಈ ಮೂಲಕ ಪ್ರಮಾಣೀಕರಿಸುತ್ತೇನೆ.
-          </p>
-        </div>
+          {/* Body Paragraph */}
+          <div className="text-[11.5px] leading-[1.65] text-justify text-black mb-2.5">
+            <p className="indent-6">
+              ಮೇಲ್ಕಾಣಿಸಿದ ವಿಷಯದನ್ವಯ, <strong>ದಿವಂಗತ. {shareholderName} ಸಾ: {shareholderPlace} ತಾಲೂಕ: {shareholderTaluk} ಜಿಲ್ಲಾ: {shareholderDistrict}</strong> ಇವರು ಕಾರ್ಖಾನೆಯಲ್ಲಿ ‘<strong>{cleanCategory}</strong>’ ಗಣದ ಶೇರು ಹೊಂದಿದ್ದು, ಖಾತೆ ನಂ: <strong>{shareNo}</strong> ಇರುತ್ತದೆ. ಸದರಿಯವರು ದಿನಾಂಕ: <strong>{dod}</strong> ರಂದು ಮೃತರಾದ ಪ್ರಯುಕ್ತ, ಮೃತ ಸದಸ್ಯರ ವಾರಸುದಾರರು ಸದಸ್ಯತ್ವ ವಾರಸಾ ಮಾಡಿಕೊಳ್ಳಲು ವಿನಂತಿಸಿಕೊಂಡಿದ್ದರನ್ವಯ, ಕಾರ್ಖಾನೆಯ ಆದೇಶ ದಿನಾಂಕ: _____ / _____ /2022 ರ ಪ್ರಕಾರ ಮೃತ ಸದಸ್ಯರ ವಾರಸುದಾರರ ಸಂಪೂರ್ಣ ಒಪ್ಪಿಗೆ ಇರುವ ಬಗ್ಗೆ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ಮಾಡಿ ವರದಿ ಸಲ್ಲಿಸಲು ನಿರ್ದೇಶನ ನೀಡಲಾಗಿರುತ್ತದೆ. ಅದರನ್ವಯ, ಸದರಿಯವರ ಸ್ವಗ್ರಾಮಕ್ಕೆ ದಿನಾಂಕ: _____ / _____ /2022 ರಂದು ನಾನೇ ಸ್ವತಃ ಖುದ್ದಾಗಿ ಹೋಗಿ ಈ ಕೆಳಕಾಣಿಸಿದ ಪಂಚರ ಸಮಕ್ಷಮದಲ್ಲಿ ಹಾಗು ಗ್ರಾಮದ ಪ್ರಮುಖರ ಜೊತೆಗೆ ಕೂಲಂಕೂಷವಾಗಿ ವಿಚಾರಣೆ ಮಾಡಲಾಗಿ ಮೃತ ಸದಸ್ಯರಿಗೆ ಉತ್ತರ ಜೀವಿತ ಪ್ರಮಾಣ ಪತ್ರದಲ್ಲಿ ನಮೂದಿಸಿದ ಸದಸ್ಯರು ಮಾತ್ರ ನೇರ ವಾರಸುದಾರರಾಗಿರುತ್ತಾರೆ, ಇವರನ್ನು ಹೊರತು ಪಡಿಸಿ ಬೇರೆ ಯಾರೂ ನೇರ ವಾರಸುದಾರರು ಇರುವುದಿಲ್ಲ. ಆದುದರಿಂದ, ಮೃತ ಸದಸ್ಯರ <strong>{relationship}</strong> ನಾದ <strong>{heirName} ಸಾ: {heirPlace} ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲಾ: {heirDistrict}</strong> ಇವರ ಹೆಸರಿಗೆ ಮರಣೋತ್ತರ ನಿಧಿ ಮಂಜೂರಿಗಾಗಿ ಹಾಗು ಸದಸ್ಯತ್ವ ವಾರಸಾ ಮಾಡುವುದಕ್ಕೆ ಕುಟುಂಬದ ಎಲ್ಲ ಸದಸ್ಯರು ಸ್ವ-ಇಚ್ಛೆಯಿಂದ ಸಹಿ ಮತ್ತು ಎಡಗೈ ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು(ಥಂಬ) ನೀಡಿ ಒಪ್ಪಿಗೆ ಸೂಚಿಸಿರುತ್ತಾರೆ. ಒಂದು ವೇಳೆ ಇದರಲ್ಲಿ ಯಾವುದೇ ತರಹದ ಲೋಪದೋಷವಾಗಿದ್ದಲ್ಲಿ ಅದಕ್ಕೆ ನಾನೇ ಸಂಪೂರ್ಣ ಜವಾಬ್ದಾರಿಯಾಗಿರುತ್ತೇನೆ ಅಂತಾ ಈ ಮೂಲಕ ಪ್ರಮಾಣೀಕರಿಸುತ್ತೇನೆ.
+            </p>
+          </div>
 
-        {/* Dynamic Table of Legal Heirs / Family Consent (Rows 1 to page8Count) */}
-        <table className="w-full border-[1.5px] border-black text-xs text-left">
-          <thead>
-            <tr className="border-b border-black font-bold bg-slate-100 text-center">
-              <th className="w-8 p-1 border-r border-black">ಅ. ಸಂ.</th>
-              <th className="p-1 border-r border-black">ವಾರಸುದಾರರ ಹೆಸರು</th>
-              <th className="w-24 p-1 border-r border-black">ಮೃತರಿಗೆ ಸಂಬಂಧ</th>
-              <th className="w-20 p-1 border-r border-black">ಭಾವ ಚಿತ್ರ</th>
-              <th className="w-24 p-1 border-r border-black">ಸಹಿ</th>
-              <th className="w-24 p-1">ಎಡಗೈ ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು(ಥಂಬ)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {page8Indices.map(idx => (
-              <tr key={idx} className="border-b border-black">
-                <td className="p-1 border-r border-black text-center font-bold align-top">{idx})</td>
-                <td className="p-1 border-r border-black space-y-0.5 text-[11px]">
-                  {idx === 1 ? (
-                    <>
-                      <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: <strong className="font-bold underline">{heirName}</strong></div>
-                      <div>ವಯಸ್ಸು :- <strong>{v.heir_age || '_____'}</strong></div>
-                      <div>ಸಾ:- <strong>{heirPlace}</strong></div>
-                      <div>ಆಧಾರ್ ನಂ:- <strong className="font-mono">{heirAadhaar || '___________________'}</strong></div>
-                      <div>ಮೊಬೈಲ್ ನಂ:- <strong className="font-mono">{heirMobile || '_________________'}</strong></div>
-                    </>
-                  ) : (
-                    <>
-                      <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: ___________________</div>
-                      <div>ವಯಸ್ಸು :- _________</div>
-                      <div>ಸಾ:- _________________________</div>
-                      <div>ಆಧಾರ್ ನಂ:- ___________________</div>
-                      <div>ಮೊಬೈಲ್ ನಂ:- _________________</div>
-                    </>
-                  )}
-                </td>
-                <td className="p-1 border-r border-black text-center align-middle font-bold">
-                  {idx === 1 ? relationship : ''}
-                </td>
-                <td className="p-1 border-r border-black text-center align-middle">
-                  {idx === 1 && photo ? (
-                    <img src={photo} alt="Photo" className="w-14 h-16 object-cover mx-auto rounded border border-black" />
-                  ) : (
-                    <div className="w-14 h-16 border border-dashed border-black mx-auto rounded flex items-center justify-center text-[9px] text-slate-400">
-                      ಭಾವಚಿತ್ರ
-                    </div>
-                  )}
-                </td>
-                <td className="p-1 border-r border-black"></td>
-                <td className="p-1 text-center align-middle">
-                  <div className="w-14 h-16 border border-dashed border-black mx-auto rounded flex items-center justify-center text-[9px] text-slate-400">
-                    ಥಂಬ್
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="text-right text-xs font-bold text-black pt-2">8</div>
-    </div>
-  );
-
-  // =========================================================================
-  // PAGE 9: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ (ಪುಟ 2 - Continuation & Witnesses)
-  // =========================================================================
-  const renderPage9 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
-      <div>
-        {renderHeaderBox()}
-
-        {/* Continuation Table Rows (If personsCount > 4, render rows 5 to personsCount) */}
-        {page9Indices.length > 0 ? (
-          <table className="w-full border-[1.5px] border-black text-xs text-left mb-3">
+          {/* Dynamic Table of Legal Heirs / Family Consent (Rows 1 to page8Count) */}
+          <table className="w-full border-[1.5px] border-black text-xs text-left">
             <thead>
               <tr className="border-b border-black font-bold bg-slate-100 text-center">
-                <th className="w-8 p-1 border-r border-black">ಅ. ಸಂ.</th>
-                <th className="p-1 border-r border-black">ವಾರಸುದಾರರ ಹೆಸರು</th>
-                <th className="w-24 p-1 border-r border-black">ಮೃತರಿಗೆ ಸಂಬಂಧ</th>
-                <th className="w-20 p-1 border-r border-black">ಭಾವ ಚಿತ್ರ</th>
-                <th className="w-24 p-1 border-r border-black">ಸಹಿ</th>
-                <th className="w-24 p-1">ಎಡಗೈ ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು(ಥಂಬ)</th>
+                <th className="w-8 p-1.5 border-r border-black">ಅ. ಸಂ.</th>
+                <th className="p-1.5 border-r border-black">ವಾರಸುದಾರರ ಹೆಸರು</th>
+                <th className="w-24 p-1.5 border-r border-black">ಮೃತರಿಗೆ ಸಂಬಂಧ</th>
+                <th className="w-28 p-1.5 border-r border-black">ಭಾವ ಚಿತ್ರ</th>
+                <th className="w-24 p-1.5 border-r border-black">ಸಹಿ</th>
+                <th className="w-28 p-1.5">ಎಡಗೈ ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು(ಥಂಬ)</th>
               </tr>
             </thead>
             <tbody>
-              {page9Indices.map(idx => (
-                <tr key={idx} className="border-b border-black">
-                  <td className="w-8 p-1 border-r border-black text-center font-bold align-top">{idx})</td>
-                  <td className="p-1 border-r border-black space-y-0.5 text-[11px]">
-                    <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: ___________________</div>
-                    <div>ವಯಸ್ಸು :- _________</div>
-                    <div>ಸಾ:- _________________________</div>
-                    <div>ಆಧಾರ್ ನಂ:- ___________________</div>
-                    <div>ಮೊಬೈಲ್ ನಂ:- _________________</div>
+              {page8Indices.map(idx => (
+                <tr key={idx} className={`border-b border-black ${rowHeightClass}`}>
+                  <td className="p-1 border-r border-black text-center font-bold align-top pt-2.5">{idx})</td>
+                  <td className="p-2 border-r border-black space-y-1 text-[11px] align-middle">
+                    {idx === 1 ? (
+                      <>
+                        <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: <strong className="font-bold underline text-[12px]">{heirName}</strong></div>
+                        <div>ವಯಸ್ಸು :- <strong>{v.heir_age || '_____'}</strong></div>
+                        <div>ಸಾ:- <strong>{heirPlace}</strong></div>
+                        <div>ಆಧಾರ್ ನಂ:- <strong className="font-mono">{heirAadhaar || '___________________'}</strong></div>
+                        <div>ಮೊಬೈಲ್ ನಂ:- <strong className="font-mono">{heirMobile || '_________________'}</strong></div>
+                      </>
+                    ) : (
+                      <>
+                        <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: ___________________</div>
+                        <div>ವಯಸ್ಸು :- _________</div>
+                        <div>ಸಾ:- _________________________</div>
+                        <div>ಆಧಾರ್ ನಂ:- ___________________</div>
+                        <div>ಮೊಬೈಲ್ ನಂ:- _________________</div>
+                      </>
+                    )}
                   </td>
-                  <td className="w-24 p-1 border-r border-black"></td>
-                  <td className="w-20 p-1 border-r border-black text-center align-middle">
-                    <div className="w-14 h-16 border border-dashed border-black mx-auto rounded flex items-center justify-center text-[9px] text-slate-400">
-                      ಭಾವಚಿತ್ರ
-                    </div>
+                  <td className="p-1.5 border-r border-black text-center align-middle font-bold text-xs">
+                    {idx === 1 ? relationship : ''}
                   </td>
-                  <td className="w-24 p-1 border-r border-black"></td>
-                  <td className="w-24 p-1 text-center align-middle">
-                    <div className="w-14 h-16 border border-dashed border-black mx-auto rounded flex items-center justify-center text-[9px] text-slate-400">
-                      ಥಂಬ್
+                  <td className="p-1 border-r border-black text-center align-middle">
+                    {idx === 1 && photo ? (
+                      <img src={photo} alt="Photo" className={`${photoBoxClass} object-cover mx-auto rounded border border-black shadow-sm`} />
+                    ) : (
+                      <div className={`${photoBoxClass} border-[1.5px] border-dashed border-slate-600 mx-auto rounded flex flex-col items-center justify-center text-slate-500 bg-slate-50/60 p-1`}>
+                        <span className="text-[10px] font-bold">ಭಾವಚಿತ್ರ</span>
+                        <span className="text-[7.5px] text-slate-400 mt-0.5 whitespace-nowrap">Passport Photo</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-1.5 border-r border-black text-center align-bottom pb-2">
+                    <div className="text-[10px] text-slate-400">ಸಹಿ (Sign)</div>
+                  </td>
+                  <td className="p-1 text-center align-middle">
+                    <div className={`${photoBoxClass} border border-dashed border-slate-400 mx-auto rounded flex flex-col items-center justify-center text-slate-400 p-1`}>
+                      <span className="text-[10px] font-bold">ಥಂಬ್</span>
+                      <span className="text-[7.5px] text-slate-400 mt-0.5 whitespace-nowrap">(Left Thumb)</span>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        ) : (
-          <div className="border border-black p-2 text-center text-xs font-bold bg-slate-50 mb-3">
-            ಕುಟುಂಬದ ವಾರಸುದಾರರ ಪೂರ್ಣ ವಿವರಗಳನ್ನು ಪುಟ 8 ರಲ್ಲಿ ನಮೂದಿಸಲಾಗಿದೆ (ಒಟ್ಟು ವಾರಸುದಾರರು: {personsCount}).
-          </div>
-        )}
-
-        {/* Witnesses Table */}
-        <table className="w-full border-[1.5px] border-black text-xs text-left mb-3">
-          <thead>
-            <tr className="border-b border-black font-bold bg-slate-100">
-              <th className="w-12 p-1 border-r border-black text-center">ಅ.ಸಂ.</th>
-              <th className="p-1 border-r border-black">ಸಾಕ್ಷಿದಾರರ ಹೆಸರು (ಶೇರು ಸದಸ್ಯರು ಮಾತ್ರ)</th>
-              <th className="w-32 p-1 border-r border-black text-center">ಸಹಿ</th>
-              <th className="w-48 p-1">ಶೇರು ಖಾತೆ ನಂ. & ಮೊಬೈಲ್ ನಂ</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-b border-black">
-              <td className="p-1.5 border-r border-black text-center font-bold">1)</td>
-              <td className="p-1.5 border-r border-black"></td>
-              <td className="p-1.5 border-r border-black"></td>
-              <td className="p-1.5 space-y-1 text-[11px]">
-                <div>Share ID No:-</div>
-                <div>Mobile No:-</div>
-              </td>
-            </tr>
-            <tr>
-              <td className="p-1.5 border-r border-black text-center font-bold">2)</td>
-              <td className="p-1.5 border-r border-black"></td>
-              <td className="p-1.5 border-r border-black"></td>
-              <td className="p-1.5 space-y-1 text-[11px]">
-                <div>Share ID No:-</div>
-                <div>Mobile No:-</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        {/* Submission Endorsement */}
-        <div className="text-[12px] leading-relaxed text-justify text-black mb-2">
-          <p>
-            ಕಾರಣ, ಮೃತ ಸದಸ್ಯರ <strong>{relationship}</strong> ಯಾದ <strong>{heirName} ಸಾ: {heirPlace} ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲಾ: {heirDistrict}</strong> ಇವರ ಹೆಸರಿಗೆ ಶೇರು ಸದಸ್ಯತ್ವ ವಾರಸಾ ಮಾಡುವ ಕುರಿತು ಮುಂದಿನ ಕ್ರಮಕ್ಕಾಗಿ ಮೆ:ರವರಲ್ಲಿ ಸಲ್ಲಿಸಲಾಗಿದೆ.
-          </p>
-          <p className="text-center font-bold my-2">
-            “ನಮ್ಮ ಸಮಕ್ಷಮದಲ್ಲಿ ರುಜು ಮಾಡಿ ಒಪ್ಪಿಗೆ ಸೂಚಿಸಿರುತ್ತಾರೆ.”
-          </p>
         </div>
 
-        {/* Signatures */}
-        <div className="flex justify-between items-end px-10 pt-10 text-xs font-bold text-black">
-          <div className="text-center">
-            <div className="w-36 border-t border-black pt-1">ಕ್ಷೇತ್ರ ಸಹಾಯಕರು</div>
-          </div>
-          <div className="text-center">
-            <div className="w-36 border-t border-black pt-1">ಸಿ.ಡಿ.ಓ</div>
-          </div>
-        </div>
+        <div className="text-right text-xs font-bold text-black pt-1">8</div>
       </div>
+    );
+  };
 
-      <div className="text-right text-xs font-bold text-black pt-2">9</div>
-    </div>
-  );
+  // =========================================================================
+  // PAGE 9: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ (ಪುಟ 2 - Continuation & Witnesses)
+  // =========================================================================
+  const renderPage9 = () => {
+    const page9RowHeightClass = page9Indices.length <= 3 ? 'h-[32mm]' : 'h-[26mm]';
+    const page9PhotoBoxClass = page9Indices.length <= 3 ? 'w-[26mm] h-[30mm]' : 'w-[24mm] h-[24mm]';
+
+    return (
+      <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+        <div>
+          {renderHeaderBox()}
+
+          {/* Continuation Table Rows (If personsCount > 4, render rows 5 to personsCount) */}
+          {page9Indices.length > 0 ? (
+            <table className="w-full border-[1.5px] border-black text-xs text-left mb-3">
+              <thead>
+                <tr className="border-b border-black font-bold bg-slate-100 text-center">
+                  <th className="w-8 p-1.5 border-r border-black">ಅ. ಸಂ.</th>
+                  <th className="p-1.5 border-r border-black">ವಾರಸುದಾರರ ಹೆಸರು</th>
+                  <th className="w-24 p-1.5 border-r border-black">ಮೃತರಿಗೆ ಸಂಬಂಧ</th>
+                  <th className="w-28 p-1.5 border-r border-black">ಭಾವ ಚಿತ್ರ</th>
+                  <th className="w-24 p-1.5 border-r border-black">ಸಹಿ</th>
+                  <th className="w-28 p-1.5">ಎಡಗೈ ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು(ಥಂಬ)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {page9Indices.map(idx => (
+                  <tr key={idx} className={`border-b border-black ${page9RowHeightClass}`}>
+                    <td className="w-8 p-1 border-r border-black text-center font-bold align-top pt-2.5">{idx})</td>
+                    <td className="p-1.5 border-r border-black space-y-1 text-[11px] align-middle">
+                      <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: ___________________</div>
+                      <div>ವಯಸ್ಸು :- _________</div>
+                      <div>ಸಾ:- _________________________</div>
+                      <div>ಆಧಾರ್ ನಂ:- ___________________</div>
+                      <div>ಮೊಬೈಲ್ ನಂ:- _________________</div>
+                    </td>
+                    <td className="w-24 p-1.5 border-r border-black"></td>
+                    <td className="w-28 p-1 border-r border-black text-center align-middle">
+                      <div className={`${page9PhotoBoxClass} border-[1.5px] border-dashed border-slate-600 mx-auto rounded flex flex-col items-center justify-center text-slate-500 bg-slate-50/60 p-1`}>
+                        <span className="text-[10px] font-bold">ಭಾವಚಿತ್ರ</span>
+                        <span className="text-[7.5px] text-slate-400 whitespace-nowrap">Passport Photo</span>
+                      </div>
+                    </td>
+                    <td className="w-24 p-1.5 border-r border-black text-center align-bottom pb-2">
+                      <div className="text-[10px] text-slate-400">ಸಹಿ (Sign)</div>
+                    </td>
+                    <td className="w-28 p-1 text-center align-middle">
+                      <div className={`${page9PhotoBoxClass} border border-dashed border-slate-400 mx-auto rounded flex flex-col items-center justify-center text-slate-400 p-1`}>
+                        <span className="text-[10px] font-bold">ಥಂಬ್</span>
+                        <span className="text-[7.5px] text-slate-400 whitespace-nowrap">(Left Thumb)</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="border border-black p-2 text-center text-xs font-bold bg-slate-50 mb-3">
+              ಕುಟುಂಬದ ವಾರಸುದಾರರ ಪೂರ್ಣ ವಿವರಗಳನ್ನು ಪುಟ 8 ರಲ್ಲಿ ನಮೂದಿಸಲಾಗಿದೆ (ಒಟ್ಟು ವಾರಸುದಾರರು: {personsCount}).
+            </div>
+          )}
+
+          {/* Witnesses Table */}
+          <table className="w-full border-[1.5px] border-black text-xs text-left mb-3">
+            <thead>
+              <tr className="border-b border-black font-bold bg-slate-100">
+                <th className="w-12 p-1 border-r border-black text-center">ಅ.ಸಂ.</th>
+                <th className="p-1 border-r border-black">ಸಾಕ್ಷಿದಾರರ ಹೆಸರು (ಶೇರು ಸದಸ್ಯರು ಮಾತ್ರ)</th>
+                <th className="w-32 p-1 border-r border-black text-center">ಸಹಿ</th>
+                <th className="w-48 p-1">ಶೇರು ಖಾತೆ ನಂ. & ಮೊಬೈಲ್ ನಂ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-black">
+                <td className="p-1.5 border-r border-black text-center font-bold">1)</td>
+                <td className="p-1.5 border-r border-black"></td>
+                <td className="p-1.5 border-r border-black"></td>
+                <td className="p-1.5 space-y-1 text-[11px]">
+                  <div>Share ID No:-</div>
+                  <div>Mobile No:-</div>
+                </td>
+              </tr>
+              <tr>
+                <td className="p-1.5 border-r border-black text-center font-bold">2)</td>
+                <td className="p-1.5 border-r border-black"></td>
+                <td className="p-1.5 border-r border-black"></td>
+                <td className="p-1.5 space-y-1 text-[11px]">
+                  <div>Share ID No:-</div>
+                  <div>Mobile No:-</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Submission Endorsement */}
+          <div className="text-[12px] leading-relaxed text-justify text-black mb-2">
+            <p>
+              ಕಾರಣ, ಮೃತ ಸದಸ್ಯರ <strong>{relationship}</strong> ಯಾದ <strong>{heirName} ಸಾ: {heirPlace} ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲಾ: {heirDistrict}</strong> ಇವರ ಹೆಸರಿಗೆ ಶೇರು ಸದಸ್ಯತ್ವ ವಾರಸಾ ಮಾಡುವ ಕುರಿತು ಮುಂದಿನ ಕ್ರಮಕ್ಕಾಗಿ ಮೆ:ರವರಲ್ಲಿ ಸಲ್ಲಿಸಲಾಗಿದೆ.
+            </p>
+            <p className="text-center font-bold my-2">
+              “ನಮ್ಮ ಸಮಕ್ಷಮದಲ್ಲಿ ರುಜು ಮಾಡಿ ಒಪ್ಪಿಗೆ ಸೂಚಿಸಿರುತ್ತಾರೆ.”
+            </p>
+          </div>
+
+          {/* Signatures */}
+          <div className="flex justify-between items-end px-10 pt-10 text-xs font-bold text-black">
+            <div className="text-center">
+              <div className="w-36 border-t border-black pt-1">ಕ್ಷೇತ್ರ ಸಹಾಯಕರು</div>
+            </div>
+            <div className="text-center">
+              <div className="w-36 border-t border-black pt-1">ಸಿ.ಡಿ.ಓ</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-right text-xs font-bold text-black pt-2">9</div>
+      </div>
+    );
+  };
 
   // =========================================================================
   // PAGE 10: Legal opinion (ಕಾನೂನು ಸಲಹೆ)
