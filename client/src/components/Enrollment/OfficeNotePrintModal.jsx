@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Printer, X, Download, FileText, CheckCircle2, Receipt } from 'lucide-react';
 
 // Number to Kannada words helper
@@ -117,6 +118,15 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
   const [logoError, setLogoError] = useState(false);
   const [activeFormat, setActiveFormat] = useState('note'); // 'note' | 'receipt'
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('office-note-printing');
+    }
+    return () => {
+      document.body.classList.remove('office-note-printing');
+    };
+  }, [isOpen]);
+
   if (!isOpen || !enrollment) return null;
 
   // Resolve values
@@ -148,15 +158,9 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
 
   const handlePrint = () => {
     document.body.classList.add('office-note-printing');
-    const cleanup = () => {
-      document.body.classList.remove('office-note-printing');
-      window.removeEventListener('afterprint', cleanup);
-    };
-    window.addEventListener('afterprint', cleanup);
     setTimeout(() => {
       window.print();
-      setTimeout(cleanup, 2500);
-    }, 150);
+    }, 100);
   };
 
   const logoSrc = './id_assets/bsskn_logo.png';
@@ -166,7 +170,10 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
       {/* Print Specific CSS to guarantee exact A4 Border, Margins, and Crisp Text */}
       <style>{`
         @media screen {
-          .office-note-print-portal { display: none !important; }
+          .office-note-print-portal {
+            display: none !important;
+            visibility: hidden !important;
+          }
         }
         @media print {
           @page {
@@ -177,12 +184,18 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
             display: none !important;
             visibility: hidden !important;
           }
+          body.office-note-printing .shareholder-record-print-portal,
+          body.office-note-printing .id-card-profile-print-portal {
+            display: none !important;
+            visibility: hidden !important;
+          }
           body.office-note-printing {
             background: #ffffff !important;
             color: #000000 !important;
             margin: 0 !important;
             padding: 0 !important;
           }
+          body.office-note-printing > .office-note-print-portal,
           body.office-note-printing .office-note-print-portal {
             display: block !important;
             visibility: visible !important;
@@ -196,14 +209,17 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          .office-note-a4-sheet {
+          body.office-note-printing .office-note-print-portal .office-note-a4-sheet {
             box-shadow: none !important;
-            border: 2.5px solid #000000 !important;
+            border: 2px solid #000000 !important;
             width: 100% !important;
             max-width: 100% !important;
-            min-height: 277mm !important;
-            padding: 18px 22px 24px 22px !important;
+            min-height: 270mm !important;
+            padding: 16px 20px 24px 20px !important;
             box-sizing: border-box !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
             page-break-after: avoid !important;
             page-break-inside: avoid !important;
           }
@@ -531,8 +547,9 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
         </div>
       </div>
 
-      {/* Standalone Print Portal (Active only when window.print() is executed) */}
-      <div className="office-note-print-portal">
+      {/* Standalone Print Portal (Portaled directly to document.body outside #root) */}
+      {typeof document !== 'undefined' && createPortal(
+        <div className="office-note-print-portal">
         {activeFormat === 'note' ? (
           <div className="office-note-a4-sheet bg-white text-black border-[2.5px] border-black w-full min-h-[277mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-sizing-border">
             <div>
@@ -719,7 +736,9 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
             </div>
           </div>
         )}
-      </div>
+      </div>,
+        document.body
+      )}
     </>
   );
 }

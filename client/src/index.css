@@ -38,11 +38,16 @@
 
 @media print {
   /* Portals default hidden unless active */
-  .id-card-profile-print-portal {
+  .id-card-profile-print-portal,
+  .office-note-print-portal {
     display: none !important;
     visibility: hidden !important;
   }
   body.id-card-printing .id-card-profile-print-portal {
+    display: block !important;
+    visibility: visible !important;
+  }
+  body.office-note-printing .office-note-print-portal {
     display: block !important;
     visibility: visible !important;
   }
@@ -63,9 +68,10 @@
     color: #000000 !important;
   }
 
-    /* When printing single shareholder record or ID card, hide #root completely */
+    /* When printing single shareholder record, office note, or ID card, hide #root completely */
   body.id-card-printing > #root,
-  body.shareholder-record-printing > #root {
+  body.shareholder-record-printing > #root,
+  body.office-note-printing > #root {
     display: none !important;
     visibility: hidden !important;
   }
