@@ -1457,6 +1457,56 @@ async function fetchApi(endpoint, options = {}) {
   return null;
 }
 
+// Deduplicates Varasa list by transfer_id and (share_no + varasa_member)
+function deduplicateVarasaList(list) {
+  if (!Array.isArray(list)) return [];
+  const map = new Map();
+  for (const item of list) {
+    if (!item) continue;
+    const cleanShNo = String(item.share_no || item.existing_share_number || '').trim().replace(/^#/, '');
+    const cleanMember = (item.varasa_member || item.heir_name || '').trim().toLowerCase().normalize('NFC');
+    const tId = (item.transfer_id || '').trim();
+    const primaryKey = tId || (cleanShNo && cleanMember ? `SH_${cleanShNo}_${cleanMember}` : `ID_${item.id || item.sl_no}`);
+
+    let existingKey = null;
+    if (map.has(primaryKey)) {
+      existingKey = primaryKey;
+    } else if (cleanShNo && cleanMember) {
+      for (const [k, v] of map.entries()) {
+        const vShNo = String(v.share_no || v.existing_share_number || '').trim().replace(/^#/, '');
+        const vMember = (v.varasa_member || v.heir_name || '').trim().toLowerCase().normalize('NFC');
+        if (vShNo === cleanShNo && vMember === cleanMember) {
+          existingKey = k;
+          break;
+        }
+      }
+    }
+
+    if (existingKey) {
+      const existing = map.get(existingKey);
+      const merged = {
+        ...existing,
+        ...item,
+        id: existing.id || item.id,
+        sl_no: existing.sl_no || item.sl_no,
+        transfer_id: (existing.transfer_id && !existing.transfer_id.startsWith('ID_') && !existing.transfer_id.startsWith('SH_'))
+          ? existing.transfer_id
+          : (item.transfer_id || existing.transfer_id),
+        heir_photo: existing.heir_photo || item.heir_photo || '',
+        shareholder_photo: existing.shareholder_photo || item.shareholder_photo || '',
+        approval_status: ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(existing.approval_status)
+          ? existing.approval_status
+          : (item.approval_status || existing.approval_status)
+      };
+      map.set(existingKey, merged);
+    } else {
+      map.set(primaryKey, item);
+    }
+  }
+  return Array.from(map.values());
+}
+
+
 export const ApiService = {
   // Ultra-fast single-pass filter options aggregator (Villages, Circles, Books, Casts, Amounts)
   // Replaces 6 separate slow loops with a single ~30ms pass that is cached in memory (0ms on repeated calls)
@@ -3102,24 +3152,16 @@ const newSh = {
       try {
         const cloudData = await CloudDbService.getCollection('varasa');
         if (Array.isArray(cloudData)) {
-          const map = new Map();
-          cloudData.forEach(item => {
-            const key = String(item.transfer_id || item.id || '').trim();
-            if (key) map.set(key, item);
-          });
-          mockVarasaTransfers.forEach(item => {
-            const key = String(item.transfer_id || item.id || '').trim();
-            if (key && !map.has(key)) {
-              map.set(key, item);
-              CloudDbService.saveCollectionItem('varasa', key, item).catch(() => {});
-            }
-          });
-          mockVarasaTransfers = Array.from(map.values());
+          const combined = [...cloudData, ...mockVarasaTransfers];
+          mockVarasaTransfers = deduplicateVarasaList(combined);
           saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
         }
       } catch (e) {
         console.warn('Cloud DB varasa sync warning:', e);
       }
+    } else {
+      mockVarasaTransfers = deduplicateVarasaList(mockVarasaTransfers);
+      saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
     }
     const apiRes = await fetchApi('/varasa');
     if (apiRes && apiRes.success) return apiRes;
@@ -3159,6 +3201,21 @@ const newSh = {
 
   async addVarasaTransfer(data) {
     await ensureDBReady();
+    const cleanShNo = String(data.share_no || data.existing_share_number || '').trim().replace(/^#/, '');
+    const cleanMember = (data.varasa_member || data.heir_name || '').trim().toLowerCase().normalize('NFC');
+
+    // Duplicate check: if an application already exists for this share_no and heir, update it!
+    const existingIdx = mockVarasaTransfers.findIndex(v => {
+      if (data.transfer_id && v.transfer_id === data.transfer_id) return true;
+      const vShNo = String(v.share_no || v.existing_share_number || '').trim().replace(/^#/, '');
+      const vMember = (v.varasa_member || v.heir_name || '').trim().toLowerCase().normalize('NFC');
+      return Boolean(cleanShNo && cleanMember && vShNo === cleanShNo && vMember === cleanMember);
+    });
+
+    if (existingIdx !== -1) {
+      return this.updateVarasaTransfer(mockVarasaTransfers[existingIdx].transfer_id || mockVarasaTransfers[existingIdx].id, data);
+    }
+
     const apiRes = await fetchApi('/varasa', { method: 'POST', body: JSON.stringify(data) });
     if (apiRes && apiRes.success) return apiRes;
 
@@ -3173,6 +3230,7 @@ const newSh = {
       id: nextId,
       sl_no: data.sl_no ? parseInt(data.sl_no) : nextSl,
       transfer_id: transferId,
+      family_count: data.family_count || 4,
       varasa_member: (data.varasa_member || data.heir_name || '').normalize('NFC'),
       heir_name: (data.varasa_member || data.heir_name || '').normalize('NFC'),
       heir_place: (data.heir_place || '').normalize('NFC'),
@@ -3190,6 +3248,8 @@ const newSh = {
       shareholder_taluk: (data.shareholder_taluk || (sh ? sh.taluk : '')).normalize('NFC'),
       shareholder_district: (data.shareholder_district || (sh ? sh.district : 'ವಿಜಯಪುರ')).normalize('NFC'),
       shareholder_relationship: (data.shareholder_relationship || 'ತಂದೆ').normalize('NFC'),
+      shareholder_aadhaar: data.shareholder_aadhaar || (sh ? (sh.aadhaar || sh.aadhar_no) : ''),
+      shareholder_photo: data.shareholder_photo || (sh ? sh.photo : ''),
       dod: data.dod || '',
       share_no: String(data.share_no || data.existing_share_number || (sh ? sh.share_no : '')),
       existing_share_number: String(data.share_no || data.existing_share_number || (sh ? sh.share_no : '')),
@@ -3229,11 +3289,50 @@ const newSh = {
 
   async updateVarasaTransfer(idOrTransferId, data) {
     await ensureDBReady();
-    const idx = mockVarasaTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
+    const targetCleanShNo = String(data.share_no || data.existing_share_number || '').trim().replace(/^#/, '');
+    const targetCleanMember = (data.varasa_member || data.heir_name || '').trim().toLowerCase().normalize('NFC');
+
+    const idx = mockVarasaTransfers.findIndex(v => {
+      if (idOrTransferId && (String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId)) return true;
+      if (data.transfer_id && v.transfer_id === data.transfer_id) return true;
+      if (data.id && String(v.id) === String(data.id)) return true;
+      if (data.sl_no && parseInt(v.sl_no) === parseInt(data.sl_no)) return true;
+      const vShNo = String(v.share_no || v.existing_share_number || '').trim().replace(/^#/, '');
+      const vMember = (v.varasa_member || v.heir_name || '').trim().toLowerCase().normalize('NFC');
+      if (targetCleanShNo && targetCleanMember && vShNo === targetCleanShNo && vMember === targetCleanMember) return true;
+      return false;
+    });
+
     if (idx !== -1) {
-      mockVarasaTransfers[idx] = { ...mockVarasaTransfers[idx], ...data };
+      const existing = mockVarasaTransfers[idx];
+
+      // LOCK CHECK: Once approved by admin, do NOT allow editing
+      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(existing.approval_status)) {
+        return {
+          success: false,
+          isLocked: true,
+          message: 'ಈ ವಾರಸು ವರ್ಗಾವಣೆ ಅರ್ಜಿಯು ಈಗಾಗಲೇ ಅಡ್ಮಿನ್ ಅವರಿಂದ ಮಂಜೂರಾಗಿದೆ (Approved & Locked). ಮಂಜೂರಾದ ನಂತರ ವಿವರಗಳನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.'
+        };
+      }
+
+      const updated = {
+        ...existing,
+        ...data,
+        id: existing.id || data.id,
+        transfer_id: existing.transfer_id || data.transfer_id || `VAR-${new Date().getFullYear()}-${String(existing.id || 1).padStart(3, '0')}`,
+        sl_no: existing.sl_no || data.sl_no,
+        updated_at: new Date().toISOString()
+      };
+
+      mockVarasaTransfers[idx] = updated;
       saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
-      return { success: true, data: mockVarasaTransfers[idx] };
+
+      if (CloudDbService.isEnabled()) {
+        const cloudKey = updated.transfer_id || String(updated.id);
+        CloudDbService.saveCollectionItem('varasa', cloudKey, updated).catch(() => {});
+      }
+
+      return { success: true, data: updated };
     }
     return { success: false, message: 'Transfer record not found' };
   },
@@ -3242,8 +3341,20 @@ const newSh = {
     await ensureDBReady();
     const idx = mockVarasaTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
     if (idx !== -1) {
-      mockVarasaTransfers.splice(idx, 1);
+      const existing = mockVarasaTransfers[idx];
+      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(existing.approval_status)) {
+        return {
+          success: false,
+          isLocked: true,
+          message: 'ಈ ವಾರಸು ವರ್ಗಾವಣೆ ಅರ್ಜಿಯು ಈಗಾಗಲೇ ಅಡ್ಮಿನ್ ಅವರಿಂದ ಮಂಜೂರಾಗಿದೆ (Approved & Locked). ಮಂಜೂರಾದ ದಾಖಲೆಯನ್ನು ಅಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.'
+        };
+      }
+      const removed = mockVarasaTransfers.splice(idx, 1)[0];
       saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+      if (CloudDbService.isEnabled()) {
+        const delKey = removed.transfer_id || String(removed.id || idOrTransferId);
+        CloudDbService.deleteCollectionItem('varasa', delKey).catch(() => {});
+      }
       return { success: true };
     }
     return { success: false, message: 'Transfer record not found' };
@@ -3258,6 +3369,10 @@ const newSh = {
     if (item) {
       item.approval_status = approval_status;
       saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+      if (CloudDbService.isEnabled()) {
+        const cloudKey = item.transfer_id || String(item.id);
+        CloudDbService.saveCollectionItem('varasa', cloudKey, item).catch(() => {});
+      }
       if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService, isShareholderInactive } from '../../services/api';
 import {
-  X, Save, User, MapPin, Phone, CreditCard, Calendar, Upload,
+  X, Save, User, Lock, MapPin, Phone, CreditCard, Calendar, Upload,
   Search, CheckCircle2, AlertCircle, FileText, Camera, Trash2,
   Building2, Hash, Layers, ShieldCheck, DollarSign, Receipt, Printer
 } from 'lucide-react';
@@ -62,6 +62,10 @@ export default function VarasaTransferModal({
   const [uploadingShPhoto, setUploadingShPhoto] = useState(false);
 
   // 22 Official Statutory Cooperative Varasa Ledger Fields
+  const isApproved = Boolean(
+    initialData && ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(initialData.approval_status)
+  );
+
   const [form, setForm] = useState({
     // Sl. No
     sl_no: initialData?.sl_no || '',
@@ -110,6 +114,47 @@ export default function VarasaTransferModal({
   useEffect(() => {
     loadVillages();
   }, []);
+
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        id: initialData.id,
+        sl_no: initialData.sl_no || '',
+        transfer_id: initialData.transfer_id || '',
+        family_count: initialData.family_count || 4,
+        varasa_member: initialData.varasa_member || initialData.heir_name || '',
+        heir_place: initialData.heir_place || '',
+        heir_taluk: initialData.heir_taluk || 'ಇಂಡಿ',
+        heir_district: initialData.heir_district || 'ವಿಜಯಪುರ',
+        heir_relationship: initialData.heir_relationship || 'ಮಗ',
+        heir_age: initialData.heir_age || '',
+        heir_mobile: initialData.heir_mobile || '',
+        heir_aadhaar: initialData.heir_aadhaar || '',
+        heir_photo: initialData.heir_photo || '',
+        shareholder_name: initialData.shareholder_name || initialData.existing_shareholder_name || '',
+        shareholder_place: initialData.shareholder_place || '',
+        shareholder_taluk: initialData.shareholder_taluk || 'ಇಂಡಿ',
+        shareholder_district: initialData.shareholder_district || 'ವಿಜಯಪುರ',
+        shareholder_relationship: initialData.shareholder_relationship || 'ತಂದೆ',
+        shareholder_aadhaar: initialData.shareholder_aadhaar || '',
+        shareholder_photo: initialData.shareholder_photo || '',
+        dod: initialData.dod || '',
+        existing_shareholder_id: initialData.existing_shareholder_id || '',
+        share_no: initialData.share_no || initialData.existing_share_number || '',
+        category: initialData.category || 'ಅ - ವರ್ಗ',
+        no_of_shares: initialData.no_of_shares || initialData.existing_shares || 1,
+        fees: initialData.fees !== undefined ? initialData.fees : 570,
+        receipt_no: initialData.receipt_no || '',
+        receipt_date: initialData.receipt_date || new Date().toLocaleDateString('en-GB'),
+        approval_status: initialData.approval_status || 'Application Received',
+        documents_verified: initialData.documents_verified || 'Pending',
+        death_cert_attached: initialData.death_cert_attached !== undefined ? initialData.death_cert_attached : true,
+        affidavit_attached: initialData.affidavit_attached !== undefined ? initialData.affidavit_attached : true,
+        panchayat_noc_attached: initialData.panchayat_noc_attached !== undefined ? initialData.panchayat_noc_attached : false,
+        remarks: initialData.remarks || 'ಮರಣ ಪ್ರಮಾಣ ಪತ್ರ ಹಾಗೂ ವಾರಸುದಾರರ ಪ್ರಮಾಣ ಪತ್ರ ಲಗತ್ತಿಸಲಾಗಿದೆ.'
+      });
+    }
+  }, [initialData]);
 
   const loadVillages = async () => {
     try {
@@ -239,9 +284,21 @@ export default function VarasaTransferModal({
       return;
     }
 
+    if (isApproved) {
+      if (showToast) showToast('ಈ ವಾರಸು ವರ್ಗಾವಣೆ ಅರ್ಜಿಯು ಅಡ್ಮಿನ್ ಅವರಿಂದ ಮಂಜೂರಾಗಿದೆ (Approved & Locked). ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.', 'error');
+      return;
+    }
+
     try {
-      if (initialData?.id || initialData?.transfer_id) {
-        const res = await ApiService.updateVarasaTransfer(initialData.id || initialData.transfer_id, form);
+      if (initialData) {
+        // ALWAYS update existing record when initialData exists, never create duplicate
+        const targetIdentifier = initialData.transfer_id || initialData.id || form.transfer_id || initialData.sl_no;
+        const res = await ApiService.updateVarasaTransfer(targetIdentifier, {
+          ...form,
+          id: initialData.id,
+          transfer_id: initialData.transfer_id || form.transfer_id,
+          sl_no: initialData.sl_no || form.sl_no
+        });
         if (res.success) {
           if (showToast) showToast('Varasa transfer application updated successfully!');
           onSaveSuccess();
@@ -313,6 +370,19 @@ export default function VarasaTransferModal({
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Approved & Locked Banner */}
+        {isApproved && (
+          <div className="mx-6 mt-4 p-3 bg-amber-950/60 border border-amber-800/80 rounded-2xl flex items-center gap-3 text-amber-300 text-xs shadow-inner">
+            <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <span className="font-bold block">ದಾಖಲೆ ಲಾಕ್ ಆಗಿದೆ (Record Approved & Locked)</span>
+              <span className="text-[11px] text-amber-200/80">
+                ಈ ವಾರಸು ವರ್ಗಾವಣೆ ಅರ್ಜಿಯು ಆಡಳಿತಾಧಿಕಾರಿಗಳಿಂದ (Admin) ಅಧಿಕೃತವಾಗಿ ಮಂಜೂರಾಗಿದೆ. ಮಂಜೂರಾದ ನಂತರ ವಿವರಗಳನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಲು ಅನುಮತಿ ಇಲ್ಲ.
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Tab Navigation */}
         <div className="flex border-b border-slate-800 bg-slate-900/40 px-6 pt-2 gap-2 text-xs font-semibold overflow-x-auto">
@@ -991,13 +1061,20 @@ export default function VarasaTransferModal({
                 <span>ಪ್ರಿವ್ಯೂ (Preview)</span>
               </button>
 
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
-              >
-                <Save className="w-4 h-4" />
-                <span>{initialData ? 'Update Application' : 'Submit Application'}</span>
-              </button>
+              {isApproved ? (
+                <div className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-amber-800/60 text-amber-400 rounded-xl text-xs font-bold cursor-not-allowed">
+                  <Lock className="w-4 h-4" />
+                  <span>ಮಂಜೂರಾಗಿದೆ - ತಿದ್ದುಪಡಿ ನಿಷೇಧಿಸಲಾಗಿದೆ (Locked)</span>
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  className="flex items-center gap-1.5 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{initialData ? 'Update Application' : 'Submit Application'}</span>
+                </button>
+              )}
             </div>
           </div>
         </form>

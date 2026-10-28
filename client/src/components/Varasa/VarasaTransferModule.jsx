@@ -6,10 +6,15 @@ import * as XLSX from 'xlsx';
 import VarasaTransferModal from './VarasaTransferModal';
 import VarasaPrintModal from './VarasaPrintModal';
 import {
-  FileSpreadsheet, Search, Plus, CheckCircle2, Clock, X, Save,
+  FileSpreadsheet, Search, Plus, CheckCircle2, Clock, X, Lock, Save,
   Download, Upload, Filter, Printer, Trash2, Edit3, User, MapPin,
   Phone, CreditCard, ShieldCheck, Check, AlertCircle, RefreshCw, Eye
 } from 'lucide-react';
+
+const isTransferApproved = (t) => {
+  if (!t) return false;
+  return ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(t.approval_status);
+};
 
 export default function VarasaTransferModule() {
   const { showToast, user } = useAuth();
@@ -623,15 +628,15 @@ export default function VarasaTransferModule() {
                     <td className="py-3 px-3 text-center">
                       <select
                         value={v.approval_status}
+                        disabled={isTransferApproved(v)}
                         onChange={(e) => handleStatusUpdate(v.transfer_id || v.id, e.target.value)}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full outline-none border cursor-pointer ${
-                          v.approval_status === 'Completed'
-                            ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                            : v.approval_status === 'Approved'
-                            ? 'bg-sky-950 text-sky-300 border-sky-800'
+                        title={isTransferApproved(v) ? 'ಅಡ್ಮಿನ್ ಅವರಿಂದ ಮಂಜೂರಾಗಿದೆ - ಸ್ಥಿತಿ ಲಾಕ್ ಆಗಿದೆ (Approved & Locked)' : 'Change Status'}
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full outline-none border ${
+                          isTransferApproved(v)
+                            ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700 cursor-not-allowed opacity-90'
                             : v.approval_status === 'Under Verification'
-                            ? 'bg-amber-950 text-amber-300 border-amber-800'
-                            : 'bg-slate-900 text-slate-400 border-slate-700'
+                            ? 'bg-amber-950 text-amber-300 border-amber-800 cursor-pointer'
+                            : 'bg-slate-900 text-slate-400 border-slate-700 cursor-pointer'
                         }`}
                       >
                         <option value="Application Received">Application Received</option>
@@ -676,26 +681,44 @@ export default function VarasaTransferModule() {
                           <Printer className="w-3.5 h-3.5 text-teal-400" />
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingTransfer(v);
-                            setShowAddModal(true);
-                          }}
-                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                          title="Edit Varasa Record"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-sky-400" />
-                        </button>
+                        {isTransferApproved(v) ? (
+                          <span
+                            className="p-1.5 rounded-lg bg-slate-900/60 text-amber-400/80 border border-amber-800/60 cursor-not-allowed inline-flex items-center justify-center"
+                            title="ಮಂಜೂರಾದ ವಾರಸು ದಾಖಲೆಯನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ (Approved by Admin - Locked from Editing)"
+                          >
+                            <Lock className="w-3.5 h-3.5 text-amber-400" />
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingTransfer(v);
+                              setShowAddModal(true);
+                            }}
+                            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                            title="Edit Varasa Record"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-sky-400" />
+                          </button>
+                        )}
 
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(v.transfer_id || v.id)}
-                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                          title="Delete Record"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {isTransferApproved(v) ? (
+                          <span
+                            className="p-1.5 rounded-lg bg-slate-900/40 text-slate-600 border border-slate-800/60 cursor-not-allowed inline-flex items-center justify-center opacity-40"
+                            title="ಮಂಜೂರಾದ ದಾಖಲೆಯನ್ನು ಅಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ (Locked)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(v.transfer_id || v.id)}
+                            className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                            title="Delete Record"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -707,16 +730,19 @@ export default function VarasaTransferModule() {
       </div>
 
       {/* Varasa Form Modal (New / Edit) */}
-      <VarasaTransferModal
-        isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setEditingTransfer(null);
-        }}
-        initialData={editingTransfer}
-        onSaveSuccess={loadTransfers}
-        showToast={showToast}
-      />
+      {showAddModal && (
+        <VarasaTransferModal
+          key={editingTransfer ? (editingTransfer.transfer_id || editingTransfer.id || editingTransfer.sl_no || 'edit') : 'new'}
+          isOpen={showAddModal}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingTransfer(null);
+          }}
+          initialData={editingTransfer}
+          onSaveSuccess={loadTransfers}
+          showToast={showToast}
+        />
+      )}
 
       {/* Excel Upload Modal */}
       {showUploadModal && (
