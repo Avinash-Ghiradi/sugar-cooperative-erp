@@ -50,7 +50,7 @@ function formatDocDate(dateStr) {
 }
 
 export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSubmission = false }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'p1'...'p10'
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'p1'...'p12'
   const logoSrc = './id_assets/bsskn_logo.png';
 
   useEffect(() => {
@@ -79,6 +79,9 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   let rawCategory = (v.category || 'ಅ').trim();
   let cleanCategory = rawCategory.replace(/[\-–]\s*ವರ್ಗ/, '').trim();
   if (!cleanCategory) cleanCategory = 'ಅ';
+
+  const isClassB = cleanCategory.includes('ಬ');
+  const faceValue = isClassB ? '5000' : '2000';
 
   const noOfShares = parseInt(v.no_of_shares || v.existing_shares) || 1;
   const dod = v.dod ? formatDocDate(v.dod) : '05/11/2021';
@@ -1019,9 +1022,169 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
     </div>
   );
 
+  // =========================================================================
+  // PAGE 11: SCHEDULE-‘A’ (Producer Member Agreement for land retention)
+  // =========================================================================
+  const renderPage11 = () => (
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Times_New_Roman',serif] box-border relative">
+      <div>
+        {renderHeaderBox()}
+
+        <div className="text-xs font-bold text-black mb-2 font-sans">
+          ದಿನಾಂಕ: -{applicationDate}
+        </div>
+
+        {/* Centered Schedule Box */}
+        <div className="flex justify-center my-2">
+          <div className="border-[2px] border-black p-0.5 bg-white inline-block">
+            <div className="border border-black px-10 py-1 bg-white text-center">
+              <span className="text-[16px] font-bold text-black tracking-widest font-serif">
+                SCHEDULE-‘A’
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Heading Statement */}
+        <div className="text-center font-bold text-[12.5px] leading-snug text-black my-3 px-2">
+          Form of agreement to be executed by a producer member of Co-operative sugar Factory for retention and non alienation and charging of lands owned by him in the area of operation of the factory.
+        </div>
+
+        {/* Recital 1 */}
+        <div className="text-[12px] leading-[1.8] text-justify text-black mb-3">
+          <p className="indent-6">
+            And agreement made on this <strong>{applicationDate}</strong> date between <strong>Shri/ Smt:- <span className="font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] underline font-bold">{heirNameRaw}</span> Place:<span className="font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] underline font-bold">{heirPlace}</span> Taluk:<span className="font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] underline font-bold">{heirTaluk}</span> Dist:<span className="font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] underline font-bold">{heirDistrict}</span></strong> (here in after called the producer member which expression shall be deemed to include his/ her executors and assings) of the one part and <strong>The Bhimashankar Sahakari Sakkare Karkhane Niyamit. Maragur Taluk Chadachan Dist:- Vijayapur</strong> a Co-operative Society registered under section 7(1) of the Karnataka Co-operative Societies Act 1959 & having its Registered office at Maragur Taluk Chadachan Dist:- Vijayapur (herein after called the factory with expression shall include its assigns) on the other part.
+          </p>
+        </div>
+
+        {/* Recital 2 */}
+        <div className="text-[12px] leading-[1.8] text-justify text-black mb-3">
+          <p className="indent-6">
+            Where as the producer member is the owner of the land described in the schedule here to attached where as he/she is a member of the factory & the factory has allotted him/her Share No: <strong className="underline font-mono">{shareNo}</strong> ‘<strong>{cleanCategory}</strong>’ Class “<strong className="underline font-mono">{noOfShares}</strong>” shares of the face value of Rs.{faceValue}/- each and where as the said producer member has agreed to be governed by the bye-laws of the factory.
+          </p>
+        </div>
+
+        {/* Agreement Clauses */}
+        <div className="text-[11.8px] leading-[1.75] text-justify text-black space-y-2 mb-4">
+          <div className="font-bold">Now this agreement witness the are follows :-</div>
+          <div className="pl-4 space-y-2">
+            <div>
+              1. The producer member shall & will during the subsistence of this agreement at his own cost charges & expenses keep and maintain the said land in cultivable condition and shall supply sugar cane grown by him/ her to the factory in the manner prescribed in the bye-law No.6(A)
+            </div>
+            <div>
+              2. That the producer member during the subsistence of this agreement shall and will retain his/ her own name & tital shall & will not alienate or create any charge or interest in the said lands specified below except such charges or interest in favour of any Co-operative society or of Government which he/ she may have created thereafter for securing finances for purpose of cultivation or improvements of the said land Neither shall be / she alienate the said lands in any other manner.
+            </div>
+            <div>
+              3. That the provided for in the Bye laws of the factory the producer member in the even of his/ her committing any breach in due observance of this agreement at any time during the subsistence of this agreement will be liable to.
+              <div className="pl-4 pt-1 space-y-1">
+                <div>a) Immediate cessation of all his/ her rights an previleges as the member including more specifically the rights or previlege of tendering to the factory sugar cane grown by him/ her.</div>
+                <div>b) Forfeiture of share held by him/ her in the society.</div>
+                <div>c) Expulsion from membership of the society and</div>
+                <div>d) Payment of penalty as may be decided by the Board.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* In witness whereof */}
+        <div className="text-[11.5px] leading-relaxed text-justify text-black mb-6">
+          In Witness where of the producer member has set his/ her hand and the common seal of the factory has been here to affixed and two members of the Board of Directors and the Managing Director of the factory have herewith set hands on the date aforementioned.
+        </div>
+
+        {/* Farmer Signature */}
+        <div className="flex justify-end pr-10 pt-4 text-xs font-bold text-black">
+          <div className="text-center space-y-1">
+            <div className="font-bold text-sm">Farmer Signature</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-right text-xs font-bold text-black pt-2 font-sans">11</div>
+    </div>
+  );
+
+  // =========================================================================
+  // PAGE 12: ಆಡಳಿತ ಮಂಡಳಿಯ ಸಭೆಯಲ್ಲಿ ಮಂಡಿಸಲು ಅನುಮತಿ (Final Board Placement Note)
+  // =========================================================================
+  const renderPage12 = () => (
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+      <div>
+        {renderHeaderBox()}
+
+        {/* Header Bar */}
+        <div className="flex justify-between items-center text-xs font-bold text-black mb-2">
+          <div>ಸಲ್ಲಿಸಲಾಗಿದೆ :-</div>
+          <div>ದಿನಾಂಕ: {applicationDate}</div>
+        </div>
+
+        <div className="text-xs font-bold text-black mb-1">
+          ಮಾನ್ಯರೇ,
+        </div>
+
+        {/* Subject */}
+        <div className="text-center font-bold text-[12.5px] text-black my-2">
+          ವಿಷಯ:-“ ಕಾರ್ಖಾನೆಯ ಮೃತ ಸದಸ್ಯರ ಶೇರನ್ನು ನೇರ ವಾರಸುದಾರರಿಗೆ ವಾರಸಾ ಮಾಡುವ ಸಲುವಾಗಿ ಮುಂಬರುವ ಆಡಳಿತ ಮಂಡಳಿಯ ಸಭೆಯಲ್ಲಿ ಮಂಡಿಸಲು ಅನುಮತಿ ನೀಡುವ ಕುರಿತು”
+        </div>
+
+        {/* Body Paragraph */}
+        <div className="text-[12.5px] leading-relaxed text-justify text-black mb-2.5">
+          <p className="indent-6">
+            ಕಾರ್ಖಾನೆಯ ‘<strong>{cleanCategory}</strong>’ ವರ್ಗದ ಸದಸ್ಯರಾದ <strong>ದಿವಂಗತ. {shareholderName} ಸಾ: {shareholderPlace} ತಾಲೂಕ: {shareholderTaluk} ಜಿಲ್ಲಾ: {shareholderDistrict}</strong> ಇವರು ಶೇರು ಸದಸ್ಯತ್ವ ಹೊಂದಿದ್ದು, ಶೇರ ಖಾತೆ ನಂ: <strong>{shareNo}</strong> ಇರುತ್ತದೆ. ಸದರಿಯವರು ದಿನಾಂಕ: <strong>{dod}</strong> ರಂದು ಮೃತರಾದ ಪ್ರಯುಕ್ತ, ಮೃತ ಸದಸ್ಯರ <strong>{relationship}</strong> ನಾದ <strong>{heirName} ಸಾ: {heirPlace} ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲಾ: {heirDistrict}</strong> ರವರು ಕಾರ್ಖಾನೆಯ ನಿಯಮಾನುಸಾರ ಅವಶ್ಯಕವಿರುವ ಈ ಕೆಳಕಂಡ ದಾಖಲಾತಿಗಳೊಂದಿಗೆ ಶೇರು ವಾರಸಾ ಮಾಡಲು ತಮ್ಮ ಅರ್ಜಿ ದಿನಾಂಕ: <strong>{applicationDate}</strong> ರಲ್ಲಿ ವಿನಂತಿಸಿಕೊಂಡಿರುತ್ತಾರೆ.
+          </p>
+        </div>
+
+        {/* Received Documents Box (11 items) */}
+        <div className="border-[1.5px] border-black p-2.5 my-2 text-[11.2px] leading-relaxed text-black">
+          <div className="text-center font-bold underline mb-1.5 text-xs">-:: ಪಡೆದ ದಾಖಲಾತಿಗಳ ವಿವರ ::-</div>
+          <div className="space-y-0.5">
+            <div>1) ಶೇರು ವಾರಸಾ ಸಲುವಾಗಿ ವಾರಸುದಾರರು ಸಲ್ಲಿಸಿದ ವಿನಂತಿ ಅರ್ಜಿ. (Application)</div>
+            <div>2) ವಾರಸಾ ಸಲುವಾಗಿ ಶೇರು ಫೀ & ಪ್ರವೇಶ ಫೀ ರೂ:<strong>{fees}</strong>/-ಭರಣಾ ಮಾಡಿದ ಮೂಲ ಪ್ರತಿ. (Fee Receipt)</div>
+            <div>3) ಮರಣ ಉತ್ತರ ದೃಢೀಕರಣ(ಅಟೆಸ್ಟೆಡ್) ಪ್ರತಿ. (Death Certificate)</div>
+            <div>4) ಉತ್ತರ ಜೀವಿತ ಪ್ರಮಾಣ ಪತ್ರ ದೃಢೀಕರಣ(ಅಟೆಸ್ಟೆಡ್) ನಕಲು ಪ್ರತಿ. (Succession Certificate- Obtain a Legal Heir Certificate)</div>
+            <div>5) ಮೃತರ ಹೆಸರಿನಲ್ಲಿ ಕಾರ್ಖಾನೆಯಲ್ಲಿ ಹಾಗು ಅಂಗ ಸಂಸ್ಥೆಗಳಲ್ಲಿ ಯಾವುದೇ ಬಾಕಿ ಇಲ್ಲದಿರುವ ಬಗ್ಗೆ <strong>ಬೇ ಬಾಕಿ ಪ್ರಮಾಣ ಪತ್ರ</strong> (No Dues Certificate)</div>
+            <div>6) ಕಾರ್ಖಾನೆಯ ಶೇರು ಹೊಂದಿದ ಬಗ್ಗೆ ಸರ್ಟಿಫಿಕೇಟ / ಗುರುತಿನ ಪತ್ರ/ಇತರೇ ದಾಖಲಾತಿಗಳು</div>
+            <div>7) ವಾರಸಾ ಮಾಡುವುದಕ್ಕಾಗಿ ರೂ:100/-ಬಾಂಡ ಮೇಲೆ ಮೃತರ ಕುಟುಂಬದ ಎಲ್ಲ ವಾರಸುದಾರರ ಒಪ್ಪಿಗೆ ಪತ್ರ (All Family)</div>
+            <div>8) ಕುಟುಂಬದ ಎಲ್ಲ ವಾರಸುದಾರರ ಆಧಾರ ಕಾರ್ಡ ದೃಢೀಕೃತ(ಅಟೆಸ್ಟೆಡ್) ಪ್ರತಿ.</div>
+            <div>9) ಕಾರ್ಖಾನೆಯ ಕ್ಷೇತ್ರ ಸಿಬ್ಬಂಧಿಯ(FA) ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ.</div>
+            <div>10) ಕಾರ್ಖಾನೆಯ ಕಾನೂನು ಸಲಹೆಗಾರರ ವರದಿ.</div>
+            <div>11) ಕಾರ್ಖಾನೆಯ ಇಬ್ಬರು ನಿರ್ದೇಶಕರಿಂದ ವಾರಸಾ ಸಲುವಾಗಿ ಅರ್ಜಿಗೆ ಲಗತ್ತಿಸಿದ ಎಲ್ಲ ದಾಖಲಾತಿಗಳನ್ನು ಪರಿಶೀಲನೆ ಮಾಡಿ ಶಿಫಾರಸ್ಸು ಮಾಡಿರುವ ಪತ್ರ</div>
+          </div>
+        </div>
+
+        {/* Submission Note */}
+        <div className="text-[12px] leading-relaxed text-justify text-black my-2">
+          ಮೇಲ್ಕಾಣಿಸಿದ ಕಾರ್ಖಾನೆಯ ಮೃತ ಸದಸ್ಯರ ವಾರಸುದಾರರು ಪೂರೈಸಿದ ಎಲ್ಲ ದಾಖಲಾತಿಗಳನ್ನು ಕೂಲಂಕೂಷವಾಗಿ ಪರಿಶೀಲಿಸಿ, ಸರಿ ಇರುವ ಬಗ್ಗೆ ಕಾರ್ಖಾನೆಯ ಕಾನೂನು ಸಲಹೆಗಾರರು ದಿನಾಂಕ: _____ / _____ /2022 ರನ್ವಯ ವರದಿ ನೀಡಿದ್ದು, ಕಾರಣ, ಸದರ ಶೇರನ್ನು ವಾರಸಾ ಮಾಡಲು ಕಾರ್ಖಾನೆಯ ಮುಂಬರುವ ಆಡಳಿತ ಮಂಡಳಿಯ ಸಭೆಯಲ್ಲಿ ಮಂಡಿಸಲು ಅನುಮತಿಗಾಗಿ ಹಾಗೂ ಮುಂದಿನ ಕ್ರಮಕ್ಕಾಗಿ ಮೆ:ರವರಲ್ಲಿ ಸಲ್ಲಿಸಲಾಗಿದೆ.
+        </div>
+
+        {/* Approved Stamp / Text */}
+        <div className="text-right pr-8 my-2">
+          <span className="font-bold text-sm text-black">“ಅನುಮೋದಿಸಿದೆ”</span>
+        </div>
+
+        {/* 4-Tier Signatures Hierarchy */}
+        <div className="flex justify-between items-end px-2 pt-10 text-xs font-bold text-black text-center">
+          <div className="space-y-1">
+            <div className="w-24 border-t border-black pt-1">ಗುಮಾಸ್ತ</div>
+          </div>
+          <div className="space-y-1">
+            <div className="w-28 border-t border-black pt-1">ಶೇರ ಇನ್‌ಚಾರ್ಜ</div>
+          </div>
+          <div className="space-y-1">
+            <div className="w-28 border-t border-black pt-1">ಕಛೇರಿ ಅಧೀಕ್ಷಕರು</div>
+          </div>
+          <div className="space-y-1">
+            <div className="w-32 border-t border-black pt-1">ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-right text-xs font-bold text-black pt-2">12</div>
+    </div>
+  );
+
   return (
     <>
-      {/* Print Specific CSS to guarantee exact 10 A4 pages without blank pages */}
+      {/* Print Specific CSS to guarantee exact 12 A4 pages without blank pages */}
       <style>{`
         @media screen {
           .varasa-print-portal {
@@ -1096,7 +1259,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <span>ಶೇರು ವಾರಸಾ ದಾಖಲಾತಿ ಕಡತ (Varasa 10-Page Official Bundle)</span>
+                  <span>ಶೇರು ವಾರಸಾ ದಾಖಲಾತಿ ಕಡತ (Varasa 12-Page Complete Bundle)</span>
                   {isNewSubmission && (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
                       ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ (Newly Submitted)
@@ -1104,7 +1267,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                   )}
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  ಕಾನೂನುಬದ್ಧ 10 ಪುಟಗಳ ಅಧಿಕೃತ ವಾರಸುದಾರರ ದಾಖಲಾತಿ ಪತ್ರಗಳು (A4 Format)
+                  ಕಾನೂನುಬದ್ಧ 12 ಪುಟಗಳ ಅಧಿಕೃತ ವಾರಸುದಾರರ ದಾಖಲಾತಿ ಪತ್ರಗಳು (A4 Format)
                 </p>
               </div>
             </div>
@@ -1118,7 +1281,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               >
                 <Printer className="w-4 h-4" />
                 <span>
-                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 10 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
+                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 12 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
                 </span>
               </button>
               <button
@@ -1131,7 +1294,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
             </div>
           </div>
 
-          {/* Page Tabs (Scrollable across 10 pages) */}
+          {/* Page Tabs (Scrollable across 12 pages) */}
           <div className="flex border-b border-slate-800 bg-slate-950/60 px-4 pt-2 gap-1.5 text-xs font-semibold overflow-x-auto">
             <button
               type="button"
@@ -1142,7 +1305,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" /> ಎಲ್ಲಾ 10 ಪುಟಗಳು (All 10 Pages)
+              <Layers className="w-3.5 h-3.5" /> ಎಲ್ಲಾ 12 ಪುಟಗಳು (All 12 Pages)
             </button>
             <button
               type="button"
@@ -1234,6 +1397,24 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
             >
               ಪುಟ 10: Legal Opinion
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('p11')}
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p11' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ಪುಟ 11: Schedule ‘A’
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('p12')}
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p12' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ಪುಟ 12: ಆಡಳಿತ ಮಂಡಳಿ ಅನುಮೋದನೆ
+            </button>
           </div>
 
           {/* Modal Preview Area */}
@@ -1250,6 +1431,8 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                 {renderPage8()}
                 {renderPage9()}
                 {renderPage10()}
+                {renderPage11()}
+                {renderPage12()}
               </div>
             ) : activeTab === 'p1' ? (
               <div className="w-full max-w-[790px]">{renderPage1()}</div>
@@ -1269,8 +1452,12 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               <div className="w-full max-w-[790px]">{renderPage8()}</div>
             ) : activeTab === 'p9' ? (
               <div className="w-full max-w-[790px]">{renderPage9()}</div>
-            ) : (
+            ) : activeTab === 'p10' ? (
               <div className="w-full max-w-[790px]">{renderPage10()}</div>
+            ) : activeTab === 'p11' ? (
+              <div className="w-full max-w-[790px]">{renderPage11()}</div>
+            ) : (
+              <div className="w-full max-w-[790px]">{renderPage12()}</div>
             )}
           </div>
 
@@ -1289,7 +1476,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>
-                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 10 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
+                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 12 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
                 </span>
               </button>
               <button
@@ -1319,6 +1506,8 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               {renderPage8()}
               {renderPage9()}
               {renderPage10()}
+              {renderPage11()}
+              {renderPage12()}
             </>
           ) : activeTab === 'p1' ? (
             renderPage1()
@@ -1338,8 +1527,12 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
             renderPage8()
           ) : activeTab === 'p9' ? (
             renderPage9()
-          ) : (
+          ) : activeTab === 'p10' ? (
             renderPage10()
+          ) : activeTab === 'p11' ? (
+            renderPage11()
+          ) : (
+            renderPage12()
           )}
         </div>,
         document.body
