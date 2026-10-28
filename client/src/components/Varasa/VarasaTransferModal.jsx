@@ -3,8 +3,9 @@ import { ApiService, isShareholderInactive } from '../../services/api';
 import {
   X, Save, User, MapPin, Phone, CreditCard, Calendar, Upload,
   Search, CheckCircle2, AlertCircle, FileText, Camera, Trash2,
-  Building2, Hash, Layers, ShieldCheck, DollarSign, Receipt
+  Building2, Hash, Layers, ShieldCheck, DollarSign, Receipt, Printer
 } from 'lucide-react';
+import VarasaPrintModal from './VarasaPrintModal';
 
 // Client-side image compression for fast storage and offline persistence
 function compressImage(file, maxWidth = 500, maxHeight = 500, quality = 0.85) {
@@ -54,6 +55,8 @@ export default function VarasaTransferModal({
   const [shareholderSearchResults, setShareholderSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [printRecord, setPrintRecord] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const fileInputRef = useRef(null);
 
   // 22 Official Statutory Cooperative Varasa Ledger Fields
@@ -216,7 +219,8 @@ export default function VarasaTransferModal({
         if (res.success) {
           if (showToast) showToast('Varasa transfer application updated successfully!');
           onSaveSuccess();
-          onClose();
+          const rec = res.data || { ...form, transfer_id: initialData.transfer_id || initialData.id };
+          setPrintRecord(rec);
         } else {
           if (showToast) showToast(res.message || 'Update failed', 'error');
         }
@@ -225,7 +229,8 @@ export default function VarasaTransferModal({
         if (res.success) {
           if (showToast) showToast(`Varasa application ${res.transfer_id} registered successfully!`);
           onSaveSuccess();
-          onClose();
+          const rec = res.data || { ...form, transfer_id: res.transfer_id };
+          setPrintRecord(rec);
         } else {
           if (showToast) showToast(res.message || 'Creation failed', 'error');
         }
@@ -234,6 +239,20 @@ export default function VarasaTransferModal({
       if (showToast) showToast('Error saving Varasa application: ' + err.message, 'error');
     }
   };
+
+  if (printRecord) {
+    return (
+      <VarasaPrintModal
+        isOpen={Boolean(printRecord)}
+        onClose={() => {
+          setPrintRecord(null);
+          onClose();
+        }}
+        varasaData={printRecord}
+        isNewSubmission={true}
+      />
+    );
+  }
 
   if (!isOpen) return null;
 
@@ -845,6 +864,16 @@ export default function VarasaTransferModal({
               ) : null}
 
               <button
+                type="button"
+                onClick={() => setShowPreviewModal(true)}
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-800/60 rounded-xl text-xs font-semibold shadow transition-all cursor-pointer"
+                title="ಮುದ್ರಣ ಪ್ರಿವ್ಯೂ (Print Preview)"
+              >
+                <Printer className="w-4 h-4" />
+                <span>ಪ್ರಿವ್ಯೂ (Preview)</span>
+              </button>
+
+              <button
                 type="submit"
                 className="flex items-center gap-1.5 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
               >
@@ -855,6 +884,17 @@ export default function VarasaTransferModal({
           </div>
         </form>
       </div>
+      {showPreviewModal && (
+        <VarasaPrintModal
+          isOpen={showPreviewModal}
+          onClose={() => setShowPreviewModal(false)}
+          varasaData={{
+            ...form,
+            transfer_id: form.transfer_id || "VAR-PREVIEW"
+          }}
+          isNewSubmission={false}
+        />
+      )}
     </div>
   );
 }

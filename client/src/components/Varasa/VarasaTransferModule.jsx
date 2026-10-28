@@ -4,6 +4,7 @@ import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import * as XLSX from 'xlsx';
 import VarasaTransferModal from './VarasaTransferModal';
+import VarasaPrintModal from './VarasaPrintModal';
 import {
   FileSpreadsheet, Search, Plus, CheckCircle2, Clock, X, Save,
   Download, Upload, Filter, Printer, Trash2, Edit3, User, MapPin,
@@ -808,104 +809,17 @@ export default function VarasaTransferModule() {
         </div>
       )}
 
-      {/* Official Varasa Acknowledgement Receipt Slip Modal */}
+      {/* Official 5-Page Varasa Application Document Bundle Print Modal */}
       {printSlipTransfer && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl p-6 space-y-6">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-              <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                <Printer className="w-5 h-5 text-emerald-400" /> Varasa Acknowledgement Slip (ವಾರಸುದಾರರ ಶೇರು ವರ್ಗಾವಣೆ ರಶೀದಿ)
-              </h2>
-              <button onClick={() => setPrintSlipTransfer(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Printable Slip Area */}
-            <div id="printable-varasa-slip" className="bg-white text-slate-900 p-6 rounded-2xl shadow-inner space-y-5 text-xs font-sans border-2 border-slate-300">
-              <div className="text-center border-b-2 border-slate-900 pb-3">
-                <h1 className="text-base font-extrabold text-slate-900 tracking-wide">
-                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204, ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ.
-                </h1>
-                <h2 className="text-xs font-semibold text-slate-700">
-                  ವಾರಸುದಾರರ ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ ಪಾವತಿ ರಶೀದಿ (Legal Heir Transfer Slip)
-                </h2>
-                <div className="text-[10px] text-slate-600 mt-1 flex justify-between px-2 font-mono">
-                  <span>Transfer ID: {printSlipTransfer.transfer_id}</span>
-                  <span>Date: {printSlipTransfer.receipt_date || printSlipTransfer.application_date || new Date().toLocaleDateString('en-GB')}</span>
-                </div>
-              </div>
-
-              {/* Grid Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2 border-r pr-3 border-slate-200">
-                  <h3 className="font-bold text-slate-950 border-b pb-1 text-[11px]">1. ವಾರಸುದಾರರ ವಿವರಗಳು (Legal Heir)</h3>
-                  <div><span className="text-slate-600">ಹೆಸರು:</span> <strong className="text-slate-900">{printSlipTransfer.varasa_member || printSlipTransfer.heir_name}</strong></div>
-                  <div><span className="text-slate-600">ಸ್ವಾಮ್ಯತ್ವ (Ownership):</span> <strong>ವಾರಸದಾರರು ({printSlipTransfer.heir_relationship || 'ಮಗ'})</strong> {printSlipTransfer.heir_age ? `(${printSlipTransfer.heir_age} yrs)` : ''}</div>
-                  <div><span className="text-slate-600">ಮೊಬೈಲ್:</span> <strong>{printSlipTransfer.heir_mobile || '—'}</strong></div>
-                  <div><span className="text-slate-600">ಸ್ಥಳ / ತಾಲ್ಲೂಕು:</span> <strong>{printSlipTransfer.heir_place}, {printSlipTransfer.heir_taluk}</strong></div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-bold text-slate-950 border-b pb-1 text-[11px]">2. ಮೂಲ ಶೇರುದಾರರ ವಿವರಗಳು (Deceased Shareholder)</h3>
-                  <div><span className="text-slate-600">ಹೆಸರು:</span> <strong className="text-slate-900">{printSlipTransfer.shareholder_name || printSlipTransfer.existing_shareholder_name}</strong></div>
-                  <div><span className="text-slate-600">ಶೇರು ಸಂಖ್ಯೆ:</span> <strong className="text-emerald-700">#{printSlipTransfer.share_no}</strong> ({printSlipTransfer.category})</div>
-                  <div><span className="text-slate-600">ಶೇರುಗಳ ಸಂಖ್ಯೆ:</span> <strong>{printSlipTransfer.no_of_shares || 1}</strong></div>
-                  <div><span className="text-slate-600">ನಿಧನ ದಿನಾಂಕ (D.o.D):</span> <strong>{printSlipTransfer.dod || '—'}</strong></div>
-                </div>
-              </div>
-
-              {/* Fee Receipt Info */}
-              <div className="p-3 bg-slate-50 border border-slate-300 rounded-xl flex items-center justify-between font-mono">
-                <div>
-                  <span className="text-slate-600 block text-[10px]">ರಶೀದಿ ಸಂಖ್ಯೆ (Receipt No)</span>
-                  <strong className="text-slate-900 text-sm">#{printSlipTransfer.receipt_no || '—'}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-600 block text-[10px]">ವರ್ಗಾವಣೆ ಶುಲ್ಕ (Transfer Fee)</span>
-                  <strong className="text-emerald-700 text-sm">₹{printSlipTransfer.fees || 570}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-600 block text-[10px]">ಸ್ಥಿತಿ (Status)</span>
-                  <strong className="text-slate-900">{printSlipTransfer.approval_status}</strong>
-                </div>
-              </div>
-
-              {/* Signatures */}
-              <div className="pt-8 flex justify-between items-end text-center text-[10px] text-slate-700">
-                <div>
-                  <div className="w-32 border-t border-slate-800 pt-1">ಅರ್ಜಿದಾರರ ಸಹಿ</div>
-                </div>
-                <div>
-                  <div className="w-32 border-t border-slate-800 pt-1">ಕ್ಲಾರ್ಕ್ / ಆಪರೇಟರ್ ಸಹಿ</div>
-                </div>
-                <div>
-                  <div className="w-32 border-t border-slate-800 pt-1">ವ್ಯವಸ್ಥಾಪಕರು / ಕಾರ್ಯದರ್ಶಿ</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setPrintSlipTransfer(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold"
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg"
-              >
-                <Printer className="w-4 h-4" /> Print Receipt
-              </button>
-            </div>
-          </div>
-        </div>
+        <VarasaPrintModal
+          isOpen={Boolean(printSlipTransfer)}
+          onClose={() => setPrintSlipTransfer(null)}
+          varasaData={printSlipTransfer}
+          isNewSubmission={false}
+        />
       )}
 
-      {/* Admin Approval & Master Sync Modal */}
+            {/* Admin Approval & Master Sync Modal */}
       {adminApproveModal.open && adminApproveModal.transfer && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-emerald-500/50 w-full max-w-xl rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
