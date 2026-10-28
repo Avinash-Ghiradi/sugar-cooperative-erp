@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ApiService, isShareholderInactive } from '../../services/api';
+import { getCompanyLogo, getHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
 import officialCircleData from '../../services/officialCircleData.json';
 import ShareholderForm from '../Shareholders/ShareholderForm';
@@ -39,6 +40,21 @@ const getSurname = (fullName) => {
   if (!fullName) return '';
   const parts = fullName.trim().split(/\s+/);
   return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+};
+
+
+const HANDSHAKE_SVG_INLINE = '<svg viewBox="0 0 140 70" width="80" height="46" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="4,12 30,20 30,54 4,46" fill="#111" stroke="#000" stroke-width="1.5"/><polygon points="30,20 36,22 36,52 30,54" fill="#fff" stroke="#000" stroke-width="1.5"/><polygon points="136,12 110,20 110,54 136,46" fill="#111" stroke="#000" stroke-width="1.5"/><polygon points="110,20 104,22 104,52 110,54" fill="#fff" stroke="#000" stroke-width="1.5"/><path d="M 36 26 C 46 21, 56 25, 64 31 C 68 34, 70 39, 68 43 C 65 47, 58 49, 50 49 C 42 49, 36 47, 36 47 Z" fill="#fff" stroke="#000" stroke-width="1.5"/><path d="M 104 25 C 94 20, 84 23, 76 28 C 70 32, 67 38, 70 43 C 74 48, 84 49, 92 48 C 100 47, 104 47, 104 47 Z" fill="#fff" stroke="#000" stroke-width="1.5"/><path d="M 74 33 C 79 35, 82 40, 81 44" stroke="#000" stroke-width="1.5" stroke-linecap="round"/><path d="M 68 36 C 73 38, 76 43, 75 46" stroke="#000" stroke-width="1.5" stroke-linecap="round"/><path d="M 62 39 C 67 41, 70 45, 69 48" stroke="#000" stroke-width="1.5" stroke-linecap="round"/><path d="M 56 42 C 61 44, 64 47, 63 49" stroke="#000" stroke-width="1.5" stroke-linecap="round"/><path d="M 40 28 C 50 24, 60 29, 66 34" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>';
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('data:') || url.startsWith('http:') || url.startsWith('https:') || url.startsWith('blob:')) {
+    return url;
+  }
+  try {
+    return new URL(url, window.location.href).href;
+  } catch (e) {
+    return url;
+  }
 };
 
 export default function SugarAllotmentModule() {
@@ -768,11 +784,14 @@ export default function SugarAllotmentModule() {
         addressLine = `Taluk: ${printTaluk} | District: ${printDistrict}`;
       }
 
+            const companyLogoUrl = toAbsoluteUrl(getCompanyLogo());
+      const handshakeLogoUrl = toAbsoluteUrl(getHandshakeLogo());
       const orientation = settings?.page_orientation || 'landscape';
 
       let html = `<!DOCTYPE html><html><head><meta charset="utf-8">`;
       html += `<title>${doc_title || 'Sugar Allotment'}</title>`;
       html += `<link rel="preconnect" href="https://fonts.googleapis.com">`;
+      html += `<base href="${window.location.origin}${window.location.pathname}">`;
       html += `<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap" rel="stylesheet">`;
       html += `<style>
         @page {
@@ -792,33 +811,111 @@ export default function SugarAllotmentModule() {
           background: #ffffff;
           font-size: 11.5px;
         }
-        .print-header-box {
-          border: 1.5px solid #2563eb;
-          border-radius: 4px;
-          padding: 8px 16px;
-          text-align: center;
+        .statutory-header-box {
+          border: 2px solid #000000;
+          background: #ffffff;
           margin-bottom: 6px;
+          box-sizing: border-box;
+          width: 100%;
+        }
+        .statutory-header-main {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 5px 12px 3px 12px;
+          box-sizing: border-box;
           background: #ffffff;
         }
-        .print-org-name {
-          font-size: 17px;
+        .statutory-logo-left {
+          width: 85px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .statutory-logo-left img {
+          max-height: 65px;
+          max-width: 85px;
+          width: auto;
+          height: auto;
+          object-fit: contain;
+          display: block;
+        }
+        .statutory-header-center {
+          flex: 1;
+          text-align: center;
+          padding: 0 8px;
+        }
+        .statutory-title-kn {
+          font-size: 20px;
+          font-weight: 800;
+          color: #000000;
+          letter-spacing: -0.2px;
+          line-height: 1.2;
+          margin: 0;
+          font-family: 'Noto Sans Kannada', sans-serif;
+        }
+        .statutory-title-en {
+          font-size: 11px;
           font-weight: 700;
-          color: #1e3a8a;
-          margin: 0 0 2px 0;
-          letter-spacing: 0.2px;
+          color: #000000;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          margin-top: 2px;
+          font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .statutory-dept-name {
+          font-size: 22px;
+          font-weight: 900;
+          color: #000000;
+          letter-spacing: 0.6px;
+          margin-top: 2px;
+          font-family: 'Noto Sans Kannada', sans-serif;
+        }
+        .statutory-logo-right {
+          width: 85px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .statutory-logo-right img, .statutory-logo-right svg {
+          max-height: 50px;
+          max-width: 85px;
+          width: auto;
+          height: auto;
+          object-fit: contain;
+          display: block;
+        }
+        .statutory-subbar {
+          border-top: 1.5px solid #000000;
+          display: flex;
+          justify-content: space-between;
+          padding: 2px 14px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #000000;
+          background: #ffffff;
+          box-sizing: border-box;
+          font-family: 'Noto Sans Kannada', sans-serif;
+        }
+        .print-meeting-bar {
+          text-align: center;
+          margin-top: 4px;
+          margin-bottom: 6px;
         }
         .print-sub-title {
           font-size: 11.5px;
           font-weight: 600;
           color: #475569;
-          margin: 0 0 6px 0;
+          margin: 0 0 4px 0;
         }
         .print-doc-banner {
           background-color: #2563eb !important;
           color: #ffffff !important;
           font-size: 13.5px;
           font-weight: 700;
-          padding: 6px 20px;
+          padding: 5px 20px;
           border-radius: 4px;
           display: inline-block;
           width: 88%;
@@ -909,10 +1006,29 @@ export default function SugarAllotmentModule() {
         }
       </style></head><body>`;
 
-      html += `<div class="print-header-box">`;
-      html += `<div class="print-org-name">${org_name}</div>`;
-      html += `<div class="print-sub-title">${subTitleDisplay}</div>`;
-      html += `<div class="print-doc-banner">${doc_title}</div>`;
+      html += `<div class="statutory-header-box">`;
+      html += `  <div class="statutory-header-main">`;
+      html += `    <div class="statutory-logo-left">`;
+      html += `      <img src="${companyLogoUrl}" alt="BSSKN Logo" onerror="this.onerror=null; this.src='${DEFAULT_LOGO_PATH}';" />`;
+      html += `    </div>`;
+      html += `    <div class="statutory-header-center">`;
+      html += `      <div class="statutory-title-kn">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ, ಮರಗೂರ</div>`;
+      html += `      <div class="statutory-title-en">SRI BHIMASHANKAR SAHAKARI SAKKARE KARKHANE NIYAMIT MARGUR</div>`;
+      html += `      <div class="statutory-dept-name">ಶೇರು ವಿಭಾಗ</div>`;
+      html += `    </div>`;
+      html += `    <div class="statutory-logo-right">`;
+      html += `      <img src="${handshakeLogoUrl}" alt="Cooperative Handshake" onerror="this.onerror=null; this.parentElement.innerHTML=\`${HANDSHAKE_SVG_INLINE}\`;" />`;
+      html += `    </div>`;
+      html += `  </div>`;
+      html += `  <div class="statutory-subbar">`;
+      html += `    <div>ತಾಲೂಕು|| ಚಡಚಣ</div>`;
+      html += `    <div>ಜಿಲ್ಲಾ|| ವಿಜಯಪುರ</div>`;
+      html += `  </div>`;
+      html += `</div>`;
+
+      html += `<div class="print-meeting-bar">`;
+      html += `  <div class="print-sub-title">${subTitleDisplay}</div>`;
+      html += `  <div class="print-doc-banner">${doc_title}</div>`;
       html += `</div>`;
 
       html += `<div class="print-divider"></div>`;
