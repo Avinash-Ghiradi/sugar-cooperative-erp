@@ -23,6 +23,7 @@ import BackupManager from './components/Admin/BackupManager';
 import SettingsModule from './components/Settings/SettingsModule';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import { ShieldCheck, LogIn, Lock, CheckCircle2 } from 'lucide-react';
+import { useCompanyLogo, DEFAULT_LOGO_PATH } from './services/organizationService';
 
 function AppContent() {
   const { user, login, activeModule, toastMessage, hasPermission } = useAuth();
@@ -62,8 +63,23 @@ function AppContent() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 mx-auto flex items-center justify-center text-slate-950 font-black text-sm shadow-lg">
-              BSSKN
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 mx-auto p-1 flex items-center justify-center text-slate-950 font-black text-sm shadow-lg overflow-hidden">
+              <img
+                src={companyLogo}
+                alt="BSSKN Logo"
+                className="w-full h-full object-contain rounded-xl"
+                onError={(e) => {
+                  if (!e.target.src.includes('./id_assets/')) {
+                    e.target.src = DEFAULT_LOGO_PATH;
+                    return;
+                  }
+                  e.target.style.display = 'none';
+                  if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="hidden w-full h-full items-center justify-center font-black text-xs">
+                BSSKN
+              </div>
             </div>
             <h1 className="text-base font-bold text-slate-100">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.</h1>
             <p className="text-xs text-slate-400">Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204</p>

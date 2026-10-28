@@ -9,6 +9,7 @@ import {
   Database, Layers, Check, ArrowRight, Eye, FileText, XCircle, MapPin, Users, Cloud
 } from 'lucide-react';
 import BackupManager from '../Admin/BackupManager';
+import { getCompanyLogo, saveCompanyLogo, resetCompanyLogo, compressLogoImage, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import ResetConfirmModal from '../Common/ResetConfirmModal';
 
 const OFFICIAL_38_HEADERS = [
@@ -34,6 +35,36 @@ export default function SettingsModule({ initialTab = 'org' }) {
     totalCircles: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
+
+  // Company Official Logo State
+  const [companyLogo, setCompanyLogo] = useState(() => getCompanyLogo());
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = useRef(null);
+
+  const handleUploadCompanyLogo = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingLogo(true);
+    try {
+      const dataUrl = await compressLogoImage(file, 400, 400);
+      setCompanyLogo(dataUrl);
+      setForm(prev => ({ ...prev, logo: dataUrl }));
+      await saveCompanyLogo(dataUrl);
+      showToast('ಕಂಪನಿಯ ಅಧಿಕೃತ ಲೋಗೋ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್ಲೋಡ್ ಆಗಿದ್ದು, ಎಲ್ಲಾ ಪುಟಗಳಲ್ಲಿ ಅನ್ವಯಿಸಲಾಗಿದೆ (Company logo uploaded & applied everywhere)!');
+    } catch (err) {
+      alert('Failed to process company logo: ' + err.message);
+    } finally {
+      setIsUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  };
+
+  const handleResetCompanyLogo = async () => {
+    await resetCompanyLogo();
+    setCompanyLogo(DEFAULT_LOGO_PATH);
+    setForm(prev => ({ ...prev, logo: '' }));
+    showToast('ಮೂಲ ಅಧಿಕೃತ ಕಾರ್ಖಾನೆ ಲೋಗೋ ಮರುಸ್ಥಾಪಿಸಲಾಗಿದೆ (Restored default factory logo).');
+  };
 
   // Form State
   const [form, setForm] = useState(() => {
@@ -666,6 +697,77 @@ export default function SettingsModule({ initialTab = 'org' }) {
             <p className="text-xs text-slate-400 mt-1">
               These details appear on official share certificates, ID cards, statutory receipts, and print exports.
             </p>
+          </div>
+
+          {/* Company Official Logo Upload Section */}
+          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+              <div>
+                <h3 className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                  <Upload className="w-4 h-4 text-emerald-400" />
+                  ಸಂಸ್ಥೆಯ ಅಧಿಕೃತ ಲೋಗೋ / Company Official Logo (Emblem)
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  ಈ ಲೋಗೋವು ಸೈಡ್‌ಬಾರ್, ಲಾಗಿನ್, ಐಡಿ ಕಾರ್ಡ್‌ಗಳು, ವಾರಸಾ & ವರ್ಗಾವಣೆ ಮುದ್ರಣ ದಾಖಲೆಗಳಲ್ಲಿ ಎಲ್ಲೆಡೆ ಅನ್ವಯಿಸುತ್ತದೆ.
+                </p>
+              </div>
+              <span className="self-start sm:self-auto px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 shrink-0">
+                Global Branding
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
+              {/* Logo Preview Frame */}
+              <div className="relative group shrink-0">
+                <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-emerald-500/50 bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)] bg-[size:12px_12px] bg-slate-950 flex items-center justify-center p-2 shadow-inner overflow-hidden">
+                  <img
+                    src={companyLogo}
+                    alt="Company Official Logo"
+                    className="max-w-full max-h-full object-contain filter drop-shadow-md"
+                    onError={(e) => {
+                      e.target.src = DEFAULT_LOGO_PATH;
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons & Guidance */}
+              <div className="flex-1 space-y-2 text-center sm:text-left">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <input
+                    type="file"
+                    ref={logoInputRef}
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    onChange={handleUploadCompanyLogo}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploadingLogo}
+                    onClick={() => logoInputRef.current?.click()}
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{isUploadingLogo ? 'ಅಪ್ಲೋಡ್ ಆಗುತ್ತಿದೆ...' : 'ಹೊಸ ಲೋಗೋ ಅಪ್ಲೋಡ್ ಮಾಡಿ (Upload Logo)'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleResetCompanyLogo}
+                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors cursor-pointer"
+                    title="Reset to official factory logo (ಮೂಲ ಕಾರ್ಖಾನೆ ಲೋಗೋಗೆ ಮರುಸ್ಥಾಪಿಸಿ)"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                    <span>ಮರುಸ್ಥಾಪಿಸಿ (Reset)</span>
+                  </button>
+                </div>
+
+                <p className="text-[10.5px] text-slate-400 leading-normal">
+                  • <strong>ಶಿಫಾರಸು</strong>: ಪಾರದರ್ಶಕ ಹಿನ್ನೆಲೆ ಹೊಂದಿರುವ PNG (Transparent PNG) ಅಥವಾ ಗರಿಷ್ಠ ರೆಸಲ್ಯೂಶನ್‌ನ JPG/WebP ಚಿತ್ರ (400×400px).<br />
+                  • <strong>ಕ್ಲೌಡ್ ಸಿಂಕ್ ಸಕ್ರಿಯವಾಗಿದೆ</strong>: ನೀವು ಇಲ್ಲಿ ಅಪ್ಲೋಡ್ ಮಾಡುವ ಲೋಗೋ ಎಲ್ಲಾ ಬ್ರೌಸರ್‌ಗಳಲ್ಲಿ ತಕ್ಷಣ ಸಿಂಕ್ ಆಗುತ್ತದೆ.
+                </p>
+              </div>
+            </div>
           </div>
 
           <form onSubmit={handleSaveOrg} className="space-y-4 text-xs">

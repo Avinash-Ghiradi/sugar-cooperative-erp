@@ -1,3 +1,4 @@
+import { getCompanyLogo } from '../../services/organizationService';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive } from '../../services/api';
@@ -1211,7 +1212,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
               {/* Clean Factory Logo without any background or border */}
               <div className="w-24 h-24 shrink-0 flex items-center justify-center">
                 <img
-                  src="./id_assets/bsskn_logo.png"
+                  src={getCompanyLogo()}
                   alt="BSSKN Logo"
                   className="w-full h-full object-contain"
                   onError={(e) => { e.target.style.display = 'none'; }}

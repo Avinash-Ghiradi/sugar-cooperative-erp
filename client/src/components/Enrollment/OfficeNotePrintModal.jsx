@@ -1,3 +1,4 @@
+import { getCompanyLogo } from '../../services/organizationService';
 import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer, X, Download, FileText, CheckCircle2, Receipt } from 'lucide-react';
@@ -163,7 +164,7 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
     }, 100);
   };
 
-  const logoSrc = './id_assets/bsskn_logo.png';
+  const logoSrc = getCompanyLogo();
 
   return (
     <>

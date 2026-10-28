@@ -9,6 +9,7 @@ import OfficialShareholderIDCard, {
   compressBackgroundImage,
   compressLogoImage
 } from './OfficialShareholderIDCard';
+import { getCompanyLogo } from '../../services/organizationService';
 import {
   Contact, Printer, Search, RefreshCw, CheckCircle2, ShieldCheck,
   BookOpen, Eye, Image as ImageIcon, SlidersHorizontal, RotateCw, X, Download, Filter,
@@ -1252,7 +1253,7 @@ export default function IDCardGenerator() {
                     ) : (
                       <>
                         <img
-                          src="./id_assets/bsskn_logo.png"
+                          src={getCompanyLogo() || './id_assets/bsskn_logo.png'}
                           alt="Default Official Factory Logo"
                           className="max-h-20 max-w-full object-contain filter drop-shadow-md"
                         />

@@ -1,3 +1,4 @@
+import { getCompanyLogo } from '../../services/organizationService';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer, X, FileText, CheckCircle2, ChevronRight, Layers, UserCheck, ArrowRightLeft } from 'lucide-react';
@@ -51,7 +52,7 @@ function formatDocDate(dateStr) {
 
 export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, isNewSubmission = false }) {
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'p1'...'p14'
-  const logoSrc = './id_assets/bsskn_logo.png';
+  const logoSrc = getCompanyLogo();
 
   useEffect(() => {
     if (isOpen) {

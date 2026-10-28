@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth, ROLE_PERMISSIONS } from '../context/AuthContext';
+import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../services/organizationService';
 import {
   LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert,
@@ -43,14 +44,30 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const { user, activeModule, setActiveModule, activeReportSubTab, setActiveReportSubTab, hasPermission, logout } = useAuth();
   const [reportsExpanded, setReportsExpanded] = React.useState(true);
   const [shareholdersExpanded, setShareholdersExpanded] = React.useState(true);
+  const companyLogo = useCompanyLogo();
 
   return (
     <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-950 border-r border-slate-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col no-print`}>
       {/* Header / Logo */}
       <div className="h-16 flex items-center px-4 border-b border-slate-800 bg-slate-900/50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20">
-            BSSKN
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 flex items-center justify-center text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 overflow-hidden shrink-0">
+            <img
+              src={companyLogo}
+              alt="BSSKN Logo"
+              className="w-full h-full object-contain rounded-lg"
+              onError={(e) => {
+                if (!e.target.src.includes('./id_assets/')) {
+                  e.target.src = DEFAULT_LOGO_PATH;
+                  return;
+                }
+                e.target.style.display = 'none';
+                if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <div className="hidden w-full h-full items-center justify-center font-black text-[11px] text-slate-950">
+              BSSKN
+            </div>
           </div>
           <div className="overflow-hidden">
             <h1 className="font-bold text-xs text-slate-100 leading-tight truncate">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ</h1>

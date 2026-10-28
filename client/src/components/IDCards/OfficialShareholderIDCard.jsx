@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getMemberTypeByCategory } from '../../services/api';
 import { CloudDbService } from '../../services/cloudDb';
+import { getCompanyLogo } from '../../services/organizationService';
 
 const STORAGE_KEY_ID_SETTINGS = 'sugar_erp_id_card_custom_settings_v1';
 
@@ -398,7 +399,7 @@ export default function OfficialShareholderIDCard({
                     {/* Factory Logo on left (Custom uploaded or official default) */}
                     <div className="w-[42px] h-[42px] shrink-0 flex items-center justify-center p-0.5 bg-white/10 rounded-full border border-white/20">
                       <img
-                        src={effectiveLogo || './id_assets/bsskn_logo.png'}
+                        src={effectiveLogo || getCompanyLogo() || './id_assets/bsskn_logo.png'}
                         alt="BSSKN Logo"
                         className="w-full h-full object-contain filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
                         onError={(e) => {

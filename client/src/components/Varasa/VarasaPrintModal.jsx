@@ -1,3 +1,4 @@
+import { getCompanyLogo } from '../../services/organizationService';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer, X, FileText, CheckCircle2, ChevronRight, Layers, UserCheck, Users } from 'lucide-react';
@@ -51,7 +52,7 @@ function formatDocDate(dateStr) {
 
 export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSubmission = false }) {
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'p1'...'p12'
-  const logoSrc = './id_assets/bsskn_logo.png';
+  const logoSrc = getCompanyLogo();
 
   // Dynamic Persons Count (default from data or 4)
   const initialCount = parseInt(varasaData?.family_count || varasaData?.heir_count) || 4;
