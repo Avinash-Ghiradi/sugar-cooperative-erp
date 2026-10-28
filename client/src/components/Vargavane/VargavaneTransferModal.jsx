@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService, isShareholderInactive } from '../../services/api';
+import VargavanePrintModal from './VargavanePrintModal';
 import {
   X, Save, User, MapPin, Phone, CreditCard, Calendar, Upload,
   Search, CheckCircle2, AlertCircle, FileText, Camera, Trash2,
-  Building2, Hash, Layers, ShieldCheck, DollarSign, Receipt, ArrowRightLeft
+  Building2, Hash, Layers, ShieldCheck, DollarSign, Receipt, ArrowRightLeft,
+  Printer, Lock
 } from 'lucide-react';
 
 // Fast client-side image compression
@@ -55,6 +57,14 @@ export default function VargavaneTransferModal({
   const [isSearching, setIsSearching] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef(null);
+
+  const [printRecord, setPrintRecord] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  const isApproved = Boolean(
+    initialData &&
+    ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(initialData.approval_status)
+  );
 
   // 22 Official Statutory Cooperative Vargavane Ledger Fields
   const [form, setForm] = useState({
@@ -196,6 +206,10 @@ export default function VargavaneTransferModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isApproved) {
+      if (showToast) showToast('ಅನುಮೋದಿತ ವರ್ಗಾವಣೆ ದಾಖಲೆಯನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ (Locked after approval).', 'error');
+      return;
+    }
     if (!form.transferor_name?.trim()) {
       if (showToast) showToast('Please enter Transferor Shareholder name.', 'error');
       setActiveTab('transferor');
@@ -217,17 +231,19 @@ export default function VargavaneTransferModal({
         const res = await ApiService.updateVargavaneTransfer(initialData.id || initialData.transfer_id, form);
         if (res.success) {
           if (showToast) showToast('Vargavane transfer application updated successfully!');
-          onSaveSuccess();
-          onClose();
+          if (onSaveSuccess) onSaveSuccess();
+          const savedRec = res.data || { ...initialData, ...form };
+          setPrintRecord(savedRec);
         } else {
           if (showToast) showToast(res.message || 'Update failed', 'error');
         }
       } else {
         const res = await ApiService.addVargavaneTransfer(form);
         if (res.success) {
-          if (showToast) showToast(`Vargavane transfer ${res.transfer_id} registered successfully!`);
-          onSaveSuccess();
-          onClose();
+          if (showToast) showToast(`Vargavane transfer ${res.transfer_id || ''} registered successfully!`);
+          if (onSaveSuccess) onSaveSuccess();
+          const savedRec = res.data || { ...form, transfer_id: res.transfer_id || form.transfer_id };
+          setPrintRecord(savedRec);
         } else {
           if (showToast) showToast(res.message || 'Creation failed', 'error');
         }
@@ -237,7 +253,21 @@ export default function VargavaneTransferModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !printRecord) return null;
+
+  if (printRecord) {
+    return (
+      <VargavanePrintModal
+        isOpen={true}
+        onClose={() => {
+          setPrintRecord(null);
+          onClose();
+        }}
+        vargavaneData={printRecord}
+        isNewSubmission={true}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-center justify-center p-3 sm:p-5 overflow-y-auto">

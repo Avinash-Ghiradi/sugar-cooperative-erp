@@ -3607,8 +3607,16 @@ const newSh = {
     await ensureDBReady();
     const idx = mockVargavaneTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
     if (idx !== -1) {
-      mockVargavaneTransfers[idx] = { ...mockVargavaneTransfers[idx], ...data };
+      const existing = mockVargavaneTransfers[idx];
+      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(existing.approval_status)) {
+        return { success: false, message: 'ಅನುಮೋದಿತ ವರ್ಗಾವಣೆ ದಾಖಲೆಯನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ (Cannot update approved Vargavane transfer).' };
+      }
+      mockVargavaneTransfers[idx] = { ...existing, ...data };
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+      if (CloudDbService.isEnabled()) {
+        CloudDbService.saveCollectionItem('vargavane', mockVargavaneTransfers[idx].transfer_id || String(mockVargavaneTransfers[idx].id), mockVargavaneTransfers[idx])
+          .catch(err => console.warn('Cloud DB updateVargavane error:', err));
+      }
       return { success: true, data: mockVargavaneTransfers[idx] };
     }
     return { success: false, message: 'Record not found' };
@@ -3618,8 +3626,16 @@ const newSh = {
     await ensureDBReady();
     const idx = mockVargavaneTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
     if (idx !== -1) {
-      mockVargavaneTransfers.splice(idx, 1);
+      const existing = mockVargavaneTransfers[idx];
+      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(existing.approval_status)) {
+        return { success: false, message: 'ಅನುಮೋದಿತ ವರ್ಗಾವಣೆ ದಾಖಲೆಯನ್ನು ಅಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ (Cannot delete approved Vargavane transfer).' };
+      }
+      const removed = mockVargavaneTransfers.splice(idx, 1)[0];
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+      if (CloudDbService.isEnabled()) {
+        CloudDbService.deleteCollectionItem('vargavane', removed.transfer_id || String(removed.id))
+          .catch(err => console.warn('Cloud DB deleteVargavane error:', err));
+      }
       return { success: true };
     }
     return { success: false, message: 'Record not found' };

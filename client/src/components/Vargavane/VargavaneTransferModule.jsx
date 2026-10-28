@@ -4,8 +4,9 @@ import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import * as XLSX from 'xlsx';
 import VargavaneTransferModal from './VargavaneTransferModal';
+import VargavanePrintModal from './VargavanePrintModal';
 import {
-  ArrowRightLeft, Search, Plus, CheckCircle2, Clock, X, Save,
+  ArrowRightLeft, Search, Plus, CheckCircle2, Clock, X, Save, Lock,
   Download, Upload, Filter, Printer, Trash2, Edit3, User, MapPin,
   Phone, CreditCard, ShieldCheck, Check, AlertCircle, RefreshCw, Eye,
   Building2, FileSpreadsheet
@@ -671,31 +672,42 @@ export default function VargavaneTransferModule() {
                           type="button"
                           onClick={() => setPrintSlipTransfer(v)}
                           className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                          title="View / Print Vargavane Acknowledgement Slip"
+                          title="ಅಧಿಕೃತ 5 ಪುಟಗಳ ಶೇರು ವರ್ಗಾವಣೆ ಮುದ್ರಣ (Print 5-Page Vargavane Transfer Application Dossier)"
                         >
                           <Printer className="w-3.5 h-3.5 text-teal-400" />
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingTransfer(v);
-                            setShowAddModal(true);
-                          }}
-                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                          title="Edit Vargavane Record"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-sky-400" />
-                        </button>
+                        {['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? (
+                          <span
+                            className="p-1.5 rounded-lg bg-slate-900/60 text-slate-500 cursor-not-allowed"
+                            title="ಅನುಮೋದಿತ ಶೇರು ವರ್ಗಾವಣೆ ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ (Locked after approval)"
+                          >
+                            <Lock className="w-3.5 h-3.5 text-slate-500" />
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingTransfer(v);
+                                setShowAddModal(true);
+                              }}
+                              className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                              title="Edit Vargavane Record"
+                            >
+                              <Edit3 className="w-3.5 h-3.5 text-sky-400" />
+                            </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(v.transfer_id || v.id)}
-                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                          title="Delete Record"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(v.transfer_id || v.id)}
+                              className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                              title="Delete Record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -809,110 +821,14 @@ export default function VargavaneTransferModule() {
         </div>
       )}
 
-      {/* Official Vargavane Acknowledgement Receipt Slip Modal */}
+      {/* Official 5-Page Statutory Vargavane Dossier Print Modal */}
       {printSlipTransfer && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl p-6 space-y-6">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-              <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                <Printer className="w-5 h-5 text-sky-400" /> Vargavane Acknowledgement Slip (ವರ್ಗಾವಣೆ ಶೇರು ಪಾವತಿ ರಶೀದಿ)
-              </h2>
-              <button onClick={() => setPrintSlipTransfer(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Printable Slip Area */}
-            <div id="printable-vargavane-slip" className="bg-white text-slate-900 p-6 rounded-2xl shadow-inner space-y-5 text-xs font-sans border-2 border-slate-300">
-              <div className="text-center border-b-2 border-slate-900 pb-3">
-                <h1 className="text-base font-extrabold text-slate-900 tracking-wide">
-                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204, ತಾ|| ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ.
-                </h1>
-                <h2 className="text-xs font-semibold text-slate-700">
-                  ವರ್ಗಾವಣೆ ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ ಪಾವತಿ ರಶೀದಿ (Vargavane Share Transfer Slip)
-                </h2>
-                <div className="text-[10px] text-slate-600 mt-1 flex justify-between px-2 font-mono">
-                  <span>Transfer ID: {printSlipTransfer.transfer_id}</span>
-                  <span>Date: {printSlipTransfer.receipt_date || printSlipTransfer.application_date || new Date().toLocaleDateString('en-GB')}</span>
-                </div>
-              </div>
-
-              {/* Grid Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2 border-r pr-3 border-slate-200">
-                  <h3 className="font-bold text-slate-950 border-b pb-1 text-[11px]">1. ಮೂಲ ಶೇರುದಾರರ ವಿವರಗಳು (Transferor)</h3>
-                  <div><span className="text-slate-600">ಹೆಸರು:</span> <strong className="text-slate-900">{printSlipTransfer.transferor_name || printSlipTransfer.shareholder_name}</strong></div>
-                  <div><span className="text-slate-600">ಸ್ವಾಮ್ಯತ್ವ (Ownership):</span> <strong>{printSlipTransfer.transferor_relationship || 'ಸ್ವಂತ (Self)'}</strong></div>
-                  <div><span className="text-slate-600">ಆಧಾರ್ ಸಂಖ್ಯೆ:</span> <strong>{printSlipTransfer.transferor_aadhaar || '—'}</strong></div>
-                  <div><span className="text-slate-600">ಸ್ಥಳ / ತಾಲ್ಲೂಕು:</span> <strong>{printSlipTransfer.transferor_place}, {printSlipTransfer.transferor_taluk}</strong></div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-bold text-slate-950 border-b pb-1 text-[11px]">2. ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು (Transferee)</h3>
-                  <div><span className="text-slate-600">ಹೆಸರು:</span> <strong className="text-slate-900">{printSlipTransfer.transferee_name}</strong></div>
-                  <div><span className="text-slate-600">ಸ್ವಾಮ್ಯತ್ವ (Ownership):</span> <strong>ವಾರಸದಾರರು ({printSlipTransfer.transferee_relationship || 'ಮಗ'})</strong></div>
-                  <div><span className="text-slate-600">ಮೊಬೈಲ್:</span> <strong>{printSlipTransfer.transferee_mobile || '—'}</strong></div>
-                  <div><span className="text-slate-600">ಆಧಾರ್ ಸಂಖ್ಯೆ:</span> <strong>{printSlipTransfer.transferee_aadhaar || '—'}</strong></div>
-                  <div><span className="text-slate-600">ಸ್ಥಳ / ತಾಲ್ಲೂಕು:</span> <strong>{printSlipTransfer.transferee_place}, {printSlipTransfer.transferee_taluk}</strong></div>
-                </div>
-              </div>
-
-              {/* Share & Fee Receipt Info */}
-              <div className="p-3 bg-slate-50 border border-slate-300 rounded-xl grid grid-cols-4 gap-2 font-mono text-center">
-                <div>
-                  <span className="text-slate-600 block text-[10px]">ಶೇರು ಸಂಖ್ಯೆ (Share No)</span>
-                  <strong className="text-sky-700 text-sm">#{printSlipTransfer.share_no}</strong>
-                  <div className="text-[10px] text-slate-500 font-sans">{printSlipTransfer.category}</div>
-                </div>
-                <div>
-                  <span className="text-slate-600 block text-[10px]">ಶೇರುಗಳ ಸಂಖ್ಯೆ (Shares)</span>
-                  <strong className="text-slate-900 text-sm">{printSlipTransfer.no_of_shares || 1}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-600 block text-[10px]">ರಶೀದಿ ನಂ (Receipt No)</span>
-                  <strong className="text-slate-900 text-sm">#{printSlipTransfer.receipt_no || '—'}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-600 block text-[10px]">ವರ್ಗಾವಣೆ ಶುಲ್ಕ (Fee)</span>
-                  <strong className="text-emerald-700 text-sm">₹{printSlipTransfer.fees || 570}</strong>
-                </div>
-              </div>
-
-              {/* Signatures */}
-              <div className="pt-8 flex justify-between items-end text-center text-[10px] text-slate-700">
-                <div>
-                  <div className="w-32 border-t border-slate-800 pt-1">ಮೂಲ ಶೇರುದಾರರ ಸಹಿ</div>
-                </div>
-                <div>
-                  <div className="w-32 border-t border-slate-800 pt-1">ವರ್ಗಾವಣೆದಾರರ ಸಹಿ</div>
-                </div>
-                <div>
-                  <div className="w-32 border-t border-slate-800 pt-1">ಕ್ಲಾರ್ಕ್ / ಆಪರೇಟರ್ ಸಹಿ</div>
-                </div>
-                <div>
-                  <div className="w-32 border-t border-slate-800 pt-1">ವ್ಯವಸ್ಥಾಪಕರು / ಕಾರ್ಯದರ್ಶಿ</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setPrintSlipTransfer(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold"
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-lg"
-              >
-                <Printer className="w-4 h-4" /> Print Receipt
-              </button>
-            </div>
-          </div>
-        </div>
+        <VargavanePrintModal
+          isOpen={Boolean(printSlipTransfer)}
+          onClose={() => setPrintSlipTransfer(null)}
+          vargavaneData={printSlipTransfer}
+          isNewSubmission={false}
+        />
       )}
 
       {/* Admin Approval & Master Sync Modal */}
