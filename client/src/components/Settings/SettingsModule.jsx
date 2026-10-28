@@ -9,7 +9,7 @@ import {
   Database, Layers, Check, ArrowRight, Eye, FileText, XCircle, MapPin, Users, Cloud
 } from 'lucide-react';
 import BackupManager from '../Admin/BackupManager';
-import { getCompanyLogo, saveCompanyLogo, resetCompanyLogo, compressLogoImage, DEFAULT_LOGO_PATH } from '../../services/organizationService';
+import { getCompanyLogo, saveCompanyLogo, resetCompanyLogo, getHandshakeLogo, saveHandshakeLogo, resetHandshakeLogo, compressLogoImage, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
 import ResetConfirmModal from '../Common/ResetConfirmModal';
 
 const OFFICIAL_38_HEADERS = [
@@ -65,6 +65,35 @@ export default function SettingsModule({ initialTab = 'org' }) {
     setForm(prev => ({ ...prev, logo: '' }));
     showToast('ಮೂಲ ಅಧಿಕೃತ ಕಾರ್ಖಾನೆ ಲೋಗೋ ಮರುಸ್ಥಾಪಿಸಲಾಗಿದೆ (Restored default factory logo).');
   };
+
+  // Cooperative Handshake Official Logo State
+  const [handshakeLogo, setHandshakeLogo] = useState(() => getHandshakeLogo());
+  const [isUploadingHandshakeLogo, setIsUploadingHandshakeLogo] = useState(false);
+  const handshakeLogoInputRef = useRef(null);
+
+  const handleUploadHandshakeLogo = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingHandshakeLogo(true);
+    try {
+      const dataUrl = await compressLogoImage(file, 400, 400);
+      setHandshakeLogo(dataUrl);
+      await saveHandshakeLogo(dataUrl);
+      showToast('ಸಹಕಾರಿ ಹಸ್ತಲಾಘವ ಲೋಗೋ ಯಶಸ್ವಿಯಾಗಿ ಅಪ್ಲೋಡ್ ಆಗಿದೆ (Cooperative Handshake Logo uploaded & saved)!');
+    } catch (err) {
+      alert('Failed to process handshake logo: ' + err.message);
+    } finally {
+      setIsUploadingHandshakeLogo(false);
+      if (handshakeLogoInputRef.current) handshakeLogoInputRef.current.value = '';
+    }
+  };
+
+  const handleResetHandshakeLogo = async () => {
+    await resetHandshakeLogo();
+    setHandshakeLogo(DEFAULT_HANDSHAKE_PATH);
+    showToast('ಮೂಲ ಸಹಕಾರಿ ಹಸ್ತಲಾಘವ ಚಿಹ್ನೆ ಮರುಸ್ಥಾಪಿಸಲಾಗಿದೆ (Restored default cooperative handshake logo).');
+  };
+
 
   // Form State
   const [form, setForm] = useState(() => {
@@ -699,73 +728,139 @@ export default function SettingsModule({ initialTab = 'org' }) {
             </p>
           </div>
 
-          {/* Company Official Logo Upload Section */}
-          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+          {/* Company & Cooperative Handshake Official Logos Upload Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Card 1: Main Factory Logo (Left Header Emblem) */}
+            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3">
               <div>
-                <h3 className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-                  <Upload className="w-4 h-4 text-emerald-400" />
-                  ಸಂಸ್ಥೆಯ ಅಧಿಕೃತ ಲೋಗೋ / Company Official Logo (Emblem)
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  ಈ ಲೋಗೋವು ಸೈಡ್‌ಬಾರ್, ಲಾಗಿನ್, ಐಡಿ ಕಾರ್ಡ್‌ಗಳು, ವಾರಸಾ & ವರ್ಗಾವಣೆ ಮುದ್ರಣ ದಾಖಲೆಗಳಲ್ಲಿ ಎಲ್ಲೆಡೆ ಅನ್ವಯಿಸುತ್ತದೆ.
+                <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+                  <h3 className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                    ಮುಖ್ಯ ಲೋಗೋ / Factory Logo
+                  </h3>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                    Left Header
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1.5">
+                  ಸೈಡ್‌ಬಾರ್, ಲಾಗಿನ್ ಹಾಗೂ ಶಾಸನಬದ್ಧ ಮುದ್ರಣ ಹೆಡರ್‌ನ ಎಡಭಾಗದಲ್ಲಿ ಕಾಣಿಸಿಕೊಳ್ಳುವ ಮುಖ್ಯ ಕಾರ್ಖಾನೆ ಲಾಂಛನ.
                 </p>
               </div>
-              <span className="self-start sm:self-auto px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 shrink-0">
-                Global Branding
-              </span>
+
+              <div className="flex items-center gap-3.5 pt-1">
+                <div className="relative group shrink-0">
+                  <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-emerald-500/50 bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)] bg-[size:10px_10px] bg-slate-950 flex items-center justify-center p-2 shadow-inner overflow-hidden">
+                    <img
+                      src={companyLogo}
+                      alt="Company Official Logo"
+                      className="max-w-full max-h-full object-contain filter drop-shadow-md"
+                      onError={(e) => {
+                        e.target.src = DEFAULT_LOGO_PATH;
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="file"
+                      ref={logoInputRef}
+                      accept="image/png,image/jpeg,image/webp,image/jpg"
+                      onChange={handleUploadCompanyLogo}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploadingLogo}
+                      onClick={() => logoInputRef.current?.click()}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{isUploadingLogo ? 'ಅಪ್ಲೋಡ್...' : 'ಅಪ್ಲೋಡ್'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleResetCompanyLogo}
+                      className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1 border border-slate-700 transition-colors cursor-pointer"
+                      title="Reset to official factory logo"
+                    >
+                      <RefreshCw className="w-3 h-3 text-amber-400" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400">
+                    ಪಾರದರ್ಶಕ PNG ಅಥವಾ JPG (400×400px)
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
-              {/* Logo Preview Frame */}
-              <div className="relative group shrink-0">
-                <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-emerald-500/50 bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)] bg-[size:12px_12px] bg-slate-950 flex items-center justify-center p-2 shadow-inner overflow-hidden">
-                  <img
-                    src={companyLogo}
-                    alt="Company Official Logo"
-                    className="max-w-full max-h-full object-contain filter drop-shadow-md"
-                    onError={(e) => {
-                      e.target.src = DEFAULT_LOGO_PATH;
-                    }}
-                  />
+            {/* Card 2: Cooperative Handshake Emblem (Right Header Emblem) */}
+            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+              <div>
+                <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+                  <h3 className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5 text-blue-400" />
+                    ಸಹಕಾರಿ ಹಸ್ತಲಾಘವ / Handshake Logo
+                  </h3>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800">
+                    Right Header
+                  </span>
                 </div>
+                <p className="text-[11px] text-slate-400 mt-1.5">
+                  ವಾರಸಾ ಮತ್ತು ವರ್ಗಾವಣೆ 14 ಪುಟಗಳ ಅಧಿಕೃತ ದಾಖಲೆಗಳ ಹೆಡರ್‌ನ ಬಲಭಾಗದಲ್ಲಿ ಕಾಣಿಸಿಕೊಳ್ಳುವ ಸಹಕಾರಿ ಹಸ್ತಲಾಘವ ಲಾಂಛನ.
+                </p>
               </div>
 
-              {/* Action Buttons & Guidance */}
-              <div className="flex-1 space-y-2 text-center sm:text-left">
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <input
-                    type="file"
-                    ref={logoInputRef}
-                    accept="image/png,image/jpeg,image/webp,image/jpg"
-                    onChange={handleUploadCompanyLogo}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    disabled={isUploadingLogo}
-                    onClick={() => logoInputRef.current?.click()}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{isUploadingLogo ? 'ಅಪ್ಲೋಡ್ ಆಗುತ್ತಿದೆ...' : 'ಹೊಸ ಲೋಗೋ ಅಪ್ಲೋಡ್ ಮಾಡಿ (Upload Logo)'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleResetCompanyLogo}
-                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors cursor-pointer"
-                    title="Reset to official factory logo (ಮೂಲ ಕಾರ್ಖಾನೆ ಲೋಗೋಗೆ ಮರುಸ್ಥಾಪಿಸಿ)"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
-                    <span>ಮರುಸ್ಥಾಪಿಸಿ (Reset)</span>
-                  </button>
+              <div className="flex items-center gap-3.5 pt-1">
+                <div className="relative group shrink-0">
+                  <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-blue-500/50 bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)] bg-[size:10px_10px] bg-slate-950 flex items-center justify-center p-2 shadow-inner overflow-hidden">
+                    <img
+                      src={handshakeLogo}
+                      alt="Cooperative Handshake Logo"
+                      className="max-w-full max-h-full object-contain filter drop-shadow-md"
+                      onError={(e) => {
+                        e.target.src = DEFAULT_HANDSHAKE_PATH;
+                      }}
+                    />
+                  </div>
                 </div>
 
-                <p className="text-[10.5px] text-slate-400 leading-normal">
-                  • <strong>ಶಿಫಾರಸು</strong>: ಪಾರದರ್ಶಕ ಹಿನ್ನೆಲೆ ಹೊಂದಿರುವ PNG (Transparent PNG) ಅಥವಾ ಗರಿಷ್ಠ ರೆಸಲ್ಯೂಶನ್‌ನ JPG/WebP ಚಿತ್ರ (400×400px).<br />
-                  • <strong>ಕ್ಲೌಡ್ ಸಿಂಕ್ ಸಕ್ರಿಯವಾಗಿದೆ</strong>: ನೀವು ಇಲ್ಲಿ ಅಪ್ಲೋಡ್ ಮಾಡುವ ಲೋಗೋ ಎಲ್ಲಾ ಬ್ರೌಸರ್‌ಗಳಲ್ಲಿ ತಕ್ಷಣ ಸಿಂಕ್ ಆಗುತ್ತದೆ.
-                </p>
+                <div className="flex-1 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="file"
+                      ref={handshakeLogoInputRef}
+                      accept="image/png,image/jpeg,image/webp,image/jpg"
+                      onChange={handleUploadHandshakeLogo}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploadingHandshakeLogo}
+                      onClick={() => handshakeLogoInputRef.current?.click()}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{isUploadingHandshakeLogo ? 'ಅಪ್ಲೋಡ್...' : 'ಅಪ್ಲೋಡ್'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleResetHandshakeLogo}
+                      className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1 border border-slate-700 transition-colors cursor-pointer"
+                      title="Reset to default handshake emblem"
+                    >
+                      <RefreshCw className="w-3 h-3 text-amber-400" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400">
+                    ಪಾರದರ್ಶಕ ಹಸ್ತಲಾಘವ PNG (400×400px)
+                  </p>
+                </div>
               </div>
             </div>
           </div>

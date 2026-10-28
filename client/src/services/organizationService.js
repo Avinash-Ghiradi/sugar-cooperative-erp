@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { CloudDbService } from './cloudDb';
 
 const STORAGE_KEY_COMPANY_LOGO = 'sugar_erp_company_logo';
+const STORAGE_KEY_HANDSHAKE_LOGO = 'sugar_erp_handshake_logo';
 const STORAGE_KEY_ORG_SETTINGS = 'sugar_erp_org_settings';
 export const DEFAULT_LOGO_PATH = './id_assets/bsskn_logo.png';
+export const DEFAULT_HANDSHAKE_PATH = './id_assets/cooperative_handshake.png';
 
 // Helper to compress and optimize uploaded company logo image
 export function compressLogoImage(file, maxWidth = 400, maxHeight = 400) {
@@ -108,7 +110,7 @@ export async function syncCompanyLogoFromCloud() {
   try {
     const records = await CloudDbService.getCollection('organization_settings');
     const cloudItem = records && records.length > 0
-      ? records.find(r => r.record_id === 'company_logo' || r.id === 'company_logo' || r.logo !== undefined) || records[0]
+      ? records.find(r => r.record_id === 'company_logo' || r.id === 'company_logo') || records[0]
       : null;
     const local = localStorage.getItem(STORAGE_KEY_COMPANY_LOGO) || '';
 
@@ -165,6 +167,106 @@ export function useCompanyLogo() {
     return () => {
       window.removeEventListener('company_logo_updated', handleUpdate);
       window.removeEventListener('id_card_settings_updated', () => setLogo(getCompanyLogo()));
+    };
+  }, []);
+
+  return logo;
+}
+
+
+// ==========================================
+// COOPERATIVE HANDSHAKE LOGO MANAGEMENT
+// ==========================================
+
+// Get current handshake logo (prioritizes uploaded custom logo, falls back to default)
+export function getHandshakeLogo() {
+  try {
+    const custom = localStorage.getItem(STORAGE_KEY_HANDSHAKE_LOGO);
+    if (custom && custom.length > 20) return custom;
+  } catch (e) {}
+  return DEFAULT_HANDSHAKE_PATH;
+}
+
+// Save handshake logo globally (localStorage + Supabase Cloud DB + broadcast event)
+export async function saveHandshakeLogo(dataUrl) {
+  try {
+    if (dataUrl) {
+      localStorage.setItem(STORAGE_KEY_HANDSHAKE_LOGO, dataUrl);
+    } else {
+      localStorage.removeItem(STORAGE_KEY_HANDSHAKE_LOGO);
+    }
+
+    // Broadcast update events locally to all mounted components
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('handshake_logo_updated', { detail: dataUrl || DEFAULT_HANDSHAKE_PATH }));
+    }
+
+    // Sync to Supabase Cloud DB across all browsers worldwide
+    await CloudDbService.saveCollectionItem('organization_settings', 'handshake_logo', {
+      logo: dataUrl || '',
+      updated_at: new Date().toISOString()
+    }).catch(err => console.warn('Cloud save handshake_logo failed:', err));
+
+    return true;
+  } catch (err) {
+    console.error('saveHandshakeLogo error:', err);
+    return false;
+  }
+}
+
+// Reset handshake logo to default
+export async function resetHandshakeLogo() {
+  return saveHandshakeLogo('');
+}
+
+// Sync handshake logo from Supabase Cloud DB across all browsers
+export async function syncHandshakeLogoFromCloud() {
+  try {
+    const records = await CloudDbService.getCollection('organization_settings');
+    const cloudItem = records && records.length > 0
+      ? records.find(r => r.record_id === 'handshake_logo' || r.id === 'handshake_logo')
+      : null;
+    const local = localStorage.getItem(STORAGE_KEY_HANDSHAKE_LOGO) || '';
+
+    if (cloudItem && cloudItem.logo) {
+      if (cloudItem.logo !== local) {
+        localStorage.setItem(STORAGE_KEY_HANDSHAKE_LOGO, cloudItem.logo);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('handshake_logo_updated', { detail: cloudItem.logo }));
+        }
+      }
+      return cloudItem.logo;
+    } else if (local && local.length > 50) {
+      // Local has a logo that cloud doesn't have yet -> push to cloud
+      await CloudDbService.saveCollectionItem('organization_settings', 'handshake_logo', {
+        logo: local,
+        updated_at: new Date().toISOString()
+      });
+      return local;
+    }
+  } catch (err) {
+    console.warn('syncHandshakeLogoFromCloud failed:', err);
+  }
+  return getHandshakeLogo();
+}
+
+// React Hook to subscribe to real-time handshake logo updates anywhere in the UI
+export function useHandshakeLogo() {
+  const [logo, setLogo] = useState(() => getHandshakeLogo());
+
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      setLogo(e?.detail || getHandshakeLogo());
+    };
+    window.addEventListener('handshake_logo_updated', handleUpdate);
+
+    // Initial background cloud sync
+    syncHandshakeLogoFromCloud().then(cloudLogo => {
+      if (cloudLogo) setLogo(cloudLogo);
+    });
+
+    return () => {
+      window.removeEventListener('handshake_logo_updated', handleUpdate);
     };
   }, []);
 

@@ -1,10 +1,24 @@
-import { getCompanyLogo } from '../../services/organizationService';
+import { getCompanyLogo, useCompanyLogo, useHandshakeLogo } from '../../services/organizationService';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer, X, FileText, CheckCircle2, ChevronRight, Layers, UserCheck, ArrowRightLeft } from 'lucide-react';
 
 // Classic Cooperative Handshake Icon (Two Clasped Hands with Suit Sleeves)
 export function CooperativeHandshakeIcon({ className = "w-20 h-12" }) {
+  const handshakeLogo = useHandshakeLogo();
+  const [imgError, setImgError] = useState(false);
+
+  if (handshakeLogo && !imgError) {
+    return (
+      <img
+        src={handshakeLogo}
+        alt="Cooperative Handshake Emblem"
+        className={`${className} object-contain filter drop-shadow-sm`}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
   return (
     <svg viewBox="0 0 140 70" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
       {/* Left Suit Sleeve (Black) */}
@@ -52,7 +66,7 @@ function formatDocDate(dateStr) {
 
 export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, isNewSubmission = false }) {
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'p1'...'p14'
-  const logoSrc = getCompanyLogo();
+  const logoSrc = useCompanyLogo();
 
   useEffect(() => {
     if (isOpen) {
