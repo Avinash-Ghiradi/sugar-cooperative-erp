@@ -50,7 +50,7 @@ function formatDocDate(dateStr) {
 }
 
 export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, isNewSubmission = false }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'p1'...'p5'
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'p1'...'p10'
   const logoSrc = './id_assets/bsskn_logo.png';
 
   useEffect(() => {
@@ -688,7 +688,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <span>ಶೇರು ವರ್ಗಾವಣೆ ದಾಖಲಾತಿ ಕಡತ (Vargavane 5-Page Complete Bundle)</span>
+                  <span>ಶೇರು ವರ್ಗಾವಣೆ ದಾಖಲಾತಿ ಕಡತ (Vargavane 10-Page Complete Bundle)</span>
                   {isNewSubmission && (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
                       ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ (Newly Submitted)
@@ -696,7 +696,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
                   )}
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  ಕಾನೂನುಬದ್ಧ 5 ಪುಟಗಳ ಅಧಿಕೃತ ಶೇರು ವರ್ಗಾವಣೆ ಪತ್ರಗಳು (A4 Format)
+                  ಕಾನೂನುಬದ್ಧ 10 ಪುಟಗಳ ಅಧಿಕೃತ ಶೇರು ವರ್ಗಾವಣೆ ಪತ್ರಗಳು (A4 Format)
                 </p>
               </div>
             </div>
@@ -710,7 +710,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
               >
                 <Printer className="w-4 h-4" />
                 <span>
-                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 5 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
+                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 10 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
                 </span>
               </button>
               <button
@@ -823,7 +823,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>
-                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 5 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
+                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 10 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
                 </span>
               </button>
               <button
