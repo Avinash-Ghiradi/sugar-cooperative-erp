@@ -49,18 +49,8 @@ function formatDocDate(dateStr) {
   return clean;
 }
 
-// Full English/Kannada mixed date like "28 October 2026"
-function formatLongDate(dateStr) {
-  if (!dateStr) {
-    const d = new Date();
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-  }
-  return String(dateStr);
-}
-
 export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSubmission = false }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'p1', 'p2', 'p3', 'p4', 'p5'
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'p1'...'p10'
   const logoSrc = './id_assets/bsskn_logo.png';
 
   useEffect(() => {
@@ -118,7 +108,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
     }, 100);
   };
 
-  // Reusable Header Box for all 5 pages
+  // Reusable Header Box for all pages
   const renderHeaderBox = () => (
     <div className="border-[2px] border-black mb-3">
       <div className="flex items-center justify-between p-2 pb-1 bg-white">
@@ -161,7 +151,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   );
 
   // =========================================================================
-  // PAGE 1: ಶೇರು ವಾರಸಾ ಅರ್ಜಿ - 1
+  // PAGE 1: ಶೇರು ವಾರಸಾ ಅರ್ಜಿ – 1
   // =========================================================================
   const renderPage1 = () => (
     <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
@@ -572,9 +562,466 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
     </div>
   );
 
+  // =========================================================================
+  // PAGE 6: ಸದಸ್ಯರು ಗುರುತಿನ ಚೀಟಿ ಪಡೆಯಲು ತುಂಬುವ ಅರ್ಜಿ ನಮೂನೆ
+  // =========================================================================
+  const renderPage6 = () => (
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+      <div>
+        {renderHeaderBox()}
+
+        <div className="text-xs font-bold text-black mb-1.5">
+          ದಿನಾಂಕ:-{applicationDate}
+        </div>
+
+        {/* Centered Title */}
+        <div className="flex justify-center my-1.5">
+          <div className="border-[2px] border-black p-0.5 bg-white inline-block">
+            <div className="border border-black px-6 py-1 bg-white text-center">
+              <span className="text-[15px] font-bold text-black tracking-wide">
+                -:: ಸದಸ್ಯರು ಗುರುತಿನ ಚೀಟಿ ಪಡೆಯಲು ತುಂಬುವ ಅರ್ಜಿ ನಮೂನೆ ::-
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Table 1: Member Particulars */}
+        <table className="w-full border-[1.5px] border-black text-xs text-left mb-2">
+          <tbody>
+            <tr className="border-b border-black">
+              <td className="w-8 p-1.5 border-r border-black text-center font-bold">1</td>
+              <td className="w-48 p-1.5 border-r border-black font-semibold">ಸದಸ್ಯತ್ವ “{cleanCategory}”ವರ್ಗ</td>
+              <td className="w-28 p-1.5 border-r border-black font-semibold">ಶೇರು ಖಾತೆ ನಂ:</td>
+              <td className="p-1.5 font-bold font-mono text-[14px]">{shareNo}</td>
+            </tr>
+            <tr className="border-b border-black">
+              <td className="p-1.5 border-r border-black text-center font-bold">2</td>
+              <td className="p-1.5 border-r border-black font-semibold">ಸದಸ್ಯರ ಪೂರ್ಣ ಹೆಸರು :</td>
+              <td colSpan="2" className="p-1.5 font-bold text-[13px]">{heirName}</td>
+            </tr>
+            <tr className="border-b border-black">
+              <td className="p-1.5 border-r border-black text-center font-bold align-top">3</td>
+              <td className="p-1.5 border-r border-black font-semibold align-top">ಖಾಯಂ ವಿಳಾಸ :</td>
+              <td colSpan="2" className="p-1.5 space-y-0.5">
+                <div>ಮುಕ್ಕಾಂ :- <strong>{heirPlace}</strong> & ಪೋಷ್ಟ :- </div>
+                <div>PIN CODE:- </div>
+                <div>ತಾಲೂಕ: <strong>{heirTaluk}</strong> ಜಿಲ್ಲಾ: <strong>{heirDistrict}</strong></div>
+                <div>ಮೊಬೈಲ್ ನಂಬರ: <strong className="font-mono">{heirMobile}</strong></div>
+              </td>
+            </tr>
+            <tr className="border-b border-black">
+              <td className="p-1.5 border-r border-black text-center font-bold">4</td>
+              <td className="p-1.5 border-r border-black font-semibold">ಲಿಂಗ : <strong className="underline">ಗಂಡು/ಹೆಣ್ಣು</strong></td>
+              <td className="p-1.5 border-r border-black">ಜನ್ಮ ದಿನಾಂಕ : _____ / _____ / _________</td>
+              <td className="p-1.5">ವಯಸ್ಸು : _________</td>
+            </tr>
+            <tr className="border-b border-black">
+              <td className="p-1.5 border-r border-black text-center font-bold">5</td>
+              <td className="p-1.5 border-r border-black font-semibold">ಗುರುತಿನ ಚೀಟಿ ಮಾಡಲು ಕಾರಣ:</td>
+              <td colSpan="2" className="p-1.5 font-bold">ಶೇರ ವಾರಸಾ ಇರುವದು.</td>
+            </tr>
+            <tr>
+              <td className="p-1.5 border-r border-black text-center font-bold">6</td>
+              <td colSpan="3" className="p-1.5 font-bold">ಮೂಲ ಶೇರ ಸರ್ಟಿಫಿಕೇಟ ಝರಾಕ್ಸ್ ಪ್ರತಿ ಕಡ್ಡಾಯವಾಗಿ ಲಗತ್ತಿಸುವದು.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Section Instruction */}
+        <div className="border border-black p-1 text-[11px] font-bold text-center bg-slate-50 mb-2">
+          ಸದಸ್ಯರು ತಮ್ಮ ಹೆಸರಿನ ಹಾಗು ವಿಳಾಸಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಫೋಟೋ ಸಹಿತ ಇರುವ ಈ ಕೆಳಕಾಣಿಸಿದ ಸರ್ಕಾರಿ ಗುರುತಿನ ದಾಖಲೆಗಳ ಪೈಕಿ ಒಂದನ್ನಾದರೂ ಪೂರೈಸತಕ್ಕದ್ದು.
+        </div>
+
+        {/* Table 2: Govt Photo ID Proofs */}
+        <table className="w-full border-[1.5px] border-black text-xs text-left mb-2">
+          <thead>
+            <tr className="border-b border-black font-bold bg-slate-100 text-center">
+              <th className="w-10 p-1 border-r border-black">ಅ. ಸಂ.</th>
+              <th className="p-1 border-r border-black">ಲಗತ್ತಿಸುವ ಸರ್ಕಾರಿ ದಾಖಲೆಗಳ ವಿವರ</th>
+              <th className="w-40 p-1 border-r border-black">ಕಾರ್ಡ ಸಂಖ್ಯೆ</th>
+              <th className="w-44 p-1 border-r border-black">ದಾಖಲೆ ವಿತರಿಸಿದ ಅಧಿಕಾರಿ ವಿವರ</th>
+              <th className="w-28 p-1">ಮತಕ್ಷೇತ್ರದ ಸ್ಥಳ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-black">
+              <td className="p-1 border-r border-black text-center font-bold">1)</td>
+              <td className="p-1 border-r border-black">ಚುನಾವಣಾಧಿಕಾರಿಗಳ ಗುರುತಿನ ಚೀಟಿ</td>
+              <td className="p-1 border-r border-black"></td>
+              <td className="p-1 border-r border-black text-center font-serif text-[11px]">Electoral Register Officer</td>
+              <td className="p-1"></td>
+            </tr>
+            <tr className="border-b border-black">
+              <td className="p-1 border-r border-black text-center font-bold">2)</td>
+              <td className="p-1 border-r border-black font-semibold">ಆಧಾರ ಕಾರ್ಡ</td>
+              <td className="p-1 border-r border-black text-center font-mono font-bold">{heirAadhaar || '_____ / _____ / _____'}</td>
+              <td className="p-1 border-r border-black text-center font-serif text-[11px]">Govt. of India</td>
+              <td className="p-1 text-center font-serif text-[11px]">Govt. of India</td>
+            </tr>
+            <tr className="border-b border-black">
+              <td className="p-1 border-r border-black text-center font-bold">3)</td>
+              <td className="p-1 border-r border-black">ಪಡಿತರ ಚೀಟಿ (ರೇಶನ್ ಕಾರ್ಡ)</td>
+              <td className="p-1 border-r border-black"></td>
+              <td className="p-1 border-r border-black"></td>
+              <td className="p-1"></td>
+            </tr>
+            <tr className="border-b border-black">
+              <td className="p-1 border-r border-black text-center font-bold">4)</td>
+              <td className="p-1 border-r border-black">ಆದಾಯ ತೆರಿಗೆ ಇಲಾಖೆಯ ಪ್ಯಾನ್ ಕಾರ್ಡ</td>
+              <td className="p-1 border-r border-black"></td>
+              <td className="p-1 border-r border-black"></td>
+              <td className="p-1"></td>
+            </tr>
+            <tr className="border-b border-black">
+              <td className="p-1 border-r border-black text-center font-bold">5)</td>
+              <td className="p-1 border-r border-black">ಪಾಸ್‌ಪೋರ್ಟ</td>
+              <td className="p-1 border-r border-black"></td>
+              <td className="p-1 border-r border-black"></td>
+              <td className="p-1"></td>
+            </tr>
+            <tr>
+              <td className="p-1 border-r border-black text-center font-bold">6)</td>
+              <td className="p-1 border-r border-black">ವಾಹನ ಚಾಲನಾ ಪರವಾನಿಗೆ ಪತ್ರ</td>
+              <td className="p-1 border-r border-black"></td>
+              <td className="p-1 border-r border-black"></td>
+              <td className="p-1"></td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Declaration */}
+        <div className="text-[11.5px] text-justify text-black mb-3">
+          ಮೇಲ್ಕಾಣಿಸಿದ ಮಾಹಿತಿಗಳು ಹಾಗು ದಾಖಲೆಗಳು ಸತ್ಯ ಮತ್ತು ನೈಜವಾಗಿವೆ ಎಂದು ಈ ಮೂಲಕ ಪ್ರಮಾಣೀಕರಿಸುತ್ತೇನೆ.
+        </div>
+
+        {/* Location, Date & Signature */}
+        <div className="flex justify-between items-end text-xs font-bold mb-3">
+          <div className="space-y-0.5">
+            <div>ಸ್ಥಳ:- ಮರಗೂರ.</div>
+            <div>ದಿನಾಂಕ: {applicationDate}</div>
+          </div>
+          <div className="text-center">
+            <div>ಸದಸ್ಯರ ಸಹಿ</div>
+          </div>
+        </div>
+
+        {/* Footer Notes */}
+        <div className="border-t border-black pt-2 text-[11px] leading-relaxed text-black">
+          <div className="font-bold underline mb-1">ಸೂಚನೆ:-</div>
+          <div className="pl-4 space-y-1">
+            <div>1) ಹೆಸರು ಮತ್ತು ವಿಳಾಸದ ಸಮಂಜಸ ದಾಖಲೆಗಳ ಝರಾಕ್ಸ್ ಪ್ರತಿಗಳನ್ನು ಹಾಜರಪಡಿಸಬೇಕು.</div>
+            <div>2) ಸದಸ್ಯರು ಹೆಬ್ಬೆಟ್ಟಿನ ಸಹಿ ಇದ್ದವರಿಗೆ ಕಾರ್ಖಾನೆಯ ಒಬ್ಬ ಸದಸ್ಯರಿಂದ ದೃಢೀಕರಣ ಪಡೆಯತಕ್ಕದ್ದು. ಅವರ ಹೆಸರು ಖಾತೆ ನಮೂದಿಸತಕ್ಕದ್ದು.</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-right text-xs font-bold text-black pt-2">6</div>
+    </div>
+  );
+
+  // =========================================================================
+  // PAGE 7: ಕಾರ್ಖಾನೆಯ ನಿರ್ದೇಶಕರ ಪರಿಶೀಲನಾ ಪತ್ರ
+  // =========================================================================
+  const renderPage7 = () => (
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+      <div>
+        {renderHeaderBox()}
+
+        <div className="text-xs font-bold text-black mb-2">
+          ದಿನಾಂಕ:-{applicationDate}
+        </div>
+
+        {/* Orange/Gold Header Pill Box */}
+        <div className="flex justify-center my-2">
+          <div className="border-[2px] border-amber-600 rounded-xl px-8 py-1.5 bg-amber-500/15 text-center">
+            <span className="text-[16px] font-bold text-black tracking-wide">
+              -:: ಕಾರ್ಖಾನೆಯ ನಿರ್ದೇಶಕರ ಪರಿಶೀಲನಾ ಪತ್ರ ::-
+            </span>
+          </div>
+        </div>
+
+        {/* Subject */}
+        <div className="my-3 text-[13px] leading-relaxed text-black">
+          <div className="font-bold">
+            ವಿಷಯ :- “ಮೃತ ಶೇರುದಾರರ ಕುಟುಂಬ ಸದಸ್ಯರಿಗೆ ವಾರಸಾ ಮಾಡುವುದಕ್ಕಾಗಿ ಅರ್ಜಿಗೆ ಲಗತ್ತಿಸಿದ ಎಲ್ಲ ದಾಖಲಾತಿಗಳನ್ನು ಪುನಃ ಪರಿಶೀಲನೆ ಮಾಡಿ ಶಿಫಾರಸ್ಸು ಮಾಡಿರುವ ಕುರಿತು”
+          </div>
+        </div>
+
+        {/* Paragraph 1 */}
+        <div className="text-[12.8px] leading-[2.0] text-justify text-black mb-4">
+          <p className="indent-8">
+            ಮೇಲ್ಕಾಣಿಸಿದ ವಿಷಯದನ್ವಯ, ಕಾರ್ಖಾನೆಯ “<strong>{cleanCategory}</strong>” ವರ್ಗದ ಸದಸ್ಯರಾದ <strong>ದಿವಂಗತ. {shareholderName} ತಾಲೂಕ: {shareholderPlace} ಜಿಲ್ಲಾ: {shareholderDistrict}</strong> ಇವರು ಶೇರು ಸದಸ್ಯತ್ವ ಹೊಂದಿದ್ದು, ಶೇರ ಖಾತೆ ನಂ: <strong>{shareNo}</strong> ಇರುತ್ತದೆ. ಸದರಿಯವರು ದಿನಾಂಕ: <strong>{dod}</strong> ರಂದು ಮೃತರಾದ ಪ್ರಯುಕ್ತ, ಮೃತ ಸದಸ್ಯರ <strong>{relationship}</strong> ನಾದ <strong>{heirName} ಸಾ: {heirPlace} ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲಾ: {heirDistrict}</strong> ರವರು ಕಾರ್ಖಾನೆಯ ನಿಯಮಾನುಸಾರ ಅವಶ್ಯಕವಿರುವ ಈ ಕೆಳಕಂಡ ದಾಖಲಾತಿಗಳೊಂದಿಗೆ ಶೇರು ವಾರಸಾ ಮಾಡಲು ತಮ್ಮ ಅರ್ಜಿ ದಿನಾಂಕ: <strong>{applicationDate}</strong> ರಲ್ಲಿ ವಿನಂತಿಸಿಕೊಂಡಿದ್ದರನ್ವಯ, ಕಾರ್ಯಾಲಯ ಆದೇಶ ದಿನಾಂಕ: _____ / _____ /2022 ರ ಪ್ರಕಾರ ಕ್ಷೇತ್ರ ಸಹಾಯಕರಾದ ಶ್ರೀ _____________________ ಇವರು ದಿನಾಂಕ: _____ / _____ /2022 ರಂದು ಖುದ್ದಾಗಿ ಮೃತರ ಗ್ರಾಮಕ್ಕೆ ಖುದ್ದಾಗಿ ಹೋಗಿ ಪಂಚರ ಸಮಕ್ಷಮದಲ್ಲಿ ಹಾಗು ಗ್ರಾಮದ ಪ್ರಮುಖರ ಜೊತೆಗೆ ಕೂಲಂಕೂಷವಾಗಿ ವಿಚಾರಣೆ ಮಾಡಿ ಮೃತರ ಕುಟುಂಬದ ಎಲ್ಲ ಸದಸ್ಯರು ಸಂಪೂರ್ಣ ಒಪ್ಪಿಗೆ ಇರುವ ಬಗ್ಗೆ ಸಹಿ ಹಾಗು ಎಡಗೈ ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು(ಥಂಬ) ತೆಗೆದುಕೊಂಡು ಸಾಕ್ಷಿದಾರರ ಸಮಕ್ಷಮ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ಮಾಡಿದ ವರದಿಯನ್ನು ಉಪ ಪ್ರಧಾನ ವ್ಯವಸ್ಥಾಪಕರು(ಕಬ್ಬು) ರವರ ಶರಾದೊಂದಿಗೆ ದಿನಾಂಕ: _____ / _____ /2022 ರನ್ವಯ ತಮ್ಮ ಚೌಕಾಸಿ ವರದಿ ನೀಡಿರುತ್ತಾರೆ.
+          </p>
+        </div>
+
+        {/* Paragraph 2 */}
+        <div className="text-[12.8px] leading-[2.0] text-justify text-black mb-8">
+          <p className="indent-8">
+            ಮೃತರ ಶೇರು ವಾರಸಾ ಮಾಡಲು ವಿನಂತಿ ಅರ್ಜಿಗೆ ಲಗತ್ತಿಸಿದ ಎಲ್ಲ ಕಾಗದ ಪತ್ರಗಳನ್ನು ಕೂಲಂಕೂಷವಾಗಿ ಪರಿಶೀಲಿಸಿ, ಕಾರ್ಖಾನೆಯ ಉಪ ನಿಯಮ 19(6) ಹಾಗೂ ಕರ್ನಾಟಕ ಸಹಕಾರ ಸಂಘಗಳ ಕಾಯ್ದೆ 1959 ಕಲಂ 24ರ ಪ್ರಕಾರ ಸರಿ ಇರುತ್ತವೆ ಅಂತಾ ಕಾರ್ಖಾನೆಯ ಕಾನೂನು ಸಲಹೆಗಾರರು ದಿನಾಂಕ: _____ / _____ /2022 ರನ್ವಯ ತಮ್ಮ ವರದಿ ನೀಡಿರುತ್ತಾರೆ. ಈ ಕೆಳಕಾಣಿಸಿದ ಕಾರ್ಖಾನೆಯ ಆಡಳಿತ ಮಂಡಳಿಯ ನಿರ್ದೇಶಕರಾದ ನಾವು ಖುದ್ದಾಗಿ ಕಛೇರಿಯಲ್ಲಿ ಪುನಃ ಮತ್ತೊಮ್ಮೆ ಕೂಲಂಕೂಷವಾಗಿ ಪರಿಶೀಲನೆ ಮಾಡಲಾಗಿ ಕಾರ್ಖಾನೆಯ ನಿಯಮಾನುಸಾರ ಸರಿ ಇರುತ್ತವೆ. ಆದಕಾರಣ, ಸದರ ಮೂಲ ಶೇರ ಖಾತೆ ನಂ: <strong>{shareNo}</strong> ರಲ್ಲಿರುವ ಮೃತರ ಹೆಸರನ್ನು ಕಡಿಮೆ ಮಾಡಿ, ಮೃತರ ವಾರಸುದಾರರಿಗೆ ವಾರಸಾ ಮಾಡಿ ಹೊಸದಾಗಿ ಶೇರ ಖಾತೆ ನಂಬರ ಕೊಡುವ ವಿಷಯ ಕುರಿತು ಕಾರ್ಖಾನೆಯ ಮುಂಬರುವ ಆಡಳಿತ ಮಂಡಳಿಯ ಸಭೆಯಲ್ಲಿ ಮಂಡಿಸಲು ಶಿಫಾರಸ್ಸು ಮಾಡಲಾಗಿರುತ್ತದೆ.
+          </p>
+        </div>
+
+        {/* Signatures of Directors */}
+        <div className="flex justify-between items-end px-12 pt-16 text-sm font-bold text-black">
+          <div className="text-center space-y-1">
+            <div className="w-36 border-t border-black pt-1">ನಿರ್ದೇಶಕರು</div>
+          </div>
+          <div className="text-center space-y-1">
+            <div className="w-36 border-t border-black pt-1">ನಿರ್ದೇಶಕರು</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-right text-xs font-bold text-black pt-2">7</div>
+    </div>
+  );
+
+  // =========================================================================
+  // PAGE 8: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ (ಪುಟ 1)
+  // =========================================================================
+  const renderPage8 = () => (
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+      <div>
+        {renderHeaderBox()}
+
+        {/* Top Header Row */}
+        <div className="flex justify-between items-center text-xs font-bold text-black mb-1">
+          <div>ಸಲ್ಲಿಸಲಾಗಿದೆ:-</div>
+          <div className="border-[2px] border-amber-600 rounded-lg px-6 py-1 bg-amber-500/15 text-center text-sm font-bold">
+            -:: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ ::-
+          </div>
+          <div>{applicationDate}</div>
+        </div>
+
+        <div className="my-2 text-xs font-bold text-black">
+          ವಿಷಯ:-“ವಾರಸುದಾರರ ಒಪ್ಪಿಗೆ ಬಗ್ಗೆ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ಮಾಡಿದ ವರದಿ ಕುರಿತು”
+        </div>
+
+        <div className="text-xs font-bold text-black mb-1">
+          ಮಾನ್ಯರೇ,
+        </div>
+
+        {/* Body Paragraph */}
+        <div className="text-[12px] leading-[1.8] text-justify text-black mb-3">
+          <p className="indent-6">
+            ಮೇಲ್ಕಾಣಿಸಿದ ವಿಷಯದನ್ವಯ, <strong>ದಿವಂಗತ. {shareholderName} ಸಾ: {shareholderPlace} ತಾಲೂಕ: {shareholderTaluk} ಜಿಲ್ಲಾ: {shareholderDistrict}</strong> ಇವರು ಕಾರ್ಖಾನೆಯಲ್ಲಿ ‘<strong>{cleanCategory}</strong>’ ಗಣದ ಶೇರು ಹೊಂದಿದ್ದು, ಖಾತೆ ನಂ: <strong>{shareNo}</strong> ಇರುತ್ತದೆ. ಸದರಿಯವರು ದಿನಾಂಕ: <strong>{dod}</strong> ರಂದು ಮೃತರಾದ ಪ್ರಯುಕ್ತ, ಮೃತ ಸದಸ್ಯರ ವಾರಸುದಾರರು ಸದಸ್ಯತ್ವ ವಾರಸಾ ಮಾಡಿಕೊಳ್ಳಲು ವಿನಂತಿಸಿಕೊಂಡಿದ್ದರನ್ವಯ, ಕಾರ್ಖಾನೆಯ ಆದೇಶ ದಿನಾಂಕ: _____ / _____ /2022 ರ ಪ್ರಕಾರ ಮೃತ ಸದಸ್ಯರ ವಾರಸುದಾರರ ಸಂಪೂರ್ಣ ಒಪ್ಪಿಗೆ ಇರುವ ಬಗ್ಗೆ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ಮಾಡಿ ವರದಿ ಸಲ್ಲಿಸಲು ನಿರ್ದೇಶನ ನೀಡಲಾಗಿರುತ್ತದೆ. ಅದರನ್ವಯ, ಸದರಿಯವರ ಸ್ವಗ್ರಾಮಕ್ಕೆ ದಿನಾಂಕ: _____ / _____ /2022 ರಂದು ನಾನೇ ಸ್ವತಃ ಖುದ್ದಾಗಿ ಹೋಗಿ ಈ ಕೆಳಕಾಣಿಸಿದ ಪಂಚರ ಸಮಕ್ಷಮದಲ್ಲಿ ಹಾಗು ಗ್ರಾಮದ ಪ್ರಮುಖರ ಜೊತೆಗೆ ಕೂಲಂಕೂಷವಾಗಿ ವಿಚಾರಣೆ ಮಾಡಲಾಗಿ ಮೃತ ಸದಸ್ಯರಿಗೆ ಉತ್ತರ ಜೀವಿತ ಪ್ರಮಾಣ ಪತ್ರದಲ್ಲಿ ನಮೂದಿಸಿದ ಸದಸ್ಯರು ಮಾತ್ರ ನೇರ ವಾರಸುದಾರರಾಗಿರುತ್ತಾರೆ, ಇವರನ್ನು ಹೊರತು ಪಡಿಸಿ ಬೇರೆ ಯಾರೂ ನೇರ ವಾರಸುದಾರರು ಇರುವುದಿಲ್ಲ. ಆದುದರಿಂದ, ಮೃತ ಸದಸ್ಯರ <strong>{relationship}</strong> ನಾದ <strong>{heirName} ಸಾ: {heirPlace} ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲಾ: {heirDistrict}</strong> ಇವರ ಹೆಸರಿಗೆ ಮರಣೋತ್ತರ ನಿಧಿ ಮಂಜೂರಿಗಾಗಿ ಹಾಗು ಸದಸ್ಯತ್ವ ವಾರಸಾ ಮಾಡುವುದಕ್ಕೆ ಕುಟುಂಬದ ಎಲ್ಲ ಸದಸ್ಯರು ಸ್ವ-ಇಚ್ಛೆಯಿಂದ ಸಹಿ ಮತ್ತು ಎಡಗೈ ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು(ಥಂಬ) ನೀಡಿ ಒಪ್ಪಿಗೆ ಸೂಚಿಸಿರುತ್ತಾರೆ. ಒಂದು ವೇಳೆ ಇದರಲ್ಲಿ ಯಾವುದೇ ತರಹದ ಲೋಪದೋಷವಾಗಿದ್ದಲ್ಲಿ ಅದಕ್ಕೆ ನಾನೇ ಸಂಪೂರ್ಣ ಜವಾಬ್ದಾರಿಯಾಗಿರುತ್ತೇನೆ ಅಂತಾ ಈ ಮೂಲಕ ಪ್ರಮಾಣೀಕರಿಸುತ್ತೇನೆ.
+          </p>
+        </div>
+
+        {/* Table of Legal Heirs / Family Consent (Rows 1 to 4) */}
+        <table className="w-full border-[1.5px] border-black text-xs text-left">
+          <thead>
+            <tr className="border-b border-black font-bold bg-slate-100 text-center">
+              <th className="w-8 p-1 border-r border-black">ಅ. ಸಂ.</th>
+              <th className="p-1 border-r border-black">ವಾರಸುದಾರರ ಹೆಸರು</th>
+              <th className="w-24 p-1 border-r border-black">ಮೃತರಿಗೆ ಸಂಬಂಧ</th>
+              <th className="w-20 p-1 border-r border-black">ಭಾವ ಚಿತ್ರ</th>
+              <th className="w-24 p-1 border-r border-black">ಸಹಿ</th>
+              <th className="w-24 p-1">ಎಡಗೈ ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು(ಥಂಬ)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[1, 2, 3, 4].map(idx => (
+              <tr key={idx} className="border-b border-black">
+                <td className="p-1 border-r border-black text-center font-bold align-top">{idx})</td>
+                <td className="p-1 border-r border-black space-y-0.5 text-[11px]">
+                  <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: ___________________</div>
+                  <div>ವಯಸ್ಸು :- _________</div>
+                  <div>ಸಾ:- _________________________</div>
+                  <div>ಆಧಾರ್ ನಂ:- ___________________</div>
+                  <div>ಮೊಬೈಲ್ ನಂ:- _________________</div>
+                </td>
+                <td className="p-1 border-r border-black"></td>
+                <td className="p-1 border-r border-black"></td>
+                <td className="p-1 border-r border-black"></td>
+                <td className="p-1"></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="text-right text-xs font-bold text-black pt-2">8</div>
+    </div>
+  );
+
+  // =========================================================================
+  // PAGE 9: ಕ್ಷೇತ್ರ ಸಹಾಯಕರ ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ (ಪುಟ 2) & ಸಾಕ್ಷಿದಾರರು
+  // =========================================================================
+  const renderPage9 = () => (
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+      <div>
+        {renderHeaderBox()}
+
+        {/* Continuation Table Rows 5 to 9 */}
+        <table className="w-full border-[1.5px] border-black text-xs text-left mb-3">
+          <tbody>
+            {[5, 6, 7, 8, 9].map(idx => (
+              <tr key={idx} className="border-b border-black">
+                <td className="w-8 p-1 border-r border-black text-center font-bold align-top">{idx})</td>
+                <td className="p-1 border-r border-black space-y-0.5 text-[11px]">
+                  <div>ಶ್ರೀ/ಶ್ರೀಮತಿ: ___________________</div>
+                  <div>ವಯಸ್ಸು :- _________</div>
+                  <div>ಸಾ:- _________________________</div>
+                  <div>ಆಧಾರ್ ನಂ:- ___________________</div>
+                  <div>ಮೊಬೈಲ್ ನಂ:- _________________</div>
+                </td>
+                <td className="w-24 p-1 border-r border-black"></td>
+                <td className="w-20 p-1 border-r border-black"></td>
+                <td className="w-24 p-1 border-r border-black"></td>
+                <td className="w-24 p-1"></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Witnesses Table */}
+        <table className="w-full border-[1.5px] border-black text-xs text-left mb-3">
+          <thead>
+            <tr className="border-b border-black font-bold bg-slate-100">
+              <th className="w-12 p-1 border-r border-black text-center">ಅ.ಸಂ.</th>
+              <th className="p-1 border-r border-black">ಸಾಕ್ಷಿದಾರರ ಹೆಸರು (ಶೇರು ಸದಸ್ಯರು ಮಾತ್ರ)</th>
+              <th className="w-32 p-1 border-r border-black text-center">ಸಹಿ</th>
+              <th className="w-48 p-1">ಶೇರು ಖಾತೆ ನಂ. & ಮೊಬೈಲ್ ನಂ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-black">
+              <td className="p-1.5 border-r border-black text-center font-bold">1)</td>
+              <td className="p-1.5 border-r border-black"></td>
+              <td className="p-1.5 border-r border-black"></td>
+              <td className="p-1.5 space-y-1 text-[11px]">
+                <div>Share ID No:-</div>
+                <div>Mobile No:-</div>
+              </td>
+            </tr>
+            <tr>
+              <td className="p-1.5 border-r border-black text-center font-bold">2)</td>
+              <td className="p-1.5 border-r border-black"></td>
+              <td className="p-1.5 border-r border-black"></td>
+              <td className="p-1.5 space-y-1 text-[11px]">
+                <div>Share ID No:-</div>
+                <div>Mobile No:-</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Submission Endorsement */}
+        <div className="text-[12px] leading-relaxed text-justify text-black mb-2">
+          <p>
+            ಕಾರಣ, ಮೃತ ಸದಸ್ಯರ <strong>{relationship}</strong> ಯಾದ <strong>{heirName} ಸಾ: {heirPlace} ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲಾ: {heirDistrict}</strong> ಇವರ ಹೆಸರಿಗೆ ಶೇರು ಸದಸ್ಯತ್ವ ವಾರಸಾ ಮಾಡುವ ಕುರಿತು ಮುಂದಿನ ಕ್ರಮಕ್ಕಾಗಿ ಮೆ:ರವರಲ್ಲಿ ಸಲ್ಲಿಸಲಾಗಿದೆ.
+          </p>
+          <p className="text-center font-bold my-2">
+            “ನಮ್ಮ ಸಮಕ್ಷಮದಲ್ಲಿ ರುಜು ಮಾಡಿ ಒಪ್ಪಿಗೆ ಸೂಚಿಸಿರುತ್ತಾರೆ.”
+          </p>
+        </div>
+
+        {/* Signatures */}
+        <div className="flex justify-between items-end px-10 pt-10 text-xs font-bold text-black">
+          <div className="text-center">
+            <div className="w-36 border-t border-black pt-1">ಕ್ಷೇತ್ರ ಸಹಾಯಕರು</div>
+          </div>
+          <div className="text-center">
+            <div className="w-36 border-t border-black pt-1">ಸಿ.ಡಿ.ಓ</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-right text-xs font-bold text-black pt-2">9</div>
+    </div>
+  );
+
+  // =========================================================================
+  // PAGE 10: Legal opinion (ಕಾನೂನು ಸಲಹೆ)
+  // =========================================================================
+  const renderPage10 = () => (
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+      <div>
+        {renderHeaderBox()}
+
+        {/* Top Header Row */}
+        <div className="flex justify-between items-center text-xs font-bold text-black mb-2">
+          <div>ಸಲ್ಲಿಸಲಾಗಿದೆ :-</div>
+          <div className="border-[2px] border-black p-0.5 bg-white inline-block">
+            <div className="border border-black px-6 py-0.5 bg-white font-serif font-bold text-sm tracking-wide">
+              Legal opinion
+            </div>
+          </div>
+          <div>ದಿನಾಂಕ:-{applicationDate}</div>
+        </div>
+
+        <div className="text-xs font-bold text-black mb-1">
+          ಮಾನ್ಯರೇ,
+        </div>
+
+        {/* Subject */}
+        <div className="text-center font-bold text-[12.5px] text-black my-2">
+          ವಿಷಯ:-“ಕಾರ್ಖಾನೆಯ ಮೃತ ಸದಸ್ಯರ ಶೇರನ್ನು ನೇರ ವಾರಸುದಾರರಿಗೆ ವಾರಸಾ ಮಾಡುವ ಸಲುವಾಗಿ ಕಾಗದ ಪತ್ರಗಳನ್ನು ಪರಿಶೀಲಿಸಿ, ಕಾನೂನು ಸಲಹೆ ನೀಡುವ ಕುರಿತು”
+        </div>
+
+        {/* Body Paragraph */}
+        <div className="text-[12.5px] leading-relaxed text-justify text-black mb-2.5">
+          <p className="indent-6">
+            ಕಾರ್ಖಾನೆಯ “<strong>{cleanCategory}</strong>” ವರ್ಗದ ಸದಸ್ಯರಾದ <strong>ದಿವಂಗತ. {shareholderName} ಸಾ: {shareholderPlace} ತಾಲೂಕ: {shareholderTaluk} ಜಿಲ್ಲಾ: {shareholderDistrict}</strong> ಇವರು ಶೇರು ಸದಸ್ಯತ್ವ ಹೊಂದಿದ್ದು, ಶೇರ ಖಾತೆ ನಂ: <strong>{shareNo}</strong> ಇರುತ್ತದೆ. ಸದರಿಯವರು ದಿನಾಂಕ: <strong>{dod}</strong> ರಂದು ಮೃತರಾದ ಪ್ರಯುಕ್ತ, ಮೃತ ಸದಸ್ಯರ <strong>{relationship}</strong> ನಾದ <strong>{heirName} ಸಾ: {heirPlace} ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲಾ: {heirDistrict}</strong> ರವರು ಕಾರ್ಖಾನೆಯ ನಿಯಮಾನುಸಾರ ಅವಶ್ಯಕವಿರುವ ಈ ಕೆಳಕಂಡ ದಾಖಲಾತಿಗಳೊಂದಿಗೆ ಶೇರು ವಾರಸಾ ಮಾಡಲು ತಮ್ಮ ಅರ್ಜಿ ದಿನಾಂಕ: <strong>{applicationDate}</strong> ರಲ್ಲಿ ವಿನಂತಿಸಿಕೊಂಡಿರುತ್ತಾರೆ.
+          </p>
+        </div>
+
+        {/* Document Checklist Box */}
+        <div className="border-[1.5px] border-black p-2.5 my-2 text-[11.5px] leading-relaxed text-black">
+          <div className="text-center font-bold underline mb-1.5 text-xs">-:: ದಾಖಲಾತಿಗಳ ವಿವರ ::-</div>
+          <div className="space-y-1">
+            <div>1) ದಿನಾಂಕ: <strong>{applicationDate}</strong> ರನ್ವಯ ವಾರಸುದಾರರು ಸಲ್ಲಿಸಿದ ವಿನಂತಿ ಅರ್ಜಿ. (Application)</div>
+            <div>2) ರಶೀದಿ ಸಂಖ್ಯೆ: <strong>{receiptNo}</strong> ದಿನಾಂಕ:<strong>{receiptDate}</strong> ರನ್ವಯ ಶೇರು ವಾರಸಾ ಫೀ & ಪ್ರವೇಶ ಫೀ ರೂ:<strong>{fees}</strong>/- ಭರಣಾ ಮಾಡಿದ ಮೂಲ ಪ್ರತಿ.</div>
+            <div>3) ಮರಣ ಉತ್ತರ ದೃಢೀಕರಣ(ಅಟೆಸ್ಟೆಡ್) ಪ್ರತಿ. (Death Certificate)</div>
+            <div>4) ಉತ್ತರ ಜೀವಿತ ಪ್ರಮಾಣ ಪತ್ರ ದೃಢೀಕರಣ(ಅಟೆಸ್ಟೆಡ್) ನಕಲು ಪ್ರತಿ. (Succession Certificate- Obtain a Legal Heir Certificate)</div>
+            <div>5) ಮೃತರ ಹೆಸರಿನಲ್ಲಿ ಕಾರ್ಖಾನೆಯಲ್ಲಿ ಹಾಗು ಅಂಗ ಸಂಸ್ಥೆಗಳಲ್ಲಿ ಯಾವುದೇ ಬಾಕಿ ಇಲ್ಲದಿರುವ ಬಗ್ಗೆ <strong>ಬೇ ಬಾಕಿ ಪ್ರಮಾಣ ಪತ್ರ</strong> (No Dues Certificate)</div>
+            <div>6) ಕಾರ್ಖಾನೆಯ ಶೇರು ಸರ್ಟಿಫಿಕೇಟ (Share Certificate) & ಗುರುತಿನ ಪತ್ರ (ID Card)</div>
+            <div>7) ರೂ:100/- ಬಾಂಡ ಮೇಲೆ ಕುಟುಂಬ ವಾರಸುದಾರರ ಒಪ್ಪಿಗೆ ಪತ್ರ</div>
+            <div>8) ರಹವಾಸಿ :- ಆಧಾರ ಕಾರ್ಡ ಸಂಖ್ಯೆ: <strong className="font-mono">{heirAadhaar || '___________________'}</strong></div>
+            <div>9) ಕಾರ್ಖಾನೆಯ ಕ್ಷೇತ್ರ ಸಿಬ್ಬಂಧಿಯ(FA) ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ವರದಿ.</div>
+          </div>
+        </div>
+
+        <div className="text-[12px] leading-relaxed text-justify text-black my-2">
+          ಕಾರಣ, ಮೃತ ಸದಸ್ಯರ ನೇರ ವಾರಸುದಾರರು ಪೂರೈಸಿದ ಮೇಲ್ಕಾಣಿಸಿದ ದಾಖಲಾತಿಗಳನ್ನು ಇದರೊಂದಿಗೆ ಲಗತ್ತಿಸಲಾಗಿದ್ದು, ಸದರ ಕಾಗದಪತ್ರಗಳನ್ನು ಕೂಲಂಕೂಷವಾಗಿ ಪರಿಶೀಲನೆ ಮಾಡಿ, ವರದಿ ನೀಡಲು ತಮ್ಮಲ್ಲಿ ಈ ಮೂಲಕ ವಿನಂತಿಸಲಾಗಿದೆ.
+        </div>
+
+        {/* Signatures of Clerks */}
+        <div className="flex justify-between items-end px-4 my-2 text-xs font-bold text-black">
+          <div>ಗುಮಾಸ್ತ</div>
+          <div>ಶೇರ ಇನ್‌ಚಾರ್ಜ</div>
+        </div>
+
+        <div className="border-t border-black my-2"></div>
+
+        {/* Section 2: Advocate Legal Opinion */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-xs font-bold text-black">
+            <div>2) ಕಾನೂನು ಸಲಹೆಗಾರರ ವರದಿ :-</div>
+            <div>ದಿನಾಂಕ: {applicationDate}</div>
+          </div>
+
+          <div className="text-[12px] leading-[1.9] text-justify text-black indent-6">
+            ಮೃತ ಸದಸ್ಯರ <strong>{relationship}</strong>ನಾದ <strong>{heirName} ಸಾ: {heirPlace} ತಾಲೂಕ: {heirTaluk} ಜಿಲ್ಲಾ: {heirDistrict}</strong> ಇವರು ಪೂರೈಸಿದ ಕಾಗದ ಪತ್ರಗಳು ಕಾರ್ಖಾನೆಯ ಉಪ ನಿಯಮ 19(6) ಹಾಗೂ ಕರ್ನಾಟಕ ಸಹಕಾರ ಸಂಘಗಳ ಕಾಯ್ದೆ 1959 ಕಲಂ 24ರ ಪ್ರಕಾರ ನಿಯಮಾನುಸಾರ ಪರಿಶೀಲಿಸಲಾಗಿ ಸರಿ ಇರುತ್ತವೆ.
+          </div>
+
+          <div className="flex justify-end pt-5 pr-4 text-xs font-bold text-black text-center">
+            <div>
+              <div>(ಶ್ರೀ ಸುನಿಲ್ ಕುಲಕರ್ಣಿ)</div>
+              <div className="font-normal text-[11px]">ವಕೀಲರು ಹಾಗೂ ಕಾನೂನು ಸಲಹೆಗಾರರು, ಇಂಡಿ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-right text-xs font-bold text-black pt-2">10</div>
+    </div>
+  );
+
   return (
     <>
-      {/* Print Specific CSS to guarantee exact 5 A4 pages without blank pages */}
+      {/* Print Specific CSS to guarantee exact 10 A4 pages without blank pages */}
       <style>{`
         @media screen {
           .varasa-print-portal {
@@ -649,7 +1096,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <span>ಶೇರು ವಾರಸಾ ಅರ್ಜಿ ಮುದ್ರಣ (Varasa Application Bundle)</span>
+                  <span>ಶೇರು ವಾರಸಾ ದಾಖಲಾತಿ ಕಡತ (Varasa 10-Page Official Bundle)</span>
                   {isNewSubmission && (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
                       ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ (Newly Submitted)
@@ -657,7 +1104,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                   )}
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  ಅಧಿಕೃತ 5 ಪುಟಗಳ ವಾರಸುದಾರರ ದಾಖಲಾತಿ ಪತ್ರಗಳು (A4 Format)
+                  ಕಾನೂನುಬದ್ಧ 10 ಪುಟಗಳ ಅಧಿಕೃತ ವಾರಸುದಾರರ ದಾಖಲಾತಿ ಪತ್ರಗಳು (A4 Format)
                 </p>
               </div>
             </div>
@@ -671,7 +1118,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               >
                 <Printer className="w-4 h-4" />
                 <span>
-                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 5 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
+                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 10 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
                 </span>
               </button>
               <button
@@ -684,8 +1131,8 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
             </div>
           </div>
 
-          {/* Page Tabs */}
-          <div className="flex border-b border-slate-800 bg-slate-950/60 px-5 pt-2 gap-1.5 text-xs font-semibold overflow-x-auto">
+          {/* Page Tabs (Scrollable across 10 pages) */}
+          <div className="flex border-b border-slate-800 bg-slate-950/60 px-4 pt-2 gap-1.5 text-xs font-semibold overflow-x-auto">
             <button
               type="button"
               onClick={() => setActiveTab('all')}
@@ -695,15 +1142,13 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" /> ಎಲ್ಲಾ 5 ಪುಟಗಳು (All 5 Pages)
+              <Layers className="w-3.5 h-3.5" /> ಎಲ್ಲಾ 10 ಪುಟಗಳು (All 10 Pages)
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('p1')}
-              className={`flex items-center gap-1.5 py-2 px-3 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'p1'
-                  ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p1' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
               ಪುಟ 1: ವಾರಸಾ ಅರ್ಜಿ
@@ -711,32 +1156,26 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
             <button
               type="button"
               onClick={() => setActiveTab('p2')}
-              className={`flex items-center gap-1.5 py-2 px-3 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'p2'
-                  ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p2' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              ಪುಟ 2: ಟ್ರಾನ್ಸಾಕ್ಷನ್ ವಿವರ
+              ಪುಟ 2: ಟ್ರಾನ್ಸಾಕ್ಷನ್
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('p3')}
-              className={`flex items-center gap-1.5 py-2 px-3 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'p3'
-                  ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p3' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              ಪುಟ 3: ಫೀ ಭರಣಾ ಅರ್ಜಿ
+              ಪುಟ 3: ಫೀ ಭರಣಾ
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('p4')}
-              className={`flex items-center gap-1.5 py-2 px-3 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'p4'
-                  ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p4' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
               ಪುಟ 4: ಕಛೇರಿ ಟಿಪ್ಪಣಿ
@@ -744,13 +1183,56 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
             <button
               type="button"
               onClick={() => setActiveTab('p5')}
-              className={`flex items-center gap-1.5 py-2 px-3 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'p5'
-                  ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p5' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              ಪುಟ 5: ಫೋಟೋ & ಮಾದರಿ ಸಹಿ
+              ಪುಟ 5: ಫೋಟೋ & ಸಹಿ
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('p6')}
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p6' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ಪುಟ 6: ID ಕಾರ್ಡ್ ಅರ್ಜಿ
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('p7')}
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p7' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ಪುಟ 7: ನಿರ್ದೇಶಕರ ಪತ್ರ
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('p8')}
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p8' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ಪುಟ 8: ಕ್ಷೇತ್ರ ಚೌಕಾಸಿ (1)
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('p9')}
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p9' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ಪುಟ 9: ಕ್ಷೇತ್ರ ಚೌಕಾಸಿ (2)
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('p10')}
+              className={`py-2 px-2.5 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'p10' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ಪುಟ 10: Legal Opinion
             </button>
           </div>
 
@@ -763,6 +1245,11 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                 {renderPage3()}
                 {renderPage4()}
                 {renderPage5()}
+                {renderPage6()}
+                {renderPage7()}
+                {renderPage8()}
+                {renderPage9()}
+                {renderPage10()}
               </div>
             ) : activeTab === 'p1' ? (
               <div className="w-full max-w-[790px]">{renderPage1()}</div>
@@ -772,8 +1259,18 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               <div className="w-full max-w-[790px]">{renderPage3()}</div>
             ) : activeTab === 'p4' ? (
               <div className="w-full max-w-[790px]">{renderPage4()}</div>
-            ) : (
+            ) : activeTab === 'p5' ? (
               <div className="w-full max-w-[790px]">{renderPage5()}</div>
+            ) : activeTab === 'p6' ? (
+              <div className="w-full max-w-[790px]">{renderPage6()}</div>
+            ) : activeTab === 'p7' ? (
+              <div className="w-full max-w-[790px]">{renderPage7()}</div>
+            ) : activeTab === 'p8' ? (
+              <div className="w-full max-w-[790px]">{renderPage8()}</div>
+            ) : activeTab === 'p9' ? (
+              <div className="w-full max-w-[790px]">{renderPage9()}</div>
+            ) : (
+              <div className="w-full max-w-[790px]">{renderPage10()}</div>
             )}
           </div>
 
@@ -792,7 +1289,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>
-                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 5 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
+                  {activeTab === 'all' ? 'ಎಲ್ಲಾ 10 ಪುಟ ಮುದ್ರಿಸಿ' : 'ಈ ಪುಟ ಮುದ್ರಿಸಿ'} (Print)
                 </span>
               </button>
               <button
@@ -817,6 +1314,11 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
               {renderPage3()}
               {renderPage4()}
               {renderPage5()}
+              {renderPage6()}
+              {renderPage7()}
+              {renderPage8()}
+              {renderPage9()}
+              {renderPage10()}
             </>
           ) : activeTab === 'p1' ? (
             renderPage1()
@@ -826,8 +1328,18 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
             renderPage3()
           ) : activeTab === 'p4' ? (
             renderPage4()
-          ) : (
+          ) : activeTab === 'p5' ? (
             renderPage5()
+          ) : activeTab === 'p6' ? (
+            renderPage6()
+          ) : activeTab === 'p7' ? (
+            renderPage7()
+          ) : activeTab === 'p8' ? (
+            renderPage8()
+          ) : activeTab === 'p9' ? (
+            renderPage9()
+          ) : (
+            renderPage10()
           )}
         </div>,
         document.body
