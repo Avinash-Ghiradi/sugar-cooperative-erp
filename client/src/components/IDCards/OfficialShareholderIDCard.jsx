@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getMemberTypeByCategory } from '../../services/api';
+import { CloudDbService } from '../../services/cloudDb';
 
 const STORAGE_KEY_ID_SETTINGS = 'sugar_erp_id_card_custom_settings_v1';
 
@@ -33,7 +34,17 @@ export function saveCustomIdCardSettings(settings) {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('id_card_settings_updated'));
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('LocalStorage save failed:', e);
+  }
+
+  // Also sync to Supabase Cloud DB for global synchronization across all devices/browsers
+  try {
+    CloudDbService.saveCollectionItem('id_card_settings', 'global_config', {
+      ...settings,
+      updated_at: new Date().toISOString()
+    }).catch(err => console.warn('Cloud save id_card_settings failed:', err));
+  } catch (err) {}
 }
 
 export function resetCustomIdCardSettings() {
@@ -43,6 +54,63 @@ export function resetCustomIdCardSettings() {
       window.dispatchEvent(new Event('id_card_settings_updated'));
     }
   } catch (e) {}
+
+  try {
+    CloudDbService.deleteCollectionItem('id_card_settings', 'global_config')
+      .catch(err => console.warn('Cloud delete id_card_settings failed:', err));
+  } catch (err) {}
+}
+
+// Global Cloud Sync: Synchronizes uploaded logo, background & MD signature across all browsers/devices
+export async function syncIdCardSettingsFromCloud() {
+  try {
+    const cloudRecords = await CloudDbService.getCollection('id_card_settings');
+    const cloudConfig = cloudRecords && cloudRecords.length > 0 ? cloudRecords[0] : null;
+    const local = getCustomIdCardSettings();
+    const hasLocalCustom = !!(local.customLogo || local.customBackground || local.customMdSignature);
+    const hasCloudCustom = !!(cloudConfig && (cloudConfig.customLogo || cloudConfig.customBackground || cloudConfig.customMdSignature));
+
+    if (hasCloudCustom) {
+      // Cloud has custom settings: adopt them locally
+      const cleanCloudSettings = {
+        customLogo: cloudConfig.customLogo || '',
+        customBackground: cloudConfig.customBackground || '',
+        customMdSignature: cloudConfig.customMdSignature || '',
+        hideHeader: Boolean(cloudConfig.hideHeader),
+        showSugarcaneWatermark: cloudConfig.showSugarcaneWatermark !== undefined ? Boolean(cloudConfig.showSugarcaneWatermark) : true,
+        backgroundOpacity: cloudConfig.backgroundOpacity !== undefined ? Number(cloudConfig.backgroundOpacity) : 1
+      };
+      const cloudJson = JSON.stringify(cleanCloudSettings);
+      const localJson = JSON.stringify({
+        customLogo: local.customLogo || '',
+        customBackground: local.customBackground || '',
+        customMdSignature: local.customMdSignature || '',
+        hideHeader: Boolean(local.hideHeader),
+        showSugarcaneWatermark: local.showSugarcaneWatermark !== undefined ? Boolean(local.showSugarcaneWatermark) : true,
+        backgroundOpacity: local.backgroundOpacity !== undefined ? Number(local.backgroundOpacity) : 1
+      });
+
+      if (cloudJson !== localJson) {
+        localStorage.setItem(STORAGE_KEY_ID_SETTINGS, cloudJson);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('id_card_settings_updated'));
+        }
+      }
+      return cleanCloudSettings;
+    } else if (hasLocalCustom) {
+      // Browser 1 already has uploaded files in localStorage, but Cloud DB is empty!
+      // Push local customizations to Supabase Cloud DB so Browser 2 gets them immediately!
+      await CloudDbService.saveCollectionItem('id_card_settings', 'global_config', {
+        ...local,
+        updated_at: new Date().toISOString()
+      });
+      console.log('Synchronized local ID card assets to Supabase Cloud DB');
+      return local;
+    }
+  } catch (err) {
+    console.warn('syncIdCardSettingsFromCloud error:', err);
+  }
+  return getCustomIdCardSettings();
 }
 
 // Client-side helper to compress and optimize uploaded logo image
@@ -330,10 +398,14 @@ export default function OfficialShareholderIDCard({
                     {/* Factory Logo on left (Custom uploaded or official default) */}
                     <div className="w-[42px] h-[42px] shrink-0 flex items-center justify-center p-0.5 bg-white/10 rounded-full border border-white/20">
                       <img
-                        src={effectiveLogo || '/id_assets/bsskn_logo.png'}
+                        src={effectiveLogo || './id_assets/bsskn_logo.png'}
                         alt="BSSKN Logo"
                         className="w-full h-full object-contain filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
                         onError={(e) => {
+                          if (!e.target.src.includes('./id_assets/')) {
+                            e.target.src = './id_assets/bsskn_logo.png';
+                            return;
+                          }
                           e.target.style.display = 'none';
                           if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
                         }}
@@ -495,23 +567,19 @@ export default function OfficialShareholderIDCard({
                 {/* Right: Managing Director Signature (Custom uploaded or official default) */}
                 <div className="text-center w-32">
                   <div className="h-5 flex items-center justify-center">
-                    {effectiveMdSig ? (
-                      <img
-                        src={effectiveMdSig}
-                        alt="MD Signature"
-                        className="max-h-5 max-w-[85px] object-contain mx-auto"
-                      />
-                    ) : (
-                      <img
-                        src="/id_assets/md_signature_transparent.png"
-                        alt="MD Signature"
-                        className="max-h-5 max-w-[85px] object-contain mx-auto"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
-                        }}
-                      />
-                    )}
+                    <img
+                      src={effectiveMdSig || './id_assets/md_signature_transparent.png'}
+                      alt="MD Signature"
+                      className="max-h-5 max-w-[85px] object-contain mx-auto"
+                      onError={(e) => {
+                        if (!e.target.src.includes('./id_assets/')) {
+                          e.target.src = './id_assets/md_signature_transparent.png';
+                          return;
+                        }
+                        e.target.style.display = 'none';
+                        if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
                     <span className="hidden font-serif italic text-emerald-700 font-bold text-xs">
                       MD Signature
                     </span>

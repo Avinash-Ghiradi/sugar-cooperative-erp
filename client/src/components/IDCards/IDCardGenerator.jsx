@@ -4,6 +4,7 @@ import OfficialShareholderIDCard, {
   getCustomIdCardSettings,
   saveCustomIdCardSettings,
   resetCustomIdCardSettings,
+  syncIdCardSettingsFromCloud,
   makeSignatureTransparent,
   compressBackgroundImage,
   compressLogoImage
@@ -11,7 +12,7 @@ import OfficialShareholderIDCard, {
 import {
   Contact, Printer, Search, RefreshCw, CheckCircle2, ShieldCheck,
   BookOpen, Eye, Image as ImageIcon, SlidersHorizontal, RotateCw, X, Download, Filter,
-  Upload, Trash2, Check, Sparkles
+  Upload, Trash2, Check, Sparkles, Cloud
 } from 'lucide-react';
 
 export default function IDCardGenerator() {
@@ -82,7 +83,32 @@ export default function IDCardGenerator() {
       setCustomSettings(getCustomIdCardSettings());
     };
     window.addEventListener('id_card_settings_updated', handleUpdate);
-    return () => window.removeEventListener('id_card_settings_updated', handleUpdate);
+
+    // Initial background sync from Supabase Cloud DB across all browsers
+    syncIdCardSettingsFromCloud().then(settings => {
+      if (settings) setCustomSettings(settings);
+    });
+
+    // Periodic sync every 20 seconds so changes in another browser reflect automatically
+    const interval = setInterval(() => {
+      syncIdCardSettingsFromCloud().then(settings => {
+        if (settings) setCustomSettings(settings);
+      });
+    }, 20000);
+
+    // Sync on window focus
+    const handleFocus = () => {
+      syncIdCardSettingsFromCloud().then(settings => {
+        if (settings) setCustomSettings(settings);
+      });
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('id_card_settings_updated', handleUpdate);
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const loadFilters = async () => {
@@ -546,6 +572,25 @@ export default function IDCardGenerator() {
             {hasCustomizations && (
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             )}
+          </button>
+
+          {/* Multi-Browser Cloud Sync Button */}
+          <button
+            onClick={async () => {
+              setUploadLoading(true);
+              const updated = await syncIdCardSettingsFromCloud();
+              if (updated) {
+                setCustomSettings(updated);
+                setUploadSuccessMsg('ಕ್ಲೌಡ್‌ನಿಂದ ಯಶಸ್ವಿಯಾಗಿ ಸಿಂಕ್ ಮಾಡಲಾಗಿದೆ (ID Card assets synchronized from Cloud across all browsers)!');
+                setTimeout(() => setUploadSuccessMsg(''), 4000);
+              }
+              setUploadLoading(false);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-sky-300 border border-slate-800 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+            title="Sync ID Card Logo, Background & Sign from Cloud (ಎಲ್ಲಾ ಬ್ರೌಸರ್‌ಗಳೊಂದಿಗೆ ಕ್ಲೌಡ್ ಸಿಂಕ್)"
+          >
+            <Cloud className="w-3.5 h-3.5 text-sky-400" />
+            <span>ಕ್ಲೌಡ್ ಸಿಂಕ್ (Cloud Sync)</span>
           </button>
 
           {/* Reference Sample Comparison Toggle */}
@@ -1140,6 +1185,35 @@ export default function IDCardGenerator() {
               </button>
             </div>
 
+            {/* Cloud Sync Status Bar */}
+            <div className="bg-sky-950/40 border border-sky-800/60 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-sky-200">
+                <Cloud className="w-4 h-4 text-sky-400 shrink-0" />
+                <span>
+                  <strong>ಮಲ್ಟಿ-ಬ್ರೌಸರ್ ಕ್ಲೌಡ್ ಸಿಂಕ್ (Multi-Browser Cloud Sync Active):</strong> ನೀವು ಅಪ್ಲೋಡ್ ಮಾಡುವ ಲೋಗೋ, ಹಿನ್ನೆಲೆ ಮತ್ತು MD ಸಹಿ ಎಲ್ಲಾ ಕಂಪ್ಯೂಟರ್ ಹಾಗೂ ಬ್ರೌಸರ್‌ಗಳಲ್ಲಿ ತಕ್ಷಣ ಸಿಂಕ್ ಆಗುತ್ತದೆ.
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setUploadLoading(true);
+                    const res = await syncIdCardSettingsFromCloud();
+                    if (res) {
+                      setCustomSettings(res);
+                      setUploadSuccessMsg('ಕ್ಲೌಡ್‌ನಿಂದ ಯಶಸ್ವಿಯಾಗಿ ಸಿಂಕ್ ಮಾಡಲಾಗಿದೆ (Refreshed from Cloud)!');
+                      setTimeout(() => setUploadSuccessMsg(''), 4000);
+                    }
+                    setUploadLoading(false);
+                  }}
+                  className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-bold flex items-center gap-1.5 text-xs transition-all cursor-pointer shadow-sm"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>ಈಗಲೇ ಕ್ಲೌಡ್ ಸಿಂಕ್ ಮಾಡಿ (Sync with Cloud Now)</span>
+                </button>
+              </div>
+            </div>
+
             {/* Upload Options Grid: 3-column Layout */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
@@ -1178,7 +1252,7 @@ export default function IDCardGenerator() {
                     ) : (
                       <>
                         <img
-                          src="/id_assets/bsskn_logo.png"
+                          src="./id_assets/bsskn_logo.png"
                           alt="Default Official Factory Logo"
                           className="max-h-20 max-w-full object-contain filter drop-shadow-md"
                         />
@@ -1337,7 +1411,7 @@ export default function IDCardGenerator() {
                     ) : (
                       <>
                         <img
-                          src="/id_assets/md_signature_transparent.png"
+                          src="./id_assets/md_signature_transparent.png"
                           alt="Default MD Signature"
                           className="max-h-16 max-w-full object-contain"
                         />
