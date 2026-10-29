@@ -169,67 +169,108 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
             </span>
           </div>
         )}
-        <div className="p-6 bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border-b border-slate-800 flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-extrabold text-2xl shadow-lg overflow-hidden shrink-0">
-              {sh.photo_url ? (
-                <img src={sh.photo_url} alt={sh.shareholder_name || sh.name} className="w-full h-full object-cover" />
-              ) : (
-                (sh.shareholder_name || sh.name || 'S').charAt(0)
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center gap-3 flex-wrap">
-                <h2 className="text-xl font-bold text-slate-100">{sh.shareholder_name || sh.name}</h2>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                  {sh.schedule_cast || 'ಅ - ವರ್ಗ'}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-900 text-sky-400 border border-slate-700">
-                  {sh.book_no || 'B.No: 1'}
-                </span>
-                {isShareholderInactive(sh) ? (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-950 text-rose-300 border border-rose-700 flex items-center gap-1 shadow">
-                    <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                    <span>ನಿಷ್ಕ್ರಿಯ (Inactive - ವಿಲೀನಗೊಂಡಿದೆ)</span>
-                  </span>
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border-b border-slate-800 space-y-3">
+          {/* Top Line: All Shareholder Information in ONE single line + Close (X) button */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-0.5">
+              {/* Avatar Photo / Initial */}
+              <div className="w-10 h-10 rounded-xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-extrabold text-lg shadow-md overflow-hidden shrink-0">
+                {sh.photo_url ? (
+                  <img src={sh.photo_url} alt={sh.shareholder_name || sh.name} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700">
-                    ಸಕ್ರಿಯ (Active)
-                  </span>
+                  (sh.shareholder_name || sh.name || 'S').charAt(0)
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-3">
-                <span>Share No: <strong className="text-emerald-400 font-mono text-sm">{sh.share_no || sh.share_number}</strong></span>
-                <span>•</span>
-                <span>Sl. No: <strong className="text-slate-200 font-mono">{sh.sl_no || sh.id}</strong></span>
-                <span>•</span>
-                <span>Shares: {isShareholderInactive(sh) ? (
-                  <strong className="text-slate-400 line-through">0 ಷೇರು (ವರ್ಗಾವಣೆ ➔ #{sh.merged_into_share_no || 'ಮುಖ್ಯ'})</strong>
+
+              {/* Shareholder Name */}
+              <h2 className="text-base sm:text-lg font-bold text-slate-100 whitespace-nowrap shrink-0">
+                {sh.shareholder_name || sh.name}
+              </h2>
+
+              {/* Category Badge */}
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 whitespace-nowrap shrink-0">
+                {sh.schedule_cast || 'ಅ - ವರ್ಗ'}
+              </span>
+
+              {/* Book / Tharavu Badge */}
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-900 text-sky-400 border border-slate-700 whitespace-nowrap shrink-0">
+                {sh.book_no || 'B.No: 1'}
+              </span>
+
+              {/* Status Badge */}
+              {isShareholderInactive(sh) ? (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-950 text-rose-300 border border-rose-700 flex items-center gap-1 shadow whitespace-nowrap shrink-0">
+                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                  <span>ನಿಷ್ಕ್ರಿಯ</span>
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700 whitespace-nowrap shrink-0">
+                  ಸಕ್ರಿಯ (Active)
+                </span>
+              )}
+
+              <span className="text-slate-600 shrink-0">•</span>
+
+              {/* Share Number */}
+              <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">
+                Share No: <strong className="text-emerald-400 font-mono text-sm">{sh.share_no || sh.share_number}</strong>
+              </span>
+
+              <span className="text-slate-600 shrink-0">•</span>
+
+              {/* Serial Number */}
+              <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">
+                Sl. No: <strong className="text-slate-200 font-mono">{sh.sl_no || sh.id}</strong>
+              </span>
+
+              <span className="text-slate-600 shrink-0">•</span>
+
+              {/* Shares Count */}
+              <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">
+                Shares: {isShareholderInactive(sh) ? (
+                  <strong className="text-slate-400 line-through">0 ಷೇರು</strong>
                 ) : (
                   <strong className="text-slate-200">{sh.number_of_shares || 1}</strong>
-                )}</span>
-                <span>•</span>
-                <span>Total Capital: {isShareholderInactive(sh) ? (
-                  <span className="text-slate-400 line-through">
-                    ₹ 0 <span className="text-[10px] text-amber-300 font-sans">(ಮೂಲ: ₹{(sh.original_total_amount || sh.transferred_amount || 2000).toLocaleString()} ವರ್ಗಾವಣೆ ➔ #{sh.merged_into_share_no})</span>
-                  </span>
+                )}
+              </span>
+
+              <span className="text-slate-600 shrink-0">•</span>
+
+              {/* Total Capital */}
+              <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">
+                Total Capital: {isShareholderInactive(sh) ? (
+                  <span className="text-slate-400 line-through">₹ 0</span>
                 ) : (
                   <strong className="text-amber-400">₹ {(sh.total_amount || sh.share_value || 2000).toLocaleString()}</strong>
-                )}</span>
-                <span>•</span>
-                <span>Place: <strong className="text-emerald-300">{sh.place || sh.village_name}</strong></span>
-              </p>
+                )}
+              </span>
+
+              <span className="text-slate-600 shrink-0">•</span>
+
+              {/* Place */}
+              <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">
+                Place: <strong className="text-emerald-300">{sh.place || sh.village_name}</strong>
+              </span>
             </div>
+
+            {/* Close Button on top right */}
+            <button
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-slate-100 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition-colors shrink-0 cursor-pointer"
+              title="Close Profile"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Bottom Line: All Action Buttons in ONE line below information */}
+          <div className="pt-2 border-t border-slate-800/70 flex flex-wrap items-center gap-2.5">
             {/* Edit Record Button */}
             {isShareholderInactive(sh) ? (
               <button
                 disabled
-                className="px-3 py-2 text-slate-500 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed opacity-50"
-                title="ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯಗೊಂಡ ಖಾತೆ - ತಿದ್ದುಪಡಿ ಅಸಾಧ್ಯ (Editing disabled for merged inactive account)"
+                className="px-3.5 py-1.5 text-slate-500 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed opacity-50"
+                title="ವಿಲೀನಗೊಂಡು ನಿಷ್ಕ್ರಿಯಗೊಂಡ ಖಾತೆ - ತಿದ್ದುಪಡಿ ಅಸಾಧ್ಯ"
               >
                 <Edit className="w-4 h-4" />
                 <span>ಖಾತೆ ನಿಷ್ಕ್ರಿಯ (Disabled)</span>
@@ -241,7 +282,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                     onEditRecord(sh);
                   }
                 }}
-                className="px-3 py-2 text-white bg-sky-600 hover:bg-sky-500 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-sky-950"
+                className="px-3.5 py-1.5 text-white bg-sky-600 hover:bg-sky-500 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-sky-950"
                 title="ಶಾಸನಬದ್ಧ 38-ಕಾಲಂಗಳ ದಾಖಲೆ ತಿದ್ದುಪಡಿ (Edit Statutory Shareholder Record)"
               >
                 <Edit className="w-4 h-4" />
@@ -249,9 +290,10 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
               </button>
             )}
 
+            {/* ID Card Tab Switch Button */}
             <button
               onClick={() => setActiveTab('id_card')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeTab === 'id_card'
                   ? 'bg-emerald-600 text-white shadow'
                   : 'text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-700/80'
@@ -260,32 +302,27 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
               <Contact className="w-4 h-4 text-emerald-400" /> ಗುರುತಿನ ಚೀಟಿ (ID Card)
             </button>
 
+            {/* Print Record Button */}
             <button
               onClick={handlePrintShareholderRecord}
-              className="px-3 py-2 text-slate-200 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+              className="px-3.5 py-1.5 text-slate-200 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
               title="ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿ ದಾಖಲೆ ಪತ್ರ ಮುದ್ರಿಸಿ (Print Statutory Shareholder Record)"
             >
               <Printer className="w-4 h-4 text-sky-400" />
               <span>ದಾಖಲೆ ಮುದ್ರಿಸಿ (Print Record)</span>
             </button>
 
+            {/* Print Card Button (available when on ID Card tab) */}
             {activeTab === 'id_card' && (
               <button
                 onClick={handlePrintIdCard}
-                className="px-3 py-2 text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                className="px-3.5 py-1.5 text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                 title="ಗುರುತಿನ ಚೀಟಿ ಮುದ್ರಿಸಿ (Print Official ID Card)"
               >
                 <Printer className="w-4 h-4" />
                 <span>ಕಾರ್ಡ್ ಮುದ್ರಿಸಿ</span>
               </button>
             )}
-
-            <button
-              onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-100 bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
         </div>
 
