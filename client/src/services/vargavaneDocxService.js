@@ -524,7 +524,9 @@ export function buildVargavaneDocx({
 
 
 
-  // Boxed statutory header matching official cooperative template (Grey shading + dotted vertical dividers)
+
+  // Boxed statutory header matching official cooperative template
+  // Column 1 = 3.2 cm (1814 dxa), Column 2 = 12.06 cm (6838 dxa), Column 3 = 3.2 cm (1814 dxa)
   const solidBorder = { style: BorderStyle.SINGLE, size: 8, color: '000000' };
   const dottedBorder = { style: BorderStyle.DOTTED, size: 6, color: '000000' };
 
@@ -535,7 +537,8 @@ export function buildVargavaneDocx({
   const headerShading = { fill: 'BFBFBF' };
 
   const statutoryHeaderTable = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: 10466, type: WidthType.DXA },
+    columnWidths: [1814, 6838, 1814],
     borders: {
       top: solidBorder,
       bottom: solidBorder,
@@ -545,31 +548,31 @@ export function buildVargavaneDocx({
       insideVertical: dottedBorder
     },
     rows: [
-      // Row 1: Left Factory Emblem + Center Titles + Right Cooperative Handshake Emblem
+      // Row 1: Left Factory Emblem (3.2 cm) + Center Titles + Right Cooperative Handshake Emblem (3.2 cm)
       new TableRow({
         children: [
-          // Left: Factory Emblem
+          // Left: Factory Emblem (3.2 cm)
           new TableCell({
-            width: { size: 16, type: WidthType.PERCENTAGE },
+            width: { size: 1814, type: WidthType.DXA },
             borders: cellBordersLeft,
             shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 60, bottom: 60, left: 60, right: 60 },
+            margins: { top: 60, bottom: 60, left: 40, right: 40 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
                 children: logoBytes ? [
                   new ImageRun({
                     data: logoBytes,
-                    transformation: { width: 68, height: 68 }
+                    transformation: { width: 72, height: 72 }
                   })
                 ] : []
               })
             ]
           }),
-          // Center: Factory Name in Kannada and English
+          // Center: Factory Name in Kannada and English (12.06 cm)
           new TableCell({
-            width: { size: 68, type: WidthType.PERCENTAGE },
+            width: { size: 6838, type: WidthType.DXA },
             borders: cellBordersCenter,
             shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
@@ -603,20 +606,20 @@ export function buildVargavaneDocx({
               })
             ]
           }),
-          // Right: Handshake Emblem
+          // Right: Handshake Emblem (3.2 cm - 1814 dxa)
           new TableCell({
-            width: { size: 16, type: WidthType.PERCENTAGE },
+            width: { size: 1814, type: WidthType.DXA },
             borders: cellBordersRight,
             shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 60, bottom: 60, left: 60, right: 60 },
+            margins: { top: 60, bottom: 60, left: 40, right: 40 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
                 children: handshakeBytes ? [
                   new ImageRun({
                     data: handshakeBytes,
-                    transformation: { width: 72, height: 44 }
+                    transformation: { width: 78, height: 48 }
                   })
                 ] : []
               })
@@ -624,15 +627,15 @@ export function buildVargavaneDocx({
           })
         ]
       }),
-      // Row 2: Sub-bar with Taluk (Left), "ಶೇರು ವಿಭಾಗ" (Center), District (Right)
+      // Row 2: Sub-bar with Taluk (3.2 cm), "ಶೇರು ವಿಭಾಗ" (12.06 cm), District (3.2 cm)
       new TableRow({
         children: [
           new TableCell({
-            width: { size: 22, type: WidthType.PERCENTAGE },
+            width: { size: 1814, type: WidthType.DXA },
             borders: cellBordersLeft,
             shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 60, bottom: 60, left: 80, right: 40 },
+            margins: { top: 60, bottom: 60, left: 60, right: 20 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.LEFT,
@@ -649,7 +652,7 @@ export function buildVargavaneDocx({
             ]
           }),
           new TableCell({
-            width: { size: 56, type: WidthType.PERCENTAGE },
+            width: { size: 6838, type: WidthType.DXA },
             borders: cellBordersCenter,
             shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
@@ -670,11 +673,11 @@ export function buildVargavaneDocx({
             ]
           }),
           new TableCell({
-            width: { size: 22, type: WidthType.PERCENTAGE },
+            width: { size: 1814, type: WidthType.DXA },
             borders: cellBordersRight,
             shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 60, bottom: 60, left: 40, right: 80 },
+            margins: { top: 60, bottom: 60, left: 20, right: 60 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.RIGHT,

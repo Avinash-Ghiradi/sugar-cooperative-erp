@@ -107,18 +107,18 @@ export default function VargavaneDocxExportModal({
 
             {/* Exact Shaded Dual-Logo Header Box */}
             <div className="bg-[#BFBFBF] text-slate-900 border-2 border-black rounded-lg overflow-hidden font-['Anek_Kannada'] shadow-md select-none">
-              {/* Row 1: Factory Logo | Titles | Handshake Logo */}
-              <div className="grid grid-cols-12 items-center border-b border-black">
-                {/* Left Logo */}
-                <div className="col-span-2 p-1.5 flex items-center justify-center border-r border-black border-dotted">
+              {/* Row 1: Factory Logo (3.2 cm) | Titles (12.06 cm) | Handshake Logo (3.2 cm) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '3.2fr 12.06fr 3.2fr' }} className="items-center border-b border-black">
+                {/* Left Logo (3.2 cm) */}
+                <div className="p-1.5 flex items-center justify-center border-r border-black border-dotted">
                   <img
                     src={`${import.meta.env.BASE_URL}id_assets/bsskn_logo.png`}
                     alt="BSSKN Factory Emblem"
                     className="w-12 h-12 object-contain"
                   />
                 </div>
-                {/* Center Titles */}
-                <div className="col-span-8 p-1.5 text-center flex flex-col justify-center">
+                {/* Center Titles (12.06 cm) */}
+                <div className="p-1.5 text-center flex flex-col justify-center">
                   <div className="font-extrabold text-xs sm:text-sm text-black leading-tight">
                     ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ, ಮರಗೂರ
                   </div>
@@ -126,25 +126,25 @@ export default function VargavaneDocxExportModal({
                     SRI BHIMASHANKAR SAHAKARI SAKKARE KARKHANE NIYAMIT MARGUR
                   </div>
                 </div>
-                {/* Right Logo */}
-                <div className="col-span-2 p-1.5 flex items-center justify-center border-l border-black border-dotted">
+                {/* Right Logo: Cooperative Handshake (3.2 cm) */}
+                <div className="p-1.5 flex items-center justify-center border-l border-black border-dotted">
                   <img
                     src={`${import.meta.env.BASE_URL}id_assets/cooperative_handshake.png`}
                     alt="Cooperative Handshake"
-                    className="w-12 h-8 object-contain"
+                    className="w-14 h-9 object-contain"
                   />
                 </div>
               </div>
 
-              {/* Row 2: Taluk | "ಶೇರು ವಿಭಾಗ" | District */}
-              <div className="grid grid-cols-12 text-[10px] sm:text-xs font-bold text-black py-1 px-2 items-center">
-                <div className="col-span-3 text-left border-r border-black border-dotted pr-1">
+              {/* Row 2: Taluk (3.2 cm) | "ಶೇರು ವಿಭಾಗ" (12.06 cm) | District (3.2 cm) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '3.2fr 12.06fr 3.2fr' }} className="text-[10px] sm:text-xs font-bold text-black py-1 px-2 items-center">
+                <div className="text-left border-r border-black border-dotted pr-1">
                   ತಾಲೂಕು|| ಚಡಚಣ
                 </div>
-                <div className="col-span-6 text-center font-extrabold text-xs sm:text-sm border-r border-black border-dotted px-1">
+                <div className="text-center font-extrabold text-xs sm:text-sm border-r border-black border-dotted px-1">
                   ಶೇರು ವಿಭಾಗ
                 </div>
-                <div className="col-span-3 text-right pl-1">
+                <div className="text-right pl-1">
                   ಜಿಲ್ಲಾ|| ವಿಜಯಪೂರ
                 </div>
               </div>
