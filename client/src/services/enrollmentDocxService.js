@@ -12,6 +12,7 @@ import {
   BorderStyle,
   PageOrientation
 } from 'docx';
+import { getFactoryLogoUint8, getHandshakeLogoUint8 } from './docxLogoHelper';
 
 // Thin crisp solid black border for statutory register grid
 const thinBorder = {
@@ -85,7 +86,9 @@ export function buildEnrollmentDocx({
   societyNameKn = 'ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ, ಮರಗೂರ',
   societyNameEn = 'SRI BHIMASHANKAR SAHAKARI SAKKARE KARKHANE NIYAMIT MARGUR',
   taluk = 'ಚಡಚಣ',
-  dist = 'ವಿಜಯಪೂರ'
+  dist = 'ವಿಜಯಪೂರ',
+  factoryLogoUint8 = null,
+  handshakeLogoUint8 = null
 } = {}) {
   // Official Google Anek Kannada font definition
   const KANNADA_FONT = {
@@ -96,6 +99,10 @@ export function buildEnrollmentDocx({
   };
 
   const effectiveDate = listDate ? formatDocxDate(listDate) : formatDocxDate();
+
+  // Resolve binary logo buffers for Word document embedding
+  const logoBytes = factoryLogoUint8 || getFactoryLogoUint8();
+  const handshakeBytes = handshakeLogoUint8 || getHandshakeLogoUint8();
 
   let totalSharesCount = 0;
 
@@ -497,6 +504,179 @@ export function buildEnrollmentDocx({
     ]
   });
 
+
+  // Boxed statutory header with Factory Shiva Emblem on Left, Handshake Emblem on Right
+  const boxBorder = { style: BorderStyle.SINGLE, size: 12, color: '000000' };
+  const subBorder = { style: BorderStyle.SINGLE, size: 8, color: '000000' };
+
+  const statutoryHeaderTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: boxBorder,
+      bottom: boxBorder,
+      left: boxBorder,
+      right: boxBorder,
+      insideHorizontal: subBorder,
+      insideVertical: noBorder
+    },
+    rows: [
+      // Upper Section: Left Logo + Center Titles + Right Logo
+      new TableRow({
+        children: [
+          // Left: Factory Emblem
+          new TableCell({
+            width: { size: 14, type: WidthType.PERCENTAGE },
+            borders: { top: noBorder, bottom: subBorder, left: noBorder, right: noBorder },
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 80, bottom: 80, left: 100, right: 60 },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: logoBytes ? [
+                  new ImageRun({
+                    data: logoBytes,
+                    transformation: { width: 75, height: 75 }
+                  })
+                ] : []
+              })
+            ]
+          }),
+          // Center: Factory Name (Kn & En) and Register Title with Underline
+          new TableCell({
+            width: { size: 72, type: WidthType.PERCENTAGE },
+            borders: { top: noBorder, bottom: subBorder, left: noBorder, right: noBorder },
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 60, bottom: 60, left: 60, right: 60 },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 30, line: 260 },
+                children: [
+                  new TextRun({
+                    text: societyNameKn,
+                    bold: true,
+                    size: 32,
+                    font: KANNADA_FONT,
+                    noProof: true
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 50, line: 220 },
+                children: [
+                  new TextRun({
+                    text: societyNameEn,
+                    bold: true,
+                    size: 19,
+                    font: KANNADA_FONT,
+                    noProof: true
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 20, after: 40, line: 260 },
+                border: {
+                  bottom: { style: BorderStyle.SINGLE, size: 8, color: '000000', space: 6 }
+                },
+                children: [
+                  new TextRun({
+                    text: 'ಶೇರು ವಿಭಾಗ - ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ವಹಿ (15 ಕಾಲಂ ರಿಜಿಸ್ಟರ್)',
+                    bold: true,
+                    size: 25,
+                    font: KANNADA_FONT,
+                    noProof: true
+                  })
+                ]
+              })
+            ]
+          }),
+          // Right: Handshake Emblem
+          new TableCell({
+            width: { size: 14, type: WidthType.PERCENTAGE },
+            borders: { top: noBorder, bottom: subBorder, left: noBorder, right: noBorder },
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 80, bottom: 80, left: 60, right: 100 },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: handshakeBytes ? [
+                  new ImageRun({
+                    data: handshakeBytes,
+                    transformation: { width: 78, height: 48 }
+                  })
+                ] : []
+              })
+            ]
+          })
+        ]
+      }),
+      // Lower Sub-bar: Taluk, Subtitle En, District
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: { top: subBorder, bottom: noBorder, left: noBorder, right: noBorder },
+            margins: { top: 60, bottom: 60, left: 160, right: 60 },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({
+                    text: 'ತಾಲೂಕು|| ' + taluk,
+                    bold: true,
+                    size: 21,
+                    font: KANNADA_FONT,
+                    noProof: true
+                  })
+                ]
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 50, type: WidthType.PERCENTAGE },
+            borders: { top: subBorder, bottom: noBorder, left: noBorder, right: noBorder },
+            margins: { top: 60, bottom: 60, left: 60, right: 60 },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: 'NEW  SHAREHOLDER  STATUTORY  ENROLLMENT  REGISTER',
+                    bold: true,
+                    size: 18,
+                    font: KANNADA_FONT,
+                    noProof: true
+                  })
+                ]
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: { top: subBorder, bottom: noBorder, left: noBorder, right: noBorder },
+            margins: { top: 60, bottom: 60, left: 60, right: 160 },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({
+                    text: 'ಜಿಲ್ಲಾ|| ' + dist,
+                    bold: true,
+                    size: 21,
+                    font: KANNADA_FONT,
+                    noProof: true
+                  })
+                ]
+              })
+            ]
+          })
+        ]
+      })
+    ]
+  });
+
   return new Document({
     styles: {
       default: {
@@ -526,98 +706,9 @@ export function buildEnrollmentDocx({
           }
         },
         children: [
-          // Line 1: Kannada Company Name
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 0, after: 60, line: 260 },
-            children: [
-              new TextRun({
-                text: societyNameKn,
-                bold: true,
-                size: 32,
-                font: KANNADA_FONT, noProof: true
-              })
-            ]
-          }),
-          // Line 2: English Company Name
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 0, after: 120, line: 240 },
-            children: [
-              new TextRun({
-                text: societyNameEn,
-                bold: true,
-                size: 20,
-                font: KANNADA_FONT, noProof: true
-              })
-            ]
-          }),
-          // Line 3: 3-column Sub-header (Taluk, Department, District)
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: noBorders,
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    borders: noBorders,
-                    verticalAlign: VerticalAlign.CENTER,
-                    children: [
-                      new Paragraph({
-                        alignment: AlignmentType.LEFT,
-                        children: [
-                          new TextRun({
-                            text: 'ತಾಲೂಕ॥ ' + taluk,
-                            bold: true,
-                            size: 22,
-                            font: KANNADA_FONT, noProof: true
-                          })
-                        ]
-                      })
-                    ]
-                  }),
-                  new TableCell({
-                    width: { size: 40, type: WidthType.PERCENTAGE },
-                    borders: noBorders,
-                    verticalAlign: VerticalAlign.CENTER,
-                    children: [
-                      new Paragraph({
-                        alignment: AlignmentType.CENTER,
-                        children: [
-                          new TextRun({
-                            text: 'ಶೇರು ವಿಭಾಗ',
-                            bold: true,
-                            size: 30,
-                            font: KANNADA_FONT, noProof: true
-                          })
-                        ]
-                      })
-                    ]
-                  }),
-                  new TableCell({
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    borders: noBorders,
-                    verticalAlign: VerticalAlign.CENTER,
-                    children: [
-                      new Paragraph({
-                        alignment: AlignmentType.RIGHT,
-                        children: [
-                          new TextRun({
-                            text: 'ಜಿಲ್ಲಾ॥ ' + dist,
-                            bold: true,
-                            size: 22,
-                            font: KANNADA_FONT, noProof: true
-                          })
-                        ]
-                      })
-                    ]
-                  })
-                ]
-              })
-            ]
-          }),
-          // Line 4: List Title Banner with Season and Date
+          // 1. Boxed Statutory Dual-Emblem Header
+          statutoryHeaderTable,
+          // 2.  List Title Banner with Season and Date
           new Paragraph({
             alignment: AlignmentType.CENTER,
             spacing: { before: 120, after: 180 },
