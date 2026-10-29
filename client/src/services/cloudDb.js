@@ -764,9 +764,26 @@ export const CloudDbService = {
         for (const log of logs) {
           const mod = log.module;
           if (collections[mod] && log.new_value) {
-            const key = String(log.record_id || log.new_value.id || log.new_value.enrollment_id || log.new_value.transfer_id || '').trim();
+            const nv = log.new_value;
+            let key = '';
+            if (mod === 'varasa') {
+              const shNo = String(nv.share_no || nv.existing_share_number || '').trim().replace(/^#/, '');
+              const mem = String(nv.varasa_member || nv.heir_name || '').trim().toLowerCase().normalize('NFC');
+              key = (shNo && mem) ? `${shNo}_${mem}` : (nv.transfer_id || String(nv.id || log.record_id || ''));
+            } else if (mod === 'vargavane') {
+              const shNo = String(nv.share_no || nv.transferor_share_no || '').trim().replace(/^#/, '');
+              const mem = String(nv.transferee_name || '').trim().toLowerCase().normalize('NFC');
+              key = (shNo && mem) ? `${shNo}_${mem}` : (nv.transfer_id || String(nv.id || log.record_id || ''));
+            } else if (mod === 'enrollments') {
+              const name = String(nv.applicant_name || nv.name || '').trim().toLowerCase().normalize('NFC');
+              const mob = String(nv.mobile || nv.phone || '').trim();
+              key = (name && mob) ? `${name}_${mob}` : (nv.enrollment_id || String(nv.id || log.record_id || ''));
+            } else {
+              key = String(log.record_id || nv.id || '').trim();
+            }
+
             if (key && !collections[mod].has(key)) {
-              collections[mod].set(key, log.new_value);
+              collections[mod].set(key, nv);
             }
           }
         }
@@ -782,17 +799,20 @@ export const CloudDbService = {
       const totalEnrollments = enrList.length;
       const totalEnrollmentShares = enrList.reduce((acc, e) => acc + (parseInt(e.no_shares, 10) || 1), 0);
       const totalEnrollmentAmount = enrList.reduce((acc, e) => acc + (parseFloat(e.total_amount) || 0), 0);
-      const approvedEnrollments = enrList.filter(e => {
-        const st = (e.approval_status || '').toLowerCase();
-        return st.includes('approved') || st.includes('active') || st.includes('issued') || st.includes('ಮಂಜೂರು') || st.includes('ವಿತರಿಸಲಾಗಿದೆ');
-      }).length;
+      const isApprovedOrCompleted = (st) => {
+        const s = String(st || '').toLowerCase();
+        return s.includes('approved') || s.includes('completed') || s.includes('issued') || s.includes('active') || s.includes('ಮಂಜೂರು') || s.includes('ಅನುಮೋದಿಸಲಾಗಿದೆ');
+      };
 
-      const pendingVarasa = varasaList.filter(v => v.approval_status !== 'Completed').length;
-      const completedVarasa = varasaList.filter(v => v.approval_status === 'Completed').length;
+      const approvedEnrollments = enrList.filter(e => isApprovedOrCompleted(e.approval_status)).length;
+      const pendingEnrollments = enrList.filter(e => !isApprovedOrCompleted(e.approval_status)).length;
+
+      const pendingVarasa = varasaList.filter(v => !isApprovedOrCompleted(v.approval_status)).length;
+      const completedVarasa = varasaList.filter(v => isApprovedOrCompleted(v.approval_status)).length;
 
       const totalVargavane = vargList.length;
-      const pendingVargavane = vargList.filter(v => v.approval_status !== 'Completed').length;
-      const completedVargavane = vargList.filter(v => v.approval_status === 'Completed').length;
+      const pendingVargavane = vargList.filter(v => !isApprovedOrCompleted(v.approval_status)).length;
+      const completedVargavane = vargList.filter(v => isApprovedOrCompleted(v.approval_status)).length;
 
       const todayTx = txList.length;
       const totalSugarAlloted = allotList.reduce((acc, a) => acc + (parseFloat(a.issued_quantity_kg) || 0), 0);
@@ -819,6 +839,7 @@ export const CloudDbService = {
           totalEnrollmentShares,
           totalEnrollmentAmount,
           approvedEnrollments,
+          pendingEnrollments,
           todayTx,
           todayAttendance: 0,
           totalSugarAlloted,
