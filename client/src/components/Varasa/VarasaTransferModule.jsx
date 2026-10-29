@@ -1040,6 +1040,22 @@ export default function VarasaTransferModule() {
           </div>
         </div>
       )}
+    
+      {/* Official Statutory Varasa Register List Print Modal */}
+      <RegisterListPrintModal
+        isOpen={listPrintModalOpen}
+        onClose={() => setListPrintModalOpen(false)}
+        type="varasa"
+        allRecords={transfers}
+        selectedIds={selectedIds}
+        initialScope={listPrintScope}
+        filterSummary={{
+          search,
+          status: statusFilter,
+          taluk: talukFilter
+        }}
+        onClearSelection={clearSelection}
+      />
     </div>
   );
 }

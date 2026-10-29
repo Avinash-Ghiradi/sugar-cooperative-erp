@@ -1030,6 +1030,22 @@ export default function VargavaneTransferModule() {
           </div>
         </div>
       )}
+    
+      {/* Official Statutory Vargavane Register List Print Modal */}
+      <RegisterListPrintModal
+        isOpen={listPrintModalOpen}
+        onClose={() => setListPrintModalOpen(false)}
+        type="vargavane"
+        allRecords={transfers}
+        selectedIds={selectedIds}
+        initialScope={listPrintScope}
+        filterSummary={{
+          search,
+          status: statusFilter,
+          taluk: talukFilter
+        }}
+        onClearSelection={clearSelection}
+      />
     </div>
   );
 }
