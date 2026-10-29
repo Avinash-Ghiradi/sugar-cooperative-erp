@@ -28,12 +28,21 @@ const cellBorders = {
 };
 
 const noBorder = { style: BorderStyle.NONE, size: 0, color: 'auto' };
-const noBorders = {
+const noTableBorders = {
+  top: noBorder,
+  bottom: noBorder,
+  left: noBorder,
+  right: noBorder,
+  insideHorizontal: noBorder,
+  insideVertical: noBorder
+};
+const noCellBorders = {
   top: noBorder,
   bottom: noBorder,
   left: noBorder,
   right: noBorder
 };
+const noBorders = noTableBorders;
 
 // Date formatter to DD/MM/YYYY
 export function formatDocxDate(dateStr) {
@@ -126,7 +135,7 @@ export function buildEnrollmentDocx({
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: slNo, size: 20, font: KANNADA_FONT })]
+              children: [new TextRun({ text: slNo, size: 20, font: KANNADA_FONT, noProof: true })]
             })
           ]
         }),
@@ -138,15 +147,15 @@ export function buildEnrollmentDocx({
           children: [
             new Paragraph({
               spacing: { before: 20, after: 10, line: 240 },
-              children: [new TextRun({ text: name, bold: true, size: 21, font: KANNADA_FONT })]
+              children: [new TextRun({ text: name, bold: true, size: 21, font: KANNADA_FONT, noProof: true })]
             }),
             villageLine ? new Paragraph({
               spacing: { before: 0, after: 10, line: 240 },
-              children: [new TextRun({ text: villageLine, size: 19, font: KANNADA_FONT })]
+              children: [new TextRun({ text: villageLine, size: 19, font: KANNADA_FONT, noProof: true })]
             }) : new Paragraph({ spacing: { before: 0, after: 0 } }),
             talukDistLine ? new Paragraph({
               spacing: { before: 0, after: 20, line: 240 },
-              children: [new TextRun({ text: talukDistLine, size: 19, font: KANNADA_FONT })]
+              children: [new TextRun({ text: talukDistLine, size: 19, font: KANNADA_FONT, noProof: true })]
             }) : new Paragraph({ spacing: { before: 0, after: 0 } })
           ]
         }),
@@ -158,7 +167,7 @@ export function buildEnrollmentDocx({
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: appDate, size: 19, font: KANNADA_FONT })]
+              children: [new TextRun({ text: appDate, size: 19, font: KANNADA_FONT, noProof: true })]
             })
           ]
         }),
@@ -170,7 +179,7 @@ export function buildEnrollmentDocx({
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: receiptAndAmt, size: 19, font: KANNADA_FONT })]
+              children: [new TextRun({ text: receiptAndAmt, size: 19, font: KANNADA_FONT, noProof: true })]
             })
           ]
         }),
@@ -182,7 +191,7 @@ export function buildEnrollmentDocx({
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: cat, size: 20, font: KANNADA_FONT })]
+              children: [new TextRun({ text: cat, size: 20, font: KANNADA_FONT, noProof: true })]
             })
           ]
         }),
@@ -194,7 +203,7 @@ export function buildEnrollmentDocx({
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: shares, bold: true, size: 20, font: KANNADA_FONT })]
+              children: [new TextRun({ text: shares, bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
             })
           ]
         }),
@@ -206,7 +215,7 @@ export function buildEnrollmentDocx({
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: remarks, size: 19, font: KANNADA_FONT })]
+              children: [new TextRun({ text: remarks, size: 19, font: KANNADA_FONT, noProof: true })]
             })
           ]
         })
@@ -232,7 +241,7 @@ export function buildEnrollmentDocx({
                 text: 'ಒಟ್ಟು (GRAND TOTAL) — ' + records.length + ' ಹೊಸ ಶೇರುದಾರರು',
                 bold: true,
                 size: 20,
-                font: KANNADA_FONT
+                font: KANNADA_FONT, noProof: true
               })
             ]
           })
@@ -251,7 +260,7 @@ export function buildEnrollmentDocx({
                 text: String(totalSharesCount),
                 bold: true,
                 size: 20,
-                font: KANNADA_FONT
+                font: KANNADA_FONT, noProof: true
               })
             ]
           })
@@ -280,7 +289,7 @@ export function buildEnrollmentDocx({
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ಅ ನಂ', bold: true, size: 20, font: KANNADA_FONT })]
+            children: [new TextRun({ text: 'ಅ ನಂ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
           })
         ]
       }),
@@ -298,7 +307,7 @@ export function buildEnrollmentDocx({
                 text: 'ಹೊಸ ಶೇರು ಅರ್ಜಿ ಮಾಡುವವರ ಸದಸ್ಯರ ಹೆಸರು ಹಾಗೂ ವಿಳಾಸ',
                 bold: true,
                 size: 20,
-                font: KANNADA_FONT
+                font: KANNADA_FONT, noProof: true
               })
             ]
           })
@@ -313,7 +322,7 @@ export function buildEnrollmentDocx({
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ಅರ್ಜಿ ದಿನಾಂಕ', bold: true, size: 20, font: KANNADA_FONT })]
+            children: [new TextRun({ text: 'ಅರ್ಜಿ ದಿನಾಂಕ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
           })
         ]
       }),
@@ -326,7 +335,7 @@ export function buildEnrollmentDocx({
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ರಶೀದಿ & ಮೊಬಲೆ', bold: true, size: 20, font: KANNADA_FONT })]
+            children: [new TextRun({ text: 'ರಶೀದಿ & ಮೊಬಲೆ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
           })
         ]
       }),
@@ -339,7 +348,7 @@ export function buildEnrollmentDocx({
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ವರ್ಗ', bold: true, size: 20, font: KANNADA_FONT })]
+            children: [new TextRun({ text: 'ವರ್ಗ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
           })
         ]
       }),
@@ -352,7 +361,7 @@ export function buildEnrollmentDocx({
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ಶೇರು ಸಂಖ್ಯೆ', bold: true, size: 20, font: KANNADA_FONT })]
+            children: [new TextRun({ text: 'ಶೇರು ಸಂಖ್ಯೆ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
           })
         ]
       }),
@@ -365,76 +374,120 @@ export function buildEnrollmentDocx({
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ಷರಾ', bold: true, size: 20, font: KANNADA_FONT })]
+            children: [new TextRun({ text: 'ಷರಾ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
           })
         ]
       })
     ]
   });
 
-  // Statutory 4-Column Signature Block
+  // Statutory 4-Column Signature Block (No box borders, no vertical dividers, clean solid signature lines)
   const signatureBlock = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: noBorders,
+    borders: noTableBorders,
     rows: [
       new TableRow({
         children: [
+          // 1. ತಯಾರಿಸಿದವರು
           new TableCell({
             width: { size: 25, type: WidthType.PERCENTAGE },
-            borders: noBorders,
+            borders: noCellBorders,
+            margins: { top: 80, bottom: 60, left: 240, right: 240 },
             children: [
-              new Paragraph({ text: '', spacing: { before: 450, after: 120 } }),
+              new Paragraph({ spacing: { before: 450, after: 0 } }),
               new Paragraph({
                 alignment: AlignmentType.CENTER,
+                border: {
+                  top: { style: BorderStyle.SINGLE, size: 6, color: '000000', space: 6 }
+                },
+                spacing: { before: 80, after: 30, line: 240 },
                 children: [
-                  new TextRun({ text: '_________________________', size: 16 }),
-                  new TextRun({ text: '\nತಯಾರಿಸಿದವರು', bold: true, size: 19, font: KANNADA_FONT }),
-                  new TextRun({ text: '\n(Prepared by / Clerk)', size: 15, font: KANNADA_FONT })
+                  new TextRun({ text: 'ತಯಾರಿಸಿದವರು', bold: true, size: 20, font: KANNADA_FONT, noProof: true })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 40, line: 220 },
+                children: [
+                  new TextRun({ text: '(Prepared by / Clerk)', size: 16, font: KANNADA_FONT, color: '333333', noProof: true })
                 ]
               })
             ]
           }),
+          // 2. ಶೇರು ಶಾಖಾಧಿಕಾರಿ
           new TableCell({
             width: { size: 25, type: WidthType.PERCENTAGE },
-            borders: noBorders,
+            borders: noCellBorders,
+            margins: { top: 80, bottom: 60, left: 240, right: 240 },
             children: [
-              new Paragraph({ text: '', spacing: { before: 450, after: 120 } }),
+              new Paragraph({ spacing: { before: 450, after: 0 } }),
               new Paragraph({
                 alignment: AlignmentType.CENTER,
+                border: {
+                  top: { style: BorderStyle.SINGLE, size: 6, color: '000000', space: 6 }
+                },
+                spacing: { before: 80, after: 30, line: 240 },
                 children: [
-                  new TextRun({ text: '_________________________', size: 16 }),
-                  new TextRun({ text: '\nಶೇರು ಶಾಖಾಧಿಕಾರಿ', bold: true, size: 19, font: KANNADA_FONT }),
-                  new TextRun({ text: '\n(Share Section Officer)', size: 15, font: KANNADA_FONT })
+                  new TextRun({ text: 'ಶೇರು ಶಾಖಾಧಿಕಾರಿ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 40, line: 220 },
+                children: [
+                  new TextRun({ text: '(Share Section Officer)', size: 16, font: KANNADA_FONT, color: '333333', noProof: true })
                 ]
               })
             ]
           }),
+          // 3. ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿ
           new TableCell({
             width: { size: 25, type: WidthType.PERCENTAGE },
-            borders: noBorders,
+            borders: noCellBorders,
+            margins: { top: 80, bottom: 60, left: 240, right: 240 },
             children: [
-              new Paragraph({ text: '', spacing: { before: 450, after: 120 } }),
+              new Paragraph({ spacing: { before: 450, after: 0 } }),
               new Paragraph({
                 alignment: AlignmentType.CENTER,
+                border: {
+                  top: { style: BorderStyle.SINGLE, size: 6, color: '000000', space: 6 }
+                },
+                spacing: { before: 80, after: 30, line: 240 },
                 children: [
-                  new TextRun({ text: '_________________________', size: 16 }),
-                  new TextRun({ text: '\nಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿ', bold: true, size: 19, font: KANNADA_FONT }),
-                  new TextRun({ text: '\n(Chief Accounts Officer)', size: 15, font: KANNADA_FONT })
+                  new TextRun({ text: 'ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 40, line: 220 },
+                children: [
+                  new TextRun({ text: '(Chief Accounts Officer)', size: 16, font: KANNADA_FONT, color: '333333', noProof: true })
                 ]
               })
             ]
           }),
+          // 4. ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು
           new TableCell({
             width: { size: 25, type: WidthType.PERCENTAGE },
-            borders: noBorders,
+            borders: noCellBorders,
+            margins: { top: 80, bottom: 60, left: 240, right: 240 },
             children: [
-              new Paragraph({ text: '', spacing: { before: 450, after: 120 } }),
+              new Paragraph({ spacing: { before: 450, after: 0 } }),
               new Paragraph({
                 alignment: AlignmentType.CENTER,
+                border: {
+                  top: { style: BorderStyle.SINGLE, size: 6, color: '000000', space: 6 }
+                },
+                spacing: { before: 80, after: 30, line: 240 },
                 children: [
-                  new TextRun({ text: '_________________________', size: 16 }),
-                  new TextRun({ text: '\nವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು', bold: true, size: 19, font: KANNADA_FONT }),
-                  new TextRun({ text: '\n(Managing Director)', size: 15, font: KANNADA_FONT })
+                  new TextRun({ text: 'ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು', bold: true, size: 20, font: KANNADA_FONT, noProof: true })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 40, line: 220 },
+                children: [
+                  new TextRun({ text: '(Managing Director)', size: 16, font: KANNADA_FONT, color: '333333', noProof: true })
                 ]
               })
             ]
@@ -482,7 +535,7 @@ export function buildEnrollmentDocx({
                 text: societyNameKn,
                 bold: true,
                 size: 32,
-                font: KANNADA_FONT
+                font: KANNADA_FONT, noProof: true
               })
             ]
           }),
@@ -495,7 +548,7 @@ export function buildEnrollmentDocx({
                 text: societyNameEn,
                 bold: true,
                 size: 20,
-                font: KANNADA_FONT
+                font: KANNADA_FONT, noProof: true
               })
             ]
           }),
@@ -518,7 +571,7 @@ export function buildEnrollmentDocx({
                             text: 'ತಾಲೂಕ॥ ' + taluk,
                             bold: true,
                             size: 22,
-                            font: KANNADA_FONT
+                            font: KANNADA_FONT, noProof: true
                           })
                         ]
                       })
@@ -536,7 +589,7 @@ export function buildEnrollmentDocx({
                             text: 'ಶೇರು ವಿಭಾಗ',
                             bold: true,
                             size: 30,
-                            font: KANNADA_FONT
+                            font: KANNADA_FONT, noProof: true
                           })
                         ]
                       })
@@ -554,7 +607,7 @@ export function buildEnrollmentDocx({
                             text: 'ಜಿಲ್ಲಾ॥ ' + dist,
                             bold: true,
                             size: 22,
-                            font: KANNADA_FONT
+                            font: KANNADA_FONT, noProof: true
                           })
                         ]
                       })
@@ -573,7 +626,7 @@ export function buildEnrollmentDocx({
                 text: 'ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ ' + season + ' [' + effectiveDate + ']',
                 bold: true,
                 size: 24,
-                font: KANNADA_FONT
+                font: KANNADA_FONT, noProof: true
               })
             ]
           }),
@@ -583,6 +636,8 @@ export function buildEnrollmentDocx({
             borders: cellBorders,
             rows: [headerRow, ...dataRows, totalRow]
           }),
+          // Spacing before signatures
+          new Paragraph({ text: '', spacing: { before: 400, after: 100 } }),
           // Signatures
           signatureBlock
         ]
