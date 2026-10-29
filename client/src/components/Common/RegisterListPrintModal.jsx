@@ -185,14 +185,15 @@ export default function RegisterListPrintModal({
 
   // Reusable Statutory Header Box (Image 1 Format)
   const renderStatutoryHeader = () => (
-    <div className="border-[2px] border-black mb-3 bg-white text-black">
-      <div className="flex items-center justify-between p-2 pb-1.5">
+    <div className="border-[2.5px] border-black mb-3 bg-white text-black font-kannada">
+      {/* Upper Main Section */}
+      <div className="flex items-center justify-between px-4 py-2">
         {/* Left: Factory Emblem */}
-        <div className="w-24 flex items-center justify-center shrink-0">
+        <div className="w-28 flex items-center justify-center shrink-0">
           <img
             src={companyLogo}
             alt="B.S.S.K.N Logo"
-            className="h-[68px] w-auto object-contain"
+            className="h-[78px] sm:h-[84px] w-auto object-contain"
             onError={(e) => {
               if (!logoError) {
                 setLogoError(true);
@@ -202,32 +203,34 @@ export default function RegisterListPrintModal({
           />
         </div>
 
-        {/* Center: Title */}
-        <div className="flex-1 text-center px-2">
-          <h1 className="text-[19px] font-bold tracking-tight text-black leading-tight">
+        {/* Center: Title Hierarchy & Underline (Matching exact statutory header) */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
+          <h1 className="text-[25px] sm:text-[27px] font-bold tracking-tight text-black leading-snug">
             ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ, ಮರಗೂರ
           </h1>
-          <h2 className="text-[10.5px] font-bold tracking-wider text-black uppercase font-sans mt-0.5">
+          <h2 className="text-[11.5px] font-bold tracking-[0.18em] text-black uppercase font-sans mt-0.5">
             SRI BHIMASHANKAR SAHAKARI SAKKARE KARKHANE NIYAMIT MARGUR
           </h2>
-          <div className="mt-1">
-            <span className="text-[18px] font-black text-black tracking-wide inline-block border-b-2 border-black pb-0.5">
+          <div className="mt-1.5 w-full flex flex-col items-center">
+            <h3 className="text-[21px] sm:text-[23px] font-black text-black tracking-normal leading-snug">
               {registerTitleKn}
-            </span>
+            </h3>
+            {/* Solid Horizontal Line spanning across the center text block */}
+            <div className="w-full border-b-[2.5px] border-black mt-2"></div>
           </div>
         </div>
 
         {/* Right: Cooperative Handshake Emblem */}
-        <div className="w-24 flex items-center justify-center shrink-0">
-          <CooperativeHandshakeIcon className="w-20 h-12" />
+        <div className="w-28 flex items-center justify-center shrink-0">
+          <CooperativeHandshakeIcon className="w-24 h-16 sm:w-28 sm:h-18" />
         </div>
       </div>
 
-      {/* Sub-bar: Taluk / District */}
-      <div className="border-t-[1.5px] border-black flex items-center justify-between px-4 py-1 text-xs font-bold bg-white text-black">
-        <div>ತಾಲೂಕು|| ಚಡಚಣ</div>
-        <div className="text-[11px] font-mono tracking-widest">{registerSubtitleEn}</div>
-        <div>ಜಿಲ್ಲಾ|| ವಿಜಯಪುರ</div>
+      {/* Lower Sub-bar: Taluk / District */}
+      <div className="border-t-[2.5px] border-black flex items-center justify-between px-6 py-1 bg-white text-black font-bold">
+        <div className="text-[14px] font-bold text-black">ತಾಲೂಕು|| ಚಡಚಣ</div>
+        <div className="text-[12px] font-mono font-bold tracking-[0.25em] text-black text-center uppercase">{registerSubtitleEn}</div>
+        <div className="text-[14px] font-bold text-black">ಜಿಲ್ಲಾ|| ವಿಜಯಪುರ</div>
       </div>
     </div>
   );
