@@ -37,7 +37,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const [selectedCircle, setSelectedCircle] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedBook, setSelectedBook] = useState('');
-  const [selectedCast, setSelectedCast] = useState('');
+  const [selectedCast, setSelectedCast] = useState(() => localStorage.getItem('sugar_erp_filter_category') || '');
   const [selectedAmount, setSelectedAmount] = useState('');
   const [sortBy, setSortBy] = useState(''); // 'place', 'circle', 'address', 'name', 'share_no'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
@@ -721,7 +721,15 @@ export default function ShareholderList({ initialShowMerge = false }) {
         {/* Schedule Cast / ವರ್ಗ Filter */}
         <select
           value={selectedCast}
-          onChange={(e) => setSelectedCast(e.target.value)}
+          onChange={(e) => {
+          const val = e.target.value;
+          setSelectedCast(val);
+          if (val) {
+            localStorage.setItem('sugar_erp_filter_category', val);
+          } else {
+            localStorage.removeItem('sugar_erp_filter_category');
+          }
+        }}
           className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 cursor-pointer"
         >
           <option value="">All Categories ({castList.length})</option>
@@ -820,6 +828,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
               setSearch('');
               setSelectedBook('');
               setSelectedCast('');
+              localStorage.removeItem('sugar_erp_filter_category');
               setSelectedVillage('');
               setSelectedCircle('');
               setSelectedAmount('');
