@@ -522,46 +522,52 @@ export function buildVargavaneDocx({
   });
 
 
-  // Boxed statutory header with Factory Shiva Emblem on Left, Handshake Emblem on Right
-  const boxBorder = { style: BorderStyle.SINGLE, size: 12, color: '000000' };
-  const subBorder = { style: BorderStyle.SINGLE, size: 8, color: '000000' };
+
+  // Boxed statutory header matching official cooperative layout
+  const headerBorder = { style: BorderStyle.SINGLE, size: 6, color: '000000' };
+  const headerCellBorders = {
+    top: headerBorder,
+    bottom: headerBorder,
+    left: headerBorder,
+    right: headerBorder
+  };
 
   const statutoryHeaderTable = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     borders: {
-      top: boxBorder,
-      bottom: boxBorder,
-      left: boxBorder,
-      right: boxBorder,
-      insideHorizontal: subBorder,
-      insideVertical: noBorder
+      top: headerBorder,
+      bottom: headerBorder,
+      left: headerBorder,
+      right: headerBorder,
+      insideHorizontal: headerBorder,
+      insideVertical: headerBorder
     },
     rows: [
-      // Upper Section: Left Logo + Center Titles + Right Logo
+      // Row 1: Left Factory Emblem + Center Titles + Right Cooperative Handshake Emblem
       new TableRow({
         children: [
           // Left: Factory Emblem
           new TableCell({
-            width: { size: 14, type: WidthType.PERCENTAGE },
-            borders: { top: noBorder, bottom: subBorder, left: noBorder, right: noBorder },
+            width: { size: 16, type: WidthType.PERCENTAGE },
+            borders: headerCellBorders,
             verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 80, bottom: 80, left: 100, right: 60 },
+            margins: { top: 60, bottom: 60, left: 60, right: 60 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
                 children: logoBytes ? [
                   new ImageRun({
                     data: logoBytes,
-                    transformation: { width: 75, height: 75 }
+                    transformation: { width: 68, height: 68 }
                   })
                 ] : []
               })
             ]
           }),
-          // Center: Factory Name (Kn & En) and Register Title with Underline
+          // Center: Factory Name in Kannada and English
           new TableCell({
-            width: { size: 72, type: WidthType.PERCENTAGE },
-            borders: { top: noBorder, bottom: subBorder, left: noBorder, right: noBorder },
+            width: { size: 68, type: WidthType.PERCENTAGE },
+            borders: headerCellBorders,
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 60, bottom: 60, left: 60, right: 60 },
             children: [
@@ -572,7 +578,7 @@ export function buildVargavaneDocx({
                   new TextRun({
                     text: societyNameKn,
                     bold: true,
-                    size: 32,
+                    size: 28,
                     font: KANNADA_FONT,
                     noProof: true
                   })
@@ -580,28 +586,12 @@ export function buildVargavaneDocx({
               }),
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                spacing: { before: 0, after: 50, line: 220 },
+                spacing: { before: 0, after: 20, line: 220 },
                 children: [
                   new TextRun({
                     text: societyNameEn,
                     bold: true,
-                    size: 19,
-                    font: KANNADA_FONT,
-                    noProof: true
-                  })
-                ]
-              }),
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 20, after: 40, line: 260 },
-                border: {
-                  bottom: { style: BorderStyle.SINGLE, size: 8, color: '000000', space: 6 }
-                },
-                children: [
-                  new TextRun({
-                    text: 'ಶೇರು ವಿಭಾಗ - ಶೇರು ವರ್ಗಾವಣೆ ವಹಿ (Share Transfer Register)',
-                    bold: true,
-                    size: 25,
+                    size: 16,
                     font: KANNADA_FONT,
                     noProof: true
                   })
@@ -611,17 +601,17 @@ export function buildVargavaneDocx({
           }),
           // Right: Handshake Emblem
           new TableCell({
-            width: { size: 14, type: WidthType.PERCENTAGE },
-            borders: { top: noBorder, bottom: subBorder, left: noBorder, right: noBorder },
+            width: { size: 16, type: WidthType.PERCENTAGE },
+            borders: headerCellBorders,
             verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 80, bottom: 80, left: 60, right: 100 },
+            margins: { top: 60, bottom: 60, left: 60, right: 60 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
                 children: handshakeBytes ? [
                   new ImageRun({
                     data: handshakeBytes,
-                    transformation: { width: 78, height: 48 }
+                    transformation: { width: 72, height: 44 }
                   })
                 ] : []
               })
@@ -629,13 +619,14 @@ export function buildVargavaneDocx({
           })
         ]
       }),
-      // Lower Sub-bar: Taluk, Subtitle En, District
+      // Row 2: Sub-bar with Taluk (Left), "ಶೇರು ವಿಭಾಗ" (Center), District (Right)
       new TableRow({
         children: [
           new TableCell({
-            width: { size: 25, type: WidthType.PERCENTAGE },
-            borders: { top: subBorder, bottom: noBorder, left: noBorder, right: noBorder },
-            margins: { top: 60, bottom: 60, left: 160, right: 60 },
+            width: { size: 22, type: WidthType.PERCENTAGE },
+            borders: headerCellBorders,
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 60, bottom: 60, left: 80, right: 40 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.LEFT,
@@ -643,7 +634,7 @@ export function buildVargavaneDocx({
                   new TextRun({
                     text: 'ತಾಲೂಕು|| ' + taluk,
                     bold: true,
-                    size: 21,
+                    size: 20,
                     font: KANNADA_FONT,
                     noProof: true
                   })
@@ -652,17 +643,18 @@ export function buildVargavaneDocx({
             ]
           }),
           new TableCell({
-            width: { size: 50, type: WidthType.PERCENTAGE },
-            borders: { top: subBorder, bottom: noBorder, left: noBorder, right: noBorder },
-            margins: { top: 60, bottom: 60, left: 60, right: 60 },
+            width: { size: 56, type: WidthType.PERCENTAGE },
+            borders: headerCellBorders,
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 60, bottom: 60, left: 40, right: 40 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: 'STATUTORY SHARE TRANSFER (VARGAVANE) REGISTER',
+                    text: 'ಶೇರು ವಿಭಾಗ',
                     bold: true,
-                    size: 18,
+                    size: 26,
                     font: KANNADA_FONT,
                     noProof: true
                   })
@@ -671,9 +663,10 @@ export function buildVargavaneDocx({
             ]
           }),
           new TableCell({
-            width: { size: 25, type: WidthType.PERCENTAGE },
-            borders: { top: subBorder, bottom: noBorder, left: noBorder, right: noBorder },
-            margins: { top: 60, bottom: 60, left: 60, right: 160 },
+            width: { size: 22, type: WidthType.PERCENTAGE },
+            borders: headerCellBorders,
+            verticalAlign: VerticalAlign.CENTER,
+            margins: { top: 60, bottom: 60, left: 40, right: 80 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.RIGHT,
@@ -681,7 +674,7 @@ export function buildVargavaneDocx({
                   new TextRun({
                     text: 'ಜಿಲ್ಲಾ|| ' + dist,
                     bold: true,
-                    size: 21,
+                    size: 20,
                     font: KANNADA_FONT,
                     noProof: true
                   })
@@ -710,9 +703,9 @@ export function buildVargavaneDocx({
         properties: {
           page: {
             size: {
-              orientation: PageOrientation.LANDSCAPE,
-              width: 16838, // A4 Landscape
-              height: 11906
+              orientation: PageOrientation.PORTRAIT,
+              width: 11906, // A4 Portrait
+              height: 16838
             },
             margin: {
               top: 720,
