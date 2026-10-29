@@ -74,9 +74,7 @@ export default function Dashboard() {
     // Row 2: Category Wise Details (ಅ, ಬ, ಕ, ಡ ವರ್ಗಗಳು)
     {
       title: "'ಅ' - ವರ್ಗ (Class A)",
-      value: `${catA.count.toLocaleString()} ಸದಸ್ಯರು`,
-      subtitle: `${catA.shares.toLocaleString()} ಷೇರುಗಳು (${catA.percentage}%)`,
-      badge: 'ಕಬ್ಬು ಬೆಳೆಗಾರ',
+      value: catA.count.toLocaleString(),
       icon: Users,
       color: 'emerald',
       link: 'shareholders',
@@ -84,9 +82,7 @@ export default function Dashboard() {
     },
     {
       title: "'ಬ' - ವರ್ಗ (Class B)",
-      value: `${catB.count.toLocaleString()} ಸದಸ್ಯರು`,
-      subtitle: `${catB.shares.toLocaleString()} ಷೇರುಗಳು (${catB.percentage}%)`,
-      badge: 'ಸಹಕಾರ ಸಂಸ್ಥೆ',
+      value: catB.count.toLocaleString(),
       icon: Building2,
       color: 'sky',
       link: 'shareholders',
@@ -94,9 +90,7 @@ export default function Dashboard() {
     },
     {
       title: "'ಕ' - ವರ್ಗ (Class C)",
-      value: `${catC.count.toLocaleString()} ಸದಸ್ಯರು`,
-      subtitle: `${catC.shares.toLocaleString()} ಷೇರುಗಳು (${catC.percentage}%)`,
-      badge: 'ನಾಮಮಾತ್ರ',
+      value: catC.count.toLocaleString(),
       icon: Coins,
       color: 'amber',
       link: 'shareholders',
@@ -104,9 +98,7 @@ export default function Dashboard() {
     },
     {
       title: "'ಡ' - ವರ್ಗ (Class D)",
-      value: `${catD.count.toLocaleString()} ಸದಸ್ಯರು`,
-      subtitle: `${catD.shares.toLocaleString()} ಷೇರುಗಳು (${catD.percentage}%)`,
-      badge: 'ಬೆಳೆಗಾರಲ್ಲದ',
+      value: catD.count.toLocaleString(),
       icon: UserCheck,
       color: 'purple',
       link: 'shareholders',
@@ -124,27 +116,21 @@ export default function Dashboard() {
   const pendingCardItems = [
     {
       title: 'Pending New Shareholders',
-      value: `${pendingNewCount.toLocaleString()} ಅರ್ಜಿಗಳು`,
-      subtitle: 'ಹೊಸ ಸದಸ್ಯತ್ವ ನೋಂದಣಿ ಪರಿಶೀಲನೆ ಬಾಕಿ',
-      badge: 'ಹೊಸ ಶೇರು ಅರ್ಜಿ',
+      value: pendingNewCount.toLocaleString(),
       icon: UserPlus,
       color: 'teal',
       link: 'enrollment'
     },
     {
       title: 'Pending Varasa',
-      value: `${(stats.pendingVarasa || 0).toLocaleString()} ಅರ್ಜಿಗಳು`,
-      subtitle: 'ವಾರಸುದಾರರ ಶಾಸನಬದ್ಧ ವರ್ಗಾವಣೆ ಬಾಕಿ',
-      badge: 'ವಾರಸಾ ಅರ್ಜಿ',
+      value: (stats.pendingVarasa || 0).toLocaleString(),
       icon: Clock,
       color: 'amber',
       link: 'varasa'
     },
     {
       title: 'Pending Vargavane (ವರ್ಗಾವಣೆ)',
-      value: `${(stats.pendingVargavane !== undefined ? stats.pendingVargavane : (stats.totalVargavane || 0)).toLocaleString()} ಅರ್ಜಿಗಳು`,
-      subtitle: 'ಶಾಸನಬದ್ಧ ಷೇರು ಹಸ್ತಾಂತರ ಪರಿಶೀಲನೆ ಬಾಕಿ',
-      badge: 'ವರ್ಗಾವಣೆ ಅರ್ಜಿ',
+      value: (stats.pendingVargavane !== undefined ? stats.pendingVargavane : (stats.totalVargavane || 0)).toLocaleString(),
       icon: ArrowRightLeft,
       color: 'purple',
       link: 'vargavane'
@@ -197,7 +183,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Rows 1-3: Stat Cards Grid (Totals, Category Details, Geography & Books) */}
+      {/* Rows 1-3: Stat Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cardItems.map((c, i) => {
           const Icon = c.icon;
@@ -212,66 +198,37 @@ export default function Dashboard() {
                 }
                 setActiveModule(c.link);
               }}
-              className="bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 hover:border-emerald-500/40 rounded-2xl p-4 transition-all cursor-pointer group shadow-sm flex flex-col justify-between"
+              className="bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 hover:border-emerald-500/40 rounded-2xl p-4 transition-all cursor-pointer group shadow-sm"
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">{c.title}</span>
-                  <div className={`w-8 h-8 rounded-xl bg-slate-900 group-hover:bg-emerald-950/80 border border-slate-800 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">{c.title}</span>
+                <div className="w-8 h-8 rounded-xl bg-slate-900 group-hover:bg-emerald-950/80 border border-slate-800 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                  <Icon className="w-4 h-4" />
                 </div>
-                <div className="text-xl font-extrabold text-slate-100 mt-2">{c.value}</div>
               </div>
-
-              {(c.subtitle || c.badge) && (
-                <div className="text-[11px] text-slate-400 mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-between gap-1">
-                  <span className="truncate text-slate-400 font-medium">{c.subtitle}</span>
-                  {c.badge && (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-800/60 shrink-0">
-                      {c.badge}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="text-xl font-extrabold text-slate-100 mt-2">{c.value}</div>
             </div>
           );
         })}
       </div>
 
       {/* Row 4: Pending Workflows (Pending New Shareholders, Pending Varasa, Pending Vargavane) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {pendingCardItems.map((c, i) => {
           const Icon = c.icon;
           return (
             <div
               key={i}
               onClick={() => setActiveModule(c.link)}
-              className="bg-slate-950/80 hover:bg-slate-900 border border-amber-900/40 hover:border-amber-500/60 rounded-2xl p-4 transition-all cursor-pointer group shadow-sm flex flex-col justify-between"
+              className="bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 hover:border-emerald-500/40 rounded-2xl p-4 transition-all cursor-pointer group shadow-sm"
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-amber-400/90 group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-400" />
-                    {c.title}
-                  </span>
-                  <div className="w-8 h-8 rounded-xl bg-slate-900 group-hover:bg-amber-950/80 border border-slate-800 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
-                    <Icon className="w-4 h-4" />
-                  </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">{c.title}</span>
+                <div className="w-8 h-8 rounded-xl bg-slate-900 group-hover:bg-emerald-950/80 border border-slate-800 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                  <Icon className="w-4 h-4" />
                 </div>
-                <div className="text-2xl font-black text-slate-100 mt-2">{c.value}</div>
               </div>
-
-              {(c.subtitle || c.badge) && (
-                <div className="text-[11px] text-slate-400 mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-between gap-1">
-                  <span className="truncate text-slate-400 font-medium">{c.subtitle}</span>
-                  {c.badge && (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-950/90 text-amber-300 border border-amber-700/60 shrink-0">
-                      {c.badge}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="text-xl font-extrabold text-slate-100 mt-2">{c.value}</div>
             </div>
           );
         })}
