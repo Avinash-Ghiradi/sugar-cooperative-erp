@@ -60,6 +60,10 @@ export default function Dashboard() {
   const catC = getCatDetails('ಕ');
   const catD = getCatDetails('ಡ');
 
+  const pendingNewCount = stats.pendingEnrollments !== undefined 
+    ? stats.pendingEnrollments 
+    : Math.max(0, (stats.totalEnrollments || 0) - (stats.approvedEnrollments || 0));
+
   const cardItems = [
     // Row 1: High Level Totals
     { title: 'Total Shareholders', value: stats.totalShareholders.toLocaleString(), icon: Users, color: 'emerald', link: 'shareholders' },
@@ -114,18 +118,37 @@ export default function Dashboard() {
     { title: 'Total Circles', value: stats.totalCircles.toLocaleString(), icon: MapPin, color: 'indigo', link: 'circles' },
     { title: 'Total Books (Ledgers)', value: (stats.totalBooks || 0).toLocaleString(), icon: BookOpen, color: 'sky', link: 'shareholders' },
     { title: 'Enrollment Capital', value: `₹ ${(stats.totalEnrollmentAmount || 0).toLocaleString()}`, icon: Coins, color: 'emerald', link: 'enrollment' },
+  ];
 
-    // Row 4: Transfers (Varasa & Vargavane)
-    { title: 'Pending Varasa', value: stats.pendingVarasa.toLocaleString(), icon: Clock, color: 'amber', link: 'varasa' },
-    { title: 'Completed Varasa', value: stats.completedVarasa.toLocaleString(), icon: FileCheck2, color: 'emerald', link: 'varasa' },
-    { title: 'Vargavane (ವರ್ಗಾವಣೆ)', value: (stats.totalVargavane || 0).toLocaleString(), icon: ArrowRightLeft, color: 'cyan', link: 'vargavane' },
-    { title: 'Completed Vargavane', value: (stats.completedVargavane || 0).toLocaleString(), icon: FileCheck2, color: 'teal', link: 'vargavane' },
-
-    // Row 5: Operations & Staff
-    { title: "Today's Transactions", value: stats.todayTx.toLocaleString(), icon: CreditCard, color: 'purple', link: 'transactions' },
-    { title: 'Sugar Allotted (kg)', value: `${stats.totalSugarAlloted.toLocaleString()} kg`, icon: Package, color: 'teal', link: 'sugar_allotment' },
-    { title: 'Cooperative Staff', value: (stats.totalEmployees || 0).toLocaleString(), icon: Briefcase, color: 'indigo', link: 'hr' },
-    { title: 'Statutory Quotas', value: `${charts.scheduleCastBreakdown?.length || 4} Categories Identified`, icon: Layers, color: 'emerald', link: 'shareholders' },
+  // Row 4: Pending Workflows (Pending New Shareholders, Pending Varasa, Pending Vargavane)
+  const pendingCardItems = [
+    {
+      title: 'Pending New Shareholders',
+      value: `${pendingNewCount.toLocaleString()} ಅರ್ಜಿಗಳು`,
+      subtitle: 'ಹೊಸ ಸದಸ್ಯತ್ವ ನೋಂದಣಿ ಪರಿಶೀಲನೆ ಬಾಕಿ',
+      badge: 'ಹೊಸ ಶೇರು ಅರ್ಜಿ',
+      icon: UserPlus,
+      color: 'teal',
+      link: 'enrollment'
+    },
+    {
+      title: 'Pending Varasa',
+      value: `${(stats.pendingVarasa || 0).toLocaleString()} ಅರ್ಜಿಗಳು`,
+      subtitle: 'ವಾರಸುದಾರರ ಶಾಸನಬದ್ಧ ವರ್ಗಾವಣೆ ಬಾಕಿ',
+      badge: 'ವಾರಸಾ ಅರ್ಜಿ',
+      icon: Clock,
+      color: 'amber',
+      link: 'varasa'
+    },
+    {
+      title: 'Pending Vargavane (ವರ್ಗಾವಣೆ)',
+      value: `${(stats.pendingVargavane !== undefined ? stats.pendingVargavane : (stats.totalVargavane || 0)).toLocaleString()} ಅರ್ಜಿಗಳು`,
+      subtitle: 'ಶಾಸನಬದ್ಧ ಷೇರು ಹಸ್ತಾಂತರ ಪರಿಶೀಲನೆ ಬಾಕಿ',
+      badge: 'ವರ್ಗಾವಣೆ ಅರ್ಜಿ',
+      icon: ArrowRightLeft,
+      color: 'purple',
+      link: 'vargavane'
+    }
   ];
 
   return (
@@ -174,7 +197,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stat Cards Grid (Including Row 2 Category Wise Details) */}
+      {/* Rows 1-3: Stat Cards Grid (Totals, Category Details, Geography & Books) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cardItems.map((c, i) => {
           const Icon = c.icon;
@@ -206,6 +229,44 @@ export default function Dashboard() {
                   <span className="truncate text-slate-400 font-medium">{c.subtitle}</span>
                   {c.badge && (
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-800/60 shrink-0">
+                      {c.badge}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Row 4: Pending Workflows (Pending New Shareholders, Pending Varasa, Pending Vargavane) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {pendingCardItems.map((c, i) => {
+          const Icon = c.icon;
+          return (
+            <div
+              key={i}
+              onClick={() => setActiveModule(c.link)}
+              className="bg-slate-950/80 hover:bg-slate-900 border border-amber-900/40 hover:border-amber-500/60 rounded-2xl p-4 transition-all cursor-pointer group shadow-sm flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-400/90 group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    {c.title}
+                  </span>
+                  <div className="w-8 h-8 rounded-xl bg-slate-900 group-hover:bg-amber-950/80 border border-slate-800 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-2xl font-black text-slate-100 mt-2">{c.value}</div>
+              </div>
+
+              {(c.subtitle || c.badge) && (
+                <div className="text-[11px] text-slate-400 mt-2.5 pt-2 border-t border-slate-800/70 flex items-center justify-between gap-1">
+                  <span className="truncate text-slate-400 font-medium">{c.subtitle}</span>
+                  {c.badge && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-950/90 text-amber-300 border border-amber-700/60 shrink-0">
                       {c.badge}
                     </span>
                   )}

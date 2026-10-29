@@ -1791,6 +1791,7 @@ export const ApiService = {
         totalEnrollmentShares: mockEnrollments.reduce((acc, e) => acc + (parseInt(e.no_shares) || 1), 0),
         totalEnrollmentAmount: mockEnrollments.reduce((acc, e) => acc + (parseFloat(e.total_amount) || 0), 0),
         approvedEnrollments: mockEnrollments.filter(e => (e.approval_status || '').includes('Approved') || (e.approval_status || '').includes('Issued')).length,
+        pendingEnrollments: mockEnrollments.filter(e => !(e.approval_status || '').includes('Approved') && !(e.approval_status || '').includes('Issued')).length,
         todayTx: mockTransactions.length,
         todayAttendance: 0,
         totalSugarAlloted: mockSugarAllotments.reduce((acc, a) => acc + (parseFloat(a.issued_quantity_kg) || 0), 0),
