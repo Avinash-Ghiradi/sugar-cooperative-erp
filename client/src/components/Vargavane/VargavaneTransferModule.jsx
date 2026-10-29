@@ -6,11 +6,12 @@ import * as XLSX from 'xlsx';
 import VargavaneTransferModal from './VargavaneTransferModal';
 import VargavanePrintModal from './VargavanePrintModal';
 import RegisterListPrintModal from '../Common/RegisterListPrintModal';
+import VargavaneDocxExportModal from './VargavaneDocxExportModal';
 import {
   ArrowRightLeft, Search, Plus, CheckCircle2, Clock, X, Save, Lock,
   Download, Upload, Filter, Printer, Trash2, Edit3, User, MapPin,
   Phone, CreditCard, ShieldCheck, Check, AlertCircle, RefreshCw, Eye,
-  Building2, FileSpreadsheet
+  Building2, FileSpreadsheet, FileText
 } from 'lucide-react';
 
 export default function VargavaneTransferModule() {
@@ -35,6 +36,17 @@ export default function VargavaneTransferModule() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [listPrintModalOpen, setListPrintModalOpen] = useState(false);
   const [listPrintScope, setListPrintScope] = useState('filtered');
+  const [docxModalOpen, setDocxModalOpen] = useState(false);
+  const [docxScope, setDocxScope] = useState('filtered');
+
+  const handleOpenDocxExport = (scope = 'filtered') => {
+    if (scope === 'selected' && selectedIds.size === 0) {
+      showToast('ದಯವಿಟ್ಟು ಮೊದಲು ವರ್ಗಾವಣೆದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ', 'warning');
+      return;
+    }
+    setDocxScope(scope);
+    setDocxModalOpen(true);
+  };
 
   const toggleSelectAllCurrent = () => {
     const ids = transfers.map(t => t.id || t.transfer_id);
@@ -428,6 +440,15 @@ export default function VargavaneTransferModule() {
 
           <button
             type="button"
+            onClick={() => handleOpenDocxExport('filtered')}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-950/70 hover:bg-blue-900/90 text-blue-200 rounded-xl text-xs font-semibold border border-blue-700/80 transition-all cursor-pointer shadow-sm"
+            title="ವರ್ಗಾವಣೆ ಯಾದಿ Word (.docx) ಫೈಲ್ ಡೌನ್‌ಲೋಡ್"
+          >
+            <FileText className="w-3.5 h-3.5 text-blue-400" /> Word (.docx) ಡೌನ್‌ಲೋಡ್
+          </button>
+
+          <button
+            type="button"
             onClick={handleDownloadTemplate}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer shadow-sm"
             title="Download Excel Template"
@@ -538,6 +559,14 @@ export default function VargavaneTransferModule() {
             >
               <Printer className="w-3.5 h-3.5" />
               <span>ಆಯ್ದವರ ಮುದ್ರಣ ({selectedIds.size})</span>
+            </button>
+            <button
+              onClick={() => handleOpenDocxExport('selected')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+              title="ಆಯ್ದ ವರ್ಗಾವಣೆಗಳ Word (.docx) ಡೌನ್‌ಲೋಡ್"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>ಆಯ್ದವರ Word (.docx) ({selectedIds.size})</span>
             </button>
             <button
               onClick={clearSelection}
@@ -1045,6 +1074,20 @@ export default function VargavaneTransferModule() {
           taluk: talukFilter
         }}
         onClearSelection={clearSelection}
+      />
+
+      {/* Official Word (.docx) Statutory List Export Modal */}
+      <VargavaneDocxExportModal
+        isOpen={docxModalOpen}
+        onClose={() => setDocxModalOpen(false)}
+        allFilteredRecords={transfers}
+        selectedIds={selectedIds}
+        initialScope={docxScope}
+        filterSummary={{
+          search,
+          status: statusFilter,
+          taluk: talukFilter
+        }}
       />
     </div>
   );
