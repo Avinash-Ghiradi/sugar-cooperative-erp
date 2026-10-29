@@ -484,154 +484,168 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
           {/* Tab: Official ID Card */}
           {activeTab === 'id_card' && (
             <div className="space-y-4">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800">
-                <div>
-                  <h4 className="font-bold text-slate-100 text-xs flex items-center gap-2">
+              <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-3.5 shadow-sm">
+                {/* 1. Official Header Title & Dimensions Subtitle */}
+                <div className="border-b border-slate-800/80 pb-2.5">
+                  <h4 className="font-bold text-slate-100 text-sm flex items-center gap-2">
                     <Contact className="w-4 h-4 text-emerald-400" />
                     ಅಧಿಕೃತ ಸದಸ್ಯರ ಗುರುತಿನ ಚೀಟಿ (Official Statutory ID Card)
                   </h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
                     ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204 • {cardSize === '95x65' ? '95.0mm × 65.0mm (Pouch)' : '85.6mm × 54.0mm (CR80)'} • {printLayout === 'a4' ? 'A4 ಹಾಳೆ ಮುದ್ರಣ (Cut & Fold)' : 'PVC / ಪ್ರತ್ಯೇಕ ಕಾರ್ಡ್'}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Flip Preview Side */}
-                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-                    <button
-                      onClick={() => setIdCardSide('Front')}
-                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                        idCardSide === 'Front' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      ಮುಂಭಾಗ
-                    </button>
-                    <button
-                      onClick={() => setIdCardSide('Back')}
-                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                        idCardSide === 'Back' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      ಹಿಂಬದಿ
-                    </button>
+                {/* 2. All Control Buttons in Clean Dual-Line Toolbar Below Title */}
+                <div className="space-y-2.5">
+                  {/* Line 1: View Options & Card Dimensions */}
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Flip Preview Side */}
+                    <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs shadow-inner">
+                      <button
+                        onClick={() => setIdCardSide('Front')}
+                        className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                          idCardSide === 'Front' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                        title="ಮುಂಭಾಗ ಪೂರ್ವವೀಕ್ಷಣೆ (Front View)"
+                      >
+                        ಮುಂಭಾಗ
+                      </button>
+                      <button
+                        onClick={() => setIdCardSide('Back')}
+                        className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                          idCardSide === 'Back' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                        title="ಹಿಂಬದಿ ಪೂರ್ವವೀಕ್ಷಣೆ (Back View)"
+                      >
+                        ಹಿಂಬದಿ
+                      </button>
+                    </div>
+
+                    {/* Format Toggle (A4 Sheet vs PVC) */}
+                    <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs shadow-inner">
+                      <button
+                        onClick={() => {
+                          setPrintLayout('a4');
+                          try { localStorage.setItem('sugar_erp_id_card_print_layout', 'a4'); } catch (e) {}
+                        }}
+                        className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                          printLayout === 'a4' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                        title="A4 Sheet (Prints Front & Back side-by-side on A4 paper with Cut & Fold Guides)"
+                      >
+                        A4 ಹಾಳೆ
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPrintLayout('pvc');
+                          try { localStorage.setItem('sugar_erp_id_card_print_layout', 'pvc'); } catch (e) {}
+                        }}
+                        className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                          printLayout === 'pvc' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                        title="Single Card (PVC / User Defined Paper)"
+                      >
+                        PVC ಕಾರ್ಡ್
+                      </button>
+                    </div>
+
+                    {/* Card Size Toggle (85.6x54mm vs 95x65mm) */}
+                    <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs shadow-inner">
+                      <button
+                        onClick={() => {
+                          setCardSize('85x54');
+                          try { localStorage.setItem('sugar_erp_id_card_print_size', '85x54'); } catch (e) {}
+                        }}
+                        className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                          cardSize === '85x54' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                        title="Standard CR80 (85.6mm × 54.0mm)"
+                      >
+                        85.6×54
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCardSize('95x65');
+                          try { localStorage.setItem('sugar_erp_id_card_print_size', '95x65'); } catch (e) {}
+                        }}
+                        className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                          cardSize === '95x65' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                        title="Pouch / Jumbo (95.0mm × 65.0mm - ಲ್ಯಾಮಿನೇಷನ್ ಪೌಚ್ ಗಾತ್ರ)"
+                      >
+                        95×65
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Format Toggle (A4 Sheet vs PVC) */}
-                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                  {/* Line 2: Print Sides + Seal + Settings + Primary Action Button */}
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      {/* Print Sides Toggle */}
+                      <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs shadow-inner">
+                        <button
+                          onClick={() => setPrintSides('both')}
+                          className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                            printSides === 'both' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                          title="Print Both Pages (Front & Back)"
+                        >
+                          ಎರಡೂ ಬದಿ
+                        </button>
+                        <button
+                          onClick={() => setPrintSides('front')}
+                          className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                            printSides === 'front' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                          title="Print Front Page Only"
+                        >
+                          ಮುಂಭಾಗ
+                        </button>
+                        <button
+                          onClick={() => setPrintSides('back')}
+                          className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                            printSides === 'back' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                          title="Print Back Page Only"
+                        >
+                          ಹಿಂಬದಿ
+                        </button>
+                      </div>
+
+                      {/* Seal Toggle */}
+                      <button
+                        onClick={() => setIdCardSeal(!idCardSeal)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer transition-all ${
+                          idCardSeal ? 'bg-purple-950/70 text-purple-300 border-purple-800 shadow-sm' : 'bg-slate-950 text-slate-500 border-slate-800'
+                        }`}
+                      >
+                        {idCardSeal ? 'Seal: ON' : 'Seal: OFF'}
+                      </button>
+
+                      {/* Settings Button */}
+                      <button
+                        onClick={() => {
+                          onClose();
+                          setActiveModule('id_cards');
+                        }}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer transition-colors shadow-sm"
+                        title="Open Full ID Card Generator & Uploads"
+                      >
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" /> ಲೋಗೋ/MD ಸಹಿ
+                      </button>
+                    </div>
+
+                    {/* Prominent Print ID Card Button */}
                     <button
-                      onClick={() => {
-                        setPrintLayout('a4');
-                        try { localStorage.setItem('sugar_erp_id_card_print_layout', 'a4'); } catch (e) {}
-                      }}
-                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                        printLayout === 'a4' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                      title="A4 Sheet (Prints Front & Back side-by-side on A4 paper with Cut & Fold Guides)"
+                      onClick={handlePrintIdCard}
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-950/60 cursor-pointer transition-all hover:scale-[1.02]"
+                      title="Print ID Card directly (ಮುಂಭಾಗ & ಹಿಂಬದಿ ಕತ್ತರಿಸುವ ಹಾಗೂ ಮಡಚುವ ಗೆರೆಗಳೊಂದಿಗೆ)"
                     >
-                      A4 ಹಾಳೆ
-                    </button>
-                    <button
-                      onClick={() => {
-                        setPrintLayout('pvc');
-                        try { localStorage.setItem('sugar_erp_id_card_print_layout', 'pvc'); } catch (e) {}
-                      }}
-                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                        printLayout === 'pvc' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                      title="Single Card (PVC / User Defined Paper)"
-                    >
-                      PVC ಕಾರ್ಡ್
+                      <Printer className="w-4 h-4" />
+                      <span>ಕಾರ್ಡ್ ಮುದ್ರಿಸಿ (Print Card)</span>
                     </button>
                   </div>
-
-                  {/* Card Size Toggle (85.6x54mm vs 95x65mm) */}
-                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-                    <button
-                      onClick={() => {
-                        setCardSize('85x54');
-                        try { localStorage.setItem('sugar_erp_id_card_print_size', '85x54'); } catch (e) {}
-                      }}
-                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                        cardSize === '85x54' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                      title="Standard CR80 (85.6mm × 54.0mm)"
-                    >
-                      85.6×54
-                    </button>
-                    <button
-                      onClick={() => {
-                        setCardSize('95x65');
-                        try { localStorage.setItem('sugar_erp_id_card_print_size', '95x65'); } catch (e) {}
-                      }}
-                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                        cardSize === '95x65' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                      title="Pouch / Jumbo (95.0mm × 65.0mm - ಲ್ಯಾಮಿನೇಷನ್ ಪೌಚ್ ಗಾತ್ರ)"
-                    >
-                      95×65
-                    </button>
-                  </div>
-
-                  {/* Print Sides Toggle */}
-                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-                    <button
-                      onClick={() => setPrintSides('both')}
-                      className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                        printSides === 'both' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                      title="Print Both Pages (Front & Back)"
-                    >
-                      ಎರಡೂ ಬದಿ
-                    </button>
-                    <button
-                      onClick={() => setPrintSides('front')}
-                      className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                        printSides === 'front' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                      title="Print Front Page Only"
-                    >
-                      ಮುಂಭಾಗ
-                    </button>
-                    <button
-                      onClick={() => setPrintSides('back')}
-                      className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                        printSides === 'back' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                      title="Print Back Page Only"
-                    >
-                      ಹಿಂಬದಿ
-                    </button>
-                  </div>
-
-                  {/* Seal Toggle */}
-                  <button
-                    onClick={() => setIdCardSeal(!idCardSeal)}
-                    className={`px-2.5 py-1 rounded-xl text-xs font-medium border cursor-pointer transition-all ${
-                      idCardSeal ? 'bg-purple-950/70 text-purple-300 border-purple-800' : 'bg-slate-950 text-slate-500 border-slate-800'
-                    }`}
-                  >
-                    {idCardSeal ? 'Seal: ON' : 'Seal: OFF'}
-                  </button>
-
-                  {/* Print ID Card Button */}
-                  <button
-                    onClick={handlePrintIdCard}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-950 cursor-pointer transition-all"
-                    title="Print ID Card directly (ಮುಂಭಾಗ & ಹಿಂಬದಿ ಕತ್ತರಿಸುವ ಹಾಗೂ ಮಡಚುವ ಗೆರೆಗಳೊಂದಿಗೆ)"
-                  >
-                    <Printer className="w-4 h-4" /> ಕಾರ್ಡ್ ಮುದ್ರಿಸಿ (Print Card)
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      onClose();
-                      setActiveModule('id_cards');
-                    }}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer transition-colors"
-                    title="Open Full ID Card Generator & Uploads"
-                  >
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" /> ಲೋಗೋ/MD ಸಹಿ
-                  </button>
                 </div>
               </div>
 
