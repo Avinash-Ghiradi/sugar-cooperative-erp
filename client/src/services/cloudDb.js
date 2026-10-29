@@ -819,7 +819,6 @@ export const CloudDbService = {
           totalEnrollmentShares,
           totalEnrollmentAmount,
           approvedEnrollments,
-          pendingEnrollments: totalEnrollments - approvedEnrollments,
           todayTx,
           todayAttendance: 0,
           totalSugarAlloted,

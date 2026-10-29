@@ -42,99 +42,23 @@ export default function Dashboard() {
 
   const { stats, charts } = data;
 
-  const getCatDetails = (catKey) => {
-    const list = charts.scheduleCastBreakdown || [];
-    const found = list.find(c => {
-      const cat = (c.category || '').toLowerCase();
-      if (catKey === 'ಅ' && (cat.includes('ಅ') || cat.includes('class a') || cat.includes('a -') || cat === 'a')) return true;
-      if (catKey === 'ಬ' && (cat.includes('ಬ') || cat.includes('class b') || cat.includes('b -') || cat === 'b')) return true;
-      if (catKey === 'ಕ' && (cat.includes('ಕ') || cat.includes('class c') || cat.includes('c -') || cat === 'c')) return true;
-      if (catKey === 'ಡ' && (cat.includes('ಡ') || cat.includes('class d') || cat.includes('d -') || cat === 'd')) return true;
-      return false;
-    });
-    return found || { count: 0, shares: 0, percentage: '0.0' };
-  };
-
-  const catA = getCatDetails('ಅ');
-  const catB = getCatDetails('ಬ');
-  const catC = getCatDetails('ಕ');
-  const catD = getCatDetails('ಡ');
-
-  const pendingNewCount = stats.pendingEnrollments !== undefined 
-    ? stats.pendingEnrollments 
-    : Math.max(0, (stats.totalEnrollments || 0) - (stats.approvedEnrollments || 0));
-
   const cardItems = [
-    // Row 1: High Level Totals
     { title: 'Total Shareholders', value: stats.totalShareholders.toLocaleString(), icon: Users, color: 'emerald', link: 'shareholders' },
     { title: 'New Enrollments (ಹೊಸ ನೋಂದಣಿ)', value: (stats.totalEnrollments || 0).toLocaleString(), icon: UserPlus, color: 'teal', link: 'enrollment' },
     { title: 'Active Shareholders', value: stats.activeShareholders.toLocaleString(), icon: UserCheck, color: 'teal', link: 'shareholders' },
     { title: 'Total Shares', value: stats.totalShares.toLocaleString(), icon: Coins, color: 'amber', link: 'shareholders' },
-
-    // Row 2: Category Wise Details (ಅ, ಬ, ಕ, ಡ ವರ್ಗಗಳು)
-    {
-      title: "'ಅ' - ವರ್ಗ (Class A)",
-      value: catA.count.toLocaleString(),
-      icon: Users,
-      color: 'emerald',
-      link: 'shareholders',
-      categoryFilter: 'ಅ - ವರ್ಗ'
-    },
-    {
-      title: "'ಬ' - ವರ್ಗ (Class B)",
-      value: catB.count.toLocaleString(),
-      icon: Building2,
-      color: 'sky',
-      link: 'shareholders',
-      categoryFilter: 'ಬ - ವರ್ಗ'
-    },
-    {
-      title: "'ಕ' - ವರ್ಗ (Class C)",
-      value: catC.count.toLocaleString(),
-      icon: Coins,
-      color: 'amber',
-      link: 'shareholders',
-      categoryFilter: 'ಕ - ವರ್ಗ'
-    },
-    {
-      title: "'ಡ' - ವರ್ಗ (Class D)",
-      value: catD.count.toLocaleString(),
-      icon: UserCheck,
-      color: 'purple',
-      link: 'shareholders',
-      categoryFilter: 'ಡ - ವರ್ಗ'
-    },
-
-    // Row 3: Geography, Circles & Books
     { title: 'Total Villages / Places', value: stats.totalVillages.toLocaleString(), icon: Building2, color: 'blue', link: 'villages' },
     { title: 'Total Circles', value: stats.totalCircles.toLocaleString(), icon: MapPin, color: 'indigo', link: 'circles' },
     { title: 'Total Books (Ledgers)', value: (stats.totalBooks || 0).toLocaleString(), icon: BookOpen, color: 'sky', link: 'shareholders' },
+    { title: 'Schedule Cast / ವರ್ಗ', value: stats.totalShareholders > 0 ? (stats.topCategory || `${stats.totalCategories || 0} Classes`) : '0 Classes', icon: Layers, color: 'purple', link: 'shareholders' },
     { title: 'Enrollment Capital', value: `₹ ${(stats.totalEnrollmentAmount || 0).toLocaleString()}`, icon: Coins, color: 'emerald', link: 'enrollment' },
-  ];
-
-  // Row 4: Pending Workflows (Pending New Shareholders, Pending Varasa, Pending Vargavane)
-  const pendingCardItems = [
-    {
-      title: 'Pending New Shareholders',
-      value: pendingNewCount.toLocaleString(),
-      icon: UserPlus,
-      color: 'teal',
-      link: 'enrollment'
-    },
-    {
-      title: 'Pending Varasa',
-      value: (stats.pendingVarasa || 0).toLocaleString(),
-      icon: Clock,
-      color: 'amber',
-      link: 'varasa'
-    },
-    {
-      title: 'Pending Vargavane (ವರ್ಗಾವಣೆ)',
-      value: (stats.pendingVargavane !== undefined ? stats.pendingVargavane : (stats.totalVargavane || 0)).toLocaleString(),
-      icon: ArrowRightLeft,
-      color: 'purple',
-      link: 'vargavane'
-    }
+    { title: 'Pending Varasa', value: stats.pendingVarasa.toLocaleString(), icon: Clock, color: 'amber', link: 'varasa' },
+    { title: 'Completed Varasa', value: stats.completedVarasa.toLocaleString(), icon: FileCheck2, color: 'emerald', link: 'varasa' },
+    { title: 'Vargavane (ವರ್ಗಾವಣೆ)', value: (stats.totalVargavane || 0).toLocaleString(), icon: ArrowRightLeft, color: 'cyan', link: 'vargavane' },
+    { title: 'Completed Vargavane', value: (stats.completedVargavane || 0).toLocaleString(), icon: FileCheck2, color: 'teal', link: 'vargavane' },
+    { title: 'Today\'s Transactions', value: stats.todayTx.toLocaleString(), icon: CreditCard, color: 'purple', link: 'transactions' },
+    { title: 'Sugar Allotted (kg)', value: `${stats.totalSugarAlloted.toLocaleString()} kg`, icon: Package, color: 'teal', link: 'sugar_allotment' },
+    { title: 'Cooperative Staff', value: (stats.totalEmployees || 0).toLocaleString(), icon: Briefcase, color: 'indigo', link: 'hr' },
   ];
 
   return (
@@ -183,38 +107,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Rows 1-3: Stat Cards Grid */}
+      {/* 12 Stat Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cardItems.map((c, i) => {
-          const Icon = c.icon;
-          return (
-            <div
-              key={i}
-              onClick={() => {
-                if (c.categoryFilter) {
-                  localStorage.setItem('sugar_erp_filter_category', c.categoryFilter);
-                } else if (c.link === 'shareholders') {
-                  localStorage.removeItem('sugar_erp_filter_category');
-                }
-                setActiveModule(c.link);
-              }}
-              className="bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 hover:border-emerald-500/40 rounded-2xl p-4 transition-all cursor-pointer group shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">{c.title}</span>
-                <div className="w-8 h-8 rounded-xl bg-slate-900 group-hover:bg-emerald-950/80 border border-slate-800 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
-                  <Icon className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-xl font-extrabold text-slate-100 mt-2">{c.value}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Row 4: Pending Workflows (Pending New Shareholders, Pending Varasa, Pending Vargavane) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {pendingCardItems.map((c, i) => {
           const Icon = c.icon;
           return (
             <div
@@ -224,7 +119,7 @@ export default function Dashboard() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">{c.title}</span>
-                <div className="w-8 h-8 rounded-xl bg-slate-900 group-hover:bg-emerald-950/80 border border-slate-800 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                <div className={`w-8 h-8 rounded-xl bg-slate-900 group-hover:bg-emerald-950/80 border border-slate-800 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform`}>
                   <Icon className="w-4 h-4" />
                 </div>
               </div>
@@ -260,7 +155,7 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={(charts.scheduleCastBreakdown || []).filter(item => item.count > 0)}
+                    data={charts.scheduleCastBreakdown}
                     dataKey="count"
                     nameKey="category"
                     cx="50%"

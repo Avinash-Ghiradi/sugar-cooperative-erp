@@ -1664,47 +1664,23 @@ export const ApiService = {
       .map(c => ({ circle_name: c, total: cCounts[c] }))
       .sort((a, b) => b.total - a.total);
 
-    const canonicalOrder = ['ಅ - ವರ್ಗ', 'ಬ - ವರ್ಗ', 'ಕ - ವರ್ಗ', 'ಡ - ವರ್ಗ'];
-    const scCounts = { 'ಅ - ವರ್ಗ': 0, 'ಬ - ವರ್ಗ': 0, 'ಕ - ವರ್ಗ': 0, 'ಡ - ವರ್ಗ': 0 };
-    const scShares = { 'ಅ - ವರ್ಗ': 0, 'ಬ - ವರ್ಗ': 0, 'ಕ - ವರ್ಗ': 0, 'ಡ - ವರ್ಗ': 0 };
-
+    const scCounts = {};
+    const scShares = {};
     shList.forEach(s => {
-      const isInactive = (typeof isShareholderInactive === 'function' && isShareholderInactive(s)) || s.status === 'Inactive';
-      const rawSc = (s.schedule_cast || '').trim().normalize('NFC');
-      let sc = 'ಅ - ವರ್ಗ';
-      if (rawSc.includes('ಡ') || /\b(class\s*d|category\s*d|d\s*class)\b/i.test(rawSc)) {
-        sc = 'ಡ - ವರ್ಗ';
-      } else if (rawSc.includes('ಬ') || /\b(class\s*b|category\s*b|b\s*class)\b/i.test(rawSc)) {
-        sc = 'ಬ - ವರ್ಗ';
-      } else if (rawSc.includes('ಕ') || /\b(class\s*c|category\s*c|c\s*class)\b/i.test(rawSc)) {
-        sc = 'ಕ - ವರ್ಗ';
-      } else if (rawSc.includes('ಅ') || /\b(class\s*a|category\s*a|a\s*class)\b/i.test(rawSc)) {
-        sc = 'ಅ - ವರ್ಗ';
-      } else if (rawSc && rawSc !== 'Yes') {
-        sc = rawSc.replace(/\s+/g, ' ');
-      }
-
-      if (scCounts[sc] === undefined) {
-        scCounts[sc] = 0;
-        scShares[sc] = 0;
-      }
+      const rawSc = (s.schedule_cast || 'ಅ - ವರ್ಗ').trim().normalize('NFC');
+      const sc = rawSc || 'ಅ - ವರ್ಗ';
+      const shares = parseInt(s.number_of_shares) || 1;
       scCounts[sc] = (scCounts[sc] || 0) + 1;
-      if (!isInactive) {
-        const shares = parseInt(s.number_of_shares) || 1;
-        scShares[sc] = (scShares[sc] || 0) + shares;
-      }
+      scShares[sc] = (scShares[sc] || 0) + shares;
     });
 
-    const activeTotal = shList.filter(s => !((typeof isShareholderInactive === 'function' && isShareholderInactive(s)) || s.status === 'Inactive')).length || shList.length || 1;
-
-    const allKeys = Array.from(new Set([...canonicalOrder, ...Object.keys(scCounts)]));
-    const scheduleCastBreakdown = allKeys.map(sc => ({
+    const scheduleCastBreakdown = Object.keys(scCounts).map(sc => ({
       category: sc,
       name: sc,
-      count: scCounts[sc] || 0,
-      shares: scShares[sc] || 0,
-      percentage: shList.length > 0 ? (((scCounts[sc] || 0) / shList.length) * 100).toFixed(1) : '0'
-    }));
+      count: scCounts[sc],
+      shares: scShares[sc],
+      percentage: shList.length > 0 ? ((scCounts[sc] / shList.length) * 100).toFixed(1) : '0'
+    })).sort((a, b) => b.count - a.count);
 
     return {
       shareholdersByVillage,
@@ -1791,7 +1767,6 @@ export const ApiService = {
         totalEnrollmentShares: mockEnrollments.reduce((acc, e) => acc + (parseInt(e.no_shares) || 1), 0),
         totalEnrollmentAmount: mockEnrollments.reduce((acc, e) => acc + (parseFloat(e.total_amount) || 0), 0),
         approvedEnrollments: mockEnrollments.filter(e => (e.approval_status || '').includes('Approved') || (e.approval_status || '').includes('Issued')).length,
-        pendingEnrollments: mockEnrollments.filter(e => !(e.approval_status || '').includes('Approved') && !(e.approval_status || '').includes('Issued')).length,
         todayTx: mockTransactions.length,
         todayAttendance: 0,
         totalSugarAlloted: mockSugarAllotments.reduce((acc, a) => acc + (parseFloat(a.issued_quantity_kg) || 0), 0),
