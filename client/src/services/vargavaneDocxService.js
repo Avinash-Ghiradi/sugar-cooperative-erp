@@ -523,24 +523,26 @@ export function buildVargavaneDocx({
 
 
 
-  // Boxed statutory header matching official cooperative layout
-  const headerBorder = { style: BorderStyle.SINGLE, size: 6, color: '000000' };
-  const headerCellBorders = {
-    top: headerBorder,
-    bottom: headerBorder,
-    left: headerBorder,
-    right: headerBorder
-  };
+
+  // Boxed statutory header matching official cooperative template (Grey shading + dotted vertical dividers)
+  const solidBorder = { style: BorderStyle.SINGLE, size: 8, color: '000000' };
+  const dottedBorder = { style: BorderStyle.DOTTED, size: 6, color: '000000' };
+
+  const cellBordersLeft = { top: solidBorder, bottom: solidBorder, left: solidBorder, right: dottedBorder };
+  const cellBordersCenter = { top: solidBorder, bottom: solidBorder, left: dottedBorder, right: dottedBorder };
+  const cellBordersRight = { top: solidBorder, bottom: solidBorder, left: dottedBorder, right: solidBorder };
+
+  const headerShading = { fill: 'BFBFBF' };
 
   const statutoryHeaderTable = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     borders: {
-      top: headerBorder,
-      bottom: headerBorder,
-      left: headerBorder,
-      right: headerBorder,
-      insideHorizontal: headerBorder,
-      insideVertical: headerBorder
+      top: solidBorder,
+      bottom: solidBorder,
+      left: solidBorder,
+      right: solidBorder,
+      insideHorizontal: solidBorder,
+      insideVertical: dottedBorder
     },
     rows: [
       // Row 1: Left Factory Emblem + Center Titles + Right Cooperative Handshake Emblem
@@ -549,7 +551,8 @@ export function buildVargavaneDocx({
           // Left: Factory Emblem
           new TableCell({
             width: { size: 16, type: WidthType.PERCENTAGE },
-            borders: headerCellBorders,
+            borders: cellBordersLeft,
+            shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 60, bottom: 60, left: 60, right: 60 },
             children: [
@@ -567,7 +570,8 @@ export function buildVargavaneDocx({
           // Center: Factory Name in Kannada and English
           new TableCell({
             width: { size: 68, type: WidthType.PERCENTAGE },
-            borders: headerCellBorders,
+            borders: cellBordersCenter,
+            shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 60, bottom: 60, left: 60, right: 60 },
             children: [
@@ -602,7 +606,8 @@ export function buildVargavaneDocx({
           // Right: Handshake Emblem
           new TableCell({
             width: { size: 16, type: WidthType.PERCENTAGE },
-            borders: headerCellBorders,
+            borders: cellBordersRight,
+            shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 60, bottom: 60, left: 60, right: 60 },
             children: [
@@ -624,7 +629,8 @@ export function buildVargavaneDocx({
         children: [
           new TableCell({
             width: { size: 22, type: WidthType.PERCENTAGE },
-            borders: headerCellBorders,
+            borders: cellBordersLeft,
+            shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 60, bottom: 60, left: 80, right: 40 },
             children: [
@@ -644,7 +650,8 @@ export function buildVargavaneDocx({
           }),
           new TableCell({
             width: { size: 56, type: WidthType.PERCENTAGE },
-            borders: headerCellBorders,
+            borders: cellBordersCenter,
+            shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 60, bottom: 60, left: 40, right: 40 },
             children: [
@@ -664,7 +671,8 @@ export function buildVargavaneDocx({
           }),
           new TableCell({
             width: { size: 22, type: WidthType.PERCENTAGE },
-            borders: headerCellBorders,
+            borders: cellBordersRight,
+            shading: headerShading,
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 60, bottom: 60, left: 40, right: 80 },
             children: [

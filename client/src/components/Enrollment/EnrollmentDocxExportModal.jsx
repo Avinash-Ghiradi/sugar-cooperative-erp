@@ -99,23 +99,59 @@ export default function EnrollmentDocxExportModal({
         <div className="p-5 space-y-4 text-xs text-slate-200">
           
           {/* Live Title Preview Box */}
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1">
+          <div className="space-y-1.5">
+            <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-amber-400" />
-              ಡಾಕ್ಯುಮೆಂಟ್ ಹೆಡರ್ ಪೂರ್ವವೀಕ್ಷಣೆ (Header Preview)
+              ದಸ್ತಾವೇಜ್ ಹೆಡರ್ ಪೂರ್ವವೀಕ್ಷಣೆ (Header Preview)
             </div>
-            <div className="text-center font-bold text-slate-100 text-xs py-1 border-y border-slate-800/80">
-              ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ, ಮರಗೂರ
+
+            {/* Exact Shaded Dual-Logo Header Box */}
+            <div className="bg-[#BFBFBF] text-slate-900 border-2 border-black rounded-lg overflow-hidden font-['Anek_Kannada'] shadow-md select-none">
+              {/* Row 1: Factory Logo | Titles | Handshake Logo */}
+              <div className="grid grid-cols-12 items-center border-b border-black">
+                {/* Left Logo */}
+                <div className="col-span-2 p-1.5 flex items-center justify-center border-r border-black border-dotted">
+                  <img
+                    src={`${import.meta.env.BASE_URL}id_assets/bsskn_logo.png`}
+                    alt="BSSKN Factory Emblem"
+                    className="w-12 h-12 object-contain"
+                  />
+                </div>
+                {/* Center Titles */}
+                <div className="col-span-8 p-1.5 text-center flex flex-col justify-center">
+                  <div className="font-extrabold text-xs sm:text-sm text-black leading-tight">
+                    ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ, ಮರಗೂರ
+                  </div>
+                  <div className="font-bold text-[9px] sm:text-[10px] text-slate-800 tracking-tight mt-0.5">
+                    SRI BHIMASHANKAR SAHAKARI SAKKARE KARKHANE NIYAMIT MARGUR
+                  </div>
+                </div>
+                {/* Right Logo */}
+                <div className="col-span-2 p-1.5 flex items-center justify-center border-l border-black border-dotted">
+                  <img
+                    src={`${import.meta.env.BASE_URL}id_assets/cooperative_handshake.png`}
+                    alt="Cooperative Handshake"
+                    className="w-12 h-8 object-contain"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Taluk | "ಶೇರು ವಿಭಾಗ" | District */}
+              <div className="grid grid-cols-12 text-[10px] sm:text-xs font-bold text-black py-1 px-2 items-center">
+                <div className="col-span-3 text-left border-r border-black border-dotted pr-1">
+                  ತಾಲೂಕು|| ಚಡಚಣ
+                </div>
+                <div className="col-span-6 text-center font-extrabold text-xs sm:text-sm border-r border-black border-dotted px-1">
+                  ಶೇರು ವಿಭಾಗ
+                </div>
+                <div className="col-span-3 text-right pl-1">
+                  ಜಿಲ್ಲಾ|| ವಿಜಯಪೂರ
+                </div>
+              </div>
             </div>
-            <div className="text-center text-[10px] text-slate-400">
-              SRI BHIMASHANKAR SAHAKARI SAKKARE KARKHANE NIYAMIT MARGUR
-            </div>
-            <div className="flex justify-between text-[11px] font-bold text-slate-300 px-2 pt-0.5">
-              <span>ತಾಲೂಕ॥ ಚಡಚಣ</span>
-              <span className="text-blue-400 font-extrabold text-xs">ಶೇರು ವಿಭಾಗ</span>
-              <span>ಜಿಲ್ಲಾ॥ ವಿಜಯಪೂರ</span>
-            </div>
-            <div className="text-center font-bold text-emerald-300 text-xs pt-1 border-t border-slate-800/80">
+
+            {/* List Title Banner below Header Box */}
+            <div className="text-center font-bold text-emerald-300 text-xs py-1">
               ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ {season || '2025 – 26'} [{listDate || 'DD/MM/YYYY'}]
             </div>
           </div>
