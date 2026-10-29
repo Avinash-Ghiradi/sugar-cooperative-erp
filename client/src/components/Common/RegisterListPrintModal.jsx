@@ -84,10 +84,22 @@ export default function RegisterListPrintModal({
         }
       } catch (e) {}
 
-      await downloadEnrollmentDocx({
-        records: recordsToPrint,
-        season
-      });
+      if (type === 'varasa') {
+        await downloadVarasaDocx({
+          records: recordsToPrint,
+          season
+        });
+      } else if (type === 'vargavane') {
+        await downloadVargavaneDocx({
+          records: recordsToPrint,
+          season
+        });
+      } else {
+        await downloadEnrollmentDocx({
+          records: recordsToPrint,
+          season
+        });
+      }
     } catch (err) {
       alert('Word document export failed: ' + err.message);
     } finally {
@@ -537,7 +549,7 @@ export default function RegisterListPrintModal({
   );
 
   const documentContent = (
-    <div className="bg-white text-black p-6 font-['Noto_Sans_Kannada','Anek_Kannada',sans-serif] w-full min-h-[100%] box-border">
+    <div className="bg-white text-black p-6 font-kannada font-sans w-full min-h-[100%] box-border">
       {renderStatutoryHeader()}
       {renderMetaBanner()}
       {type === 'enrollment' && renderEnrollmentTable()}

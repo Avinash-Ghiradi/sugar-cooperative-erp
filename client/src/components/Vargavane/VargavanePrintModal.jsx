@@ -166,7 +166,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 1: ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ - 1
   // =========================================================================
   const renderPage1 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -247,7 +247,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 2: Share Transfer Transations Details (Transfer- 01)
   // =========================================================================
   const renderPage2 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -290,7 +290,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
                 <div className="flex justify-between"><span>Old Certificate No.</span><span>—</span></div>
                 <div className="flex justify-between"><span>Total No of Shares</span><span className="font-bold">{noOfShares}</span></div>
                 <div className="flex justify-between pt-1 border-t border-slate-300">
-                  <span className="font-['Anek_Kannada']">ವರ್ಗಾವಣೆ ಮಾಡುವವರು</span>
+                  <span className="font-kannada">ವರ್ಗಾವಣೆ ಮಾಡುವವರು</span>
                   <span>NRD Shares : <strong>Nil</strong></span>
                 </div>
               </td>
@@ -301,7 +301,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
                 <div className="flex justify-between"><span>New Certificate No.</span><span>—</span></div>
                 <div className="flex justify-between"><span>Total No of Shares</span><span className="font-bold">{noOfShares}</span></div>
                 <div className="flex justify-between pt-1 border-t border-slate-300">
-                  <span className="font-['Anek_Kannada']">ವರ್ಗಾಯಿಸಿಕೊಳ್ಳುವವರು</span>
+                  <span className="font-kannada">ವರ್ಗಾಯಿಸಿಕೊಳ್ಳುವವರು</span>
                   <span>NRD Shares : <strong>Nil</strong></span>
                 </div>
               </td>
@@ -451,7 +451,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 3: ಕಾರ್ಖಾನೆಯ ನಾಮಿನಲ್ ಮೆಂಬರ ಮಾಡಿಕೊಳ್ಳಲು ವಿನಂತಿ ಅರ್ಜಿ
   // =========================================================================
   const renderPage3 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -527,7 +527,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 4: ಕಛೇರಿ ಟಿಪ್ಪಣೆ (ಕಬ್ಬು ಲೇಖಪಾಲರ ವರದಿ)
   // =========================================================================
   const renderPage4 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -582,7 +582,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 5: ಕಾರ್ಖಾನೆಯ ನಿರ್ದೇಶಕರ ಪರಿಶೀಲನಾ ಪತ್ರ
   // =========================================================================
   const renderPage5 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -633,7 +633,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 6: ID Card & Dual Specimen Signatures (Cane Development Officer Endorsement)
   // =========================================================================
   const renderPage6 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative shadow-lg">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative shadow-lg">
       <div>
         {renderHeaderBox()}
 
@@ -714,7 +714,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 7: No Dues Request Letter to Managing Director & Cane Accountant Clearance
   // =========================================================================
   const renderPage7 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative shadow-lg">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative shadow-lg">
       <div>
         {renderHeaderBox()}
 
@@ -780,7 +780,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 8: Member Identity Card Application Form & Govt ID Checklist
   // =========================================================================
   const renderPage8 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative shadow-lg">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative shadow-lg">
       <div>
         {renderHeaderBox()}
 
@@ -941,7 +941,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 9: Office Order to Field Assistant for Spot Inquiry (ಸ್ಥಾನಿಕ ಚೌಕಾಸಿ ಆದೇಶ)
   // =========================================================================
   const renderPage9 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative shadow-lg">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative shadow-lg">
       <div>
         {renderHeaderBox()}
 
@@ -1066,7 +1066,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 11: ಶೇರು ವರ್ಗಾವಣೆ ಮಾಡುವವರು (ಶೇರು ಮಾರಾಟಗಾರರ ಅಧಿಕೃತ ಅರ್ಜಿ)
   // =========================================================================
   const renderPage11 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative shadow-lg">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative shadow-lg">
       <div>
         {renderHeaderBox()}
 
@@ -1224,7 +1224,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 12: ಶೇರು ವರ್ಗಾಯಿಸಿಕೊಳ್ಳುವವರು (ಖರೀದಿದಾರರ ಅಧಿಕೃತ ಅರ್ಜಿ)
   // =========================================================================
   const renderPage12 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative shadow-lg">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative shadow-lg">
       <div>
         {renderHeaderBox()}
 
@@ -1375,7 +1375,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 13: ಸದಸ್ಯತ್ವ ವರ್ಗಾವಣೆ ಮಾಡುವ ಶೇರುದಾರರ ಕುಟುಂಬದ ಸದಸ್ಯರ ಪೂರ್ಣ ವಿವರ (Consent Table)
   // =========================================================================
   const renderPage13 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative shadow-lg">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative shadow-lg">
       <div>
         {renderHeaderBox()}
 
@@ -1480,7 +1480,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   // PAGE 14: Legal Opinion (ಕಾನೂನು ಸಲಹೆಗಾರರ ವರದಿ & ಪರಿಶೀಲನಾ ಪಟ್ಟಿ)
   // =========================================================================
   const renderPage14 = () => (
-    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative shadow-lg">
+    <div className="vargavane-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-5 flex flex-col justify-between font-kannada box-border relative shadow-lg">
       <div>
         {renderHeaderBox()}
 

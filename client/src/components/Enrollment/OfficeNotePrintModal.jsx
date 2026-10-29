@@ -306,7 +306,7 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
               /* ========================================================================= */
               /* FORMAT 1: ಕಛೇರಿ ಟಿಪ್ಪಣಿ (Exact Match with Uploaded Image)                  */
               /* ========================================================================= */
-              <div className="office-note-a4-sheet bg-white text-black border-[2.5px] border-black w-full max-w-[790px] min-h-[1050px] p-6 sm:p-8 flex flex-col justify-between shadow-2xl font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-sizing-border">
+              <div className="office-note-a4-sheet bg-white text-black border-[2.5px] border-black w-full max-w-[790px] min-h-[1050px] p-6 sm:p-8 flex flex-col justify-between shadow-2xl font-kannada box-sizing-border">
                 
                 <div>
                   {/* 1. Header Box with Double-Section Border */}
@@ -403,7 +403,7 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
               /* ========================================================================= */
               /* FORMAT 2: ಪ್ರವೇಶ ರಶೀದಿ (Official Admission Receipt Slip)                  */
               /* ========================================================================= */
-              <div className="office-note-a4-sheet bg-white text-black border-[2px] border-black w-full max-w-[790px] min-h-[900px] p-6 sm:p-8 flex flex-col justify-between shadow-2xl font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-sizing-border space-y-4">
+              <div className="office-note-a4-sheet bg-white text-black border-[2px] border-black w-full max-w-[790px] min-h-[900px] p-6 sm:p-8 flex flex-col justify-between shadow-2xl font-kannada box-sizing-border space-y-4">
                 
                 {/* Header */}
                 <div className="text-center border-b-2 border-slate-800 pb-3 space-y-1">
@@ -552,7 +552,7 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
       {typeof document !== 'undefined' && createPortal(
         <div className="office-note-print-portal">
         {activeFormat === 'note' ? (
-          <div className="office-note-a4-sheet bg-white text-black border-[2.5px] border-black w-full min-h-[277mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-sizing-border">
+          <div className="office-note-a4-sheet bg-white text-black border-[2.5px] border-black w-full min-h-[277mm] p-6 flex flex-col justify-between font-kannada box-sizing-border">
             <div>
               {/* Header Box */}
               <div className="border-[2px] border-black mb-4">
@@ -629,7 +629,7 @@ export default function OfficeNotePrintModal({ isOpen, onClose, enrollment, isNe
 
           </div>
         ) : (
-          <div className="office-note-a4-sheet bg-white text-black border-[2px] border-black w-full min-h-[277mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-sizing-border space-y-4">
+          <div className="office-note-a4-sheet bg-white text-black border-[2px] border-black w-full min-h-[277mm] p-6 flex flex-col justify-between font-kannada box-sizing-border space-y-4">
             <div className="text-center border-b-2 border-slate-800 pb-3 space-y-1">
               <h2 className="text-lg font-extrabold text-slate-900 tracking-wide">
                 ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204

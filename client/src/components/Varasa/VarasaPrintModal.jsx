@@ -185,7 +185,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   // PAGE 1: ಶೇರು ವಾರಸಾ ಅರ್ಜಿ – 1
   // =========================================================================
   const renderPage1 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -263,7 +263,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   // PAGE 2: Share Varasha Transation Details (With Photo paste for BOTH persons)
   // =========================================================================
   const renderPage2 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -423,7 +423,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   // PAGE 3: ಶೇರು ವಾರಸಾ ಫೀ ಭರಣಾ ಮಾಡುವ ಕುರಿತು
   // =========================================================================
   const renderPage3 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -500,7 +500,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   // PAGE 4: ಕಛೇರಿ ಟಿಪ್ಪಣಿ (NOC Report from Cane & R&D Dept)
   // =========================================================================
   const renderPage4 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -569,7 +569,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   // PAGE 5: ಸದಸ್ಯರ ಫೋಟೋ & ಮಾದರಿ ಸಹಿ & ಪ್ರಮಾಣಪತ್ರ ವಿತರಣೆ
   // =========================================================================
   const renderPage5 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -632,7 +632,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   // PAGE 6: ಸದಸ್ಯರು ಗುರುತಿನ ಚೀಟಿ ಪಡೆಯಲು ತುಂಬುವ ಅರ್ಜಿ ನಮೂನೆ (With Photo paste box)
   // =========================================================================
   const renderPage6 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -803,7 +803,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   // PAGE 7: ಕಾರ್ಖಾನೆಯ ನಿರ್ದೇಶಕರ ಪರಿಶೀಲನಾ ಪತ್ರ
   // =========================================================================
   const renderPage7 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -876,7 +876,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
         : 'w-[26mm] h-[29mm]';
 
     return (
-      <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+      <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
         <div>
           {renderHeaderBox()}
 
@@ -980,7 +980,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
     const page9PhotoBoxClass = page9Indices.length <= 3 ? 'w-[26mm] h-[30mm]' : 'w-[24mm] h-[24mm]';
 
     return (
-      <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+      <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
         <div>
           {renderHeaderBox()}
 
@@ -1096,7 +1096,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   // PAGE 10: Legal opinion (ಕಾನೂನು ಸಲಹೆ)
   // =========================================================================
   const renderPage10 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 
@@ -1210,7 +1210,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
         {/* Recital 1 */}
         <div className="text-[12px] leading-[1.8] text-justify text-black mb-3">
           <p className="indent-6">
-            And agreement made on this <strong>{applicationDate}</strong> date between <strong>Shri/ Smt:- <span className="font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] underline font-bold">{heirNameRaw}</span> Place:<span className="font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] underline font-bold">{heirPlace}</span> Taluk:<span className="font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] underline font-bold">{heirTaluk}</span> Dist:<span className="font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] underline font-bold">{heirDistrict}</span></strong> (here in after called the producer member which expression shall be deemed to include his/ her executors and assings) of the one part and <strong>The Bhimashankar Sahakari Sakkare Karkhane Niyamit. Maragur Taluk Chadachan Dist:- Vijayapur</strong> a Co-operative Society registered under section 7(1) of the Karnataka Co-operative Societies Act 1959 & having its Registered office at Maragur Taluk Chadachan Dist:- Vijayapur (herein after called the factory with expression shall include its assigns) on the other part.
+            And agreement made on this <strong>{applicationDate}</strong> date between <strong>Shri/ Smt:- <span className="font-kannada underline font-bold">{heirNameRaw}</span> Place:<span className="font-kannada underline font-bold">{heirPlace}</span> Taluk:<span className="font-kannada underline font-bold">{heirTaluk}</span> Dist:<span className="font-kannada underline font-bold">{heirDistrict}</span></strong> (here in after called the producer member which expression shall be deemed to include his/ her executors and assings) of the one part and <strong>The Bhimashankar Sahakari Sakkare Karkhane Niyamit. Maragur Taluk Chadachan Dist:- Vijayapur</strong> a Co-operative Society registered under section 7(1) of the Karnataka Co-operative Societies Act 1959 & having its Registered office at Maragur Taluk Chadachan Dist:- Vijayapur (herein after called the factory with expression shall include its assigns) on the other part.
           </p>
         </div>
 
@@ -1264,7 +1264,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
   // PAGE 12: ಆಡಳಿತ ಮಂಡಳಿಯ ಸಭೆಯಲ್ಲಿ ಮಂಡಿಸಲು ಅನುಮತಿ (Final Board Placement Note)
   // =========================================================================
   const renderPage12 = () => (
-    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-['Anek_Kannada','Noto_Sans_Kannada',sans-serif] box-border relative">
+    <div className="varasa-a4-page bg-white text-black border-[2px] border-black w-full min-h-[272mm] p-6 flex flex-col justify-between font-kannada box-border relative">
       <div>
         {renderHeaderBox()}
 

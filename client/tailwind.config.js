@@ -7,8 +7,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["'Anek Kannada'", "'Aneka Kannada'", 'Inter', "'Noto Sans Kannada'", 'sans-serif'],
-        kannada: ["'Anek Kannada'", "'Aneka Kannada'", "'Noto Sans Kannada'", 'sans-serif'],
+        sans: ["'Anek Kannada'", 'Inter', "'Noto Sans Kannada'", 'sans-serif'],
+        kannada: ["'Anek Kannada'", "'Noto Sans Kannada'", 'sans-serif'],
+        aneka: ["'Anek Kannada'", 'sans-serif'],
       },
       colors: {
         coop: {

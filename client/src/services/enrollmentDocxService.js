@@ -9,10 +9,11 @@ import {
   WidthType,
   AlignmentType,
   VerticalAlign,
-  BorderStyle
+  BorderStyle,
+  PageOrientation
 } from 'docx';
 
-// Thin solid black border for standard statutory register grid
+// Thin crisp solid black border for statutory register grid
 const thinBorder = {
   style: BorderStyle.SINGLE,
   size: 4,
@@ -38,17 +39,15 @@ const noBorders = {
 export function formatDocxDate(dateStr) {
   if (!dateStr) {
     const d = new Date();
-    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
   }
   const clean = String(dateStr).trim();
   const parts = clean.split(/[-/]/);
   if (parts.length === 3) {
     if (parts[0].length === 4) {
-      // YYYY-MM-DD -> DD/MM/YYYY
-      return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+      return parts[2].padStart(2, '0') + '/' + parts[1].padStart(2, '0') + '/' + parts[0];
     }
-    // DD-MM-YYYY or MM-DD-YYYY
-    return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
+    return parts[0].padStart(2, '0') + '/' + parts[1].padStart(2, '0') + '/' + parts[2];
   }
   return clean;
 }
@@ -62,12 +61,13 @@ export function normalizeCategory(cat) {
   if (c.includes('ಕ') || c.toLowerCase().includes('class c')) return 'ಕ ವರ್ಗ';
   if (c.includes('ಡ') || c.toLowerCase().includes('class d')) return 'ಡ ವರ್ಗ';
   if (c.endsWith('ವರ್ಗ')) return c;
-  return `${c} ವರ್ಗ`;
+  return c + ' ವರ್ಗ';
 }
 
 /**
  * Builds the Word Document (.docx) matching the statutory 7-column layout:
  * "ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ 2025 – 26 [07/03/2026]"
+ * Using Google Anek Kannada font with executive landscape layout and statutory signatures.
  */
 export function buildEnrollmentDocx({
   records = [],
@@ -78,8 +78,17 @@ export function buildEnrollmentDocx({
   taluk = 'ಚಡಚಣ',
   dist = 'ವಿಜಯಪೂರ'
 } = {}) {
-  const KANNADA_FONT = { name: 'Calibri', cs: 'Nirmala UI' };
+  // Official Google Anek Kannada font definition
+  const KANNADA_FONT = {
+    name: 'Anek Kannada',
+    cs: 'Anek Kannada',
+    ascii: 'Anek Kannada',
+    hAnsi: 'Anek Kannada'
+  };
+
   const effectiveDate = listDate ? formatDocxDate(listDate) : formatDocxDate();
+
+  let totalSharesCount = 0;
 
   // Construct Data Rows
   const dataRows = records.map((record, index) => {
@@ -89,19 +98,21 @@ export function buildEnrollmentDocx({
     const recTaluk = String(record.taluk || taluk).trim();
     const recDist = String(record.dist || record.district || dist).trim();
 
-    const villageLine = place ? (place.startsWith('ಸಾ||') ? place : `ಸಾ||${place}`) : '';
-    const talukText = recTaluk.startsWith('ತಾ||') ? recTaluk : `ತಾ||${recTaluk}`;
-    const distText = recDist.startsWith('ಜಿ||') ? recDist : `ಜಿ||${recDist}`;
-    const talukDistLine = `${talukText} ${distText}`;
+    const villageLine = place ? (place.startsWith('ಸಾ||') || place.startsWith('ಸಾ॥') ? place : 'ಸಾ॥ ' + place) : '';
+    const talukText = recTaluk.startsWith('ತಾ||') || recTaluk.startsWith('ತಾ॥') ? recTaluk : 'ತಾ॥ ' + recTaluk;
+    const distText = recDist.startsWith('ಜಿ||') || recDist.startsWith('ಜಿ॥') ? recDist : 'ಜಿ॥ ' + recDist;
+    const talukDistLine = talukText + '      ' + distText;
 
     const appDate = formatDocxDate(record.date || record.application_date || record.tharava_date);
     const receiptNo = String(record.receipt_no || record.receipt || '').trim();
     const rawAmt = record.share_amount || record.total_amount || ((record.no_shares || 1) * 24000);
     const formattedAmt = rawAmt ? Math.round(Number(rawAmt)) : 24000;
-    const receiptAndAmt = receiptNo ? `${receiptNo} (${formattedAmt})` : `(${formattedAmt})`;
+    const receiptAndAmt = receiptNo ? receiptNo + ' (' + formattedAmt + ')' : '(' + formattedAmt + ')';
 
     const cat = normalizeCategory(record.category);
-    const shares = String(record.no_shares || record.number_of_shares || 1);
+    const sharesNum = parseInt(record.no_shares || record.number_of_shares || 1, 10) || 1;
+    totalSharesCount += sharesNum;
+    const shares = String(sharesNum);
     const remarks = String(record.remarks || '');
 
     return new TableRow({
@@ -111,6 +122,7 @@ export function buildEnrollmentDocx({
         new TableCell({
           borders: cellBorders,
           verticalAlign: VerticalAlign.CENTER,
+          margins: { top: 80, bottom: 80, left: 100, right: 100 },
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
@@ -118,29 +130,31 @@ export function buildEnrollmentDocx({
             })
           ]
         }),
-        // Col 2: ಹೊಸ ಶೇರು ಅರ್ಜಿ ಮಾಡುವವರ ಸದಸ್ಯರ ಹೆಸರು ಹಾಗೂ ವಿಳಾಸ (3 lines)
+        // Col 2: ಹೊಸ ಶೇರು ಅರ್ಜಿ ಮಾಡುವವರ ಸದಸ್ಯರ ಹೆಸರು ಹಾಗೂ ವಿಳಾಸ
         new TableCell({
           borders: cellBorders,
           verticalAlign: VerticalAlign.CENTER,
+          margins: { top: 80, bottom: 80, left: 120, right: 100 },
           children: [
             new Paragraph({
               spacing: { before: 20, after: 10, line: 240 },
-              children: [new TextRun({ text: name, bold: true, size: 20, font: KANNADA_FONT })]
+              children: [new TextRun({ text: name, bold: true, size: 21, font: KANNADA_FONT })]
             }),
             villageLine ? new Paragraph({
               spacing: { before: 0, after: 10, line: 240 },
               children: [new TextRun({ text: villageLine, size: 19, font: KANNADA_FONT })]
-            }) : null,
-            new Paragraph({
+            }) : new Paragraph({ spacing: { before: 0, after: 0 } }),
+            talukDistLine ? new Paragraph({
               spacing: { before: 0, after: 20, line: 240 },
               children: [new TextRun({ text: talukDistLine, size: 19, font: KANNADA_FONT })]
-            })
-          ].filter(Boolean)
+            }) : new Paragraph({ spacing: { before: 0, after: 0 } })
+          ]
         }),
         // Col 3: ಅರ್ಜಿ ದಿನಾಂಕ
         new TableCell({
           borders: cellBorders,
           verticalAlign: VerticalAlign.CENTER,
+          margins: { top: 80, bottom: 80, left: 80, right: 80 },
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
@@ -152,6 +166,7 @@ export function buildEnrollmentDocx({
         new TableCell({
           borders: cellBorders,
           verticalAlign: VerticalAlign.CENTER,
+          margins: { top: 80, bottom: 80, left: 80, right: 80 },
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
@@ -163,10 +178,11 @@ export function buildEnrollmentDocx({
         new TableCell({
           borders: cellBorders,
           verticalAlign: VerticalAlign.CENTER,
+          margins: { top: 80, bottom: 80, left: 80, right: 80 },
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: cat, size: 19, font: KANNADA_FONT })]
+              children: [new TextRun({ text: cat, size: 20, font: KANNADA_FONT })]
             })
           ]
         }),
@@ -174,10 +190,11 @@ export function buildEnrollmentDocx({
         new TableCell({
           borders: cellBorders,
           verticalAlign: VerticalAlign.CENTER,
+          margins: { top: 80, bottom: 80, left: 80, right: 80 },
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: shares, size: 20, font: KANNADA_FONT })]
+              children: [new TextRun({ text: shares, bold: true, size: 20, font: KANNADA_FONT })]
             })
           ]
         }),
@@ -185,6 +202,7 @@ export function buildEnrollmentDocx({
         new TableCell({
           borders: cellBorders,
           verticalAlign: VerticalAlign.CENTER,
+          margins: { top: 80, bottom: 80, left: 80, right: 80 },
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
@@ -196,15 +214,69 @@ export function buildEnrollmentDocx({
     });
   });
 
-  // Header Row (repeats on each page)
+  // Grand Total Summary Row
+  const totalRow = new TableRow({
+    cantSplit: true,
+    children: [
+      new TableCell({
+        columnSpan: 5,
+        borders: cellBorders,
+        shading: { fill: 'F1F5F9' },
+        verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 100, bottom: 100, left: 120, right: 120 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: 'ಒಟ್ಟು (GRAND TOTAL) — ' + records.length + ' ಹೊಸ ಶೇರುದಾರರು',
+                bold: true,
+                size: 20,
+                font: KANNADA_FONT
+              })
+            ]
+          })
+        ]
+      }),
+      new TableCell({
+        borders: cellBorders,
+        shading: { fill: 'F1F5F9' },
+        verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 100, bottom: 100, left: 80, right: 80 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: String(totalSharesCount),
+                bold: true,
+                size: 20,
+                font: KANNADA_FONT
+              })
+            ]
+          })
+        ]
+      }),
+      new TableCell({
+        borders: cellBorders,
+        shading: { fill: 'F1F5F9' },
+        verticalAlign: VerticalAlign.CENTER,
+        children: [new Paragraph({ children: [] })]
+      })
+    ]
+  });
+
+  // 7-Column Official Table Header Row
   const headerRow = new TableRow({
     tableHeader: true,
     cantSplit: true,
     children: [
       new TableCell({
-        width: { size: 7, type: WidthType.PERCENTAGE },
+        width: { size: 6, type: WidthType.PERCENTAGE },
         borders: cellBorders,
+        shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 100, bottom: 100, left: 80, right: 80 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -213,9 +285,11 @@ export function buildEnrollmentDocx({
         ]
       }),
       new TableCell({
-        width: { size: 41, type: WidthType.PERCENTAGE },
+        width: { size: 42, type: WidthType.PERCENTAGE },
         borders: cellBorders,
+        shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 100, bottom: 100, left: 120, right: 100 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -233,7 +307,9 @@ export function buildEnrollmentDocx({
       new TableCell({
         width: { size: 14, type: WidthType.PERCENTAGE },
         borders: cellBorders,
+        shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 100, bottom: 100, left: 80, right: 80 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -242,9 +318,11 @@ export function buildEnrollmentDocx({
         ]
       }),
       new TableCell({
-        width: { size: 16, type: WidthType.PERCENTAGE },
+        width: { size: 15, type: WidthType.PERCENTAGE },
         borders: cellBorders,
+        shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 100, bottom: 100, left: 80, right: 80 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -255,7 +333,9 @@ export function buildEnrollmentDocx({
       new TableCell({
         width: { size: 8, type: WidthType.PERCENTAGE },
         borders: cellBorders,
+        shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 100, bottom: 100, left: 80, right: 80 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -264,9 +344,11 @@ export function buildEnrollmentDocx({
         ]
       }),
       new TableCell({
-        width: { size: 7, type: WidthType.PERCENTAGE },
+        width: { size: 8, type: WidthType.PERCENTAGE },
         borders: cellBorders,
+        shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 100, bottom: 100, left: 80, right: 80 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -277,7 +359,9 @@ export function buildEnrollmentDocx({
       new TableCell({
         width: { size: 7, type: WidthType.PERCENTAGE },
         borders: cellBorders,
+        shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 100, bottom: 100, left: 80, right: 80 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -288,11 +372,98 @@ export function buildEnrollmentDocx({
     ]
   });
 
+  // Statutory 4-Column Signature Block
+  const signatureBlock = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: noBorders,
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: noBorders,
+            children: [
+              new Paragraph({ text: '', spacing: { before: 450, after: 120 } }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({ text: '_________________________', size: 16 }),
+                  new TextRun({ text: '\nತಯಾರಿಸಿದವರು', bold: true, size: 19, font: KANNADA_FONT }),
+                  new TextRun({ text: '\n(Prepared by / Clerk)', size: 15, font: KANNADA_FONT })
+                ]
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: noBorders,
+            children: [
+              new Paragraph({ text: '', spacing: { before: 450, after: 120 } }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({ text: '_________________________', size: 16 }),
+                  new TextRun({ text: '\nಶೇರು ಶಾಖಾಧಿಕಾರಿ', bold: true, size: 19, font: KANNADA_FONT }),
+                  new TextRun({ text: '\n(Share Section Officer)', size: 15, font: KANNADA_FONT })
+                ]
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: noBorders,
+            children: [
+              new Paragraph({ text: '', spacing: { before: 450, after: 120 } }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({ text: '_________________________', size: 16 }),
+                  new TextRun({ text: '\nಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿ', bold: true, size: 19, font: KANNADA_FONT }),
+                  new TextRun({ text: '\n(Chief Accounts Officer)', size: 15, font: KANNADA_FONT })
+                ]
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: noBorders,
+            children: [
+              new Paragraph({ text: '', spacing: { before: 450, after: 120 } }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({ text: '_________________________', size: 16 }),
+                  new TextRun({ text: '\nವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು', bold: true, size: 19, font: KANNADA_FONT }),
+                  new TextRun({ text: '\n(Managing Director)', size: 15, font: KANNADA_FONT })
+                ]
+              })
+            ]
+          })
+        ]
+      })
+    ]
+  });
+
   return new Document({
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: 'Anek Kannada',
+            size: 20
+          }
+        }
+      }
+    },
     sections: [
       {
         properties: {
           page: {
+            size: {
+              orientation: PageOrientation.LANDSCAPE,
+              width: 16838, // A4 Landscape
+              height: 11906
+            },
             margin: {
               top: 720,
               bottom: 720,
@@ -344,7 +515,7 @@ export function buildEnrollmentDocx({
                         alignment: AlignmentType.LEFT,
                         children: [
                           new TextRun({
-                            text: `ತಾಲೂಕ॥ ${taluk}`,
+                            text: 'ತಾಲೂಕ॥ ' + taluk,
                             bold: true,
                             size: 22,
                             font: KANNADA_FONT
@@ -380,7 +551,7 @@ export function buildEnrollmentDocx({
                         alignment: AlignmentType.RIGHT,
                         children: [
                           new TextRun({
-                            text: `ಜಿಲ್ಲಾ॥ ${dist}`,
+                            text: 'ಜಿಲ್ಲಾ॥ ' + dist,
                             bold: true,
                             size: 22,
                             font: KANNADA_FONT
@@ -399,7 +570,7 @@ export function buildEnrollmentDocx({
             spacing: { before: 120, after: 180 },
             children: [
               new TextRun({
-                text: `ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ ${season} [${effectiveDate}]`,
+                text: 'ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ ' + season + ' [' + effectiveDate + ']',
                 bold: true,
                 size: 24,
                 font: KANNADA_FONT
@@ -410,8 +581,10 @@ export function buildEnrollmentDocx({
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             borders: cellBorders,
-            rows: [headerRow, ...dataRows]
-          })
+            rows: [headerRow, ...dataRows, totalRow]
+          }),
+          // Signatures
+          signatureBlock
         ]
       }
     ]
@@ -427,7 +600,7 @@ export async function downloadEnrollmentDocx(options = {}) {
 
   const cleanSeason = (options.season || '2025-26').replace(/\s+/g, '_').replace(/–/g, '-');
   const cleanDate = (options.listDate ? formatDocxDate(options.listDate) : formatDocxDate()).replace(/\//g, '-');
-  const filename = options.filename || `Hosa_Sherudarara_Arji_Yadi_${cleanSeason}_${cleanDate}.docx`;
+  const filename = options.filename || 'Hosa_Sherudarara_Arji_Yadi_' + cleanSeason + '_' + cleanDate + '.docx';
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
