@@ -6,13 +6,14 @@ import {
   Table,
   TableRow,
   TableCell,
+  ImageRun,
   WidthType,
   AlignmentType,
   VerticalAlign,
   BorderStyle,
   PageOrientation
 } from 'docx';
-import { getFactoryLogoUint8, getHandshakeLogoUint8 } from './docxLogoHelper';
+import { getFactoryLogoUint8, getHandshakeLogoUint8 } from './docxLogoHelper.js';
 
 // Thin crisp solid black border for statutory register grid
 const thinBorder = {
