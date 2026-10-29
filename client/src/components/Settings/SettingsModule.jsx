@@ -71,6 +71,22 @@ export default function SettingsModule({ initialTab = 'org' }) {
   const [isUploadingHandshakeLogo, setIsUploadingHandshakeLogo] = useState(false);
   const handshakeLogoInputRef = useRef(null);
 
+  // Keep logo previews in sync with cloud broadcasts
+  useEffect(() => {
+    const handleCompanyLogoUpdate = (e) => {
+      setCompanyLogo(e?.detail || getCompanyLogo());
+    };
+    const handleHandshakeLogoUpdate = (e) => {
+      setHandshakeLogo(e?.detail || getHandshakeLogo());
+    };
+    window.addEventListener('company_logo_updated', handleCompanyLogoUpdate);
+    window.addEventListener('handshake_logo_updated', handleHandshakeLogoUpdate);
+    return () => {
+      window.removeEventListener('company_logo_updated', handleCompanyLogoUpdate);
+      window.removeEventListener('handshake_logo_updated', handleHandshakeLogoUpdate);
+    };
+  }, []);
+
   const handleUploadHandshakeLogo = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;

@@ -44,11 +44,26 @@ export function compressLogoImage(file, maxWidth = 400, maxHeight = 400) {
 export function getCompanyLogo() {
   try {
     const custom = localStorage.getItem(STORAGE_KEY_COMPANY_LOGO);
-    if (custom && custom.length > 20) return custom;
+    const handshake = localStorage.getItem(STORAGE_KEY_HANDSHAKE_LOGO);
+    // Cleanup if contaminated by handshake logo
+    if (custom && custom.length > 20) {
+      if (handshake && custom === handshake) {
+        localStorage.removeItem(STORAGE_KEY_COMPANY_LOGO);
+        return DEFAULT_LOGO_PATH;
+      }
+      return custom;
+    }
     const orgRaw = localStorage.getItem(STORAGE_KEY_ORG_SETTINGS);
     if (orgRaw) {
       const org = JSON.parse(orgRaw);
-      if (org && org.logo && org.logo.length > 20) return org.logo;
+      if (org && org.logo && org.logo.length > 20) {
+        if (handshake && org.logo === handshake) {
+          delete org.logo;
+          localStorage.setItem(STORAGE_KEY_ORG_SETTINGS, JSON.stringify(org));
+          return DEFAULT_LOGO_PATH;
+        }
+        return org.logo;
+      }
     }
   } catch (e) {}
   return DEFAULT_LOGO_PATH;
@@ -84,6 +99,8 @@ export async function saveCompanyLogo(dataUrl) {
 
     // Sync to Supabase Cloud DB across all browsers worldwide
     await CloudDbService.saveCollectionItem('organization_settings', 'company_logo', {
+      record_id: 'company_logo',
+      id: 'company_logo',
       logo: dataUrl || '',
       updated_at: new Date().toISOString()
     }).catch(err => console.warn('Cloud save company_logo failed:', err));
@@ -102,7 +119,43 @@ export async function saveCompanyLogo(dataUrl) {
 
 // Reset company logo to default
 export async function resetCompanyLogo() {
-  return saveCompanyLogo('');
+  try {
+    localStorage.removeItem(STORAGE_KEY_COMPANY_LOGO);
+    const orgRaw = localStorage.getItem(STORAGE_KEY_ORG_SETTINGS);
+    if (orgRaw) {
+      try {
+        const org = JSON.parse(orgRaw);
+        delete org.logo;
+        localStorage.setItem(STORAGE_KEY_ORG_SETTINGS, JSON.stringify(org));
+      } catch (e) {}
+    }
+    const idKey = 'sugar_erp_id_card_custom_settings_v1';
+    const idRaw = localStorage.getItem(idKey);
+    if (idRaw) {
+      try {
+        const idSettings = JSON.parse(idRaw);
+        idSettings.customLogo = '';
+        localStorage.setItem(idKey, JSON.stringify(idSettings));
+      } catch (e) {}
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('company_logo_updated', { detail: DEFAULT_LOGO_PATH }));
+      window.dispatchEvent(new Event('id_card_settings_updated'));
+    }
+
+    await CloudDbService.saveCollectionItem('organization_settings', 'company_logo', {
+      record_id: 'company_logo',
+      id: 'company_logo',
+      logo: '',
+      updated_at: new Date().toISOString()
+    }).catch(() => {});
+
+    return true;
+  } catch (err) {
+    console.error('resetCompanyLogo error:', err);
+    return false;
+  }
 }
 
 // Sync company logo from Supabase Cloud DB across all browsers
@@ -110,12 +163,14 @@ export async function syncCompanyLogoFromCloud() {
   try {
     const records = await CloudDbService.getCollection('organization_settings');
     const cloudItem = records && records.length > 0
-      ? records.find(r => r.record_id === 'company_logo' || r.id === 'company_logo') || records[0]
+      ? records.find(r => (r.record_id === 'company_logo' || r.id === 'company_logo') && r.record_id !== 'handshake_logo' && r.id !== 'handshake_logo')
       : null;
     const local = localStorage.getItem(STORAGE_KEY_COMPANY_LOGO) || '';
+    const handshakeLocal = localStorage.getItem(STORAGE_KEY_HANDSHAKE_LOGO) || '';
+    const isContaminatedByHandshake = (local && handshakeLocal && local === handshakeLocal);
 
     if (cloudItem && cloudItem.logo) {
-      if (cloudItem.logo !== local) {
+      if (cloudItem.logo !== local || isContaminatedByHandshake) {
         localStorage.setItem(STORAGE_KEY_COMPANY_LOGO, cloudItem.logo);
         const orgRaw = localStorage.getItem(STORAGE_KEY_ORG_SETTINGS);
         const org = orgRaw ? JSON.parse(orgRaw) : {};
@@ -134,9 +189,18 @@ export async function syncCompanyLogoFromCloud() {
         }
       }
       return cloudItem.logo;
+    } else if (isContaminatedByHandshake) {
+      localStorage.removeItem(STORAGE_KEY_COMPANY_LOGO);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('company_logo_updated', { detail: DEFAULT_LOGO_PATH }));
+        window.dispatchEvent(new Event('id_card_settings_updated'));
+      }
+      return DEFAULT_LOGO_PATH;
     } else if (local && local.length > 50) {
       // Local has a logo that cloud doesn't have yet -> push to cloud
       await CloudDbService.saveCollectionItem('organization_settings', 'company_logo', {
+        record_id: 'company_logo',
+        id: 'company_logo',
         logo: local,
         updated_at: new Date().toISOString()
       });
@@ -203,6 +267,8 @@ export async function saveHandshakeLogo(dataUrl) {
 
     // Sync to Supabase Cloud DB across all browsers worldwide
     await CloudDbService.saveCollectionItem('organization_settings', 'handshake_logo', {
+      record_id: 'handshake_logo',
+      id: 'handshake_logo',
       logo: dataUrl || '',
       updated_at: new Date().toISOString()
     }).catch(err => console.warn('Cloud save handshake_logo failed:', err));
@@ -216,7 +282,22 @@ export async function saveHandshakeLogo(dataUrl) {
 
 // Reset handshake logo to default
 export async function resetHandshakeLogo() {
-  return saveHandshakeLogo('');
+  try {
+    localStorage.removeItem(STORAGE_KEY_HANDSHAKE_LOGO);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('handshake_logo_updated', { detail: DEFAULT_HANDSHAKE_PATH }));
+    }
+    await CloudDbService.saveCollectionItem('organization_settings', 'handshake_logo', {
+      record_id: 'handshake_logo',
+      id: 'handshake_logo',
+      logo: '',
+      updated_at: new Date().toISOString()
+    }).catch(() => {});
+    return true;
+  } catch (err) {
+    console.error('resetHandshakeLogo error:', err);
+    return false;
+  }
 }
 
 // Sync handshake logo from Supabase Cloud DB across all browsers
@@ -224,7 +305,7 @@ export async function syncHandshakeLogoFromCloud() {
   try {
     const records = await CloudDbService.getCollection('organization_settings');
     const cloudItem = records && records.length > 0
-      ? records.find(r => r.record_id === 'handshake_logo' || r.id === 'handshake_logo')
+      ? records.find(r => (r.record_id === 'handshake_logo' || r.id === 'handshake_logo') && r.record_id !== 'company_logo' && r.id !== 'company_logo')
       : null;
     const local = localStorage.getItem(STORAGE_KEY_HANDSHAKE_LOGO) || '';
 
@@ -239,6 +320,8 @@ export async function syncHandshakeLogoFromCloud() {
     } else if (local && local.length > 50) {
       // Local has a logo that cloud doesn't have yet -> push to cloud
       await CloudDbService.saveCollectionItem('organization_settings', 'handshake_logo', {
+        record_id: 'handshake_logo',
+        id: 'handshake_logo',
         logo: local,
         updated_at: new Date().toISOString()
       });

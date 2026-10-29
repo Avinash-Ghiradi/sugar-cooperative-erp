@@ -562,10 +562,18 @@ export const CloudDbService = {
         for (const r of res) {
           const item = r.new_value;
           if (!item) continue;
-          const key = String(r.record_id || item.enrollment_id || item.transfer_id || item.request_id || item.id || '').trim();
+          const key = String(r.record_id || (typeof item === 'object' && (item.enrollment_id || item.transfer_id || item.request_id || item.id || item.record_id)) || '').trim();
           if (key && !seen.has(key)) {
             seen.add(key);
-            unique.push(item);
+            if (typeof item === 'object' && item !== null) {
+              unique.push({
+                ...item,
+                record_id: r.record_id || item.record_id || key,
+                id: item.id || r.record_id || key
+              });
+            } else {
+              unique.push(item);
+            }
           }
         }
         return unique;
@@ -585,6 +593,10 @@ export const CloudDbService = {
         method: 'DELETE'
       }).catch(() => {});
 
+      const payload = (typeof data === 'object' && data !== null)
+        ? { ...data, record_id: recKey, id: data.id || recKey }
+        : data;
+
       // Insert new entry
       await this.request('audit_logs', {
         method: 'POST',
@@ -594,7 +606,7 @@ export const CloudDbService = {
           module: moduleName,
           action: 'UPSERT',
           record_id: recKey,
-          new_value: data
+          new_value: payload
         })
       });
       return true;
