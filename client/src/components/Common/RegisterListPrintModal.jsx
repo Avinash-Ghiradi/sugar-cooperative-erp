@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Printer, X, CheckSquare, Square, Layers, Filter, CheckCircle2, FileText, ChevronDown } from 'lucide-react';
 import { useCompanyLogo, useHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
 import { downloadEnrollmentDocx } from '../../services/enrollmentDocxService';
+import { downloadVarasaDocx } from '../../services/varasaDocxService';
 
 // Classic Cooperative Handshake SVG Icon fallback
 function CooperativeHandshakeIcon({ className = "w-20 h-12" }) {
@@ -634,13 +635,13 @@ export default function RegisterListPrintModal({
                 <span>ಮುದ್ರಿಸಿ (Print {recordsToPrint.length})</span>
               </button>
 
-              {type === 'enrollment' && (
+              {(type === 'enrollment' || type === 'varasa') && (
                 <button
                   type="button"
                   disabled={isDownloadingDocx}
                   onClick={handleDownloadDocx}
                   className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-blue-950 transition-all cursor-pointer"
-                  title="ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ Word (.docx) ಫೈಲ್ ಡೌನ್‌ಲೋಡ್"
+                  title={type === 'varasa' ? "ವಾರಸಾ ಯಾದಿ Word (.docx) ಫೈಲ್ ಡೌನ್‌ಲೋಡ್" : "ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ Word (.docx) ಫೈಲ್ ಡೌನ್‌ಲೋಡ್"}
                 >
                   <FileText className="w-4 h-4" />
                   <span>{isDownloadingDocx ? 'ಸಿದ್ಧವಾಗುತ್ತಿದೆ...' : 'Word (.docx)'}</span>

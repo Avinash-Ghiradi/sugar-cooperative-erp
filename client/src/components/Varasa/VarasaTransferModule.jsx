@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 import VarasaTransferModal from './VarasaTransferModal';
 import VarasaPrintModal from './VarasaPrintModal';
 import RegisterListPrintModal from '../Common/RegisterListPrintModal';
+import VarasaDocxExportModal from './VarasaDocxExportModal';
 import {
   FileSpreadsheet, Search, Plus, CheckCircle2, Clock, X, Lock, Save,
   Download, Upload, Filter, Printer, Trash2, Edit3, User, MapPin,
@@ -39,6 +40,17 @@ export default function VarasaTransferModule() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [listPrintModalOpen, setListPrintModalOpen] = useState(false);
   const [listPrintScope, setListPrintScope] = useState('filtered');
+  const [docxModalOpen, setDocxModalOpen] = useState(false);
+  const [docxScope, setDocxScope] = useState('filtered');
+
+  const handleOpenDocxExport = (scope = 'filtered') => {
+    if (scope === 'selected' && selectedIds.size === 0) {
+      showToast('ದಯವಿಟ್ಟು ಮೊದಲು ವಾರಸುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ', 'warning');
+      return;
+    }
+    setDocxScope(scope);
+    setDocxModalOpen(true);
+  };
 
   const toggleSelectAllCurrent = () => {
     const ids = transfers.map(t => t.id || t.transfer_id);
@@ -430,6 +442,15 @@ export default function VarasaTransferModule() {
 
           <button
             type="button"
+            onClick={() => handleOpenDocxExport('filtered')}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-950/70 hover:bg-blue-900/90 text-blue-200 rounded-xl text-xs font-semibold border border-blue-700/80 transition-all cursor-pointer shadow-sm"
+            title="ವಾರಸಾ ಯಾದಿ Word (.docx) ಫೈಲ್ ಡೌನ್‌ಲೋಡ್"
+          >
+            <FileText className="w-3.5 h-3.5 text-blue-400" /> Word (.docx) ಡೌನ್‌ಲೋಡ್
+          </button>
+
+          <button
+            type="button"
             onClick={handleDownloadTemplate}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer shadow-sm"
             title="Download Excel Template"
@@ -540,6 +561,14 @@ export default function VarasaTransferModule() {
             >
               <Printer className="w-3.5 h-3.5" />
               <span>ಆಯ್ದವರ ಮುದ್ರಣ ({selectedIds.size})</span>
+            </button>
+            <button
+              onClick={() => handleOpenDocxExport('selected')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+              title="ಆಯ್ದ ವಾರಸುದಾರರ Word (.docx) ಡೌನ್‌ಲೋಡ್"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>ಆಯ್ದವರ Word (.docx) ({selectedIds.size})</span>
             </button>
             <button
               onClick={clearSelection}
@@ -1055,6 +1084,20 @@ export default function VarasaTransferModule() {
           taluk: talukFilter
         }}
         onClearSelection={clearSelection}
+      />
+
+      {/* Official Word (.docx) Statutory List Export Modal */}
+      <VarasaDocxExportModal
+        isOpen={docxModalOpen}
+        onClose={() => setDocxModalOpen(false)}
+        allFilteredRecords={transfers}
+        selectedIds={selectedIds}
+        initialScope={docxScope}
+        filterSummary={{
+          search,
+          status: statusFilter,
+          taluk: talukFilter
+        }}
       />
     </div>
   );
