@@ -10,7 +10,7 @@ import VarasaDocxExportModal from './VarasaDocxExportModal';
 import {
   FileSpreadsheet, Search, Plus, CheckCircle2, Clock, X, Lock, Save,
   Download, Upload, Filter, Printer, Trash2, Edit3, User, MapPin,
-  Phone, CreditCard, ShieldCheck, Check, AlertCircle, RefreshCw, Eye
+  Phone, CreditCard, ShieldCheck, Check, AlertCircle, RefreshCw, Eye, FileText
 } from 'lucide-react';
 
 const isTransferApproved = (t) => {
