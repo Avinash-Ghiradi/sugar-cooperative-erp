@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer, X, CheckSquare, Square, Layers, Filter, CheckCircle2, FileText, ChevronDown } from 'lucide-react';
 import { useCompanyLogo, useHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
+import { downloadEnrollmentDocx } from '../../services/enrollmentDocxService';
 
 // Classic Cooperative Handshake SVG Icon fallback
 function CooperativeHandshakeIcon({ className = "w-20 h-12" }) {
@@ -67,6 +68,30 @@ export default function RegisterListPrintModal({
   const [orientation, setOrientation] = useState('landscape');
   const [logoError, setLogoError] = useState(false);
   const companyLogo = useCompanyLogo();
+  const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
+
+  const handleDownloadDocx = async () => {
+    try {
+      setIsDownloadingDocx(true);
+      let season = '2025 – 26';
+      try {
+        const saved = localStorage.getItem('sugar_erp_org_settings');
+        if (saved) {
+          const org = JSON.parse(saved);
+          if (org.crushing_season) season = org.crushing_season.replace(/-/g, ' – ');
+        }
+      } catch (e) {}
+
+      await downloadEnrollmentDocx({
+        records: recordsToPrint,
+        season
+      });
+    } catch (err) {
+      alert('Word document export failed: ' + err.message);
+    } finally {
+      setIsDownloadingDocx(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -608,6 +633,19 @@ export default function RegisterListPrintModal({
                 <Printer className="w-4 h-4" />
                 <span>ಮುದ್ರಿಸಿ (Print {recordsToPrint.length})</span>
               </button>
+
+              {type === 'enrollment' && (
+                <button
+                  type="button"
+                  disabled={isDownloadingDocx}
+                  onClick={handleDownloadDocx}
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-blue-950 transition-all cursor-pointer"
+                  title="ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ Word (.docx) ಫೈಲ್ ಡೌನ್‌ಲೋಡ್"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>{isDownloadingDocx ? 'ಸಿದ್ಧವಾಗುತ್ತಿದೆ...' : 'Word (.docx)'}</span>
+                </button>
+              )}
 
               {/* Close Button */}
               <button

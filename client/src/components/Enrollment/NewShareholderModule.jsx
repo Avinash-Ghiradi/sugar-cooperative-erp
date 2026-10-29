@@ -5,9 +5,10 @@ import { useAuth } from '../../context/AuthContext';
 import NewShareholderModal from './NewShareholderModal';
 import OfficeNotePrintModal from './OfficeNotePrintModal';
 import RegisterListPrintModal from '../Common/RegisterListPrintModal';
+import EnrollmentDocxExportModal from './EnrollmentDocxExportModal';
 import * as XLSX from 'xlsx';
 import {
-  Coins, Search, Plus, Download, Upload, Printer, RefreshCw,
+  Coins, Search, Plus, FileText, Download, Upload, Printer, RefreshCw,
   FileSpreadsheet, Filter, CheckCircle2, AlertCircle, Eye,
   Trash2, Edit, ChevronLeft, ChevronRight, UserPlus, Stamp,
   ArrowRight, ShieldCheck, X, Building2, MapPin, Receipt, Hash
@@ -49,6 +50,43 @@ export default function NewShareholderModule() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [listPrintModalOpen, setListPrintModalOpen] = useState(false);
   const [listPrintInitialScope, setListPrintInitialScope] = useState('filtered');
+  const [docxModalOpen, setDocxModalOpen] = useState(false);
+  const [docxInitialScope, setDocxInitialScope] = useState('filtered');
+  const [isPreparingDocx, setIsPreparingDocx] = useState(false);
+
+  const handleOpenDocxExport = async (targetScope = 'filtered') => {
+    if (targetScope === 'selected' && selectedIds.size === 0) {
+      showToast('ದಯವಿಟ್ಟು ಮೊದಲು ಶೇರುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Please select holders first)', 'warning');
+      return;
+    }
+    setDocxInitialScope(targetScope);
+
+    if (totalRecords > enrollments.length) {
+      try {
+        setIsPreparingDocx(true);
+        const res = await ApiService.getEnrollments({
+          search: searchTerm,
+          category: categoryFilter,
+          status: statusFilter,
+          page: 1,
+          limit: 99999
+        });
+        if (res && res.success && res.data) {
+          setAllPrintRecords(res.data);
+        } else {
+          setAllPrintRecords(enrollments);
+        }
+      } catch (e) {
+        setAllPrintRecords(enrollments);
+      } finally {
+        setIsPreparingDocx(false);
+      }
+    } else {
+      setAllPrintRecords(enrollments);
+    }
+
+    setDocxModalOpen(true);
+  };
 
   const toggleSelectAllCurrentPage = () => {
     const pageIds = enrollments.map(e => e.id);
@@ -360,6 +398,16 @@ export default function NewShareholderModule() {
           </button>
 
           <button
+            onClick={() => handleOpenDocxExport('filtered')}
+            disabled={isPreparingDocx}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-950/70 hover:bg-blue-900/90 text-blue-200 rounded-xl text-xs font-semibold transition-colors border border-blue-700/80 cursor-pointer shadow-sm"
+            title="ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ Word (.docx) ಫೈಲ್ ಡೌನ್‌ಲೋಡ್"
+          >
+            <FileText className="w-3.5 h-3.5 text-blue-400" />
+            <span>{isPreparingDocx ? 'ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...' : 'Word (.docx) ಡೌನ್‌ಲೋಡ್'}</span>
+          </button>
+
+          <button
             onClick={() => {
               setEditingRecord(null);
               setModalMode('register');
@@ -521,6 +569,15 @@ export default function NewShareholderModule() {
             >
               <Printer className="w-3.5 h-3.5" />
               <span>ಆಯ್ದವರ ಮುದ್ರಣ ({selectedIds.size})</span>
+            </button>
+            <button
+              onClick={() => handleOpenDocxExport('selected')}
+              disabled={isPreparingDocx}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+              title="ಆಯ್ದ ಶೇರುದಾರರ Word (.docx) ಡೌನ್‌ಲೋಡ್"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>ಆಯ್ದವರ Word (.docx) ({selectedIds.size})</span>
             </button>
             <button
               onClick={clearSelection}
@@ -828,6 +885,20 @@ export default function NewShareholderModule() {
           status: statusFilter
         }}
         onClearSelection={clearSelection}
+      />
+
+      {/* Official Word (.docx) Statutory List Export Modal */}
+      <EnrollmentDocxExportModal
+        isOpen={docxModalOpen}
+        onClose={() => setDocxModalOpen(false)}
+        allFilteredRecords={allPrintRecords.length > 0 ? allPrintRecords : enrollments}
+        selectedIds={selectedIds}
+        initialScope={docxInitialScope}
+        filterSummary={{
+          search: searchTerm,
+          category: categoryFilter,
+          status: statusFilter
+        }}
       />
     </div>
   );
