@@ -419,6 +419,15 @@ export default function VargavaneTransferModule() {
 
           <button
             type="button"
+            onClick={() => handleOpenListPrint('filtered')}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer shadow-sm"
+            title="ವರ್ಗಾವಣೆ ಶೇರು ವರ್ಗಾವಣೆ ಪಟ್ಟಿ ಮುದ್ರಿಸಿ (Print Vargavane List)"
+          >
+            <Printer className="w-3.5 h-3.5 text-blue-400" /> ಪಟ್ಟಿಯನ್ನು ಮುದ್ರಿಸಿ (Print List)
+          </button>
+
+          <button
+            type="button"
             onClick={handleDownloadTemplate}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer shadow-sm"
             title="Download Excel Template"
@@ -573,6 +582,15 @@ export default function VargavaneTransferModule() {
             <table className="w-full text-left text-xs whitespace-nowrap">
               <thead className="bg-emerald-800 border-b-2 border-emerald-400 text-white uppercase font-bold text-[10.5px] tracking-wider">
                 <tr>
+                  <th className="py-3 px-3 text-center border-r border-emerald-700/40 w-10">
+                    <input
+                      type="checkbox"
+                      checked={transfers.length > 0 && transfers.every(t => selectedIds.has(t.id || t.transfer_id))}
+                      onChange={toggleSelectAllCurrent}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                      title="ಪ್ರಸ್ತುತ ಎಲ್ಲಾ ವರ್ಗಾವಣೆ ದಾಖಲೆಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಿ"
+                    />
+                  </th>
                   <th className="py-3 px-3 text-center border-r border-emerald-700/40">Sl.</th>
                   <th className="py-3 px-4 border-r border-emerald-700/40">1. Share Holder (ಮೂಲ ಶೇರುದಾರರು)</th>
                   <th className="py-3 px-3 border-r border-emerald-700/40">1.1-1.3 Place & Taluk</th>
@@ -588,8 +606,20 @@ export default function VargavaneTransferModule() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                {transfers.map((v, idx) => (
-                  <tr key={v.id || v.transfer_id || idx} className="hover:bg-slate-900/50 transition-colors">
+                {transfers.map((v, idx) => {
+                  const rowId = v.id || v.transfer_id;
+                  const isSelected = selectedIds.has(rowId);
+                  return (
+                  <tr key={rowId || idx} className={`transition-colors ${isSelected ? 'bg-emerald-950/40 border-l-4 border-l-emerald-500' : 'hover:bg-slate-900/50'}`}>
+                    {/* Checkbox */}
+                    <td className="py-3 px-3 text-center border-r border-slate-800/60 w-10">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectRow(rowId)}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                      />
+                    </td>
                     {/* Sl. No */}
                     <td className="py-3 px-3 text-center font-mono text-slate-400 font-semibold">
                       {v.sl_no || (idx + 1)}
@@ -775,7 +805,8 @@ export default function VargavaneTransferModule() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </TableScrollerContainer>
