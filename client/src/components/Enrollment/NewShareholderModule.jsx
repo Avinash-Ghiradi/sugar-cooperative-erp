@@ -4,7 +4,7 @@ import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import NewShareholderModal from './NewShareholderModal';
 import OfficeNotePrintModal from './OfficeNotePrintModal';
-import EnrollmentListPrintModal from './EnrollmentListPrintModal';
+import RegisterListPrintModal from '../Common/RegisterListPrintModal';
 import * as XLSX from 'xlsx';
 import {
   Coins, Search, Plus, Download, Upload, Printer, RefreshCw,
@@ -94,12 +94,40 @@ export default function NewShareholderModule() {
     }
   };
 
-  const handleOpenListPrint = (targetScope = 'filtered') => {
+  const [allPrintRecords, setAllPrintRecords] = useState([]);
+  const [isPreparingPrint, setIsPreparingPrint] = useState(false);
+
+  const handleOpenListPrint = async (targetScope = 'filtered') => {
     if (targetScope === 'selected' && selectedIds.size === 0) {
       showToast('ದಯವಿಟ್ಟು ಮೊದಲು ಮುದ್ರಿಸಲು ಶೇರುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Please select holders first)', 'warning');
       return;
     }
     setListPrintInitialScope(targetScope);
+
+    if (totalRecords > enrollments.length) {
+      try {
+        setIsPreparingPrint(true);
+        const res = await ApiService.getEnrollments({
+          search: searchTerm,
+          category: categoryFilter,
+          status: statusFilter,
+          page: 1,
+          limit: 99999
+        });
+        if (res && res.success && res.data) {
+          setAllPrintRecords(res.data);
+        } else {
+          setAllPrintRecords(enrollments);
+        }
+      } catch (e) {
+        setAllPrintRecords(enrollments);
+      } finally {
+        setIsPreparingPrint(false);
+      }
+    } else {
+      setAllPrintRecords(enrollments);
+    }
+
     setListPrintModalOpen(true);
   };
 
@@ -322,6 +350,16 @@ export default function NewShareholderModule() {
           </button>
 
           <button
+            onClick={() => handleOpenListPrint('filtered')}
+            disabled={isPreparingPrint}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-semibold transition-colors border border-slate-700 cursor-pointer shadow-sm"
+            title="ಪ್ರಸ್ತುತ ಶೋಧಿತ ಅಥವಾ ಆಯ್ದ ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ವಹಿ ಮುದ್ರಿಸಿ"
+          >
+            <Printer className="w-3.5 h-3.5 text-blue-400" />
+            <span>{isPreparingPrint ? 'ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...' : 'ಪಟ್ಟಿಯನ್ನು ಮುದ್ರಿಸಿ (Print List)'}</span>
+          </button>
+
+          <button
             onClick={() => {
               setEditingRecord(null);
               setModalMode('register');
@@ -501,6 +539,15 @@ export default function NewShareholderModule() {
             {/* 15 Official Table Headers matching the user's Excel sheet */}
             <thead className="bg-[#608b34] text-white font-bold text-[11px] border-b border-[#4d7228] sticky top-0 z-10 select-none">
               <tr>
+                <th className="px-3 py-3 border-r border-[#4d7228]/50 text-center w-10">
+                  <input
+                    type="checkbox"
+                    checked={enrollments.length > 0 && enrollments.every(e => selectedIds.has(e.id))}
+                    onChange={toggleSelectAllCurrentPage}
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    title="ಪ್ರಸ್ತುತ ಪುಟದ ಎಲ್ಲಾ ಸದಸ್ಯರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Select All on this page)"
+                  />
+                </th>
                 <th className="px-3 py-3 border-r border-[#4d7228]/50 text-center">Sl No</th>
                 <th className="px-3 py-3 border-r border-[#4d7228]/50">Date</th>
                 <th className="px-4 py-3 border-r border-[#4d7228]/50">Full Name</th>
@@ -522,7 +569,7 @@ export default function NewShareholderModule() {
             <tbody className="divide-y divide-slate-800/80">
               {loading ? (
                 <tr>
-                  <td colSpan="17" className="py-12 text-center text-slate-400">
+                  <td colSpan="18" className="py-12 text-center text-slate-400">
                     <div className="flex items-center justify-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
                       <span>ಲೋಡ್ ಆಗುತ್ತಿದೆ...</span>
@@ -531,13 +578,25 @@ export default function NewShareholderModule() {
                 </tr>
               ) : enrollments.length === 0 ? (
                 <tr>
-                  <td colSpan="17" className="py-12 text-center text-slate-500">
+                  <td colSpan="18" className="py-12 text-center text-slate-500">
                     ಯಾವುದೇ ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ. "+ ಹೊಸ ನೋಂದಣಿ" ಬಟನ್ ಒತ್ತಿ ದಾಖಲಿಸಿ.
                   </td>
                 </tr>
               ) : (
-                enrollments.map((item, idx) => (
-                  <tr key={item.id} className="hover:bg-slate-900/60 transition-colors">
+                enrollments.map((item, idx) => {
+                  const isSelected = selectedIds.has(item.id);
+                  return (
+                  <tr key={item.id} className={`transition-colors ${isSelected ? 'bg-emerald-950/40 border-l-4 border-l-emerald-500' : 'hover:bg-slate-900/60'}`}>
+                    {/* 0. Row Checkbox */}
+                    <td className="px-3 py-2.5 text-center border-r border-slate-800/60 w-10">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectRow(item.id)}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                      />
+                    </td>
+
                     {/* 1. Sl No */}
                     <td className="px-3 py-2.5 text-center font-mono text-slate-400 border-r border-slate-800/60">
                       {item.sl_no || (idx + 1)}
@@ -702,7 +761,8 @@ export default function NewShareholderModule() {
                       </div>
                     </td>
                   </tr>
-                ))
+                );
+              })
               )}
             </tbody>
           </table>
@@ -752,6 +812,22 @@ export default function NewShareholderModule() {
         isOpen={Boolean(officeNoteRecord)}
         onClose={() => setOfficeNoteRecord(null)}
         enrollment={officeNoteRecord}
+      />
+
+      {/* Official Statutory Register List Print Modal */}
+      <RegisterListPrintModal
+        isOpen={listPrintModalOpen}
+        onClose={() => setListPrintModalOpen(false)}
+        type="enrollment"
+        allRecords={allPrintRecords.length > 0 ? allPrintRecords : enrollments}
+        selectedIds={selectedIds}
+        initialScope={listPrintInitialScope}
+        filterSummary={{
+          search: searchTerm,
+          category: categoryFilter,
+          status: statusFilter
+        }}
+        onClearSelection={clearSelection}
       />
     </div>
   );

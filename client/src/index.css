@@ -41,7 +41,8 @@
   .id-card-profile-print-portal,
   .office-note-print-portal,
   .varasa-print-portal,
-  .enrollment-list-print-portal {
+  .enrollment-list-print-portal,
+  .register-list-print-portal {
     display: none !important;
     visibility: hidden !important;
   }
@@ -83,7 +84,8 @@
   body.shareholder-record-printing > #root,
   body.office-note-printing > #root,
   body.varasa-printing > #root,
-  body.enrollment-list-printing > #root {
+  body.enrollment-list-printing > #root,
+  body.register-list-printing > #root {
     display: none !important;
     visibility: hidden !important;
   }

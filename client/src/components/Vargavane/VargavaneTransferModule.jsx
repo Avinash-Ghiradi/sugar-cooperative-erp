@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import * as XLSX from 'xlsx';
 import VargavaneTransferModal from './VargavaneTransferModal';
 import VargavanePrintModal from './VargavanePrintModal';
+import RegisterListPrintModal from '../Common/RegisterListPrintModal';
 import {
   ArrowRightLeft, Search, Plus, CheckCircle2, Clock, X, Save, Lock,
   Download, Upload, Filter, Printer, Trash2, Edit3, User, MapPin,
@@ -30,6 +31,38 @@ export default function VargavaneTransferModule() {
   const [importAsCompleted, setImportAsCompleted] = useState(true);
   const [adminApproveModal, setAdminApproveModal] = useState({ open: false, transfer: null, remarks: '' });
   const uploadFileInputRef = useRef(null);
+  // Multi-select & List Print states
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [listPrintModalOpen, setListPrintModalOpen] = useState(false);
+  const [listPrintScope, setListPrintScope] = useState('filtered');
+
+  const toggleSelectAllCurrent = () => {
+    const ids = transfers.map(t => t.id || t.transfer_id);
+    const allSel = ids.length > 0 && ids.every(id => selectedIds.has(id));
+    const next = new Set(selectedIds);
+    if (allSel) ids.forEach(id => next.delete(id));
+    else ids.forEach(id => next.add(id));
+    setSelectedIds(next);
+  };
+
+  const toggleSelectRow = (id) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleOpenListPrint = (scope = 'filtered') => {
+    if (scope === 'selected' && selectedIds.size === 0) {
+      showToast('ದಯವಿಟ್ಟು ಮೊದಲು ಮುದ್ರಿಸಲು ಸದಸ್ಯರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ', 'warning');
+      return;
+    }
+    setListPrintScope(scope);
+    setListPrintModalOpen(true);
+  };
+
 
   useEffect(() => {
     loadTransfers();
@@ -477,6 +510,37 @@ export default function VargavaneTransferModule() {
         </div>
       </div>
 
+      {/* Selected Holders Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="bg-emerald-950/70 border border-emerald-700/80 rounded-2xl p-3 px-4 flex flex-wrap items-center justify-between gap-3 shadow-lg shadow-emerald-950/40 animate-fadeIn mb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-xs shadow">
+              {selectedIds.size}
+            </div>
+            <span className="text-xs font-bold text-emerald-200">
+              {selectedIds.size} ವರ್ಗಾವಣೆದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ ({selectedIds.size} Selected)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleOpenListPrint('selected')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>ಆಯ್ದವರ ಮುದ್ರಣ ({selectedIds.size})</span>
+            </button>
+            <button
+              onClick={clearSelection}
+              className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors cursor-pointer"
+            >
+              ಆಯ್ಕೆ ತೆರವು (Clear)
+            </button>
+          </div>
+        </div>
+      )}
+
+      
       {/* Main Vargavane Table */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
         {loading ? (
