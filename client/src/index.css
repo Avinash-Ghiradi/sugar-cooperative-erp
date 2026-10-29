@@ -40,7 +40,8 @@
   /* Portals default hidden unless active */
   .id-card-profile-print-portal,
   .office-note-print-portal,
-  .varasa-print-portal {
+  .varasa-print-portal,
+  .enrollment-list-print-portal {
     display: none !important;
     visibility: hidden !important;
   }
@@ -53,6 +54,10 @@
     visibility: visible !important;
   }
   body.varasa-printing .varasa-print-portal {
+    display: block !important;
+    visibility: visible !important;
+  }
+  body.enrollment-list-printing .enrollment-list-print-portal {
     display: block !important;
     visibility: visible !important;
   }
@@ -77,7 +82,8 @@
   body.id-card-printing > #root,
   body.shareholder-record-printing > #root,
   body.office-note-printing > #root,
-  body.varasa-printing > #root {
+  body.varasa-printing > #root,
+  body.enrollment-list-printing > #root {
     display: none !important;
     visibility: hidden !important;
   }

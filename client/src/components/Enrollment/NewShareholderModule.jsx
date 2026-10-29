@@ -4,6 +4,7 @@ import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import NewShareholderModal from './NewShareholderModal';
 import OfficeNotePrintModal from './OfficeNotePrintModal';
+import EnrollmentListPrintModal from './EnrollmentListPrintModal';
 import * as XLSX from 'xlsx';
 import {
   Coins, Search, Plus, Download, Upload, Printer, RefreshCw,
@@ -44,6 +45,64 @@ export default function NewShareholderModule() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [printingRecord, setPrintingRecord] = useState(null);
   const [officeNoteRecord, setOfficeNoteRecord] = useState(null);
+  // Multi-Selection & List Print states
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [listPrintModalOpen, setListPrintModalOpen] = useState(false);
+  const [listPrintInitialScope, setListPrintInitialScope] = useState('filtered');
+
+  const toggleSelectAllCurrentPage = () => {
+    const pageIds = enrollments.map(e => e.id);
+    const allSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.has(id));
+    const newSet = new Set(selectedIds);
+    if (allSelected) {
+      pageIds.forEach(id => newSet.delete(id));
+    } else {
+      pageIds.forEach(id => newSet.add(id));
+    }
+    setSelectedIds(newSet);
+  };
+
+  const toggleSelectRow = (id) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const selectAllFiltered = async () => {
+    try {
+      const res = await ApiService.getEnrollments({
+        search: searchTerm,
+        category: categoryFilter,
+        status: statusFilter,
+        page: 1,
+        limit: 99999
+      });
+      if (res && res.success && res.data) {
+        setSelectedIds(new Set(res.data.map(e => e.id)));
+        showToast(`ಎಲ್ಲಾ ${res.data.length} ಶೋಧಿತ ಸದಸ್ಯರನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ`);
+      }
+    } catch (err) {
+      showToast('ಆಯ್ಕೆ ಮಾಡಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ: ' + err.message, 'error');
+    }
+  };
+
+  const handleOpenListPrint = (targetScope = 'filtered') => {
+    if (targetScope === 'selected' && selectedIds.size === 0) {
+      showToast('ದಯವಿಟ್ಟು ಮೊದಲು ಮುದ್ರಿಸಲು ಶೇರುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Please select holders first)', 'warning');
+      return;
+    }
+    setListPrintInitialScope(targetScope);
+    setListPrintModalOpen(true);
+  };
+
 
   useEffect(() => {
     loadEnrollments();
@@ -395,6 +454,46 @@ export default function NewShareholderModule() {
         </div>
       </div>
 
+            {/* Selected Holders Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="bg-emerald-950/70 border border-emerald-700/80 rounded-2xl p-3 px-4 flex flex-wrap items-center justify-between gap-3 shadow-lg shadow-emerald-950/40 animate-fadeIn">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-xs shadow">
+              {selectedIds.size}
+            </div>
+            <div>
+              <span className="text-xs font-bold text-emerald-200">
+                {selectedIds.size} ಶೇರುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ ({selectedIds.size} Holders Selected)
+              </span>
+              {totalRecords > enrollments.length && selectedIds.size < totalRecords && (
+                <button
+                  onClick={selectAllFiltered}
+                  className="text-[11px] text-emerald-400 hover:text-emerald-200 underline cursor-pointer ml-2"
+                >
+                  ಎಲ್ಲಾ {totalRecords} ಶೋಧಿತ ಸದಸ್ಯರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleOpenListPrint('selected')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>ಆಯ್ದವರ ಮುದ್ರಣ ({selectedIds.size})</span>
+            </button>
+            <button
+              onClick={clearSelection}
+              className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors cursor-pointer"
+            >
+              ಆಯ್ಕೆ ತೆರವು (Clear)
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 15-Column Statutory Register Table */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <TableScrollerContainer label="15 ಕಾಲಂಗಳ ನೋಂದಣಿ ವಹಿ (Scroll Register):">
@@ -423,7 +522,7 @@ export default function NewShareholderModule() {
             <tbody className="divide-y divide-slate-800/80">
               {loading ? (
                 <tr>
-                  <td colSpan="16" className="py-12 text-center text-slate-400">
+                  <td colSpan="17" className="py-12 text-center text-slate-400">
                     <div className="flex items-center justify-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
                       <span>ಲೋಡ್ ಆಗುತ್ತಿದೆ...</span>
@@ -432,7 +531,7 @@ export default function NewShareholderModule() {
                 </tr>
               ) : enrollments.length === 0 ? (
                 <tr>
-                  <td colSpan="16" className="py-12 text-center text-slate-500">
+                  <td colSpan="17" className="py-12 text-center text-slate-500">
                     ಯಾವುದೇ ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ. "+ ಹೊಸ ನೋಂದಣಿ" ಬಟನ್ ಒತ್ತಿ ದಾಖಲಿಸಿ.
                   </td>
                 </tr>
