@@ -36,19 +36,23 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
     }
   });
 
-  const [printSides, setPrintSides] = useState('both'); // 'both', 'front', 'back'
+  const [printSides, setPrintSides] = useState('both');
+  const [printMode, setPrintMode] = useState(null); // 'id_card' | 'record' | null // 'both', 'front', 'back'
 
   useEffect(() => {
-    const handleBeforePrint = () => {
+        const handleBeforePrint = () => {
       if (activeTab === 'id_card') {
+        setPrintMode('id_card');
         document.body.classList.add('id-card-printing');
         document.body.classList.remove('shareholder-record-printing');
       } else {
+        setPrintMode('record');
         document.body.classList.add('shareholder-record-printing');
         document.body.classList.remove('id-card-printing');
       }
     };
     const handleAfterPrint = () => {
+      setPrintMode(null);
       document.body.classList.remove('id-card-printing');
       document.body.classList.remove('shareholder-record-printing');
     };
@@ -62,10 +66,12 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
     };
   }, [activeTab]);
 
-  const handlePrintIdCard = () => {
+    const handlePrintIdCard = () => {
+    setPrintMode('id_card');
     document.body.classList.remove('shareholder-record-printing');
     document.body.classList.add('id-card-printing');
     const cleanup = () => {
+      setPrintMode(null);
       document.body.classList.remove('id-card-printing');
       window.removeEventListener('afterprint', cleanup);
     };
@@ -73,13 +79,15 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
     setTimeout(() => {
       window.print();
       setTimeout(cleanup, 2500);
-    }, 120);
+    }, 150);
   };
 
   const handlePrintShareholderRecord = () => {
+    setPrintMode('record');
     document.body.classList.remove('id-card-printing');
     document.body.classList.add('shareholder-record-printing');
     const cleanup = () => {
+      setPrintMode(null);
       document.body.classList.remove('shareholder-record-printing');
       window.removeEventListener('afterprint', cleanup);
     };
@@ -87,8 +95,9 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
     setTimeout(() => {
       window.print();
       setTimeout(cleanup, 2500);
-    }, 120);
+    }, 150);
   };
+
 
   useEffect(() => {
     loadProfile();
@@ -1154,14 +1163,17 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
 
 
 
-    {/* Dedicated Official Statutory Shareholder Record Sheet Print Portal */}
-    {typeof document !== 'undefined' && createPortal(
+    {/* Dedicated Official Statutory Shareholder Record Sheet Print Portal - Only mounted when printing record */}
+    {typeof document !== 'undefined' && printMode === 'record' && createPortal(
       <div className="shareholder-record-print-portal">
         <style>{`
           @media screen {
             .shareholder-record-print-portal { display: none !important; }
           }
           @media print {
+            .shareholder-record-print-portal { display: none !important; }
+            body:not(.shareholder-record-printing) .shareholder-record-print-portal { display: none !important; }
+            body.id-card-printing .shareholder-record-print-portal { display: none !important; }
             body.shareholder-record-printing > #root {
               display: none !important;
               visibility: hidden !important;
@@ -1473,6 +1485,8 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
           }
           @media print {
             .id-card-profile-print-portal { display: none !important; }
+            .shareholder-record-print-portal { display: none !important; }
+            body.id-card-printing .shareholder-record-print-portal { display: none !important; }
             body:not(.id-card-printing) .id-card-profile-print-portal { display: none !important; }
             body.shareholder-record-printing .id-card-profile-print-portal { display: none !important; }
             body.id-card-printing > #root {

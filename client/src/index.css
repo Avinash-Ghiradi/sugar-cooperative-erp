@@ -99,12 +99,25 @@
     break-inside: avoid !important;
   }
 
-  /* Portals default hidden unless active */
+    /* Portals default hidden unless active */
+  .shareholder-record-print-portal,
   .id-card-profile-print-portal,
   .office-note-print-portal,
   .varasa-print-portal,
   .enrollment-list-print-portal,
   .register-list-print-portal {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  body.shareholder-record-printing .shareholder-record-print-portal {
+    display: block !important;
+    visibility: visible !important;
+  }
+  body.id-card-printing .shareholder-record-print-portal {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  body.shareholder-record-printing .id-card-profile-print-portal {
     display: none !important;
     visibility: hidden !important;
   }
