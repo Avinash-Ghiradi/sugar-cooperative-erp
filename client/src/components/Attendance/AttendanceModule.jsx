@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { Html5Qrcode } from 'html5-qrcode';
 import {
   CalendarCheck, Search, CheckCircle2, XCircle, Clock, Save, RefreshCw,
-  QrCode, UserCheck, Users, FileSpreadsheet, Sparkles, Filter, Check, ArrowRight
+  QrCode, UserCheck, Users, FileSpreadsheet, Sparkles, Filter, Check, ArrowRight,
+  Camera, AlertTriangle, X, Image as ImageIcon, Video, VideoOff
 } from 'lucide-react';
 
 export default function AttendanceModule() {
@@ -27,9 +29,122 @@ export default function AttendanceModule() {
   const [searchQuery, setSearchQuery] = useState('');
   const scanInputRef = useRef(null);
 
+  // Live Camera Scanner States
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [availableCameras, setAvailableCameras] = useState([]);
+  const [selectedCameraId, setSelectedCameraId] = useState('');
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const html5QrCodeRef = useRef(null);
+  const fileInputRef = useRef(null);
+
   useEffect(() => {
     loadAttendance();
   }, [recordType, selectedDate]);
+
+  // Handle Camera Open / Close & Live Scanning with Html5Qrcode
+  useEffect(() => {
+    let isCancelled = false;
+    let qrScanner = null;
+
+    if (cameraOpen) {
+      setCameraError('');
+      setIsCameraActive(false);
+
+      const initCamera = async () => {
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (isCancelled) return;
+
+          if (!devices || devices.length === 0) {
+            setCameraError('ಯಾವುದೇ ಕ್ಯಾಮೆರಾ ಕಂಡುಬಂದಿಲ್ಲ (No camera device detected on this device).');
+            return;
+          }
+
+          setAvailableCameras(devices);
+          // Prefer back camera (environment) or last device for mobile phones
+          const chosenId = selectedCameraId || devices[devices.length - 1].id;
+          setSelectedCameraId(chosenId);
+
+          const scanner = new Html5Qrcode('qr-camera-reader');
+          html5QrCodeRef.current = scanner;
+          qrScanner = scanner;
+
+          await scanner.start(
+            chosenId,
+            {
+              fps: 15,
+              qrbox: { width: 220, height: 220 }
+            },
+            (decodedText) => {
+              // Successfully scanned!
+              handleProcessScan(decodedText);
+            },
+            () => {
+              // Ignore standard frame scan errors
+            }
+          );
+
+          if (!isCancelled) {
+            setIsCameraActive(true);
+          }
+        } catch (err) {
+          if (!isCancelled) {
+            console.error('Camera startup error:', err);
+            setCameraError(`ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಅನುಮತಿ ಅಗತ್ಯವಿದೆ (Camera permission required): ${err.message || err}. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್ಸ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಅನುಮತಿ ನೀಡಿ (Allow Camera).`);
+          }
+        }
+      };
+
+      // Slight timeout to ensure DOM container #qr-camera-reader is fully rendered
+      const timer = setTimeout(initCamera, 150);
+
+      return () => {
+        isCancelled = true;
+        clearTimeout(timer);
+        if (qrScanner) {
+          try {
+            if (qrScanner.isScanning) {
+              qrScanner.stop().then(() => qrScanner.clear()).catch(() => {});
+            } else {
+              qrScanner.clear();
+            }
+          } catch (e) {}
+        }
+        html5QrCodeRef.current = null;
+        setIsCameraActive(false);
+      };
+    } else {
+      if (html5QrCodeRef.current) {
+        try {
+          if (html5QrCodeRef.current.isScanning) {
+            html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear()).catch(() => {});
+          }
+        } catch (e) {}
+        html5QrCodeRef.current = null;
+      }
+      setIsCameraActive(false);
+    }
+  }, [cameraOpen, selectedCameraId]);
+
+  // Handle Photo File Upload QR Scanning
+  const handleFileUploadScan = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      showToast('ಫೋಟೋದಿಂದ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಲಾಗುತ್ತಿದೆ...', 'info');
+      // Create temporary instance or use existing
+      const html5Qr = new Html5Qrcode('temp-qr-file-scanner');
+      const decodedText = await html5Qr.scanFile(file, true);
+      html5Qr.clear();
+      if (decodedText) {
+        handleProcessScan(decodedText);
+      }
+    } catch (err) {
+      showToast('⚠️ ಫೋಟೋದಲ್ಲಿ ಯಾವುದೇ QR ಕೋಡ್ ಪತ್ತೆಯಾಗಿಲ್ಲ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋ ಬಳಸಿ.', 'error');
+    }
+  };
 
   // Check URL parameters for direct QR scan verification on load
   useEffect(() => {
@@ -288,8 +403,8 @@ export default function AttendanceModule() {
             </div>
           </div>
 
-          {/* Quick Scanner Input Bar */}
-          <div className="flex gap-2">
+          {/* Quick Scanner Input Bar with Camera Trigger */}
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <QrCode className="w-4 h-4 text-emerald-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -314,7 +429,121 @@ export default function AttendanceModule() {
                 ದಾಖಲಿಸಿ
               </button>
             </div>
+
+            {/* Camera QR Scanner Open / Close Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setCameraError('');
+                setCameraOpen(!cameraOpen);
+              }}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg cursor-pointer shrink-0 ${
+                cameraOpen
+                  ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950 animate-pulse'
+              }`}
+              title="Open Device Camera to scan QR Code (ಕ್ಯಾಮೆರಾ ತೆರೆಯಿರಿ)"
+            >
+              <Camera className="w-4 h-4" />
+              <span>{cameraOpen ? 'ಕ್ಯಾಮೆರಾ ಮುಚ್ಚಿ (Close Camera)' : '📷 ಕ್ಯಾಮೆರಾ ಸ್ಕ್ಯಾನರ್ ಪ್ರಾರಂಭಿಸಿ (Open Camera)'}</span>
+            </button>
+
+            {/* Scan from Photo Upload Button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileUploadScan}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0"
+              title="Upload photo of ID Card to scan QR Code"
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
+              <span className="hidden md:inline">ಫೋಟೋ ಅಪ್ಲೋಡ್</span>
+            </button>
           </div>
+
+          {/* Hidden helper element for file photo scanning */}
+          <div id="temp-qr-file-scanner" className="hidden" />
+
+          {/* LIVE CAMERA VIEWFINDER & TARGET RETICLE */}
+          {cameraOpen && (
+            <div className="bg-slate-950/90 border-2 border-emerald-500 rounded-2xl p-4 shadow-2xl space-y-3 relative overflow-hidden animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+                  <h4 className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                    <Camera className="w-4 h-4 text-emerald-400" />
+                    <span>ಲೈವ್ ಕ್ಯಾಮೆರಾ QR ಸ್ಕ್ಯಾನರ್ (Live Camera Scanner Active)</span>
+                  </h4>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Camera Selection Dropdown */}
+                  {availableCameras.length > 1 && (
+                    <select
+                      value={selectedCameraId}
+                      onChange={(e) => setSelectedCameraId(e.target.value)}
+                      className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1 outline-none"
+                    >
+                      {availableCameras.map((cam, idx) => (
+                        <option key={cam.id} value={cam.id}>
+                          {cam.label || `Camera ${idx + 1}`}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setCameraOpen(false)}
+                    className="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
+                    title="Close Camera"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {cameraError ? (
+                <div className="p-4 bg-rose-950/80 border border-rose-600 text-rose-200 text-xs rounded-xl flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <div className="font-bold">ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ (Camera Error):</div>
+                    <p className="text-[11px] text-rose-300">{cameraError}</p>
+                    <p className="text-[10px] text-slate-400">
+                      • ಬ್ರೌಸರ್ URL ಬಾರ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಐಕಾನ್ (🔒 / 🎥) ಕ್ಲಿಕ್ ಮಾಡಿ <strong>Allow (ಅನುಮತಿಸಿ)</strong> ಆಯ್ಕೆಮಾಡಿ.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative max-w-sm mx-auto overflow-hidden rounded-xl border-2 border-emerald-500/70 shadow-2xl bg-black">
+                  {/* Html5Qrcode video renders inside this element */}
+                  <div id="qr-camera-reader" className="w-full h-64 bg-black flex items-center justify-center text-slate-500 text-xs [&>video]:w-full [&>video]:h-full [&>video]:object-cover" />
+
+                  {/* Aiming Reticle with Animated Laser Scanner Line */}
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="w-48 h-48 border-2 border-dashed border-emerald-400/90 rounded-2xl relative shadow-[0_0_20px_rgba(16,185,129,0.35)]">
+                      {/* Corner Accents */}
+                      <div className="absolute -top-1 -left-1 w-4 h-4 border-t-3 border-l-3 border-emerald-400 rounded-tl"></div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 border-t-3 border-r-3 border-emerald-400 rounded-tr"></div>
+                      <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-3 border-l-3 border-emerald-400 rounded-bl"></div>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-3 border-r-3 border-emerald-400 rounded-br"></div>
+                      {/* Animated Laser Line */}
+                      <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-300 to-transparent shadow-[0_0_8px_#34d399] animate-pulse"></div>
+                    </div>
+                    <span className="text-[10px] font-bold text-white bg-slate-950/90 px-3 py-1 rounded-full mt-2 border border-slate-700 shadow-md">
+                      ಗುರುತಿನ ಚೀಟಿಯ QR ಕೋಡ್ ಅನ್ನು ಚೌಕಟ್ಟಿನಲ್ಲಿ ಹಿಡಿಯಿರಿ
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Last Scanned Member Notification Card */}
           {lastScannedMember && (
