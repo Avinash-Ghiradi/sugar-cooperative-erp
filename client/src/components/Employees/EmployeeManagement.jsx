@@ -26,25 +26,32 @@ export default function EmployeeManagement() {
 
   // ID Card Print Options inside Modal
   const [cardSide, setCardSide] = useState('both'); // 'front', 'back', 'both'
+  const [cardOrientation, setCardOrientation] = useState(() => {
+    try {
+      return localStorage.getItem('sugar_erp_staff_card_orientation') || 'portrait';
+    } catch (e) {
+      return 'portrait';
+    }
+  }); // 'portrait' (ಲಂಬ - 54x85.6mm) or 'landscape' (ಅಡ್ಡ - 85.6x54mm)
   const [printLayout, setPrintLayout] = useState('single'); // 'single', '4perPage', '8perPage'
   const [showSeal, setShowSeal] = useState(true);
   const [showQrCode, setShowQrCode] = useState(true);
 
-  // Form State
+  // Form State - Clean Real Entry without hardcoded mock details
   const initialForm = {
     employee_id: '',
     name: '',
     name_english: '',
-    designation: 'ಕಬ್ಬು ತಪಾಸಣಾಧಿಕಾರಿ (Cane Inspector)',
-    department: 'ಕಬ್ಬು ವಿಭಾಗ (Cane Procurement)',
+    designation: '',
+    department: '',
     mobile: '',
     aadhaar_no: '',
-    blood_group: 'O+',
+    blood_group: '',
     joining_date: new Date().toISOString().split('T')[0],
-    address: 'ಮರಗೂರ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ಆವರಣ, ಚಡಚಣ',
+    address: '',
     emergency_contact: '',
     epf_uan_no: '',
-    salary_grade: 'Grade B',
+    salary_grade: '',
     photo_url: '',
     signature_url: '',
     status: 'Active'
@@ -727,6 +734,7 @@ export default function EmployeeManagement() {
                     onChange={(e) => setFormData({ ...formData, blood_group: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
                   >
+                    <option value="">-- ರಕ್ತದ ಗುಂಪು ಆಯ್ಕೆಮಾಡಿ (Select Blood Group) --</option>
                     <option value="A+">A+ (ಎ ಪಾಸಿಟಿವ್)</option>
                     <option value="B+">B+ (ಬಿ ಪಾಸಿಟಿವ್)</option>
                     <option value="O+">O+ (ಒ ಪಾಸಿಟಿವ್)</option>
@@ -758,7 +766,7 @@ export default function EmployeeManagement() {
                     type="text"
                     value={formData.name_english}
                     onChange={(e) => setFormData({ ...formData, name_english: e.target.value })}
-                    placeholder="e.g. Sanjeevkumar S. Patil"
+                    placeholder="ಉದಾ: Ramesh Kumar"
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
                   />
                 </div>
@@ -771,6 +779,7 @@ export default function EmployeeManagement() {
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
                   >
+                    <option value="">-- ವಿಭಾಗ ಆಯ್ಕೆಮಾಡಿ (Select Department) --</option>
                     {standardDepartments.map(dept => (
                       <option key={dept} value={dept}>{dept}</option>
                     ))}
@@ -920,6 +929,36 @@ export default function EmployeeManagement() {
 
               {/* Toolbar Controls */}
               <div className="flex items-center gap-2 flex-wrap">
+                {/* Orientation Toggle: Portrait (ಲಂಬ) / Landscape (ಅಡ್ಡ) */}
+                <div className="flex bg-slate-900 p-0.5 rounded-xl border border-slate-800 text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCardOrientation('portrait');
+                      try { localStorage.setItem('sugar_erp_staff_card_orientation', 'portrait'); } catch (e) {}
+                    }}
+                    className={`px-3 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                      cardOrientation === 'portrait' ? 'bg-amber-600 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title="ಲಂಬ ವಿನ್ಯಾಸ (Portrait - 54x85.6mm)"
+                  >
+                    <span>📱 ಲಂಬ (Portrait)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCardOrientation('landscape');
+                      try { localStorage.setItem('sugar_erp_staff_card_orientation', 'landscape'); } catch (e) {}
+                    }}
+                    className={`px-3 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                      cardOrientation === 'landscape' ? 'bg-amber-600 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title="ಅಡ್ಡ ವಿನ್ಯಾಸ (Landscape - 85.6x54mm)"
+                  >
+                    <span>💻 ಅಡ್ಡ (Landscape)</span>
+                  </button>
+                </div>
+
                 {/* Side Toggle: Front / Back / Both */}
                 <div className="flex bg-slate-900 p-0.5 rounded-xl border border-slate-800 text-xs font-semibold">
                   <button
@@ -1015,12 +1054,7 @@ export default function EmployeeManagement() {
                       ಮುಂಭಾಗ (Front Page)
                     </span>
                     <div>
-                      <OfficialStaffIDCard
-                        employee={selectedEmpForCard}
-                        showBack={false}
-                        showSeal={showSeal}
-                        showQrCode={showQrCode}
-                      />
+                      <OfficialStaffIDCard employee={selectedEmpForCard} showBack={false} showSeal={showSeal} showQrCode={showQrCode} orientation={cardOrientation} />
                     </div>
                   </div>
 
@@ -1030,12 +1064,7 @@ export default function EmployeeManagement() {
                       ಹಿಂಬದಿ (Back Page - Attendance QR)
                     </span>
                     <div>
-                      <OfficialStaffIDCard
-                        employee={selectedEmpForCard}
-                        showBack={true}
-                        showSeal={showSeal}
-                        showQrCode={showQrCode}
-                      />
+                      <OfficialStaffIDCard employee={selectedEmpForCard} showBack={true} showSeal={showSeal} showQrCode={showQrCode} orientation={cardOrientation} />
                     </div>
                   </div>
                 </>
@@ -1045,12 +1074,7 @@ export default function EmployeeManagement() {
                     ಮುಂಭಾಗ (Front Page)
                   </span>
                   <div>
-                    <OfficialStaffIDCard
-                      employee={selectedEmpForCard}
-                      showBack={false}
-                      showSeal={showSeal}
-                      showQrCode={showQrCode}
-                    />
+                    <OfficialStaffIDCard employee={selectedEmpForCard} showBack={false} showSeal={showSeal} showQrCode={showQrCode} orientation={cardOrientation} />
                   </div>
                 </div>
               ) : (
@@ -1059,12 +1083,7 @@ export default function EmployeeManagement() {
                     ಹಿಂಬದಿ (Back Page - Attendance QR)
                   </span>
                   <div>
-                    <OfficialStaffIDCard
-                      employee={selectedEmpForCard}
-                      showBack={true}
-                      showSeal={showSeal}
-                      showQrCode={showQrCode}
-                    />
+                    <OfficialStaffIDCard employee={selectedEmpForCard} showBack={true} showSeal={showSeal} showQrCode={showQrCode} orientation={cardOrientation} />
                   </div>
                 </div>
               )}

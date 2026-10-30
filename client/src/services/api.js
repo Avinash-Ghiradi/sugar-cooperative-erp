@@ -11,7 +11,7 @@ const STORAGE_KEY_SA = 'sugar_erp_clean_allotments_v3';
 const STORAGE_KEY_VT = 'sugar_erp_clean_varasa_v4';
 const STORAGE_KEY_VG = 'sugar_erp_clean_vargavane_v4';
 const STORAGE_KEY_ENROLLMENT = 'sugar_erp_clean_enrollment_v2';
-const STORAGE_KEY_EMP = 'sugar_erp_clean_emp_v3';
+const STORAGE_KEY_EMP = 'sugar_erp_clean_emp_v4';
 const STORAGE_KEY_LOGS = 'sugar_erp_clean_logs_v3';
 const STORAGE_KEY_MERGE_REQ = 'sugar_erp_clean_merge_requests_v1';
 
@@ -1363,156 +1363,14 @@ export const initialNewEnrollments = [
   }
 ];
 let mockEnrollments = loadStoredData(STORAGE_KEY_ENROLLMENT, []);
-const defaultMockEmployees = [
-  {
-    id: 1,
-    employee_id: 'EMP-001',
-    name: 'ಸಂಜೀವಕುಮಾರ ಎಸ್. ಪಾಟೀಲ',
-    name_english: 'Sanjeevkumar S. Patil',
-    designation: 'ಮುಖ್ಯ ಕಾರ್ಯನಿರ್ವಾಹಕ ಅಧಿಕಾರಿ (Managing Director)',
-    department: 'ಆಡಳಿತ ವಿಭಾಗ (Administration)',
-    mobile: '9845012301',
-    aadhaar_no: '2345 6789 0101',
-    blood_group: 'O+',
-    joining_date: '01/06/2012',
-    address: 'ಆಡಳಿತ ಮಂಡಳಿ ಕ್ವಾರ್ಟರ್ಸ್, ಮರಗೂರ ಕಾರ್ಖಾನೆ ಆವರಣ',
-    emergency_contact: 'ಸುರೇಶ ಪಾಟೀಲ - 9845099881',
-    epf_uan_no: 'UAN-100293847561',
-    salary_grade: 'Grade A - Executive',
-    photo_url: '',
-    status: 'Active'
-  },
-  {
-    id: 2,
-    employee_id: 'EMP-002',
-    name: 'ಮಲ್ಲಿಕಾರ್ಜುನ ಬಿ. ಹಿರೇಮಠ',
-    name_english: 'Mallikarjun B. Hiremath',
-    designation: 'ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿ (Chief Accounts Officer)',
-    department: 'ಲೆಕ್ಕಪತ್ರ ವಿಭಾಗ (Accounts & Finance)',
-    mobile: '9845012302',
-    aadhaar_no: '3456 7890 0202',
-    blood_group: 'B+',
-    joining_date: '15/08/2015',
-    address: 'ಸ್ಟಾಫ್ ಕಾಲೋನಿ, ಚಡಚಣ',
-    emergency_contact: 'ಬಸವರಾಜ ಹಿರೇಮಠ - 9845099882',
-    epf_uan_no: 'UAN-100293847562',
-    salary_grade: 'Grade A - Officer',
-    photo_url: '',
-    status: 'Active'
-  },
-  {
-    id: 3,
-    employee_id: 'EMP-003',
-    name: 'ಅಶೋಕ ಆರ್. ಬಿರಾದಾರ',
-    name_english: 'Ashok R. Biradar',
-    designation: 'ಕಬ್ಬು ಅಭಿವೃದ್ಧಿ & ಖರೀದಿ ಅಧಿಕಾರಿ (Cane Manager)',
-    department: 'ಕಬ್ಬು ವಿಭಾಗ (Cane Procurement)',
-    mobile: '9845012303',
-    aadhaar_no: '4567 8901 0303',
-    blood_group: 'A+',
-    joining_date: '10/11/2017',
-    address: 'ಕೃಷಿ ತೋಟ, ಬಳ್ಳೊಳ್ಳಿ',
-    emergency_contact: 'ರಮೇಶ ಬಿರಾದಾರ - 9845099883',
-    epf_uan_no: 'UAN-100293847563',
-    salary_grade: 'Grade B - Manager',
-    photo_url: '',
-    status: 'Active'
-  },
-  {
-    id: 4,
-    employee_id: 'EMP-004',
-    name: 'ಗುರುರಾಜ ಎನ್. ಕುಲಕರ್ಣಿ',
-    name_english: 'Gururaj N. Kulkarni',
-    designation: 'ಪ್ರಧಾನ ಇಂಜಿನಿಯರ್ (Chief Mechanical Engineer)',
-    department: 'ಇಂಜಿನಿಯರಿಂಗ್ ವಿಭಾಗ (Engineering & Milling)',
-    mobile: '9845012304',
-    aadhaar_no: '5678 9012 0404',
-    blood_group: 'AB+',
-    joining_date: '05/01/2018',
-    address: 'ಇಂಜಿನಿಯರ್ಸ್ ಬ್ಲಾಕ್, ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ಆವರಣ, ಮರಗೂರ',
-    emergency_contact: 'ಶ್ರೀಕಾಂತ್ ಕುಲಕರ್ಣಿ - 9845099884',
-    epf_uan_no: 'UAN-100293847564',
-    salary_grade: 'Grade B - Senior Engineer',
-    photo_url: '',
-    status: 'Active'
-  },
-  {
-    id: 5,
-    employee_id: 'EMP-005',
-    name: 'ಶಿವಾನಂದ ಎಂ. ದೇಸಾಯಿ',
-    name_english: 'Shivanand M. Desai',
-    designation: 'ಉತ್ಪಾದನಾ ಅಧೀಕ್ಷಕರು (Manufacturing Chemist)',
-    department: 'ಉತ್ಪಾದನೆ & ಸಂಸ್ಕರಣೆ (Production & Boiling)',
-    mobile: '9845012305',
-    aadhaar_no: '6789 0123 0505',
-    blood_group: 'O-',
-    joining_date: '20/07/2019',
-    address: 'ಮರಗೂರ ಗ್ರಾಮ, ತಾ: ಚಡಚಣ',
-    emergency_contact: 'ಮಹೇಶ ದೇಸಾಯಿ - 9845099885',
-    epf_uan_no: 'UAN-100293847565',
-    salary_grade: 'Grade B - Chemist',
-    photo_url: '',
-    status: 'Active'
-  },
-  {
-    id: 6,
-    employee_id: 'EMP-006',
-    name: 'ಅವಿನಾಶ ಎಸ್. ಗಿರಡ್ಡಿ',
-    name_english: 'Avinash S. Ghiradi',
-    designation: 'ಹಿರಿಯ ಕಂಪ್ಯೂಟರ್ ಸಿಸ್ಟಮ್ ಅಡ್ಮಿನ್ (Sr. System Administrator / ERP In-charge)',
-    department: 'ಐಟಿ & ಇಆರ್‌ಪಿ ವಿಭಾಗ (Information Technology)',
-    mobile: '9845012306',
-    aadhaar_no: '2356 9889 2656',
-    blood_group: 'B+',
-    joining_date: '12/03/2020',
-    address: 'ಕಂಪ್ಯೂಟರ್ ವಿಭಾಗ ಕ್ವಾರ್ಟರ್ಸ್, ಇಂಡಿ',
-    emergency_contact: 'ಶಾಂತಕುಮಾರ ಗಿರಡ್ಡಿ - 9845099886',
-    epf_uan_no: 'UAN-100293847566',
-    salary_grade: 'Grade B - Technical',
-    photo_url: '',
-    status: 'Active'
-  },
-  {
-    id: 7,
-    employee_id: 'EMP-007',
-    name: 'ಬಸವರಾಜ ಕೆ. ನಾವಿ',
-    name_english: 'Basavaraj K. Navi',
-    designation: 'ಹಿರಿಯ ಕಬ್ಬು ತಪಾಸಣಾಧಿಕಾರಿ (Senior Cane Inspector)',
-    department: 'ಕಬ್ಬು ವಿಭಾಗ (Cane Procurement)',
-    mobile: '9845012307',
-    aadhaar_no: '7890 1234 0707',
-    blood_group: 'A-',
-    joining_date: '18/09/2021',
-    address: 'ಅಥರ್ಗಾ ರಸ್ತೆ, ಇಂಡಿ',
-    emergency_contact: 'ಕಾಶಿನಾಥ ನಾವಿ - 9845099887',
-    epf_uan_no: 'UAN-100293847567',
-    salary_grade: 'Grade C - Inspector',
-    photo_url: '',
-    status: 'Active'
-  },
-  {
-    id: 8,
-    employee_id: 'EMP-008',
-    name: 'ಚಂದ್ರಕಾಂತ ಡಿ. ರಾಥೋಡ',
-    name_english: 'Chandrakant D. Rathod',
-    designation: 'ಮುಖ್ಯ ಭದ್ರತಾಧಿಕಾರಿ (Chief Security Officer)',
-    department: 'ಭದ್ರತೆ & ರಕ್ಷಣೆ (Security & Safety)',
-    mobile: '9845012308',
-    aadhaar_no: '8901 2345 0808',
-    blood_group: 'O+',
-    joining_date: '01/02/2022',
-    address: 'ಮೇನ್ ಗೇಟ್ ಸೆಕ್ಯುರಿಟಿ ಬ್ಲಾಕ್, ಮರಗೂರ',
-    emergency_contact: 'ಧರ್ಮಸಿಂಗ್ ರಾಥೋಡ - 9845099888',
-    epf_uan_no: 'UAN-100293847568',
-    salary_grade: 'Grade C - Security',
-    photo_url: '',
-    status: 'Active'
+let mockEmployees = loadStoredData(STORAGE_KEY_EMP, []);
+// Clean up any old mock records from older storage
+if (Array.isArray(mockEmployees) && mockEmployees.length > 0) {
+  const cleaned = mockEmployees.filter(e => !e.epf_uan_no?.startsWith('UAN-10029384756') && !e.name?.includes('ಸಂಜೀವಕುಮಾರ ಎಸ್. ಪಾಟೀಲ'));
+  if (cleaned.length !== mockEmployees.length) {
+    mockEmployees = cleaned;
+    saveStoredData(STORAGE_KEY_EMP, mockEmployees);
   }
-];
-let mockEmployees = loadStoredData(STORAGE_KEY_EMP, defaultMockEmployees);
-if (!mockEmployees || mockEmployees.length === 0) {
-  mockEmployees = defaultMockEmployees;
-  saveStoredData(STORAGE_KEY_EMP, mockEmployees);
 }
 let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
 let mockMergeRequests = loadStoredData(STORAGE_KEY_MERGE_REQ, []);
@@ -5584,16 +5442,16 @@ const newSh = {
       employee_id: assignedEmpId,
       name: data.name || '',
       name_english: data.name_english || data.name || '',
-      designation: data.designation || 'ಸಿಬ್ಬಂದಿ (Staff)',
-      department: data.department || 'ಆಡಳಿತ ವಿಭಾಗ (Administration)',
+      designation: data.designation || '',
+      department: data.department || '',
       mobile: data.mobile || data.mobile_no || '',
       aadhaar_no: data.aadhaar_no || '',
-      blood_group: data.blood_group || 'O+',
+      blood_group: data.blood_group || '',
       joining_date: data.joining_date || new Date().toISOString().split('T')[0],
       address: data.address || '',
       emergency_contact: data.emergency_contact || '',
       epf_uan_no: data.epf_uan_no || '',
-      salary_grade: data.salary_grade || 'Standard',
+      salary_grade: data.salary_grade || '',
       photo_url: data.photo_url || '',
       signature_url: data.signature_url || '',
       status: data.status || 'Active'

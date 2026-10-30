@@ -261,9 +261,10 @@ export default function AttendanceModule() {
         setAttendanceList(empRes.data.map(e => ({
           entity_id: e.employee_id,
           name: e.name,
-          department: e.department || e.designation,
-          status: 'Present',
-          time: '09:00 AM'
+          department: e.department || e.designation || '—',
+          status: 'Absent',
+          time: null,
+          photo_url: e.photo_url || null
         })));
       }
     }
@@ -510,41 +511,48 @@ export default function AttendanceModule() {
         </button>
       </div>
 
-      {/* Shareholder QR Attendance Scanner Banner */}
-      {recordType === 'Shareholder' && (
-        <div className="bg-gradient-to-r from-emerald-950/80 via-slate-950 to-emerald-950/70 border-2 border-emerald-500/60 rounded-2xl p-4 shadow-xl space-y-3">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                <QrCode className="w-5 h-5 animate-pulse" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
-                  <span>ID Card QR Code Attendance Scanner</span>
-                  <span className="text-[10px] bg-emerald-900/80 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-600">
-                    ಲೈವ್ ಸ್ಕ್ಯಾನರ್ ಸಕ್ರಿಯವಾಗಿದೆ
-                  </span>
-                </h3>
-                <p className="text-xs text-slate-400">
-                  ಶೇರುದಾರರ ಗುರುತಿನ ಚೀಟಿಯ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ ಷೇರು ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ (Auto Attendance Scan)
-                </p>
-              </div>
+      {/* QR Code Attendance Scanner Banner for both Shareholders & Employees */}
+      <div className="bg-gradient-to-r from-emerald-950/80 via-slate-950 to-emerald-950/70 border-2 border-emerald-500/60 rounded-2xl p-4 shadow-xl space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+              <QrCode className="w-5 h-5 animate-pulse" />
             </div>
-
-            {/* Attendance Quorum Stats */}
-            <div className="flex items-center gap-3 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
-              <div>
-                <span className="text-slate-400">ಹಾಜರಾದವರು: </span>
-                <strong className="text-emerald-400 font-mono">{presentMembers}</strong>
-                <span className="text-slate-500"> / {totalMembers}</span>
-              </div>
-              <span className="text-slate-600">|</span>
-              <div>
-                <span className="text-slate-400">ಕೋರಂ: </span>
-                <strong className={quorumPct >= 20 ? 'text-emerald-400' : 'text-amber-400'}>{quorumPct}%</strong>
-              </div>
+            <div>
+              <h3 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
+                <span>
+                  {recordType === 'Employee'
+                    ? 'Staff ID Card QR Code Attendance Scanner (ಸಿಬ್ಬಂದಿ ಹಾಜರಾತಿ QR ಸ್ಕ್ಯಾನರ್)'
+                    : 'ID Card QR Code Attendance Scanner (ಶೇರುದಾರರ ಹಾಜರಾತಿ QR ಸ್ಕ್ಯಾನರ್)'}
+                </span>
+                <span className="text-[10px] bg-emerald-900/80 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-600">
+                  {recordType === 'Employee' ? 'ಸಿಬ್ಬಂದಿ ಸ್ಕ್ಯಾನರ್ ಸಕ್ರಿಯವಾಗಿದೆ' : 'ಲೈವ್ ಸ್ಕ್ಯಾನರ್ ಸಕ್ರಿಯವಾಗಿದೆ'}
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                {recordType === 'Employee'
+                  ? 'ಸಿಬ್ಬಂದಿ ಗುರುತಿನ ಚೀಟಿಯ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ Emp ID ನಮೂದಿಸಿ (Auto Employee Attendance Scan)'
+                  : 'ಶೇರುದಾರರ ಗುರುತಿನ ಚೀಟಿಯ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ ಷೇರು ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ (Auto Attendance Scan)'}
+              </p>
             </div>
           </div>
+
+          {/* Attendance Stats */}
+          <div className="flex items-center gap-3 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+            <div>
+              <span className="text-slate-400">{recordType === 'Employee' ? 'ಹಾಜರಾದ ಸಿಬ್ಬಂದಿ: ' : 'ಹಾಜರಾದವರು: '}</span>
+              <strong className="text-emerald-400 font-mono">{presentMembers}</strong>
+              <span className="text-slate-500"> / {totalMembers}</span>
+            </div>
+            <span className="text-slate-600">|</span>
+            <div>
+              <span className="text-slate-400">{recordType === 'Employee' ? 'ಹಾಜರಾತಿ: ' : 'ಕೋರಂ: '}</span>
+              <strong className={quorumPct >= (recordType === 'Employee' ? 50 : 20) ? 'text-emerald-400' : 'text-amber-400'}>
+                {quorumPct}%
+              </strong>
+            </div>
+          </div>
+        </div>
 
           {/* Quick Scanner Input Bar with Camera Trigger */}
           <div className="flex flex-col sm:flex-row gap-2">
@@ -561,7 +569,7 @@ export default function AttendanceModule() {
                     handleProcessScan(scanInput.trim());
                   }
                 }}
-                placeholder="ಗುರುತಿನ ಚೀಟಿಯ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ ಷೇರು ನಂ ನಮೂದಿಸಿ (Press Enter)..."
+                placeholder={recordType === 'Employee' ? "ಸಿಬ್ಬಂದಿ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ Emp ID (EMP-001) ನಮೂದಿಸಿ (Press Enter)..." : "ಗುರುತಿನ ಚೀಟಿಯ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ ಷೇರು ನಂ ನಮೂದಿಸಿ (Press Enter)..."}
                 className="w-full bg-slate-900 border-2 border-emerald-500/50 focus:border-emerald-400 rounded-xl pl-9 pr-24 py-2.5 text-xs text-emerald-100 placeholder:text-slate-500 outline-none transition-all shadow-inner font-mono"
               />
               <button
@@ -696,7 +704,7 @@ export default function AttendanceModule() {
                       <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-300 to-transparent shadow-[0_0_8px_#34d399] animate-pulse"></div>
                     </div>
                     <span className="text-[10px] font-bold text-white bg-slate-950/90 px-3 py-1 rounded-full mt-2 border border-slate-700 shadow-md">
-                      ಗುರುತಿನ ಚೀಟಿಯ QR ಕೋಡ್ ಅನ್ನು ಚೌಕಟ್ಟಿನಲ್ಲಿ ಹಿಡಿಯಿರಿ
+                      {recordType === 'Employee' ? 'ಸಿಬ್ಬಂದಿ ID ಕಾರ್ಡ್‌ನ ಹಿಂಬದಿಯ QR ಕೋಡ್ ಅನ್ನು ಚೌಕಟ್ಟಿನಲ್ಲಿ ಹಿಡಿಯಿರಿ' : 'ಗುರುತಿನ ಚೀಟಿಯ QR ಕೋಡ್ ಅನ್ನು ಚೌಕಟ್ಟಿನಲ್ಲಿ ಹಿಡಿಯಿರಿ'}
                     </span>
                   </div>
                 </div>
@@ -717,10 +725,14 @@ export default function AttendanceModule() {
                 <div>
                   <div className="font-bold text-emerald-200 text-sm flex items-center gap-2">
                     <span>{lastScannedMember.name}</span>
-                    <span className="text-[11px] font-mono text-emerald-400">(ಷೇರು #{lastScannedMember.entity_id})</span>
+                    <span className="text-[11px] font-mono text-emerald-400">
+                      ({recordType === 'Employee' || String(lastScannedMember.entity_id).startsWith('EMP') ? `Emp ID: ${lastScannedMember.entity_id}` : `ಷೇರು #${lastScannedMember.entity_id}`})
+                    </span>
                   </div>
                   <div className="text-[11px] text-slate-300">
-                    ಸಾ॥ {lastScannedMember.department} • ಪುಸ್ತಕ: {lastScannedMember.book_no} • ಸಮಯ: {lastScannedMember.time}
+                    {recordType === 'Employee' || String(lastScannedMember.entity_id).startsWith('EMP')
+                      ? `ವಿಭಾಗ / ಹುದ್ದೆ: ${lastScannedMember.department} • ಸಮಯ: ${lastScannedMember.time}`
+                      : `ಸಾ॥ ${lastScannedMember.department} • ಪುಸ್ತಕ: ${lastScannedMember.book_no || '—'} • ಸಮಯ: ${lastScannedMember.time}`}
                   </div>
                 </div>
               </div>
@@ -730,8 +742,7 @@ export default function AttendanceModule() {
               </div>
             </div>
           )}
-        </div>
-      )}
+      </div>
 
       {/* Attendance Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
