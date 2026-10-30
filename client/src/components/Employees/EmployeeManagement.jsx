@@ -44,9 +44,11 @@ export default function EmployeeManagement() {
       return 'portrait';
     }
   }); // 'portrait' (ಲಂಬ - 54x85.6mm) or 'landscape' (ಅಡ್ಡ - 85.6x54mm)
-  const [printLayout, setPrintLayout] = useState('single'); // 'single', '4perPage', '8perPage'
+  const [printLayout, setPrintLayout] = useState('cr80'); // 'cr80' (CR80 PVC Plastic Card) or 'a4' (A4 Sheet with Cut & Fold Lines)
   const [showSeal, setShowSeal] = useState(true);
   const [showQrCode, setShowQrCode] = useState(true);
+  const [showCustomizerModal, setShowCustomizerModal] = useState(false);
+  const [staffCardSettings, setStaffCardSettings] = useState(getStaffIdCardSettings);
 
   // Form State - Clean Real Entry without hardcoded mock details
   const initialForm = {
@@ -88,6 +90,98 @@ export default function EmployeeManagement() {
       window.removeEventListener('employees_updated', handleUpdate);
     };
   }, []);
+
+  useEffect(() => {
+    syncStaffIdCardSettingsFromCloud().then(settings => {
+      if (settings) setStaffCardSettings(settings);
+    });
+    const handleSettingsUpdated = (e) => {
+      setStaffCardSettings(e.detail || getStaffIdCardSettings());
+    };
+    window.addEventListener('staff_id_card_settings_updated', handleSettingsUpdated);
+    return () => window.removeEventListener('staff_id_card_settings_updated', handleSettingsUpdated);
+  }, []);
+
+  // Dedicated Print Staff ID Card Trigger
+  const handlePrintStaffCard = () => {
+    document.body.classList.add('staff-id-card-printing');
+    const cleanup = () => {
+      document.body.classList.remove('staff-id-card-printing');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(() => {
+      window.print();
+    }, 120);
+  };
+
+  const handleUpdateSettingsField = (field, value) => {
+    setStaffCardSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = async (e, field) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      showToast('ಚಿತ್ರವನ್ನು ಸಂಸ್ಕರಿಸಲಾಗುತ್ತಿದೆ...', 'info');
+      const dataUrl = await compressBackgroundImage(file, 1200, 800, 0.9);
+      setStaffCardSettings(prev => {
+        const updated = { ...prev, [field]: dataUrl };
+        saveStaffIdCardSettings(updated);
+        return updated;
+      });
+      showToast('ಹಿನ್ನೆಲೆ ಚಿತ್ರವನ್ನು ಅಪ್ಲೋಡ್ ಮಾಡಲಾಗಿದೆ (Saved to Cloud DB)!', 'success');
+    } catch (err) {
+      showToast('ಅಪ್ಲೋಡ್ ವಿಫಲವಾಗಿದೆ: ' + err.message, 'error');
+    }
+  };
+
+  const handleMdSignatureUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      showToast('ಸಹಿಯ ಹಿನ್ನೆಲೆಯನ್ನು ಪಾರದರ್ಶಕಗೊಳಿಸಲಾಗುತ್ತಿದೆ...', 'info');
+      const dataUrl = await makeSignatureTransparent(file);
+      setStaffCardSettings(prev => {
+        const updated = { ...prev, customMdSignature: dataUrl };
+        saveStaffIdCardSettings(updated);
+        return updated;
+      });
+      showToast('MD ಸಹಿಯನ್ನು ಅಪ್ಲೋಡ್ ಮಾಡಲಾಗಿದೆ (Saved to Cloud DB)!', 'success');
+    } catch (err) {
+      showToast('ಸಹಿ ಅಪ್ಲೋಡ್ ವಿಫಲವಾಗಿದೆ: ' + err.message, 'error');
+    }
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await compressLogoImage(file, 400, 400);
+      setStaffCardSettings(prev => {
+        const updated = { ...prev, customLogo: dataUrl };
+        saveStaffIdCardSettings(updated);
+        return updated;
+      });
+      showToast('ಕಾರ್ಖಾನೆಯ ಲೋಗೋ ಅಪ್ಲೋಡ್ ಮಾಡಲಾಗಿದೆ (Saved to Cloud DB)!', 'success');
+    } catch (err) {
+      showToast('ಲೋಗೋ ಅಪ್ಲೋಡ್ ವಿಫಲವಾಗಿದೆ: ' + err.message, 'error');
+    }
+  };
+
+  const handleSaveAndCloseCustomizer = () => {
+    saveStaffIdCardSettings(staffCardSettings);
+    showToast('ಹಿನ್ನೆಲೆ ಮತ್ತು ವಿನ್ಯಾಸವನ್ನು ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್‌ಗೆ ಉಳಿಸಲಾಗಿದೆ (Saved to Cloud DB for all browsers)!', 'success');
+    setShowCustomizerModal(false);
+  };
+
+  const handleResetAllSettings = () => {
+    if (window.confirm('ಎಲ್ಲಾ ಕಸ್ಟಮ್ ಹಿನ್ನೆಲೆ, ಸಹಿ ಮತ್ತು ಲೋಗೋ ಮರುಹೊಂದಿಸಲು ಖಚಿತಪಡಿಸಿ?')) {
+      resetStaffIdCardSettings();
+      setStaffCardSettings(getStaffIdCardSettings());
+      showToast('ಡೀಫಾಲ್ಟ್ ವಿನ್ಯಾಸಕ್ಕೆ ಮರುಹೊಂದಿಸಲಾಗಿದೆ', 'info');
+    }
+  };
 
   const loadEmployees = async () => {
     setLoading(true);
@@ -1018,6 +1112,41 @@ export default function EmployeeManagement() {
                   ಸೀಲ್: {showSeal ? 'ON' : 'OFF'}
                 </button>
 
+                {/* Print Layout Format Toggle: CR80 PVC Card vs A4 Sheet */}
+                <div className="flex bg-slate-900 p-0.5 rounded-xl border border-slate-800 text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setPrintLayout('cr80')}
+                    className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                      printLayout === 'cr80' ? 'bg-emerald-600 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title="Standard CR80 PVC Plastic Card (54x85.6mm / 85.6x54mm)"
+                  >
+                    <span>🪪 CR80 ಕಾರ್ಡ್ (PVC)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrintLayout('a4')}
+                    className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                      printLayout === 'a4' ? 'bg-teal-600 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title="A4 Paper Sheet with Cut and Fold Guides"
+                  >
+                    <span>📄 A4 ಶೀಟ್ (Cut & Fold)</span>
+                  </button>
+                </div>
+
+                {/* Backgrounds & Design Customizer Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowCustomizerModal(true)}
+                  className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all"
+                  title="Upload Custom Front / Back Backgrounds, Logo, and MD Signature"
+                >
+                  <Palette className="w-4 h-4" />
+                  <span>🎨 ಹಿನ್ನೆಲೆ & ವಿನ್ಯಾಸ (Design)</span>
+                </button>
+
                 {/* QR Toggle */}
                 <button
                   onClick={() => setShowQrCode(!showQrCode)}
@@ -1028,13 +1157,13 @@ export default function EmployeeManagement() {
                   ಹಾಜರಾತಿ QR: {showQrCode ? 'ON' : 'OFF'}
                 </button>
 
-                {/* Print Button */}
+                {/* Print Button - Uses dedicated Print Portal */}
                 <button
-                  onClick={() => window.print()}
-                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer"
+                  onClick={handlePrintStaffCard}
+                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer transition-all"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>ಪ್ರಿಂಟ್ ಮಾಡಿ (Print)</span>
+                  <span>ಪ್ರಿಂಟ್ ಮಾಡಿ (Print ID Card)</span>
                 </button>
 
                 {/* Close Button */}
