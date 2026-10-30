@@ -34,6 +34,7 @@ export default function AttendanceModule() {
   const [cameraError, setCameraError] = useState('');
   const [availableCameras, setAvailableCameras] = useState([]);
   const [selectedCameraId, setSelectedCameraId] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const html5QrCodeRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -51,8 +52,52 @@ export default function AttendanceModule() {
       setCameraError('');
       setIsCameraActive(false);
 
-      const initCamera = async () => {
+      const startScanner = async () => {
         try {
+          // 1. Detect if running on mobile device
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+          // 2. Query available camera devices (triggers permission / retrieves device IDs)
+          let devices = [];
+          try {
+            devices = await Html5Qrcode.getCameras();
+            if (!isCancelled && devices && devices.length > 0) {
+              setAvailableCameras(devices);
+            }
+          } catch (camErr) {
+            console.warn('Could not enumerate cameras upfront:', camErr);
+          }
+
+          if (isCancelled) return;
+
+          // 3. Determine camera target:
+          // Html5Qrcode.createVideoConstraints accepts EITHER a string deviceId
+          // OR an object with EXACTLY 1 key: { facingMode: 'user' } or { facingMode: 'environment' }
+          let cameraTarget;
+          if (selectedCameraId) {
+            cameraTarget = selectedCameraId;
+          } else if (devices && devices.length > 0) {
+            if (isMobile) {
+              const backCam = devices.find(d => /back|rear|environment/i.test(d.label));
+              cameraTarget = backCam ? backCam.id : devices[0].id;
+            } else {
+              cameraTarget = devices[0].id; // On desktop/laptop, use the real detected webcam ID
+            }
+          } else {
+            cameraTarget = isMobile ? { facingMode: 'environment' } : { facingMode: 'user' };
+          }
+
+          // 4. Ensure DOM container #qr-camera-reader is ready
+          const readerElem = document.getElementById('qr-camera-reader');
+          if (!readerElem) {
+            console.warn('#qr-camera-reader element not found in DOM');
+            return;
+          }
+
+          // Clear any previous child nodes to guarantee clean state
+          try { readerElem.innerHTML = ''; } catch (e) {}
+
+          // 5. Create fresh scanner instance
           const scanner = new Html5Qrcode('qr-camera-reader', {
             formatsToSupport: [
               Html5QrcodeSupportedFormats.QR_CODE,
@@ -67,62 +112,41 @@ export default function AttendanceModule() {
           html5QrCodeRef.current = scanner;
           qrScanner = scanner;
 
-          // Full-frame scanning without restrictive qrbox crop for instant detection anywhere in frame!
+          // 6. Full-frame scanning without restrictive qrbox crop
           const scanConfig = {
             fps: 15,
             disableFlip: false
           };
 
-          const cameraTarget = selectedCameraId
-            ? selectedCameraId
-            : {
-                facingMode: 'environment',
-                width: { min: 640, ideal: 1280, max: 1920 },
-                height: { min: 480, ideal: 720, max: 1080 }
-              };
-
-          try {
-            await scanner.start(
-              cameraTarget,
-              scanConfig,
-              (decodedText) => {
-                handleProcessScan(decodedText);
-              },
-              () => {}
-            );
-          } catch (firstErr) {
-            console.warn('Environment rear camera failed, retrying with default/user camera:', firstErr);
-            // Fallback for laptops or desktop computers without rear environment camera
-            await scanner.start(
-              { facingMode: 'user' },
-              scanConfig,
-              (decodedText) => {
-                handleProcessScan(decodedText);
-              },
-              () => {}
-            );
-          }
+          await scanner.start(
+            cameraTarget,
+            scanConfig,
+            (decodedText) => {
+              handleProcessScan(decodedText);
+            },
+            () => {}
+          );
 
           if (!isCancelled) {
             setIsCameraActive(true);
-            // Query available cameras now that permission has been granted
-            try {
-              const devices = await Html5Qrcode.getCameras();
-              if (!isCancelled && devices && devices.length > 0) {
-                setAvailableCameras(devices);
-              }
-            } catch (e) {}
+            setCameraError('');
           }
         } catch (err) {
           if (!isCancelled) {
             console.error('Camera startup error:', err);
-            setCameraError(`ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಅನುಮತಿ ನೀಡಿ (Camera permission required): ${err.message || err}. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್ಸ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ Allow ಮಾಡಿ.`);
+            const errStr = String(err?.message || err || '');
+            if (errStr.includes('Permission') || errStr.includes('NotAllowedError')) {
+              setCameraError('ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಅನುಮತಿ ನೀಡಿ (Permission required). ಬ್ರೌಸರ್ URL ಬಾರ್‌ನಲ್ಲಿ 🔒 ಐಕಾನ್ ಕ್ಲಿಕ್ ಮಾಡಿ Camera Allow ಮಾಡಿ.');
+            } else if (errStr.includes('NotFound') || errStr.includes('DevicesNotFoundError')) {
+              setCameraError('ಯಾವುದೇ ಕ್ಯಾಮೆರಾ ಪತ್ತೆಯಾಗಿಲ್ಲ. ವೆಬ್‌ಕ್ಯಾಮ್ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ.');
+            } else {
+              setCameraError(`ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ: ${errStr}`);
+            }
           }
         }
       };
 
-      // Slight timeout to ensure DOM container #qr-camera-reader is fully rendered
-      const timer = setTimeout(initCamera, 120);
+      const timer = setTimeout(startScanner, 120);
 
       return () => {
         isCancelled = true;
@@ -130,9 +154,11 @@ export default function AttendanceModule() {
         if (qrScanner) {
           try {
             if (qrScanner.isScanning) {
-              qrScanner.stop().then(() => qrScanner.clear()).catch(() => {});
+              qrScanner.stop().then(() => {
+                try { qrScanner.clear(); } catch (e) {}
+              }).catch(() => {});
             } else {
-              qrScanner.clear();
+              try { qrScanner.clear(); } catch (e) {}
             }
           } catch (e) {}
         }
@@ -143,14 +169,18 @@ export default function AttendanceModule() {
       if (html5QrCodeRef.current) {
         try {
           if (html5QrCodeRef.current.isScanning) {
-            html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear()).catch(() => {});
+            html5QrCodeRef.current.stop().then(() => {
+              try { html5QrCodeRef.current.clear(); } catch (e) {}
+            }).catch(() => {});
+          } else {
+            try { html5QrCodeRef.current.clear(); } catch (e) {}
           }
         } catch (e) {}
         html5QrCodeRef.current = null;
       }
       setIsCameraActive(false);
     }
-  }, [cameraOpen, selectedCameraId]);
+  }, [cameraOpen, selectedCameraId, retryCount]);
 
   // Handle Photo File Upload QR Scanning
   const handleFileUploadScan = async (e) => {
@@ -568,21 +598,36 @@ export default function AttendanceModule() {
                 </div>
               </div>
 
-              {cameraError ? (
-                <div className="p-4 bg-rose-950/80 border border-rose-600 text-rose-200 text-xs rounded-xl flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <div className="font-bold">ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ (Camera Error):</div>
-                    <p className="text-[11px] text-rose-300">{cameraError}</p>
-                    <p className="text-[10px] text-slate-400">
-                      • ಬ್ರೌಸರ್ URL ಬಾರ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಐಕಾನ್ (🔒 / 🎥) ಕ್ಲಿಕ್ ಮಾಡಿ <strong>Allow (ಅನುಮತಿಸಿ)</strong> ಆಯ್ಕೆಮಾಡಿ.
-                    </p>
+              {cameraError && (
+                <div className="p-3.5 bg-rose-950/80 border border-rose-600 text-rose-200 text-xs rounded-xl flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div className="font-bold">ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ (Camera Error):</div>
+                      <p className="text-[11px] text-rose-300">{cameraError}</p>
+                      <p className="text-[10px] text-slate-400">
+                        • ಬ್ರೌಸರ್ URL ಬಾರ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಐಕಾನ್ (🔒 / 🎥) ಕ್ಲಿಕ್ ಮಾಡಿ <strong>Allow (ಅನುಮತಿಸಿ)</strong> ಆಯ್ಕೆಮಾಡಿ.
+                      </p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCameraError('');
+                      setRetryCount(c => c + 1);
+                    }}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow shrink-0 cursor-pointer flex items-center gap-1.5"
+                    title="Retry camera initialization"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ</span>
+                  </button>
                 </div>
-              ) : (
-                <div className="relative max-w-sm mx-auto overflow-hidden rounded-xl border-2 border-emerald-500/70 shadow-2xl bg-black">
-                  {/* Html5Qrcode video renders inside this element */}
-                  <div id="qr-camera-reader" className="w-full min-h-[260px] bg-black flex items-center justify-center text-slate-500 text-xs [&>video]:w-full [&>video]:max-h-[340px] [&>video]:object-contain" />
+              )}
+
+              <div className="relative max-w-sm mx-auto overflow-hidden rounded-xl border-2 border-emerald-500/70 shadow-2xl bg-black">
+                {/* Html5Qrcode video renders inside this element */}
+                <div id="qr-camera-reader" className="w-full min-h-[260px] bg-black flex items-center justify-center text-slate-500 text-xs [&>video]:w-full [&>video]:max-h-[340px] [&>video]:object-contain" />
 
                   {/* Aiming Reticle with Animated Laser Scanner Line */}
                   <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
@@ -600,7 +645,6 @@ export default function AttendanceModule() {
                     </span>
                   </div>
                 </div>
-              )}
             </div>
           )}
 
