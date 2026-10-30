@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {
   CalendarCheck, Search, CheckCircle2, XCircle, Clock, Save, RefreshCw,
   QrCode, UserCheck, Users, FileSpreadsheet, Sparkles, Filter, Check, ArrowRight,
@@ -53,41 +53,49 @@ export default function AttendanceModule() {
 
       const initCamera = async () => {
         try {
-          const scanner = new Html5Qrcode('qr-camera-reader');
+          const scanner = new Html5Qrcode('qr-camera-reader', {
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.QR_CODE,
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39
+            ],
+            verbose: false,
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true
+            }
+          });
           html5QrCodeRef.current = scanner;
           qrScanner = scanner;
 
-          const qrBoxFunction = (viewfinderWidth, viewfinderHeight) => {
-            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            const edgeSize = Math.max(160, Math.floor(minEdge * 0.72));
-            return { width: edgeSize, height: edgeSize };
+          // Full-frame scanning without restrictive qrbox crop for instant detection anywhere in frame!
+          const scanConfig = {
+            fps: 15,
+            disableFlip: false
           };
 
-          // On mobile phones, request the rear camera via facingMode: 'environment' directly!
-          // Never call getCameras() before starting on mobile, because mobile browsers throw without prior user gesture!
-          const cameraTarget = selectedCameraId ? selectedCameraId : { facingMode: 'environment' };
+          const cameraTarget = selectedCameraId
+            ? selectedCameraId
+            : {
+                facingMode: 'environment',
+                width: { min: 640, ideal: 1280, max: 1920 },
+                height: { min: 480, ideal: 720, max: 1080 }
+              };
 
           try {
             await scanner.start(
               cameraTarget,
-              {
-                fps: 15,
-                qrbox: qrBoxFunction
-              },
+              scanConfig,
               (decodedText) => {
                 handleProcessScan(decodedText);
               },
               () => {}
             );
           } catch (firstErr) {
-            console.warn('Environment rear camera failed, retrying with default user camera:', firstErr);
+            console.warn('Environment rear camera failed, retrying with default/user camera:', firstErr);
             // Fallback for laptops or desktop computers without rear environment camera
             await scanner.start(
               { facingMode: 'user' },
-              {
-                fps: 15,
-                qrbox: qrBoxFunction
-              },
+              scanConfig,
               (decodedText) => {
                 handleProcessScan(decodedText);
               },
@@ -108,7 +116,7 @@ export default function AttendanceModule() {
         } catch (err) {
           if (!isCancelled) {
             console.error('Camera startup error:', err);
-            setCameraError(`ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಅನುಮತಿ ನೀಡಿ (Camera permission required): ${err.message || err}. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್ಸ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ Allow ಮಾಡಿ ಅಥವಾ ಕೆಳಗಿನ '📸 ಮೊಬೈಲ್ ಕ್ಯಾಮೆರಾ' ಬಟನ್ ಬಳಸಿ.`);
+            setCameraError(`ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಅನುಮತಿ ನೀಡಿ (Camera permission required): ${err.message || err}. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್ಸ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ Allow ಮಾಡಿ.`);
           }
         }
       };
@@ -224,28 +232,49 @@ export default function AttendanceModule() {
     setLoading(false);
   };
 
+  // Refs for debounce & anti-spam scanning
+  const lastScanTimeRef = useRef(0);
+  const lastScannedCodeRef = useRef('');
+
   // Extract share number from raw text, QR URL or JSON
   const extractShareNo = (raw) => {
     if (!raw) return '';
     const text = String(raw).trim();
-    const urlMatch = text.match(/[?&](?:attn|share_no|share)=(\d+)/i);
+    // 1. URL parameter format (e.g. ?attn=3652, ?share_no=3652, ?share=3652, ?id=3652)
+    const urlMatch = text.match(/[?&](?:attn|share_no|share|id)=(\d+)/i);
     if (urlMatch) return urlMatch[1];
+    // 2. JSON format (e.g. {"share_no": 3652})
     if (text.startsWith('{') && text.endsWith('}')) {
       try {
         const obj = JSON.parse(text);
         if (obj.share_no) return String(obj.share_no).replace(/\D/g, '');
+        if (obj.attn) return String(obj.attn).replace(/\D/g, '');
       } catch (e) {}
     }
-    const prefixMatch = text.match(/(?:BSSKN|ATTN|SHARE)[:\-\s]*(\d+)/i);
+    // 3. Prefix format (e.g. BSSKN-3652, ATTN: 3652, SHARE #3652)
+    const prefixMatch = text.match(/(?:BSSKN|ATTN|SHARE|MEMBER)[:\-\s#]*(\d+)/i);
     if (prefixMatch) return prefixMatch[1];
+    // 4. Raw digits
     return text.replace(/\D/g, '');
   };
 
   // Process a QR Scan or manual entry
   const handleProcessScan = async (rawCode) => {
     const targetNo = extractShareNo(rawCode);
-    if (!targetNo) return;
+    if (!targetNo) {
+      showToast('⚠️ ಅಮಾನ್ಯ QR ಕೋಡ್ / ಷೇರು ನಂಬರ್ (Invalid QR Code / Share No)', 'error');
+      return;
+    }
 
+    // Cooldown check: prevent 15 duplicate rapid fires on the same card within 2.5s
+    const now = Date.now();
+    if (lastScannedCodeRef.current === targetNo && (now - lastScanTimeRef.current) < 2500) {
+      return;
+    }
+    lastScannedCodeRef.current = targetNo;
+    lastScanTimeRef.current = now;
+
+    setScanInput('');
     const currentTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     let foundIdx = attendanceList.findIndex(item => String(item.entity_id).trim() === targetNo);
@@ -268,35 +297,47 @@ export default function AttendanceModule() {
       playBeep();
       showToast(`✅ ಷೇರು #${updatedItem.entity_id} - ${updatedItem.name} ಹಾಜರಾತಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ!`, 'success');
     } else {
-      // Fetch shareholder directly if not on page 1
+      // Fetch shareholder directly (exact share_no lookup across all 17,076 members)
       try {
-        const sRes = await ApiService.getShareholders({ search: targetNo, page: 1, limit: 1 });
-        if (sRes && sRes.data && sRes.data.length > 0) {
-          const s = sRes.data[0];
+        let match = null;
+        // 1. Direct lookup by Share No
+        const singleRes = await ApiService.getShareholderById(targetNo);
+        if (singleRes && singleRes.success && singleRes.shareholder) {
+          match = singleRes.shareholder;
+        }
+
+        // 2. Fallback search query
+        if (!match) {
+          const sRes = await ApiService.getShareholders({ search: targetNo, page: 1, limit: 10 });
+          if (sRes && sRes.data && sRes.data.length > 0) {
+            match = sRes.data.find(s => String(s.share_no || s.share_number || '').trim() === targetNo) || sRes.data[0];
+          }
+        }
+
+        if (match) {
           const newItem = {
-            entity_id: s.share_no || s.share_number || targetNo,
-            name: s.shareholder_name || s.name || 'Member',
-            department: s.place || s.village_name || '—',
-            book_no: s.book_no || '—',
+            entity_id: match.share_no || match.share_number || targetNo,
+            name: match.shareholder_name || match.name || 'Member',
+            department: match.place || match.village_name || '—',
+            book_no: match.book_no || '—',
             status: 'Present',
             time: currentTime,
-            photo_url: s.photo_url || null,
-            shares: s.number_of_shares || 1
+            photo_url: match.photo_url || null,
+            shares: match.number_of_shares || 1
           };
 
-          setAttendanceList(prev => [newItem, ...prev]);
+          setAttendanceList(prev => [newItem, ...prev.filter(item => String(item.entity_id).trim() !== targetNo)]);
           setLastScannedMember(newItem);
           playBeep();
           showToast(`✅ ಷೇರು #${newItem.entity_id} - ${newItem.name} ಹಾಜರಾತಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ!`, 'success');
         } else {
-          showToast(`⚠️ ಷೇರು ಸಂಖ್ಯೆ #${targetNo} ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಕಂಡುಬಂದಿಲ್ಲ (Not found).`, 'error');
+          showToast(`⚠️ ಷೇರು #${targetNo} ವ್ಯವಸ್ಥೆಯಲ್ಲಿ ಕಂಡುಬಂದಿಲ್ಲ.`, 'error');
         }
       } catch (err) {
-        showToast(`⚠️ ಸ್ಕ್ಯಾನ್ ದೋಷ: ${err.message}`, 'error');
+        showToast(`⚠️ ಷೇರು #${targetNo} ಹಾಜರಾತಿ ದೋಷ: ${err.message}`, 'error');
       }
     }
 
-    setScanInput('');
     if (scanInputRef.current) scanInputRef.current.focus();
   };
 
@@ -541,7 +582,7 @@ export default function AttendanceModule() {
               ) : (
                 <div className="relative max-w-sm mx-auto overflow-hidden rounded-xl border-2 border-emerald-500/70 shadow-2xl bg-black">
                   {/* Html5Qrcode video renders inside this element */}
-                  <div id="qr-camera-reader" className="w-full h-64 bg-black flex items-center justify-center text-slate-500 text-xs [&>video]:w-full [&>video]:h-full [&>video]:object-cover" />
+                  <div id="qr-camera-reader" className="w-full min-h-[260px] bg-black flex items-center justify-center text-slate-500 text-xs [&>video]:w-full [&>video]:max-h-[340px] [&>video]:object-contain" />
 
                   {/* Aiming Reticle with Animated Laser Scanner Line */}
                   <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">

@@ -9,11 +9,10 @@ const qrDataUrlCache = new Map();
 
 export function getShareholderQRPayload(sh) {
   const shareNo = String(sh?.share_no || sh?.share_number || '').trim();
-  const name = String(sh?.shareholder_name || sh?.name || '').trim();
-  const book = String(sh?.book_no || '').trim();
-  const place = String(sh?.place || sh?.village_name || '').trim();
-  // Standard format for Attendance scanning: URL readable by phones and 2D barcode scanners
-  return `https://avinash-ghiradi.github.io/sugar-cooperative-erp/?attendance=true&share_no=${encodeURIComponent(shareNo)}&name=${encodeURIComponent(name)}&place=${encodeURIComponent(place)}&book=${encodeURIComponent(book)}`;
+  // Clean, high-speed, compact URL format: 100% compatible with smartphone cameras,
+  // 2D handheld USB scanners, and the in-app camera scanner.
+  // Version 4 (33x33 modules) instead of dense Version 13 (69x69 modules).
+  return `https://avinash-ghiradi.github.io/sugar-cooperative-erp/?attn=${encodeURIComponent(shareNo)}`;
 }
 
 export function ShareholderAttendanceQR({ shareholder, size = 36, className = '' }) {
@@ -30,11 +29,11 @@ export function ShareholderAttendanceQR({ shareholder, size = 36, className = ''
     }
     const payload = getShareholderQRPayload(sh);
     QRCode.toDataURL(payload, {
-      margin: 0,
-      width: size * 3, // Ultra-high resolution crispness for scanning
-      errorCorrectionLevel: 'M',
+      margin: 1, // Standard mandatory quiet zone for instant finder pattern recognition
+      width: Math.max(256, size * 4), // High-DPI crisp rendering
+      errorCorrectionLevel: 'M', // 15% error recovery
       color: {
-        dark: '#064e3b', // Deep emerald matching cooperative card
+        dark: '#000000', // Pure optical black for maximum 21:1 contrast
         light: '#ffffff'
       }
     }).then(url => {
@@ -634,8 +633,8 @@ export default function OfficialShareholderIDCard({
                 {/* Center: Official Attendance QR Code for General Meetings & Voting */}
                 {effectiveShowQrCode && (
                   <div className="flex flex-col items-center justify-center shrink-0 mx-1 mb-0.5" title="ಹಾಜರಾತಿ ಕ್ಯೂಆರ್ ಕೋಡ್ (Attendance QR Code)">
-                    <div className="p-0.5 bg-white border border-[#166534]/70 rounded shadow-sm flex items-center justify-center">
-                      <ShareholderAttendanceQR shareholder={sh} size={33} />
+                    <div className="p-0.5 bg-white border border-slate-900 rounded shadow-sm flex items-center justify-center">
+                      <ShareholderAttendanceQR shareholder={sh} size={38} />
                     </div>
                     <span className="text-[6.5px] font-black text-[#14532d] tracking-tight leading-none mt-0.5 uppercase whitespace-nowrap">
                       ಹಾಜರಾತಿ QR
@@ -709,7 +708,7 @@ export default function OfficialShareholderIDCard({
 
                 {/* Right Side: LARGE PROMINENT ATTENDANCE QR CODE */}
                 {effectiveShowQrCode && (
-                  <div className="w-[98px] shrink-0 flex flex-col items-center justify-between p-1 bg-white rounded-lg border-2 border-emerald-700 shadow-md">
+                  <div className="w-[108px] shrink-0 flex flex-col items-center justify-between p-1.5 bg-white rounded-xl border-2 border-emerald-800 shadow-lg">
                     {/* Top QR Label */}
                     <div className="text-[8px] font-black text-emerald-950 uppercase tracking-tight text-center leading-none">
                       ಹಾಜರಾತಿ QR
@@ -717,7 +716,7 @@ export default function OfficialShareholderIDCard({
 
                     {/* LARGE 70px HIGH-RESOLUTION QR CODE */}
                     <div className="my-0.5 p-0.5 bg-white flex items-center justify-center">
-                      <ShareholderAttendanceQR shareholder={sh} size={70} />
+                      <ShareholderAttendanceQR shareholder={sh} size={82} />
                     </div>
 
                     {/* Bottom Share Details */}
