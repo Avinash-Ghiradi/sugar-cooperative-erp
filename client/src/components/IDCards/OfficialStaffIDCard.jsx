@@ -2,14 +2,98 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { getCompanyLogo } from '../../services/organizationService';
 import { OfficialSocietySeal } from './OfficialShareholderIDCard';
+import { CloudDbService } from '../../services/cloudDb';
 import { Heart, Phone, Shield, User, Briefcase, Calendar, Award } from 'lucide-react';
 
 const staffQrDataUrlCache = new Map();
+
+export const STORAGE_KEY_STAFF_ID_SETTINGS = 'sugar_erp_staff_id_card_settings';
 
 export function getStaffQRPayload(emp) {
   const empId = String(emp?.employee_id || emp?.id || '').trim();
   // Clean, high-speed, compact URL format for phone cameras, handheld 2D scanners, and attendance app
   return `https://avinash-ghiradi.github.io/sugar-cooperative-erp/?emp_attn=${encodeURIComponent(empId)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Staff ID Card Customization Settings & Cloud Database Synchronization
+// ---------------------------------------------------------------------------
+export function getStaffIdCardSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_STAFF_ID_SETTINGS);
+    return raw ? JSON.parse(raw) : {
+      customLogo: '',
+      customFrontBackground: '',
+      customBackBackground: '',
+      customMdSignature: '',
+      backgroundOpacity: 1
+    };
+  } catch (e) {
+    return {
+      customLogo: '',
+      customFrontBackground: '',
+      customBackBackground: '',
+      customMdSignature: '',
+      backgroundOpacity: 1
+    };
+  }
+}
+
+export function saveStaffIdCardSettings(settings) {
+  try {
+    localStorage.setItem(STORAGE_KEY_STAFF_ID_SETTINGS, JSON.stringify(settings));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('staff_id_card_settings_updated', { detail: settings }));
+    }
+  } catch (e) {
+    console.warn('LocalStorage save failed:', e);
+  }
+
+  // Sync to Supabase Cloud DB for global synchronization across all factory browsers/devices
+  try {
+    CloudDbService.saveCollectionItem('staff_id_card_settings', 'active_settings', {
+      ...settings,
+      updated_at: new Date().toISOString()
+    }).catch(err => console.warn('Cloud save staff_id_card_settings failed:', err));
+  } catch (err) {}
+}
+
+export function resetStaffIdCardSettings() {
+  try {
+    localStorage.removeItem(STORAGE_KEY_STAFF_ID_SETTINGS);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('staff_id_card_settings_updated', { detail: null }));
+    }
+  } catch (e) {}
+
+  try {
+    CloudDbService.deleteCollectionItem('staff_id_card_settings', 'active_settings')
+      .catch(err => console.warn('Cloud delete staff_id_card_settings failed:', err));
+  } catch (err) {}
+}
+
+export async function syncStaffIdCardSettingsFromCloud() {
+  try {
+    const cloudRecords = await CloudDbService.getCollection('staff_id_card_settings');
+    const cloudConfig = cloudRecords && cloudRecords.length > 0 ? cloudRecords[0] : null;
+    if (cloudConfig) {
+      const cleanSettings = {
+        customLogo: cloudConfig.customLogo || '',
+        customFrontBackground: cloudConfig.customFrontBackground || '',
+        customBackBackground: cloudConfig.customBackBackground || '',
+        customMdSignature: cloudConfig.customMdSignature || '',
+        backgroundOpacity: cloudConfig.backgroundOpacity !== undefined ? Number(cloudConfig.backgroundOpacity) : 1
+      };
+      localStorage.setItem(STORAGE_KEY_STAFF_ID_SETTINGS, JSON.stringify(cleanSettings));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('staff_id_card_settings_updated', { detail: cleanSettings }));
+      }
+      return cleanSettings;
+    }
+  } catch (err) {
+    console.warn('syncStaffIdCardSettingsFromCloud error:', err);
+  }
+  return getStaffIdCardSettings();
 }
 
 export function StaffAttendanceQR({ employee, size = 96, className = '' }) {
@@ -68,8 +152,11 @@ export default function OfficialStaffIDCard({
   showSeal = true,
   showQrCode = true,
   orientation = 'portrait', // 'portrait' (ಲಂಬ - 54x85.6mm) or 'landscape' (ಅಡ್ಡ - 85.6x54mm)
-  customLogo = '',
-  customMdSignature = '',
+  customLogo,
+  customMdSignature,
+  customFrontBackground,
+  customBackBackground,
+  backgroundOpacity,
   className = ''
 }) {
   const emp = employee || {};
@@ -86,12 +173,32 @@ export default function OfficialStaffIDCard({
   const address = emp.address || '—';
   const epfUan = emp.epf_uan_no || '—';
 
+  // Global settings state with real-time broadcast listener
+  const [globalSettings, setGlobalSettings] = useState(getStaffIdCardSettings);
+
+  useEffect(() => {
+    const handleSettingsUpdated = (e) => {
+      setGlobalSettings(e.detail || getStaffIdCardSettings());
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('staff_id_card_settings_updated', handleSettingsUpdated);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('staff_id_card_settings_updated', handleSettingsUpdated);
+      }
+    };
+  }, []);
+
   const kannadaFontStyle = {
     fontFamily: "'Noto Sans Kannada', 'Tunga', 'Kaveri', 'Segoe UI', Arial, sans-serif"
   };
 
-  const effectiveLogo = customLogo || getCompanyLogo();
-  const effectiveMdSig = customMdSignature || './id_assets/md_signature_transparent.png';
+  const effectiveLogo = (customLogo !== undefined && customLogo !== '') ? customLogo : (globalSettings.customLogo || getCompanyLogo());
+  const effectiveMdSig = (customMdSignature !== undefined && customMdSignature !== '') ? customMdSignature : (globalSettings.customMdSignature || './id_assets/md_signature_transparent.png');
+  const effectiveFrontBg = (customFrontBackground !== undefined) ? customFrontBackground : (globalSettings.customFrontBackground || '');
+  const effectiveBackBg = (customBackBackground !== undefined) ? customBackBackground : (globalSettings.customBackBackground || '');
+  const effectiveBgOpacity = (backgroundOpacity !== undefined) ? Number(backgroundOpacity) : (globalSettings.backgroundOpacity !== undefined ? Number(globalSettings.backgroundOpacity) : 1);
 
   const isPortrait = orientation === 'portrait';
 
@@ -104,9 +211,19 @@ export default function OfficialStaffIDCard({
         <div className="w-[232px] h-[372px] rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-700 bg-white relative flex flex-col justify-between font-sans print:shadow-none print:border-slate-500">
           {!showBack ? (
             /* ----- PORTRAIT FRONT VIEW ----- */
-            <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900">
+            <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900 overflow-hidden">
+              {/* Custom Uploaded Background for Front Page (if provided) */}
+              {effectiveFrontBg && (
+                <img
+                  src={effectiveFrontBg}
+                  alt="Staff Front Background"
+                  className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+                  style={{ opacity: effectiveBgOpacity }}
+                />
+              )}
+
               {/* Top Corporate Header */}
-              <div className="bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-950 text-white px-2 py-1.5 flex flex-col items-center justify-center border-b-2 border-amber-500 shrink-0 text-center relative shadow-sm">
+              <div className="bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-950 text-white px-2 py-1.5 flex flex-col items-center justify-center border-b-2 border-amber-500 shrink-0 text-center relative z-10 shadow-sm">
                 <div className="w-8 h-8 rounded-full bg-white p-0.5 shrink-0 flex items-center justify-center shadow-md mb-0.5">
                   <img
                     src={effectiveLogo}
@@ -135,7 +252,7 @@ export default function OfficialStaffIDCard({
               </div>
 
               {/* Middle Section: Photo & Profile Details */}
-              <div className="flex-1 flex flex-col items-center justify-center px-2 py-1 relative">
+              <div className="flex-1 flex flex-col items-center justify-center px-2 py-1 relative z-10">
                 {/* Photo Frame with Seal */}
                 <div className="relative shrink-0 flex flex-col items-center">
                   <div className="w-[70px] h-[86px] rounded-lg border-2 border-emerald-800 overflow-hidden bg-slate-100 shadow-md relative flex items-center justify-center">
@@ -202,7 +319,7 @@ export default function OfficialStaffIDCard({
 
                 {/* Compact Mobile & Joining Date line */}
                 {(mobile !== '—' || joiningDate !== '—') && (
-                  <div className="flex items-center justify-center gap-2 text-[7.2px] text-slate-600 font-mono mt-1 border-t border-slate-200/80 pt-0.5 w-full">
+                  <div className="flex items-center justify-center gap-2 text-[7.2px] text-slate-600 font-mono mt-1 border-t border-slate-200/80 pt-0.5 w-full bg-white/70 rounded">
                     {mobile !== '—' && <span>📞 {mobile}</span>}
                     {mobile !== '—' && joiningDate !== '—' && <span className="text-slate-400">•</span>}
                     {joiningDate !== '—' && <span>ಸೇರ್ಪಡೆ: {joiningDate}</span>}
@@ -211,7 +328,7 @@ export default function OfficialStaffIDCard({
               </div>
 
               {/* Bottom Signatures Section - PROMINENT, LARGE & FULLY VISIBLE */}
-              <div className="px-3 py-1.5 border-t border-slate-300/80 bg-white/95 flex items-end justify-between text-[7px] text-slate-700 shrink-0">
+              <div className="px-3 py-1.5 border-t border-slate-300/80 bg-white/95 relative z-10 flex items-end justify-between text-[7px] text-slate-700 shrink-0">
                 {/* Left: Employee Sign */}
                 <div className="flex flex-col items-center">
                   <div className="h-6 flex items-end justify-center">
@@ -242,13 +359,23 @@ export default function OfficialStaffIDCard({
               </div>
 
               {/* Bottom Decorative Band */}
-              <div className="h-1 bg-gradient-to-r from-emerald-900 via-amber-400 to-emerald-900 shrink-0"></div>
+              <div className="h-1 bg-gradient-to-r from-emerald-900 via-amber-400 to-emerald-900 shrink-0 relative z-10"></div>
             </div>
           ) : (
             /* ----- PORTRAIT BACK VIEW ----- */
-            <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900 p-2.5">
+            <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900 p-2.5 overflow-hidden">
+              {/* Custom Uploaded Background for Back Page (if provided) */}
+              {effectiveBackBg && (
+                <img
+                  src={effectiveBackBg}
+                  alt="Staff Back Background"
+                  className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+                  style={{ opacity: effectiveBgOpacity }}
+                />
+              )}
+
               {/* Header */}
-              <div className="text-center border-b border-slate-200 pb-1" style={kannadaFontStyle}>
+              <div className="text-center border-b border-slate-200 pb-1 relative z-10 bg-white/70 rounded p-1" style={kannadaFontStyle}>
                 <h3 className="text-[9px] font-black text-slate-900 leading-tight">
                   ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.
                 </h3>
@@ -261,13 +388,13 @@ export default function OfficialStaffIDCard({
               </div>
 
               {/* Prime Central Attendance QR Code */}
-              <div className="my-auto flex flex-col items-center justify-center">
+              <div className="my-auto flex flex-col items-center justify-center relative z-10">
                 {showQrCode && (
                   <div className="bg-white p-1 rounded-xl border-2 border-emerald-600 shadow-md">
                     <StaffAttendanceQR employee={emp} size={96} />
                   </div>
                 )}
-                <div className="mt-1 text-center" style={kannadaFontStyle}>
+                <div className="mt-1 text-center bg-white/80 px-2 py-0.5 rounded shadow-xs" style={kannadaFontStyle}>
                   <div className="text-[8px] font-black text-emerald-950 flex items-center justify-center gap-1">
                     <span>📱 ಹಾಜರಾತಿ QR ಕೋಡ್</span>
                   </div>
@@ -278,7 +405,7 @@ export default function OfficialStaffIDCard({
               </div>
 
               {/* Complete Extended Details Grid on Back */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-[7.2px] text-slate-800 space-y-0.5" style={kannadaFontStyle}>
+              <div className="bg-slate-50/90 backdrop-blur-xs border border-slate-200 rounded-lg p-2 text-[7.2px] text-slate-800 space-y-0.5 relative z-10 shadow-xs" style={kannadaFontStyle}>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">ರಕ್ತದ ಗುಂಪು:</span>
                   <strong className="text-rose-700 font-mono font-black">{bloodGroup || '—'}</strong>
@@ -314,7 +441,7 @@ export default function OfficialStaffIDCard({
               </div>
 
               {/* Statutory Rules & Barcode */}
-              <div className="border-t border-slate-200 pt-0.5 text-center space-y-0.5">
+              <div className="border-t border-slate-200 pt-0.5 text-center space-y-0.5 relative z-10 bg-white/70 rounded">
                 <p className="text-[6.2px] text-slate-500">
                   • ಕಾರ್ಖಾನೆಯ ಆವರಣದಲ್ಲಿ ಗುರುತಿನ ಚೀಟಿ ಧರಿಸುವುದು ಕಡ್ಡಾಯವಾಗಿದೆ.
                 </p>
@@ -341,9 +468,19 @@ export default function OfficialStaffIDCard({
       <div className="w-[372px] h-[232px] rounded-xl overflow-hidden shadow-xl border-2 border-slate-700 bg-white relative flex flex-col justify-between font-sans print:shadow-none print:border-slate-500">
         {!showBack ? (
           /* ==================== LANDSCAPE FRONT VIEW ==================== */
-          <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900">
+          <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900 overflow-hidden">
+            {/* Custom Uploaded Background for Front Page (if provided) */}
+            {effectiveFrontBg && (
+              <img
+                src={effectiveFrontBg}
+                alt="Staff Front Background"
+                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+                style={{ opacity: effectiveBgOpacity }}
+              />
+            )}
+
             {/* Top Corporate Header */}
-            <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-950 text-white px-2.5 py-1.5 flex items-center gap-2 border-b-2 border-amber-500 shrink-0">
+            <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-950 text-white px-2.5 py-1.5 flex items-center gap-2 border-b-2 border-amber-500 shrink-0 relative z-10">
               {/* Factory Logo */}
               <div className="w-10 h-10 rounded-full bg-white p-0.5 shrink-0 flex items-center justify-center shadow-md">
                 <img
@@ -375,7 +512,7 @@ export default function OfficialStaffIDCard({
             </div>
 
             {/* Middle Section: Member Details (Left) + Employee Photo (Right) */}
-            <div className="flex items-center justify-between px-3 py-1 flex-1 gap-2 relative">
+            <div className="flex items-center justify-between px-3 py-1 flex-1 gap-2 relative z-10">
               {/* Left Column: Details */}
               <div className="flex-1 min-w-0 space-y-0.5 text-slate-900" style={kannadaFontStyle}>
                 {/* Emp ID Badge */}
@@ -383,7 +520,6 @@ export default function OfficialStaffIDCard({
                   <span className="bg-emerald-950 text-amber-300 text-[8px] font-black font-mono px-2 py-0.5 rounded border border-amber-400 shadow-sm inline-block">
                     {empId}
                   </span>
-                  {/* Blood Group Tag */}
                   {bloodGroup && (
                     <span className="bg-rose-50 text-rose-700 border border-rose-300 text-[7.5px] font-black px-1.5 py-0.2 rounded flex items-center gap-0.5">
                       <span className="text-rose-600 font-bold">🩸</span> {bloodGroup}
@@ -423,7 +559,7 @@ export default function OfficialStaffIDCard({
                 </div>
 
                 {/* Joining Date & Mobile */}
-                <div className="grid grid-cols-2 gap-x-2 text-[7.8px] text-slate-700 pt-0.5 border-t border-slate-200">
+                <div className="grid grid-cols-2 gap-x-2 text-[7.8px] text-slate-700 pt-0.5 border-t border-slate-200 bg-white/70 rounded px-1">
                   <div>
                     <span className="text-slate-500">ಸೇರ್ಪಡೆ: </span>
                     <strong className="font-mono text-slate-900">{joiningDate}</strong>
@@ -472,7 +608,7 @@ export default function OfficialStaffIDCard({
             </div>
 
             {/* Bottom Footer: Signatures & Address */}
-            <div className="bg-slate-100/90 border-t border-slate-200 px-3 py-1 flex items-center justify-between text-[7px] text-slate-600">
+            <div className="bg-slate-100/90 border-t border-slate-200 px-3 py-1 relative z-10 flex items-center justify-between text-[7px] text-slate-600">
               <div className="flex items-center gap-1.5" style={kannadaFontStyle}>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                 <span>ಮರಗೂರ, ತಾ: ಚಡಚಣ, ಜಿ: ವಿಜಯಪುರ - 586204</span>
@@ -497,13 +633,23 @@ export default function OfficialStaffIDCard({
             </div>
 
             {/* Micro Gold Line at very bottom */}
-            <div className="h-0.5 bg-gradient-to-r from-emerald-600 via-amber-400 to-emerald-600"></div>
+            <div className="h-0.5 bg-gradient-to-r from-emerald-600 via-amber-400 to-emerald-600 relative z-10"></div>
           </div>
         ) : (
           /* ==================== LANDSCAPE BACK VIEW ==================== */
-          <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900 p-2.5">
+          <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900 p-2.5 overflow-hidden">
+            {/* Custom Uploaded Background for Back Page (if provided) */}
+            {effectiveBackBg && (
+              <img
+                src={effectiveBackBg}
+                alt="Staff Back Background"
+                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+                style={{ opacity: effectiveBgOpacity }}
+              />
+            )}
+
             {/* Back Header */}
-            <div className="border-b border-slate-200 pb-1 flex items-center justify-between" style={kannadaFontStyle}>
+            <div className="border-b border-slate-200 pb-1 flex items-center justify-between relative z-10 bg-white/70 rounded p-1" style={kannadaFontStyle}>
               <div>
                 <h3 className="text-[9.5px] font-black text-slate-900 leading-tight">
                   ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204
@@ -518,10 +664,10 @@ export default function OfficialStaffIDCard({
             </div>
 
             {/* Back Main Body: Left (Details & Rules) + Right (Dedicated Large Attendance QR Code) */}
-            <div className="flex items-center justify-between gap-3 flex-1 py-1">
+            <div className="flex items-center justify-between gap-3 flex-1 py-1 relative z-10">
               {/* Left Column: Details Grid & Guidelines */}
               <div className="flex-1 space-y-1 text-[7.8px] text-slate-800" style={kannadaFontStyle}>
-                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 bg-slate-50/90 backdrop-blur-xs p-1.5 rounded-lg border border-slate-200 shadow-xs">
                   <div>
                     <span className="text-slate-500">ಆಧಾರ್: </span>
                     <strong className="font-mono text-slate-900">{aadhaarNo}</strong>
@@ -545,49 +691,41 @@ export default function OfficialStaffIDCard({
                 </div>
 
                 {/* Factory Safety Rules */}
-                <div className="text-[6.8px] text-slate-600 space-y-0.5 pt-0.5">
+                <div className="text-[6.8px] text-slate-600 space-y-0.5 pt-0.5 bg-white/70 rounded p-1">
                   <div className="flex items-start gap-1">
                     <span className="text-emerald-700 font-bold">•</span>
-                    <span>ಕಾರ್ಖಾನೆ ಆವರಣದಲ್ಲಿ ಸದಾ ಗುರುತಿನ ಚೀಟಿ ಧರಿಸುವುದು ಕಡ್ಡಾಯವಾಗಿದೆ.</span>
+                    <span>ಈ ಗುರುತಿನ ಚೀಟಿಯು ಕಾರ್ಖಾನೆಯ ಆಸ್ತಿಯಾಗಿದೆ, ಕಡ್ಡಾಯವಾಗಿ ಧರಿಸಿ.</span>
                   </div>
                   <div className="flex items-start gap-1">
                     <span className="text-emerald-700 font-bold">•</span>
-                    <span>ಭದ್ರತಾ ಸಿಬ್ಬಂದಿಗೆ ತಪಾಸಣೆ ಸಮಯದಲ್ಲಿ ಈ ಕಾರ್ಡ್ ತೋರಿಸಬೇಕು.</span>
-                  </div>
-                  <div className="flex items-start gap-1">
-                    <span className="text-emerald-700 font-bold">•</span>
-                    <span>ಕಾರ್ಡ್ ಕಳೆದುಹೋದರೆ ತಕ್ಷಣ ಆಡಳಿತ ಕಚೇರಿಗೆ ಮಾಹಿತಿ ನೀಡಬೇಕು.</span>
+                    <span>ಕಳೆದುಹೋದರೆ ಕೂಡಲೇ ಸಿಬ್ಬಂದಿ ಕಚೇರಿಗೆ ಮಾಹಿತಿ ನೀಡಿ.</span>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Prominent Large 96px Attendance QR Code */}
+              {/* Right Column: Attendance QR Code & Officer Sign */}
               <div className="shrink-0 flex flex-col items-center justify-center pl-2 border-l border-slate-200">
                 {showQrCode && (
                   <div className="bg-white p-1 rounded-xl border-2 border-emerald-600 shadow-md">
-                    <StaffAttendanceQR employee={emp} size={96} />
+                    <StaffAttendanceQR employee={emp} size={90} />
                   </div>
                 )}
-                <div className="mt-1 text-center" style={kannadaFontStyle}>
-                  <div className="text-[8px] font-black text-emerald-950 flex items-center justify-center gap-0.5">
-                    <span>📱 ಹಾಜರಾತಿ QR ಕೋಡ್</span>
+                <div className="mt-1 text-center bg-white/80 px-1 py-0.5 rounded shadow-xs" style={kannadaFontStyle}>
+                  <div className="text-[7.5px] font-black text-emerald-950 flex items-center justify-center gap-0.5">
+                    <span>📱 ಹಾಜರಾತಿ QR</span>
                   </div>
-                  <span className="text-[6.5px] text-slate-500 font-medium">
-                    (Attendance QR Code)
-                  </span>
+                  <div className="text-[6.5px] font-mono tracking-wider text-slate-700 font-bold mt-0.5">
+                    ||||| {empId} |||||
+                  </div>
+                  <div className="text-[6.5px] text-slate-600 font-bold mt-0.5">
+                    ಸಿಬ್ಬಂದಿ ನಿರ್ವಾಹಕರು
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Back Footer: Barcode & Authorization */}
-            <div className="border-t border-slate-200 pt-1 flex items-center justify-between text-[7px] text-slate-600">
-              <div className="flex items-center gap-1.5 font-mono text-[8px] text-slate-700 font-bold">
-                <span>||||| ||| {empId} |||||</span>
-              </div>
-              <div className="text-right font-bold text-slate-800" style={kannadaFontStyle}>
-                ಸಿಬ್ಬಂದಿ ನಿರ್ವಾಹಕರು (Personnel Manager)
-              </div>
-            </div>
+            {/* Micro Gold Line at very bottom */}
+            <div className="h-0.5 bg-gradient-to-r from-emerald-600 via-amber-400 to-emerald-600 relative z-10"></div>
           </div>
         )}
       </div>

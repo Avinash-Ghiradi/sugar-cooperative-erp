@@ -1,11 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import OfficialStaffIDCard from '../IDCards/OfficialStaffIDCard';
+import { createPortal } from 'react-dom';
+import OfficialStaffIDCard, {
+  getStaffIdCardSettings,
+  saveStaffIdCardSettings,
+  resetStaffIdCardSettings,
+  syncStaffIdCardSettingsFromCloud
+} from '../IDCards/OfficialStaffIDCard';
+import {
+  compressBackgroundImage,
+  compressLogoImage,
+  makeSignatureTransparent
+} from '../IDCards/OfficialShareholderIDCard';
 import {
   Briefcase, Plus, Search, Edit, Trash2, CheckCircle2, XCircle, X, Save,
   Printer, QrCode, User, Phone, Heart, Award, Shield, FileSpreadsheet,
-  Camera, Upload, Eye, SlidersHorizontal, RefreshCw, Check, Sparkles, AlertTriangle
+  Camera, Upload, Eye, SlidersHorizontal, RefreshCw, Check, Sparkles, AlertTriangle, Palette, Sliders, Layers, RotateCcw, Image as ImageIcon
 } from 'lucide-react';
 
 export default function EmployeeManagement() {
@@ -1064,7 +1075,18 @@ export default function EmployeeManagement() {
                       ಮುಂಭಾಗ (Front Page)
                     </span>
                     <div>
-                      <OfficialStaffIDCard employee={selectedEmpForCard} showBack={false} showSeal={showSeal} showQrCode={showQrCode} orientation={cardOrientation} />
+                      <OfficialStaffIDCard
+                        employee={selectedEmpForCard}
+                        showBack={false}
+                        showSeal={showSeal}
+                        showQrCode={showQrCode}
+                        orientation={cardOrientation}
+                        customFrontBackground={staffCardSettings.customFrontBackground}
+                        customBackBackground={staffCardSettings.customBackBackground}
+                        backgroundOpacity={staffCardSettings.backgroundOpacity}
+                        customLogo={staffCardSettings.customLogo}
+                        customMdSignature={staffCardSettings.customMdSignature}
+                      />
                     </div>
                   </div>
 
@@ -1074,7 +1096,18 @@ export default function EmployeeManagement() {
                       ಹಿಂಬದಿ (Back Page - Attendance QR)
                     </span>
                     <div>
-                      <OfficialStaffIDCard employee={selectedEmpForCard} showBack={true} showSeal={showSeal} showQrCode={showQrCode} orientation={cardOrientation} />
+                      <OfficialStaffIDCard
+                        employee={selectedEmpForCard}
+                        showBack={true}
+                        showSeal={showSeal}
+                        showQrCode={showQrCode}
+                        orientation={cardOrientation}
+                        customFrontBackground={staffCardSettings.customFrontBackground}
+                        customBackBackground={staffCardSettings.customBackBackground}
+                        backgroundOpacity={staffCardSettings.backgroundOpacity}
+                        customLogo={staffCardSettings.customLogo}
+                        customMdSignature={staffCardSettings.customMdSignature}
+                      />
                     </div>
                   </div>
                 </>
@@ -1084,7 +1117,18 @@ export default function EmployeeManagement() {
                     ಮುಂಭಾಗ (Front Page)
                   </span>
                   <div>
-                    <OfficialStaffIDCard employee={selectedEmpForCard} showBack={false} showSeal={showSeal} showQrCode={showQrCode} orientation={cardOrientation} />
+                    <OfficialStaffIDCard
+                        employee={selectedEmpForCard}
+                        showBack={false}
+                        showSeal={showSeal}
+                        showQrCode={showQrCode}
+                        orientation={cardOrientation}
+                        customFrontBackground={staffCardSettings.customFrontBackground}
+                        customBackBackground={staffCardSettings.customBackBackground}
+                        backgroundOpacity={staffCardSettings.backgroundOpacity}
+                        customLogo={staffCardSettings.customLogo}
+                        customMdSignature={staffCardSettings.customMdSignature}
+                      />
                   </div>
                 </div>
               ) : (
@@ -1093,7 +1137,18 @@ export default function EmployeeManagement() {
                     ಹಿಂಬದಿ (Back Page - Attendance QR)
                   </span>
                   <div>
-                    <OfficialStaffIDCard employee={selectedEmpForCard} showBack={true} showSeal={showSeal} showQrCode={showQrCode} orientation={cardOrientation} />
+                    <OfficialStaffIDCard
+                        employee={selectedEmpForCard}
+                        showBack={true}
+                        showSeal={showSeal}
+                        showQrCode={showQrCode}
+                        orientation={cardOrientation}
+                        customFrontBackground={staffCardSettings.customFrontBackground}
+                        customBackBackground={staffCardSettings.customBackBackground}
+                        backgroundOpacity={staffCardSettings.backgroundOpacity}
+                        customLogo={staffCardSettings.customLogo}
+                        customMdSignature={staffCardSettings.customMdSignature}
+                      />
                   </div>
                 </div>
               )}
@@ -1105,7 +1160,7 @@ export default function EmployeeManagement() {
                 💡 <strong>ಮುದ್ರಣ ಸಲಹೆ:</strong> Standard CR80 PVC ಪ್ಲಾಸ್ಟಿಕ್ ಕಾರ್ಡ್ ಅಥವಾ 300 GSM ಗ್ಲಾಸಿ ಕಾರ್ಡ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿ ಪ್ರಿಂಟ್ ಮಾಡಲು Print ಕ್ಲಿಕ್ ಮಾಡಿ <em>"Save as PDF"</em> ಅಥವಾ ಪ್ರಿಂಟರ್ ಆಯ್ಕೆಮಾಡಿ.
               </div>
               <button
-                onClick={() => window.print()}
+                onClick={handlePrintStaffCard}
                 className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold shrink-0 cursor-pointer"
               >
                 ಪ್ರಿಂಟ್ ಸೆಟ್ಟಿಂಗ್ಸ್
@@ -1113,6 +1168,444 @@ export default function EmployeeManagement() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 6. Staff ID Card Background & Design Customizer Modal */}
+      {showCustomizerModal && (
+        <div className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-950 border-2 border-amber-500 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl p-6 space-y-5 animate-fadeIn text-slate-100 my-8">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Palette className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-bold text-amber-300">
+                  ಸಿಬ್ಬಂದಿ ಗುರುತಿನ ಚೀಟಿ ಹಿನ್ನೆಲೆ & ವಿನ್ಯಾಸ (Staff ID Card Backgrounds & Design)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCustomizerModal(false)}
+                className="p-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              ಇಲ್ಲಿ ಅಪ್ಲೋಡ್ ಮಾಡಿದ ಮುಂಭಾಗ ಹಾಗೂ ಹಿಂಬದಿಯ ಹಿನ್ನೆಲೆ, ಸಹಿ ಮತ್ತು ಲೋಗೋ ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್ ಮೂಲಕ <strong>ಎಲ್ಲಾ ಕಂಪ್ಯೂಟರ್/ಬ್ರೌಸರ್‌ಗಳಲ್ಲಿ ತಕ್ಷಣ ಸಿಂಕ್ ಆಗುತ್ತದೆ.</strong>
+            </p>
+
+            {/* Grid of Background Uploads (Dual-Sided: Front & Back) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 1. Front Background */}
+              <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                    <span>🖼️</span> ಮುಂಭಾಗದ ಹಿನ್ನೆಲೆ (Front Background)
+                  </span>
+                  {staffCardSettings.customFrontBackground && (
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateSettingsField('customFrontBackground', '')}
+                      className="text-[10px] text-rose-400 hover:text-rose-300 underline cursor-pointer"
+                    >
+                      ತೆಗೆದುಹಾಕಿ (Remove)
+                    </button>
+                  )}
+                </div>
+                <div className="h-28 rounded-xl border border-dashed border-slate-700 bg-slate-950 flex items-center justify-center overflow-hidden relative">
+                  {staffCardSettings.customFrontBackground ? (
+                    <img
+                      src={staffCardSettings.customFrontBackground}
+                      alt="Front Background Preview"
+                      className="w-full h-full object-cover"
+                      style={{ opacity: staffCardSettings.backgroundOpacity !== undefined ? staffCardSettings.backgroundOpacity : 1 }}
+                    />
+                  ) : (
+                    <div className="text-center p-2 text-slate-500 text-[11px]">
+                      ಯಾವುದೇ ಕಸ್ಟಮ್ ಹಿನ್ನೆಲೆ ಇಲ್ಲ<br />(No Front Background)
+                    </div>
+                  )}
+                </div>
+                <label className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{staffCardSettings.customFrontBackground ? 'ಮುಂಭಾಗದ ಹಿನ್ನೆಲೆ ಬದಲಿಸಿ' : '+ ಮುಂಭಾಗದ ಹಿನ್ನೆಲೆ ಅಪ್ಲೋಡ್'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e, 'customFrontBackground')}
+                  />
+                </label>
+              </div>
+
+              {/* 2. Back Background */}
+              <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                    <span>🖼️</span> ಹಿಂಬದಿಯ ಹಿನ್ನೆಲೆ (Back Background)
+                  </span>
+                  {staffCardSettings.customBackBackground && (
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateSettingsField('customBackBackground', '')}
+                      className="text-[10px] text-rose-400 hover:text-rose-300 underline cursor-pointer"
+                    >
+                      ತೆಗೆದುಹಾಕಿ (Remove)
+                    </button>
+                  )}
+                </div>
+                <div className="h-28 rounded-xl border border-dashed border-slate-700 bg-slate-950 flex items-center justify-center overflow-hidden relative">
+                  {staffCardSettings.customBackBackground ? (
+                    <img
+                      src={staffCardSettings.customBackBackground}
+                      alt="Back Background Preview"
+                      className="w-full h-full object-cover"
+                      style={{ opacity: staffCardSettings.backgroundOpacity !== undefined ? staffCardSettings.backgroundOpacity : 1 }}
+                    />
+                  ) : (
+                    <div className="text-center p-2 text-slate-500 text-[11px]">
+                      ಯಾವುದೇ ಕಸ್ಟಮ್ ಹಿನ್ನೆಲೆ ಇಲ್ಲ<br />(No Back Background)
+                    </div>
+                  )}
+                </div>
+                <label className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{staffCardSettings.customBackBackground ? 'ಹಿಂಬದಿಯ ಹಿನ್ನೆಲೆ ಬದಲಿಸಿ' : '+ ಹಿಂಬದಿಯ ಹಿನ್ನೆಲೆ ಅಪ್ಲೋಡ್'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e, 'customBackBackground')}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* 3. Background Opacity Slider */}
+            <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                  <span>ಹಿನ್ನೆಲೆ ಅಪಾರದರ್ಶಕತೆ (Background Opacity)</span>
+                </span>
+                <span className="font-mono font-bold text-amber-400">
+                  {Math.round((staffCardSettings.backgroundOpacity !== undefined ? staffCardSettings.backgroundOpacity : 1) * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.1"
+                max="1"
+                step="0.05"
+                value={staffCardSettings.backgroundOpacity !== undefined ? staffCardSettings.backgroundOpacity : 1}
+                onChange={(e) => handleUpdateSettingsField('backgroundOpacity', parseFloat(e.target.value))}
+                className="w-full accent-amber-500 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-slate-500">
+                <span>ಮಂದವಾದ ಹಿನ್ನೆಲೆ (10% - Light)</span>
+                <span>ಪೂರ್ಣ ಬಣ್ಣ (100% - Solid)</span>
+              </div>
+            </div>
+
+            {/* 4. Managing Director Signature & Logo */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* MD Signature */}
+              <div className="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-200">
+                    ✍️ ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರ ಸಹಿ (MD Signature)
+                  </span>
+                  {staffCardSettings.customMdSignature && (
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateSettingsField('customMdSignature', '')}
+                      className="text-[10px] text-rose-400 underline cursor-pointer"
+                    >
+                      ಮರುಹೊಂದಿಸಿ
+                    </button>
+                  )}
+                </div>
+                <div className="h-12 bg-white rounded-lg flex items-center justify-center p-1 border border-slate-700">
+                  <img
+                    src={staffCardSettings.customMdSignature || './id_assets/md_signature_transparent.png'}
+                    alt="MD Signature"
+                    className="h-10 object-contain"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                </div>
+                <label className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
+                  <Upload className="w-3 h-3" />
+                  <span>ಹೊಸ ಸಹಿ ಅಪ್ಲೋಡ್ ಮಾಡಿ</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleMdSignatureUpload}
+                  />
+                </label>
+              </div>
+
+              {/* Factory Logo */}
+              <div className="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-200">
+                    🏢 ಕಾರ್ಖಾನೆಯ ಲೋಗೋ (Factory Logo)
+                  </span>
+                  {staffCardSettings.customLogo && (
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateSettingsField('customLogo', '')}
+                      className="text-[10px] text-rose-400 underline cursor-pointer"
+                    >
+                      ಮರುಹೊಂದಿಸಿ
+                    </button>
+                  )}
+                </div>
+                <div className="h-12 bg-white rounded-lg flex items-center justify-center p-1 border border-slate-700">
+                  <img
+                    src={staffCardSettings.customLogo || './id_assets/bssk_logo.png'}
+                    alt="Factory Logo"
+                    className="h-10 object-contain"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                </div>
+                <label className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
+                  <Upload className="w-3 h-3" />
+                  <span>ಹೊಸ ಲೋಗೋ ಅಪ್ಲೋಡ್ ಮಾಡಿ</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={handleResetAllSettings}
+                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer border border-slate-800"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>ಮರುಹೊಂದಿಸಿ (Reset to Default)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveAndCloseCustomizer}
+                className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-950 cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>ಕ್ಲೌಡ್‌ನಲ್ಲಿ ಉಳಿಸಿ (Save & Sync to Cloud DB)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Dedicated Standalone Print Portal for Staff ID Cards (window.print()) */}
+      {typeof document !== 'undefined' && createPortal(
+        <div className="staff-id-card-print-portal">
+          <style>{`
+            @page {
+              size: ${printLayout === 'a4' ? 'A4 portrait' : (cardOrientation === 'portrait' ? '54mm 85.6mm' : '85.6mm 54mm')};
+              margin: ${printLayout === 'a4' ? '10mm 8mm' : '2mm'};
+            }
+            @media print {
+              html, body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              body.staff-id-card-printing > #root {
+                display: none !important;
+                visibility: hidden !important;
+              }
+              .staff-id-card-print-portal {
+                display: block !important;
+                visibility: visible !important;
+                width: 100% !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+              }
+              .staff-print-hide {
+                display: none !important;
+              }
+            }
+            @media screen {
+              .staff-id-card-print-portal {
+                display: none !important;
+              }
+            }
+          `}</style>
+
+          {selectedEmpForCard && (
+            <div className="w-full">
+              {printLayout === 'a4' ? (
+                /* A4 Printable Sheet with Cut & Fold Guides */
+                <div className="max-w-[190mm] mx-auto p-4 flex flex-col items-center">
+                  {/* Top Guide Text */}
+                  <div className="w-full flex items-center justify-between text-[11px] text-slate-600 font-mono border-b border-dashed border-slate-400 pb-1 mb-4">
+                    <span>✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut outer line)</span>
+                    <span className="font-bold text-slate-800">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ. - ಅಧಿಕೃತ ಸಿಬ್ಬಂದಿ ID</span>
+                    <span>✂ Cut</span>
+                  </div>
+
+                  {cardSide === 'both' ? (
+                    <div className="border-2 border-dashed border-slate-500 p-2 rounded-xl inline-flex items-center justify-center gap-4 bg-white relative">
+                      {/* Front Side */}
+                      <div className="p-1">
+                        <OfficialStaffIDCard
+                          employee={selectedEmpForCard}
+                          showBack={false}
+                          showSeal={showSeal}
+                          showQrCode={showQrCode}
+                          orientation={cardOrientation}
+                          customFrontBackground={staffCardSettings.customFrontBackground}
+                          customBackBackground={staffCardSettings.customBackBackground}
+                          backgroundOpacity={staffCardSettings.backgroundOpacity}
+                          customLogo={staffCardSettings.customLogo}
+                          customMdSignature={staffCardSettings.customMdSignature}
+                        />
+                      </div>
+
+                      {/* Center Fold Line */}
+                      <div className="w-0.5 self-stretch border-r-2 border-dashed border-slate-400 flex flex-col justify-between items-center py-2 text-[9px] text-slate-500 font-mono">
+                        <span>▲</span>
+                        <span className="rotate-90 whitespace-nowrap tracking-widest uppercase">ಮಡಚಿ (Fold)</span>
+                        <span>▼</span>
+                      </div>
+
+                      {/* Back Side */}
+                      <div className="p-1">
+                        <OfficialStaffIDCard
+                          employee={selectedEmpForCard}
+                          showBack={true}
+                          showSeal={showSeal}
+                          showQrCode={showQrCode}
+                          orientation={cardOrientation}
+                          customFrontBackground={staffCardSettings.customFrontBackground}
+                          customBackBackground={staffCardSettings.customBackBackground}
+                          backgroundOpacity={staffCardSettings.backgroundOpacity}
+                          customLogo={staffCardSettings.customLogo}
+                          customMdSignature={staffCardSettings.customMdSignature}
+                        />
+                      </div>
+                    </div>
+                  ) : cardSide === 'front' ? (
+                    <div className="border-2 border-dashed border-slate-500 p-2 rounded-xl inline-block bg-white">
+                      <OfficialStaffIDCard
+                        employee={selectedEmpForCard}
+                        showBack={false}
+                        showSeal={showSeal}
+                        showQrCode={showQrCode}
+                        orientation={cardOrientation}
+                        customFrontBackground={staffCardSettings.customFrontBackground}
+                        customBackBackground={staffCardSettings.customBackBackground}
+                        backgroundOpacity={staffCardSettings.backgroundOpacity}
+                        customLogo={staffCardSettings.customLogo}
+                        customMdSignature={staffCardSettings.customMdSignature}
+                      />
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-slate-500 p-2 rounded-xl inline-block bg-white">
+                      <OfficialStaffIDCard
+                        employee={selectedEmpForCard}
+                        showBack={true}
+                        showSeal={showSeal}
+                        showQrCode={showQrCode}
+                        orientation={cardOrientation}
+                        customFrontBackground={staffCardSettings.customFrontBackground}
+                        customBackBackground={staffCardSettings.customBackBackground}
+                        backgroundOpacity={staffCardSettings.backgroundOpacity}
+                        customLogo={staffCardSettings.customLogo}
+                        customMdSignature={staffCardSettings.customMdSignature}
+                      />
+                    </div>
+                  )}
+
+                  {/* Bottom Cut & Fold Guide */}
+                  <div className="w-full flex items-center justify-between text-[10px] text-slate-500 font-mono border-t border-dashed border-slate-400 pt-1 mt-4">
+                    <span>✂ ಕತ್ತರಿಸಿ ಮತ್ತು ಮಧ್ಯದಲ್ಲಿ ಮಡಚಿ ಲ್ಯಾಮಿನೇಟ್ ಮಾಡಿ (Cut & Fold for ID Lamination)</span>
+                    <span>#{selectedEmpForCard.employee_id} - {selectedEmpForCard.name}</span>
+                  </div>
+                </div>
+              ) : (
+                /* Standard CR80 PVC Plastic Card Print */
+                <div className="flex flex-wrap items-center justify-center gap-6 p-2 min-h-screen">
+                  {cardSide === 'both' ? (
+                    <>
+                      <div className="page-break-after-avoid">
+                        <OfficialStaffIDCard
+                          employee={selectedEmpForCard}
+                          showBack={false}
+                          showSeal={showSeal}
+                          showQrCode={showQrCode}
+                          orientation={cardOrientation}
+                          customFrontBackground={staffCardSettings.customFrontBackground}
+                          customBackBackground={staffCardSettings.customBackBackground}
+                          backgroundOpacity={staffCardSettings.backgroundOpacity}
+                          customLogo={staffCardSettings.customLogo}
+                          customMdSignature={staffCardSettings.customMdSignature}
+                        />
+                      </div>
+                      <div className="page-break-after-avoid">
+                        <OfficialStaffIDCard
+                          employee={selectedEmpForCard}
+                          showBack={true}
+                          showSeal={showSeal}
+                          showQrCode={showQrCode}
+                          orientation={cardOrientation}
+                          customFrontBackground={staffCardSettings.customFrontBackground}
+                          customBackBackground={staffCardSettings.customBackBackground}
+                          backgroundOpacity={staffCardSettings.backgroundOpacity}
+                          customLogo={staffCardSettings.customLogo}
+                          customMdSignature={staffCardSettings.customMdSignature}
+                        />
+                      </div>
+                    </>
+                  ) : cardSide === 'front' ? (
+                    <OfficialStaffIDCard
+                      employee={selectedEmpForCard}
+                      showBack={false}
+                      showSeal={showSeal}
+                      showQrCode={showQrCode}
+                      orientation={cardOrientation}
+                      customFrontBackground={staffCardSettings.customFrontBackground}
+                      customBackBackground={staffCardSettings.customBackBackground}
+                      backgroundOpacity={staffCardSettings.backgroundOpacity}
+                      customLogo={staffCardSettings.customLogo}
+                      customMdSignature={staffCardSettings.customMdSignature}
+                    />
+                  ) : (
+                    <OfficialStaffIDCard
+                      employee={selectedEmpForCard}
+                      showBack={true}
+                      showSeal={showSeal}
+                      showQrCode={showQrCode}
+                      orientation={cardOrientation}
+                      customFrontBackground={staffCardSettings.customFrontBackground}
+                      customBackBackground={staffCardSettings.customBackBackground}
+                      backgroundOpacity={staffCardSettings.backgroundOpacity}
+                      customLogo={staffCardSettings.customLogo}
+                      customMdSignature={staffCardSettings.customMdSignature}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -9,6 +9,32 @@ import {
   Camera, AlertTriangle, X, Image as ImageIcon, Video, VideoOff
 } from 'lucide-react';
 
+// Safe global singleton tracker to prevent Html5Qrcode state machine transition collisions
+let globalActiveScanner = null;
+let globalScannerTransitionPromise = null;
+
+async function safelyStopGlobalScanner() {
+  if (globalScannerTransitionPromise) {
+    try { await globalScannerTransitionPromise; } catch (e) {}
+  }
+  if (globalActiveScanner) {
+    const scanner = globalActiveScanner;
+    globalActiveScanner = null;
+    try {
+      const state = typeof scanner.getState === 'function' ? scanner.getState() : 0;
+      // 2: SCANNING, 3: PAUSED
+      if (state === 2 || state === 3) {
+        await scanner.stop();
+      }
+    } catch (e) {
+      console.warn('Silent catch in safelyStopGlobalScanner:', e);
+    }
+    try {
+      await scanner.clear();
+    } catch (e) {}
+  }
+}
+
 export default function AttendanceModule() {
   const { showToast } = useAuth();
   const [recordType, setRecordType] = useState(() => {
