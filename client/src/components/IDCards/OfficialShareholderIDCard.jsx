@@ -397,6 +397,7 @@ export default function OfficialShareholderIDCard({
 
   const sh = shareholder || {};
   const classLetter = getClassLetter(sh.schedule_cast);
+  const cleanMemberType = getMemberTypeByCategory(sh.schedule_cast, sh.member_type).replace(/\s*\(\s*Cane\s*Grower\s*\)/gi, '').trim();
   const sharesCount = sh.number_of_shares || 1;
   const shareNo = sh.share_no || sh.share_number || '3335';
   const memberName = sh.shareholder_name || sh.name || 'ಸದಸ್ಯರ ಹೆಸರು';
@@ -603,7 +604,7 @@ export default function OfficialShareholderIDCard({
               </div>
 
               {/* 4. BOTTOM ROW: Signatures & Attendance QR (Fixed with shrink-0, always 100% visible) */}
-              <div className="relative z-10 shrink-0 px-2.5 pb-1 pt-0.5 flex items-end justify-between border-t border-slate-300/80 bg-white/40" style={kannadaFontStyle}>
+              <div className="relative z-10 shrink-0 px-3 pb-1.5 pt-0.5 flex items-end justify-between border-t border-slate-300/80 bg-white/40" style={kannadaFontStyle}>
                 {/* Left: Member Signature */}
                 <div className="text-center w-24">
                   <div className="h-5 flex items-center justify-center">
@@ -630,17 +631,7 @@ export default function OfficialShareholderIDCard({
                   </div>
                 </div>
 
-                {/* Center: Official Attendance QR Code for General Meetings & Voting */}
-                {effectiveShowQrCode && (
-                  <div className="flex flex-col items-center justify-center shrink-0 mx-1 mb-0.5" title="ಹಾಜರಾತಿ ಕ್ಯೂಆರ್ ಕೋಡ್ (Attendance QR Code)">
-                    <div className="p-0.5 bg-white border border-slate-900 rounded shadow-sm flex items-center justify-center">
-                      <ShareholderAttendanceQR shareholder={sh} size={38} />
-                    </div>
-                    <span className="text-[6.5px] font-black text-[#14532d] tracking-tight leading-none mt-0.5 uppercase whitespace-nowrap">
-                      ಹಾಜರಾತಿ QR
-                    </span>
-                  </div>
-                )}
+                
 
                 {/* Right: Managing Director Signature (Custom uploaded or official default) */}
                 <div className="text-center w-28">
@@ -688,7 +679,7 @@ export default function OfficialShareholderIDCard({
                   {/* Statutory Member Details Grid */}
                   <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[8.2px] leading-tight pb-1 border-b border-slate-200">
                     <div>• ಪುಸ್ತಕ: <strong className="font-mono text-emerald-900">{sh.book_no || 'B.No: 1'}</strong></div>
-                    <div>• ಪ್ರಕಾರ: <strong className="text-emerald-900">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</strong></div>
+                    <div>• ಪ್ರಕಾರ: <strong className="text-emerald-900">{cleanMemberType}</strong></div>
                     <div>• ವರ್ಗ: <strong className="text-emerald-800">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</strong></div>
                     <div>• ಷೇರುಗಳು: <strong className="font-mono text-slate-900">{sharesCount}</strong></div>
                     <div>• ದಿನಾಂಕ: <span className="font-mono">{sh.reg_date || sh.registration_date || '—'}</span></div>
@@ -708,7 +699,7 @@ export default function OfficialShareholderIDCard({
 
                 {/* Right Side: LARGE PROMINENT ATTENDANCE QR CODE */}
                 {effectiveShowQrCode && (
-                  <div className="w-[108px] shrink-0 flex flex-col items-center justify-between p-1.5 bg-white rounded-xl border-2 border-emerald-800 shadow-lg">
+                  <div className="w-[122px] shrink-0 flex flex-col items-center justify-between p-1.5 bg-white rounded-xl border-2 border-emerald-900 shadow-xl">
                     {/* Top QR Label */}
                     <div className="text-[8px] font-black text-emerald-950 uppercase tracking-tight text-center leading-none">
                       ಹಾಜರಾತಿ QR
@@ -716,7 +707,7 @@ export default function OfficialShareholderIDCard({
 
                     {/* LARGE 70px HIGH-RESOLUTION QR CODE */}
                     <div className="my-0.5 p-0.5 bg-white flex items-center justify-center">
-                      <ShareholderAttendanceQR shareholder={sh} size={82} />
+                      <ShareholderAttendanceQR shareholder={sh} size={96} />
                     </div>
 
                     {/* Bottom Share Details */}
