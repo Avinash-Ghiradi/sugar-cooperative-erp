@@ -37,7 +37,6 @@ export default function AttendanceModule() {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const html5QrCodeRef = useRef(null);
   const fileInputRef = useRef(null);
-  const nativeCameraRef = useRef(null);
 
   useEffect(() => {
     loadAttendance();
@@ -466,24 +465,6 @@ export default function AttendanceModule() {
               <span>{cameraOpen ? 'ಕ್ಯಾಮೆರಾ ಮುಚ್ಚಿ' : '🎥 ಲೈವ್ ಕ್ಯಾಮೆರಾ'}</span>
             </button>
 
-            {/* Option 2: Mobile Phone Camera Snap (Opens mobile phone's built-in camera app directly) */}
-            <input
-              ref={nativeCameraRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={handleFileUploadScan}
-            />
-            <button
-              type="button"
-              onClick={() => nativeCameraRef.current?.click()}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-teal-950 cursor-pointer shrink-0 animate-pulse"
-              title="Directly opens smartphone camera to snap and scan ID card (ಮೊಬೈಲ್ ಕ್ಯಾಮೆರಾ)"
-            >
-              <Camera className="w-4 h-4 text-emerald-200" />
-              <span>📸 ಮೊಬೈಲ್ ಕ್ಯಾಮೆರಾ</span>
-            </button>
 
             {/* Option 3: Scan from Photo Gallery */}
             <input

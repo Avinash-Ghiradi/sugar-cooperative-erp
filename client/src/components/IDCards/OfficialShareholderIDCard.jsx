@@ -671,58 +671,74 @@ export default function OfficialShareholderIDCard({
             </>
           ) : (
             /* BACK VIEW */
-            <div className="w-full h-full p-2.5 flex flex-col justify-between text-slate-900 bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0]" style={kannadaFontStyle}>
+            <div className="w-full h-full p-2 flex flex-col justify-between text-slate-900 bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0]" style={kannadaFontStyle}>
               {/* Header in Kannada & English */}
-              <div className="border-b-2 border-emerald-700 pb-1 text-center">
-                <h3 className="font-black text-[11.5px] text-emerald-900 leading-tight">
+              <div className="border-b-2 border-emerald-700 pb-0.5 text-center shrink-0">
+                <h3 className="font-black text-[11px] text-emerald-900 leading-tight">
                   ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204
                 </h3>
-                <p className="text-[8px] font-bold text-slate-600 mt-0.5">
+                <p className="text-[7.5px] font-bold text-slate-600">
                   Shree Bheemashankar Co-operative Sugar Factory, Margur - 586204, Tq|| Chadachan, Dist|| Vijayapur
                 </p>
               </div>
 
-              {/* Statutory Member Details Grid */}
-              <div className="grid grid-cols-2 gap-x-2.5 gap-y-1 text-[8.8px] py-1 border-b border-slate-300">
-                <div>• ಪುಸ್ತಕ ಸಂ (Book): <strong className="font-mono text-emerald-900">{sh.book_no || 'B.No: 1'}</strong></div>
-                <div>• ಸದಸ್ಯರ ಪ್ರಕಾರ: <strong className="text-emerald-900">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</strong></div>
-                <div>• ವರ್ಗ (Class): <strong className="text-emerald-800">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</strong></div>
-                <div>• ಷೇರುಗಳ ಸಂಖ್ಯೆ: <strong className="font-mono text-slate-900">{sharesCount}</strong></div>
-                <div>• ನೋಂದಣಿ ದಿನಾಂಕ: <span className="font-mono">{sh.reg_date || sh.registration_date || '—'}</span></div>
-                <div>• ಮಂಡಳಿ ಠರಾವು: <span className="font-mono">{sh.tharava_no || 'TR-01/1982'}</span></div>
-                <div>• ಸದಸ್ಯರ ಆಧಾರ್: <span className="font-mono">{sh.aadhaar_card_no || sh.aadhaar_ref || '—'}</span></div>
-                <div>• ಮೊಬೈಲ್: <span className="font-mono">{sh.mobile_no || sh.mobile || '—'}</span></div>
-              </div>
-
-              {/* Statutory Rules / ಸೂಚನೆಗಳು */}
-              <div className="text-[7.6px] text-slate-700 space-y-0.5 py-0.5">
-                <div className="font-bold text-slate-900 text-[8.2px]">ಮುಖ್ಯ ಸೂಚನೆಗಳು:</div>
-                <div>1. ವಾರ್ಷಿಕ ಮಹಾಸಭೆ, ಕಾರ್ಖಾನೆ ಚುಣಾವಣೆ ಮತ್ತು ಕಾರ್ಖಾನೆಯ ಸಭೆಗಳಿಗೆ ಹಾಜರಾಗಲು ಈ ಚೀಟಿ ಕಡ್ಡಾಯವಾಗಿದೆ.</div>
-                <div>2. ಕಬ್ಬು ಪೂರೈಕೆ, ತೂಕದ ಬಿಲ್ಲು ಪಾವತಿ ಮತ್ತು ಸಕ್ಕರೆ ಕೋಟಾ ಪಡೆಯಲು ಹಾಜರುಪಡಿಸತಕ್ಕದ್ದು.</div>
-                <div>3. ಈ ಚೀಟಿ ಕಳೆದುಹೋದಲ್ಲಿ ತಕ್ಷಣವೇ ಕಾರ್ಖಾನೆಯ ಆಡಳಿತ ಕಚೇರಿಗೆ ತಿಳಿಸತಕ್ಕದ್ದು.</div>
-              </div>
-
-              {/* Footer with Barcode, Attendance QR & Signatures */}
-              <div className="pt-1 border-t border-slate-300 flex items-center justify-between text-[8px]">
-                {/* Simulated Barcode */}
-                <div className="flex flex-col gap-0.5">
-                  <div className="bg-white px-2 py-0.5 rounded border border-slate-300 font-mono font-bold text-[7.5px] text-slate-900 tracking-widest text-center">
-                    |||||| || ||| {shareNo} |||| |||
+              {/* Middle Section: Member Details + Large Prominent Attendance QR Code */}
+              <div className="flex items-stretch gap-2 my-auto py-0.5">
+                {/* Left Side: Member Details & Statutory Rules */}
+                <div className={`flex-1 flex flex-col justify-between ${effectiveShowQrCode ? 'pr-1 border-r border-slate-300/80' : ''}`}>
+                  {/* Statutory Member Details Grid */}
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[8.2px] leading-tight pb-1 border-b border-slate-200">
+                    <div>• ಪುಸ್ತಕ: <strong className="font-mono text-emerald-900">{sh.book_no || 'B.No: 1'}</strong></div>
+                    <div>• ಪ್ರಕಾರ: <strong className="text-emerald-900">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</strong></div>
+                    <div>• ವರ್ಗ: <strong className="text-emerald-800">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</strong></div>
+                    <div>• ಷೇರುಗಳು: <strong className="font-mono text-slate-900">{sharesCount}</strong></div>
+                    <div>• ದಿನಾಂಕ: <span className="font-mono">{sh.reg_date || sh.registration_date || '—'}</span></div>
+                    <div>• ಠರಾವು: <span className="font-mono">{sh.tharava_no || 'TR-01/1982'}</span></div>
+                    <div>• ಆಧಾರ್: <span className="font-mono">{sh.aadhaar_card_no || sh.aadhaar_ref || '—'}</span></div>
+                    <div>• ಮೊಬೈಲ್: <span className="font-mono">{sh.mobile_no || sh.mobile || '—'}</span></div>
                   </div>
-                  <span className="text-[6.5px] text-slate-600 font-medium">ವಾರ್ಷಿಕ ಮಹಾಸಭೆ ಹಾಜರಾತಿಗಾಗಿ ಅಧಿಕೃತ ಕಾರ್ಡ್</span>
+
+                  {/* Statutory Rules / ಮುಖ್ಯ ಸೂಚನೆಗಳು */}
+                  <div className="text-[7.2px] text-slate-700 space-y-0.5 pt-1">
+                    <div className="font-bold text-slate-900 text-[7.8px]">ಮುಖ್ಯ ಸೂಚನೆಗಳು:</div>
+                    <div>1. ವಾರ್ಷಿಕ ಮಹಾಸಭೆ, ಚುನಾವಣೆ ಮತ್ತು ಸಭೆಗಳಿಗೆ ಈ ಕಾರ್ಡ್ ಕಡ್ಡಾಯ.</div>
+                    <div>2. ಕಬ್ಬು ಸರಬರಾಜು, ಬಿಲ್ಲು ಪಾವತಿ ಮತ್ತು ಸಕ್ಕರೆ ಕೋಟಾಗೆ ಹಾಜರುಪಡಿಸಿ.</div>
+                    <div>3. ಗೇಟ್‌ನಲ್ಲಿ ಹಾಜರಾತಿಗಾಗಿ ಬಲಭಾಗದ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ.</div>
+                  </div>
                 </div>
 
-                {/* Back Side Dedicated Attendance QR Code */}
+                {/* Right Side: LARGE PROMINENT ATTENDANCE QR CODE */}
                 {effectiveShowQrCode && (
-                  <div className="flex items-center gap-1.5 bg-white/95 border border-emerald-700/50 px-1.5 py-0.5 rounded shadow-sm">
-                    <ShareholderAttendanceQR shareholder={sh} size={38} />
-                    <div className="flex flex-col text-left leading-tight">
-                      <span className="text-[7.5px] font-black text-emerald-950">ಹಾಜರಾತಿ QR</span>
-                      <span className="text-[6px] text-emerald-800 font-bold">Attendance Scan</span>
-                      <span className="text-[6px] font-mono text-slate-800 font-bold">#{shareNo}</span>
+                  <div className="w-[98px] shrink-0 flex flex-col items-center justify-between p-1 bg-white rounded-lg border-2 border-emerald-700 shadow-md">
+                    {/* Top QR Label */}
+                    <div className="text-[8px] font-black text-emerald-950 uppercase tracking-tight text-center leading-none">
+                      ಹಾಜರಾತಿ QR
+                    </div>
+
+                    {/* LARGE 70px HIGH-RESOLUTION QR CODE */}
+                    <div className="my-0.5 p-0.5 bg-white flex items-center justify-center">
+                      <ShareholderAttendanceQR shareholder={sh} size={70} />
+                    </div>
+
+                    {/* Bottom Share Details */}
+                    <div className="text-center leading-tight">
+                      <div className="text-[8px] font-mono font-black text-emerald-900">
+                        #{shareNo}
+                      </div>
+                      <div className="text-[6px] font-bold text-slate-600 uppercase">
+                        AGM Attendance
+                      </div>
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Footer with Barcode & Signatures */}
+              <div className="pt-1 border-t border-slate-300 flex items-center justify-between text-[8px] shrink-0">
+                {/* Simulated Barcode */}
+                <div className="bg-white px-2 py-0.5 rounded border border-slate-300 font-mono font-bold text-[7.5px] text-slate-900 tracking-widest text-center">
+                  |||||| || ||| {shareNo} |||| |||
+                </div>
 
                 <div className="text-right">
                   <div className="font-bold text-slate-900 text-[8px]">ಆಡಳಿತ ಮಂಡಳಿ ಪರವಾಗಿ</div>
