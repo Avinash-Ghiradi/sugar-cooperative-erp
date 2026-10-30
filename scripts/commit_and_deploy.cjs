@@ -6,7 +6,7 @@ console.log('Running git commands in:', cwd);
 
 execSync('git add -A', { cwd, stdio: 'inherit' });
 try {
-  execSync('git commit -m "feat: add live camera QR Code scanner for shareholder attendance"', { cwd, stdio: 'inherit' });
+  execSync('git commit -m "fix: resolve mobile camera opening for QR Code attendance scan"', { cwd, stdio: 'inherit' });
 } catch (e) {
   console.log('Commit note:', e.message);
 }

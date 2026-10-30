@@ -37,6 +37,7 @@ export default function AttendanceModule() {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const html5QrCodeRef = useRef(null);
   const fileInputRef = useRef(null);
+  const nativeCameraRef = useRef(null);
 
   useEffect(() => {
     loadAttendance();
@@ -53,51 +54,68 @@ export default function AttendanceModule() {
 
       const initCamera = async () => {
         try {
-          const devices = await Html5Qrcode.getCameras();
-          if (isCancelled) return;
-
-          if (!devices || devices.length === 0) {
-            setCameraError('ಯಾವುದೇ ಕ್ಯಾಮೆರಾ ಕಂಡುಬಂದಿಲ್ಲ (No camera device detected on this device).');
-            return;
-          }
-
-          setAvailableCameras(devices);
-          // Prefer back camera (environment) or last device for mobile phones
-          const chosenId = selectedCameraId || devices[devices.length - 1].id;
-          setSelectedCameraId(chosenId);
-
           const scanner = new Html5Qrcode('qr-camera-reader');
           html5QrCodeRef.current = scanner;
           qrScanner = scanner;
 
-          await scanner.start(
-            chosenId,
-            {
-              fps: 15,
-              qrbox: { width: 220, height: 220 }
-            },
-            (decodedText) => {
-              // Successfully scanned!
-              handleProcessScan(decodedText);
-            },
-            () => {
-              // Ignore standard frame scan errors
-            }
-          );
+          const qrBoxFunction = (viewfinderWidth, viewfinderHeight) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const edgeSize = Math.max(160, Math.floor(minEdge * 0.72));
+            return { width: edgeSize, height: edgeSize };
+          };
+
+          // On mobile phones, request the rear camera via facingMode: 'environment' directly!
+          // Never call getCameras() before starting on mobile, because mobile browsers throw without prior user gesture!
+          const cameraTarget = selectedCameraId ? selectedCameraId : { facingMode: 'environment' };
+
+          try {
+            await scanner.start(
+              cameraTarget,
+              {
+                fps: 15,
+                qrbox: qrBoxFunction
+              },
+              (decodedText) => {
+                handleProcessScan(decodedText);
+              },
+              () => {}
+            );
+          } catch (firstErr) {
+            console.warn('Environment rear camera failed, retrying with default user camera:', firstErr);
+            // Fallback for laptops or desktop computers without rear environment camera
+            await scanner.start(
+              { facingMode: 'user' },
+              {
+                fps: 15,
+                qrbox: qrBoxFunction
+              },
+              (decodedText) => {
+                handleProcessScan(decodedText);
+              },
+              () => {}
+            );
+          }
 
           if (!isCancelled) {
             setIsCameraActive(true);
+            // Query available cameras now that permission has been granted
+            try {
+              const devices = await Html5Qrcode.getCameras();
+              if (!isCancelled && devices && devices.length > 0) {
+                setAvailableCameras(devices);
+              }
+            } catch (e) {}
           }
         } catch (err) {
           if (!isCancelled) {
             console.error('Camera startup error:', err);
-            setCameraError(`ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಅನುಮತಿ ಅಗತ್ಯವಿದೆ (Camera permission required): ${err.message || err}. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್ಸ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಅನುಮತಿ ನೀಡಿ (Allow Camera).`);
+            setCameraError(`ಕ್ಯಾಮೆರಾ ತೆರೆಯಲು ಅನುಮತಿ ನೀಡಿ (Camera permission required): ${err.message || err}. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್ಸ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ Allow ಮಾಡಿ ಅಥವಾ ಕೆಳಗಿನ '📸 ಮೊಬೈಲ್ ಕ್ಯಾಮೆರಾ' ಬಟನ್ ಬಳಸಿ.`);
           }
         }
       };
 
       // Slight timeout to ensure DOM container #qr-camera-reader is fully rendered
-      const timer = setTimeout(initCamera, 150);
+      const timer = setTimeout(initCamera, 120);
 
       return () => {
         isCancelled = true;
@@ -430,25 +448,44 @@ export default function AttendanceModule() {
               </button>
             </div>
 
-            {/* Camera QR Scanner Open / Close Button */}
+            {/* Option 1: Live Video Camera Stream */}
             <button
               type="button"
               onClick={() => {
                 setCameraError('');
                 setCameraOpen(!cameraOpen);
               }}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg cursor-pointer shrink-0 ${
+              className={`flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg cursor-pointer shrink-0 ${
                 cameraOpen
                   ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950 animate-pulse'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950'
               }`}
-              title="Open Device Camera to scan QR Code (ಕ್ಯಾಮೆರಾ ತೆರೆಯಿರಿ)"
+              title="Open live camera stream to scan (ಲೈವ್ ಕ್ಯಾಮೆರಾ)"
             >
               <Camera className="w-4 h-4" />
-              <span>{cameraOpen ? 'ಕ್ಯಾಮೆರಾ ಮುಚ್ಚಿ (Close Camera)' : '📷 ಕ್ಯಾಮೆರಾ ಸ್ಕ್ಯಾನರ್ ಪ್ರಾರಂಭಿಸಿ (Open Camera)'}</span>
+              <span>{cameraOpen ? 'ಕ್ಯಾಮೆರಾ ಮುಚ್ಚಿ' : '🎥 ಲೈವ್ ಕ್ಯಾಮೆರಾ'}</span>
             </button>
 
-            {/* Scan from Photo Upload Button */}
+            {/* Option 2: Mobile Phone Camera Snap (Opens mobile phone's built-in camera app directly) */}
+            <input
+              ref={nativeCameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileUploadScan}
+            />
+            <button
+              type="button"
+              onClick={() => nativeCameraRef.current?.click()}
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-teal-950 cursor-pointer shrink-0 animate-pulse"
+              title="Directly opens smartphone camera to snap and scan ID card (ಮೊಬೈಲ್ ಕ್ಯಾಮೆರಾ)"
+            >
+              <Camera className="w-4 h-4 text-emerald-200" />
+              <span>📸 ಮೊಬೈಲ್ ಕ್ಯಾಮೆರಾ</span>
+            </button>
+
+            {/* Option 3: Scan from Photo Gallery */}
             <input
               ref={fileInputRef}
               type="file"
@@ -460,10 +497,10 @@ export default function AttendanceModule() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0"
-              title="Upload photo of ID Card to scan QR Code"
+              title="Upload photo of ID Card from gallery"
             >
               <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
-              <span className="hidden md:inline">ಫೋಟೋ ಅಪ್ಲೋಡ್</span>
+              <span className="hidden lg:inline">ಗ್ಯಾಲರಿ</span>
             </button>
           </div>
 
