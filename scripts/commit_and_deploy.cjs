@@ -6,7 +6,7 @@ console.log('Running git commands in:', cwd);
 
 execSync('git add -A', { cwd, stdio: 'inherit' });
 try {
-  execSync('git commit -m "fix: resolve camera transition state error and ensure desktop webcam / mobile rear camera direct initialization"', { cwd, stdio: 'inherit' });
+  execSync('git commit -m "feat: complete Employee entry with photo upload, webcam snapshot, official Staff ID Card with Attendance QR, and live attendance integration"', { cwd, stdio: 'inherit' });
 } catch (e) {
   console.log('Commit note:', e.message);
 }

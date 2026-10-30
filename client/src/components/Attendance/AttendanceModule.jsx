@@ -205,12 +205,20 @@ export default function AttendanceModule() {
   useEffect(() => {
     try {
       const p = new URLSearchParams(window.location.search);
-      const urlShare = p.get('share_no') || p.get('attn');
-      if (urlShare) {
-        setRecordType('Shareholder');
+      const empShare = p.get('emp_attn') || p.get('emp_id') || p.get('employee');
+      if (empShare) {
+        setRecordType('Employee');
         setTimeout(() => {
-          handleProcessScan(urlShare);
+          handleProcessScan(empShare);
         }, 600);
+      } else {
+        const urlShare = p.get('share_no') || p.get('attn');
+        if (urlShare) {
+          setRecordType('Shareholder');
+          setTimeout(() => {
+            handleProcessScan(urlShare);
+          }, 600);
+        }
       }
     } catch (e) {}
   }, []);
@@ -266,51 +274,74 @@ export default function AttendanceModule() {
   const lastScanTimeRef = useRef(0);
   const lastScannedCodeRef = useRef('');
 
-  // Extract share number from raw text, QR URL or JSON
-  const extractShareNo = (raw) => {
+  // Extract share number or Employee ID from raw text, QR URL or JSON
+  const extractEntityId = (raw) => {
     if (!raw) return '';
     const text = String(raw).trim();
-    // 1. URL parameter format (e.g. ?attn=3652, ?share_no=3652, ?share=3652, ?id=3652)
+    // 1. Employee URL parameter format (e.g. ?emp_attn=EMP-001, ?employee_id=EMP-001, ?emp=EMP-001)
+    const empMatch = text.match(/[?&](?:emp_attn|emp_id|employee|emp)=([^&]+)/i);
+    if (empMatch) return decodeURIComponent(empMatch[1]).trim().toUpperCase();
+
+    // 2. Shareholder URL parameter format (e.g. ?attn=3652, ?share_no=3652, ?share=3652, ?id=3652)
     const urlMatch = text.match(/[?&](?:attn|share_no|share|id)=(\d+)/i);
     if (urlMatch) return urlMatch[1];
-    // 2. JSON format (e.g. {"share_no": 3652})
+
+    // 3. Employee ID prefix (e.g. EMP-001, EMP-102, EMP001)
+    const empPrefixMatch = text.match(/EMP[:\-\s#]*(\d+)/i);
+    if (empPrefixMatch) return `EMP-${empPrefixMatch[1].padStart(3, '0')}`;
+
+    // 4. JSON format
     if (text.startsWith('{') && text.endsWith('}')) {
       try {
         const obj = JSON.parse(text);
+        if (obj.employee_id) return String(obj.employee_id).trim().toUpperCase();
+        if (obj.emp_attn) return String(obj.emp_attn).trim().toUpperCase();
         if (obj.share_no) return String(obj.share_no).replace(/\D/g, '');
         if (obj.attn) return String(obj.attn).replace(/\D/g, '');
       } catch (e) {}
     }
-    // 3. Prefix format (e.g. BSSKN-3652, ATTN: 3652, SHARE #3652)
+
+    // 5. Shareholder prefix format (e.g. BSSKN-3652, ATTN: 3652, SHARE #3652)
     const prefixMatch = text.match(/(?:BSSKN|ATTN|SHARE|MEMBER)[:\-\s#]*(\d+)/i);
     if (prefixMatch) return prefixMatch[1];
-    // 4. Raw digits
+
+    // 6. Direct EMP text
+    if (/^EMP/i.test(text)) return text.toUpperCase();
+
+    // 7. Raw digits
     return text.replace(/\D/g, '');
   };
 
   // Process a QR Scan or manual entry
   const handleProcessScan = async (rawCode) => {
-    const targetNo = extractShareNo(rawCode);
-    if (!targetNo) {
-      showToast('⚠️ ಅಮಾನ್ಯ QR ಕೋಡ್ / ಷೇರು ನಂಬರ್ (Invalid QR Code / Share No)', 'error');
+    const targetId = extractEntityId(rawCode);
+    if (!targetId) {
+      showToast('⚠️ ಅಮಾನ್ಯ QR ಕೋಡ್ / ಗುರುತಿನ ಚೀಟಿ ಸಂಖ್ಯೆ (Invalid QR / ID)', 'error');
       return;
     }
 
-    // Cooldown check: prevent 15 duplicate rapid fires on the same card within 2.5s
+    // Cooldown check: prevent duplicate rapid fires on the same card within 2.5s
     const now = Date.now();
-    if (lastScannedCodeRef.current === targetNo && (now - lastScanTimeRef.current) < 2500) {
+    if (lastScannedCodeRef.current === targetId && (now - lastScanTimeRef.current) < 2500) {
       return;
     }
-    lastScannedCodeRef.current = targetNo;
+    lastScannedCodeRef.current = targetId;
     lastScanTimeRef.current = now;
 
     setScanInput('');
     const currentTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    let foundIdx = attendanceList.findIndex(item => String(item.entity_id).trim() === targetNo);
+    const isEmployeeScan = targetId.startsWith('EMP');
+
+    // Auto-switch to Employee tab if an employee card is scanned while on shareholder tab
+    if (isEmployeeScan && recordType !== 'Employee') {
+      setRecordType('Employee');
+    }
+
+    let foundIdx = attendanceList.findIndex(item => String(item.entity_id).trim().toUpperCase() === targetId.toUpperCase());
 
     if (foundIdx !== -1) {
-      // Mark as present in the existing list
+      // Mark as present in current list
       const updatedItem = {
         ...attendanceList[foundIdx],
         status: 'Present',
@@ -325,28 +356,52 @@ export default function AttendanceModule() {
 
       setLastScannedMember(updatedItem);
       playBeep();
-      showToast(`✅ ಷೇರು #${updatedItem.entity_id} - ${updatedItem.name} ಹಾಜರಾತಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ!`, 'success');
+      showToast(`✅ ${isEmployeeScan ? 'ಸಿಬ್ಬಂದಿ' : 'ಷೇರು'} #${updatedItem.entity_id} - ${updatedItem.name} ಹಾಜರಾತಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ!`, 'success');
+    } else if (isEmployeeScan) {
+      // Look up Employee
+      try {
+        const empRes = await ApiService.getEmployeeById(targetId);
+        if (empRes && empRes.success && empRes.employee) {
+          const emp = empRes.employee;
+          const newItem = {
+            entity_id: emp.employee_id,
+            name: emp.name,
+            department: emp.department || emp.designation,
+            status: 'Present',
+            time: currentTime,
+            photo_url: emp.photo_url || null
+          };
+          setAttendanceList(prev => [newItem, ...prev.filter(i => String(i.entity_id).toUpperCase() !== targetId.toUpperCase())]);
+          setLastScannedMember(newItem);
+          playBeep();
+          showToast(`✅ ಸಿಬ್ಬಂದಿ #${newItem.entity_id} - ${newItem.name} ಹಾಜರಾತಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ!`, 'success');
+        } else {
+          showToast(`⚠️ ಸಿಬ್ಬಂದಿ #${targetId} ಕಂಡುಬಂದಿಲ್ಲ.`, 'error');
+        }
+      } catch (err) {
+        showToast(`⚠️ ಸಿಬ್ಬಂದಿ #${targetId} ಹಾಜರಾತಿ ದೋಷ: ${err.message}`, 'error');
+      }
     } else {
       // Fetch shareholder directly (exact share_no lookup across all 17,076 members)
       try {
         let match = null;
         // 1. Direct lookup by Share No
-        const singleRes = await ApiService.getShareholderById(targetNo);
+        const singleRes = await ApiService.getShareholderById(targetId);
         if (singleRes && singleRes.success && singleRes.shareholder) {
           match = singleRes.shareholder;
         }
 
         // 2. Fallback search query
         if (!match) {
-          const sRes = await ApiService.getShareholders({ search: targetNo, page: 1, limit: 10 });
+          const sRes = await ApiService.getShareholders({ search: targetId, page: 1, limit: 10 });
           if (sRes && sRes.data && sRes.data.length > 0) {
-            match = sRes.data.find(s => String(s.share_no || s.share_number || '').trim() === targetNo) || sRes.data[0];
+            match = sRes.data.find(s => String(s.share_no || s.share_number || '').trim() === targetId) || sRes.data[0];
           }
         }
 
         if (match) {
           const newItem = {
-            entity_id: match.share_no || match.share_number || targetNo,
+            entity_id: match.share_no || match.share_number || targetId,
             name: match.shareholder_name || match.name || 'Member',
             department: match.place || match.village_name || '—',
             book_no: match.book_no || '—',
@@ -356,15 +411,15 @@ export default function AttendanceModule() {
             shares: match.number_of_shares || 1
           };
 
-          setAttendanceList(prev => [newItem, ...prev.filter(item => String(item.entity_id).trim() !== targetNo)]);
+          setAttendanceList(prev => [newItem, ...prev.filter(item => String(item.entity_id).trim() !== targetId)]);
           setLastScannedMember(newItem);
           playBeep();
           showToast(`✅ ಷೇರು #${newItem.entity_id} - ${newItem.name} ಹಾಜರಾತಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ!`, 'success');
         } else {
-          showToast(`⚠️ ಷೇರು #${targetNo} ವ್ಯವಸ್ಥೆಯಲ್ಲಿ ಕಂಡುಬಂದಿಲ್ಲ.`, 'error');
+          showToast(`⚠️ ಷೇರು #${targetId} ವ್ಯವಸ್ಥೆಯಲ್ಲಿ ಕಂಡುಬಂದಿಲ್ಲ.`, 'error');
         }
       } catch (err) {
-        showToast(`⚠️ ಷೇರು #${targetNo} ಹಾಜರಾತಿ ದೋಷ: ${err.message}`, 'error');
+        showToast(`⚠️ ಷೇರು #${targetId} ಹಾಜರಾತಿ ದೋಷ: ${err.message}`, 'error');
       }
     }
 
