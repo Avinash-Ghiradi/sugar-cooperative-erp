@@ -1,7 +1,70 @@
+import QRCode from 'qrcode';
 import React, { useState, useEffect } from 'react';
 import { getMemberTypeByCategory } from '../../services/api';
 import { CloudDbService } from '../../services/cloudDb';
 import { getCompanyLogo } from '../../services/organizationService';
+
+
+const qrDataUrlCache = new Map();
+
+export function getShareholderQRPayload(sh) {
+  const shareNo = String(sh?.share_no || sh?.share_number || '').trim();
+  const name = String(sh?.shareholder_name || sh?.name || '').trim();
+  const book = String(sh?.book_no || '').trim();
+  const place = String(sh?.place || sh?.village_name || '').trim();
+  // Standard format for Attendance scanning: URL readable by phones and 2D barcode scanners
+  return `https://avinash-ghiradi.github.io/sugar-cooperative-erp/?attendance=true&share_no=${encodeURIComponent(shareNo)}&name=${encodeURIComponent(name)}&place=${encodeURIComponent(place)}&book=${encodeURIComponent(book)}`;
+}
+
+export function ShareholderAttendanceQR({ shareholder, size = 36, className = '' }) {
+  const sh = shareholder || {};
+  const shareNo = String(sh.share_no || sh.share_number || '0').trim();
+  const cacheKey = `${shareNo}_${size}`;
+  const [dataUrl, setDataUrl] = useState(() => qrDataUrlCache.get(cacheKey) || '');
+
+  useEffect(() => {
+    if (!shareNo || shareNo === '0') return;
+    if (qrDataUrlCache.has(cacheKey)) {
+      setDataUrl(qrDataUrlCache.get(cacheKey));
+      return;
+    }
+    const payload = getShareholderQRPayload(sh);
+    QRCode.toDataURL(payload, {
+      margin: 0,
+      width: size * 3, // Ultra-high resolution crispness for scanning
+      errorCorrectionLevel: 'M',
+      color: {
+        dark: '#064e3b', // Deep emerald matching cooperative card
+        light: '#ffffff'
+      }
+    }).then(url => {
+      qrDataUrlCache.set(cacheKey, url);
+      setDataUrl(url);
+    }).catch(err => {
+      console.warn('QR code gen error:', err);
+    });
+  }, [shareNo, size]);
+
+  if (!dataUrl) {
+    return (
+      <div
+        style={{ width: `${size}px`, height: `${size}px` }}
+        className="bg-emerald-50/80 rounded border border-emerald-300 flex items-center justify-center text-[7px] text-emerald-800 font-bold"
+      >
+        QR
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={dataUrl}
+      alt={`Attendance QR - ${shareNo}`}
+      className={`object-contain block ${className}`}
+      style={{ width: `${size}px`, height: `${size}px` }}
+    />
+  );
+}
 
 const STORAGE_KEY_ID_SETTINGS = 'sugar_erp_id_card_custom_settings_v1';
 
@@ -15,6 +78,7 @@ export function getCustomIdCardSettings() {
       customMdSignature: '',
       hideHeader: false,
       showSugarcaneWatermark: true,
+      showQrCode: true,
       backgroundOpacity: 1
     };
   } catch (e) {
@@ -312,6 +376,7 @@ export default function OfficialShareholderIDCard({
   shareholder,
   side = 'Front',
   showSeal = true,
+  showQrCode,
   scale = 1,
   cardSize = '85x54',
   customLogo,
@@ -346,6 +411,7 @@ export default function OfficialShareholderIDCard({
   const effectiveMdSig = customMdSignature !== undefined ? customMdSignature : globalSettings.customMdSignature;
   const effectiveHideHeader = hideHeader !== undefined ? hideHeader : globalSettings.hideHeader;
   const effectiveShowWatermark = showSugarcaneWatermark !== undefined ? showSugarcaneWatermark : globalSettings.showSugarcaneWatermark;
+  const effectiveShowQrCode = showQrCode !== undefined ? showQrCode : (globalSettings.showQrCode !== undefined ? globalSettings.showQrCode : true);
   const bgOpacity = globalSettings.backgroundOpacity !== undefined ? globalSettings.backgroundOpacity : 1;
 
   // Google Font 'Anek Kannada' / 'Aneka Kannada' applied uniformly
@@ -537,10 +603,10 @@ export default function OfficialShareholderIDCard({
                 </div>
               </div>
 
-              {/* 4. BOTTOM ROW: Signatures (Fixed with shrink-0, always 100% visible) */}
-              <div className="relative z-10 shrink-0 px-3 pb-1 pt-0.5 flex items-end justify-between border-t border-slate-300/80 bg-white/40" style={kannadaFontStyle}>
+              {/* 4. BOTTOM ROW: Signatures & Attendance QR (Fixed with shrink-0, always 100% visible) */}
+              <div className="relative z-10 shrink-0 px-2.5 pb-1 pt-0.5 flex items-end justify-between border-t border-slate-300/80 bg-white/40" style={kannadaFontStyle}>
                 {/* Left: Member Signature */}
-                <div className="text-center w-28">
+                <div className="text-center w-24">
                   <div className="h-5 flex items-center justify-center">
                     {sh.signature_url ? (
                       <img
@@ -565,8 +631,20 @@ export default function OfficialShareholderIDCard({
                   </div>
                 </div>
 
+                {/* Center: Official Attendance QR Code for General Meetings & Voting */}
+                {effectiveShowQrCode && (
+                  <div className="flex flex-col items-center justify-center shrink-0 mx-1 mb-0.5" title="ಹಾಜರಾತಿ ಕ್ಯೂಆರ್ ಕೋಡ್ (Attendance QR Code)">
+                    <div className="p-0.5 bg-white border border-[#166534]/70 rounded shadow-sm flex items-center justify-center">
+                      <ShareholderAttendanceQR shareholder={sh} size={33} />
+                    </div>
+                    <span className="text-[6.5px] font-black text-[#14532d] tracking-tight leading-none mt-0.5 uppercase whitespace-nowrap">
+                      ಹಾಜರಾತಿ QR
+                    </span>
+                  </div>
+                )}
+
                 {/* Right: Managing Director Signature (Custom uploaded or official default) */}
-                <div className="text-center w-32">
+                <div className="text-center w-28">
                   <div className="h-5 flex items-center justify-center">
                     <img
                       src={effectiveMdSig || './id_assets/md_signature_transparent.png'}
@@ -624,12 +702,27 @@ export default function OfficialShareholderIDCard({
                 <div>3. ಈ ಚೀಟಿ ಕಳೆದುಹೋದಲ್ಲಿ ತಕ್ಷಣವೇ ಕಾರ್ಖಾನೆಯ ಆಡಳಿತ ಕಚೇರಿಗೆ ತಿಳಿಸತಕ್ಕದ್ದು.</div>
               </div>
 
-              {/* Footer with Barcode & Signatures */}
+              {/* Footer with Barcode, Attendance QR & Signatures */}
               <div className="pt-1 border-t border-slate-300 flex items-center justify-between text-[8px]">
                 {/* Simulated Barcode */}
-                <div className="bg-white px-2 py-0.5 rounded border border-slate-300 font-mono font-bold text-[7.5px] text-slate-900 tracking-widest text-center">
-                  |||||| || ||| {shareNo} |||| |||
+                <div className="flex flex-col gap-0.5">
+                  <div className="bg-white px-2 py-0.5 rounded border border-slate-300 font-mono font-bold text-[7.5px] text-slate-900 tracking-widest text-center">
+                    |||||| || ||| {shareNo} |||| |||
+                  </div>
+                  <span className="text-[6.5px] text-slate-600 font-medium">ವಾರ್ಷಿಕ ಮಹಾಸಭೆ ಹಾಜರಾತಿಗಾಗಿ ಅಧಿಕೃತ ಕಾರ್ಡ್</span>
                 </div>
+
+                {/* Back Side Dedicated Attendance QR Code */}
+                {effectiveShowQrCode && (
+                  <div className="flex items-center gap-1.5 bg-white/95 border border-emerald-700/50 px-1.5 py-0.5 rounded shadow-sm">
+                    <ShareholderAttendanceQR shareholder={sh} size={38} />
+                    <div className="flex flex-col text-left leading-tight">
+                      <span className="text-[7.5px] font-black text-emerald-950">ಹಾಜರಾತಿ QR</span>
+                      <span className="text-[6px] text-emerald-800 font-bold">Attendance Scan</span>
+                      <span className="text-[6px] font-mono text-slate-800 font-bold">#{shareNo}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="text-right">
                   <div className="font-bold text-slate-900 text-[8px]">ಆಡಳಿತ ಮಂಡಳಿ ಪರವಾಗಿ</div>

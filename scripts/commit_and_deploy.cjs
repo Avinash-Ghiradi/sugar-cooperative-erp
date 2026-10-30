@@ -6,7 +6,7 @@ console.log('Running git commands in:', cwd);
 
 execSync('git add -A', { cwd, stdio: 'inherit' });
 try {
-  execSync('git commit -m "fix: prioritize exact shareholder number match first before partial matches in search"', { cwd, stdio: 'inherit' });
+  execSync('git commit -m "feat: add QR Code for shareholder attendance system and display on ID cards"', { cwd, stdio: 'inherit' });
 } catch (e) {
   console.log('Commit note:', e.message);
 }

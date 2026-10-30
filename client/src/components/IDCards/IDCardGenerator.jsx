@@ -11,7 +11,7 @@ import OfficialShareholderIDCard, {
 } from './OfficialShareholderIDCard';
 import { getCompanyLogo } from '../../services/organizationService';
 import {
-  Contact, Printer, Search, RefreshCw, CheckCircle2, ShieldCheck,
+  Contact, Printer, Search, RefreshCw, CheckCircle2, ShieldCheck, QrCode,
   BookOpen, Eye, Image as ImageIcon, SlidersHorizontal, RotateCw, X, Download, Filter,
   Upload, Trash2, Check, Sparkles, Cloud
 } from 'lucide-react';
@@ -22,6 +22,10 @@ export default function IDCardGenerator() {
   const [cardSide, setCardSide] = useState('Front'); // 'Front' or 'Back'
   const [printSides, setPrintSides] = useState('both'); // 'both' (Front & Back), 'front', 'back'
   const [showSeal, setShowSeal] = useState(true);
+  const [showQrCode, setShowQrCode] = useState(() => {
+    const s = getCustomIdCardSettings();
+    return s.showQrCode !== undefined ? Boolean(s.showQrCode) : true;
+  });
   const [search, setSearch] = useState('');
   const [circleFilter, setCircleFilter] = useState('');
   const [placeFilter, setPlaceFilter] = useState('');
@@ -742,6 +746,26 @@ export default function IDCardGenerator() {
             {showSeal ? 'ಅಧಿಕೃತ ಮೊಹರು (Seal: ON)' : 'Seal: OFF'}
           </button>
 
+          {/* Shareholder Attendance System QR Code Toggle */}
+          <button
+            onClick={() => {
+              const nextVal = !showQrCode;
+              setShowQrCode(nextVal);
+              const updated = { ...customSettings, showQrCode: nextVal };
+              setCustomSettings(updated);
+              saveCustomIdCardSettings(updated);
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
+              showQrCode
+                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700 shadow-sm'
+                : 'bg-slate-900 text-slate-500 border-slate-800'
+            }`}
+            title="Toggle Shareholder Attendance System QR Code on ID Card (ಹಾಜರಾತಿ QR ಕೋಡ್)"
+          >
+            <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+            {showQrCode ? 'ಹಾಜರಾತಿ QR: ON' : 'QR: OFF'}
+          </button>
+
           {/* Refresh / Cache Invalidate Button */}
           <button
             onClick={() => {
@@ -849,6 +873,7 @@ export default function IDCardGenerator() {
                     customMdSignature={customSettings.customMdSignature}
                     hideHeader={customSettings.hideHeader}
                     showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                    showQrCode={showQrCode}
                     scale={1}
                   />
                 )}
@@ -1022,6 +1047,7 @@ export default function IDCardGenerator() {
                       customMdSignature={customSettings.customMdSignature}
                       hideHeader={customSettings.hideHeader}
                       showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                    showQrCode={showQrCode}
                       scale={0.96}
                     />
                   </div>
@@ -1065,6 +1091,7 @@ export default function IDCardGenerator() {
                               customMdSignature={customSettings.customMdSignature}
                               hideHeader={customSettings.hideHeader}
                               showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                    showQrCode={showQrCode}
                               scale={1}
                             />
                           </div>
@@ -1083,6 +1110,7 @@ export default function IDCardGenerator() {
                               customMdSignature={customSettings.customMdSignature}
                               hideHeader={customSettings.hideHeader}
                               showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                    showQrCode={showQrCode}
                               scale={1}
                             />
                           </div>
@@ -1116,6 +1144,7 @@ export default function IDCardGenerator() {
                             customMdSignature={customSettings.customMdSignature}
                             hideHeader={customSettings.hideHeader}
                             showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                    showQrCode={showQrCode}
                             scale={1}
                           />
                         </div>
@@ -1151,6 +1180,7 @@ export default function IDCardGenerator() {
                       customMdSignature={customSettings.customMdSignature}
                       hideHeader={customSettings.hideHeader}
                       showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                    showQrCode={showQrCode}
                       scale={1}
                     />
                   </div>
@@ -1471,6 +1501,7 @@ export default function IDCardGenerator() {
                     customMdSignature={customSettings.customMdSignature}
                     hideHeader={customSettings.hideHeader}
                     showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                    showQrCode={showQrCode}
                     scale={1.1}
                   />
                 )}
@@ -1543,6 +1574,7 @@ export default function IDCardGenerator() {
                 customMdSignature={customSettings.customMdSignature}
                 hideHeader={customSettings.hideHeader}
                 showSugarcaneWatermark={customSettings.showSugarcaneWatermark}
+                    showQrCode={showQrCode}
                 scale={1.2}
               />
             </div>

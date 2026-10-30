@@ -21,7 +21,15 @@ export const AuthProvider = ({ children }) => {
     };
   });
 
-  const [activeModule, setActiveModule] = useState('dashboard');
+  const [activeModule, setActiveModule] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('attendance') || params.get('attn') || params.get('share_no')) {
+        return 'attendance';
+      }
+    } catch (e) {}
+    return 'dashboard';
+  });
   const [activeReportSubTab, setActiveReportSubTab] = useState('shareholders');
   const [toastMessage, setToastMessage] = useState(null);
 
