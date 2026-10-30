@@ -6,7 +6,7 @@ console.log('Running git commands in:', cwd);
 
 execSync('git add -A', { cwd, stdio: 'inherit' });
 try {
-  execSync('git commit -m "feat: remove mock employee details, add dual Portrait and Landscape formats for Staff ID Cards, and add QR scanner to Employee Attendance"', { cwd, stdio: 'inherit' });
+  execSync('git commit -m "feat: optimize Portrait Staff ID card with prominent MD signature, and enable real-time Supabase Cloud DB for Employees and Attendance"', { cwd, stdio: 'inherit' });
 } catch (e) {
   console.log('Commit note:', e.message);
 }

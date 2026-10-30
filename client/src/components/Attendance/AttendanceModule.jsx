@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '../../services/api';
+import { CloudDbService } from '../../services/cloudDb';
 import { useAuth } from '../../context/AuthContext';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {
@@ -241,6 +242,25 @@ export default function AttendanceModule() {
 
   const loadAttendance = async () => {
     setLoading(true);
+
+    // 1. Check Cloud Database for saved attendance for this date & type
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudAttn = await CloudDbService.getCollection('attendance_records');
+        if (Array.isArray(cloudAttn)) {
+          const savedDay = cloudAttn.find(r => r.date === selectedDate && r.type === recordType);
+          if (savedDay && Array.isArray(savedDay.list) && savedDay.list.length > 0) {
+            setAttendanceList(savedDay.list);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Cloud DB attendance load error:', err);
+      }
+    }
+
+    // 2. Default initialization if not yet saved in Cloud DB
     if (recordType === 'Shareholder') {
       const shRes = await ApiService.getShareholders({ page: 1, limit: 100, status: 'Active' });
       if (shRes && shRes.data) {
@@ -438,8 +458,22 @@ export default function AttendanceModule() {
     }));
   };
 
-  const handleSaveAttendance = () => {
+  const handleSaveAttendance = async () => {
     const presentCount = attendanceList.filter(i => i.status === 'Present').length;
+    if (CloudDbService.isEnabled()) {
+      try {
+        await CloudDbService.saveCollectionItem('attendance_records', `${selectedDate}_${recordType}`, {
+          date: selectedDate,
+          type: recordType,
+          list: attendanceList,
+          updated_at: new Date().toISOString()
+        });
+        showToast(`✅ ${selectedDate} ದಿನಾಂಕದ ಹಾಜರಾತಿ ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ! (${presentCount} Present)`, 'success');
+        return;
+      } catch (err) {
+        console.warn('Cloud DB save attendance error:', err);
+      }
+    }
     showToast(`Attendance saved for ${selectedDate}! (${presentCount} Present out of ${attendanceList.length})`, 'success');
   };
 

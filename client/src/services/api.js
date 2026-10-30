@@ -1059,13 +1059,14 @@ export async function syncAllCloudWorkflows() {
   const isBlankReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true');
 
   try {
-    const [enr, varasa, varg, merges, txs, allotments] = await Promise.all([
+    const [enr, varasa, varg, merges, txs, allotments, emps] = await Promise.all([
       CloudDbService.getCollection('enrollments').catch(() => null),
       CloudDbService.getCollection('varasa').catch(() => null),
       CloudDbService.getCollection('vargavane').catch(() => null),
       CloudDbService.getCollection('merge_requests').catch(() => null),
       CloudDbService.getCollection('transactions').catch(() => null),
-      CloudDbService.getCollection('sugar_allotments').catch(() => null)
+      CloudDbService.getCollection('sugar_allotments').catch(() => null),
+      CloudDbService.getCollection('employees').catch(() => null)
     ]);
 
     // Update local state strictly from Cloud DB (Strictly ONE-WAY sync from Cloud to Local)
@@ -1125,6 +1126,27 @@ export async function syncAllCloudWorkflows() {
     if (Array.isArray(allotments)) {
       mockSugarAllotments = allotments;
       saveStoredData(STORAGE_KEY_SA, mockSugarAllotments);
+    }
+
+    if (Array.isArray(emps)) {
+      // Merge cloud employees with any local entries not yet uploaded
+      const empMap = new Map();
+      emps.forEach(e => {
+        const k = String(e.employee_id || e.id).trim();
+        if (k) empMap.set(k, e);
+      });
+      for (const localEmp of mockEmployees) {
+        const k = String(localEmp.employee_id || localEmp.id).trim();
+        if (k && !empMap.has(k)) {
+          CloudDbService.saveCollectionItem('employees', k, localEmp).catch(() => {});
+          empMap.set(k, localEmp);
+        }
+      }
+      mockEmployees = Array.from(empMap.values());
+      saveStoredData(STORAGE_KEY_EMP, mockEmployees);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('employees_updated', { detail: mockEmployees }));
+      }
     }
   } catch (err) {
     console.warn('syncAllCloudWorkflows error:', err);
@@ -5425,6 +5447,34 @@ const newSh = {
   },
 
   async getEmployees() {
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudData = await CloudDbService.getCollection('employees');
+        if (Array.isArray(cloudData)) {
+          const empMap = new Map();
+          cloudData.forEach(e => {
+            const k = String(e.employee_id || e.id).trim();
+            if (k) empMap.set(k, e);
+          });
+
+          // Upload any local records not yet present in Cloud DB
+          for (const localEmp of mockEmployees) {
+            const k = String(localEmp.employee_id || localEmp.id).trim();
+            if (k && !empMap.has(k)) {
+              await CloudDbService.saveCollectionItem('employees', k, localEmp).catch(() => {});
+              empMap.set(k, localEmp);
+            }
+          }
+
+          mockEmployees = Array.from(empMap.values());
+          saveStoredData(STORAGE_KEY_EMP, mockEmployees);
+          return { success: true, data: mockEmployees };
+        }
+      } catch (err) {
+        console.warn('Cloud DB getEmployees error:', err);
+      }
+    }
+
     const apiRes = await fetchApi('/employees');
     if (apiRes && apiRes.success) return apiRes;
 
@@ -5432,9 +5482,6 @@ const newSh = {
   },
 
   async addEmployee(data) {
-    const apiRes = await fetchApi('/employees', { method: 'POST', body: JSON.stringify(data) });
-    if (apiRes && apiRes.success) return apiRes;
-
     const nextId = mockEmployees.length > 0 ? Math.max(...mockEmployees.map(e => Number(e.id) || 0)) + 1 : 1;
     const assignedEmpId = data.employee_id || `EMP-${String(nextId).padStart(3, '0')}`;
     const newEmp = {
@@ -5456,37 +5503,100 @@ const newSh = {
       signature_url: data.signature_url || '',
       status: data.status || 'Active'
     };
-    mockEmployees.unshift(newEmp);
+
+    // 1. Save directly to Supabase Cloud Database (so all devices worldwide get it)
+    if (CloudDbService.isEnabled()) {
+      try {
+        await CloudDbService.saveCollectionItem('employees', newEmp.employee_id, newEmp);
+      } catch (e) {
+        console.warn('Could not save employee to cloud:', e);
+      }
+    }
+
+    // 2. Update local state
+    mockEmployees = [newEmp, ...mockEmployees.filter(e => e.employee_id !== newEmp.employee_id)];
     saveStoredData(STORAGE_KEY_EMP, mockEmployees);
+
+    // 3. Broadcast update to other tabs/listeners
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('employees_updated', { detail: newEmp }));
+    }
+
     return { success: true, employee_id: newEmp.employee_id, employee: newEmp };
   },
 
   async updateEmployee(idOrEmpId, data) {
     const cleanId = String(idOrEmpId).trim();
     const idx = mockEmployees.findIndex(e => String(e.id) === cleanId || String(e.employee_id) === cleanId);
+    let updated = null;
     if (idx !== -1) {
-      mockEmployees[idx] = { ...mockEmployees[idx], ...data };
-      saveStoredData(STORAGE_KEY_EMP, mockEmployees);
-      return { success: true, employee: mockEmployees[idx] };
+      updated = { ...mockEmployees[idx], ...data };
+      mockEmployees[idx] = updated;
+    } else {
+      updated = { id: cleanId, employee_id: cleanId, ...data };
+      mockEmployees.unshift(updated);
     }
-    return { success: false, message: 'Employee not found' };
+    saveStoredData(STORAGE_KEY_EMP, mockEmployees);
+
+    // Update in Cloud Database
+    if (CloudDbService.isEnabled()) {
+      try {
+        await CloudDbService.saveCollectionItem('employees', updated.employee_id || cleanId, updated);
+      } catch (e) {
+        console.warn('Could not update employee in cloud:', e);
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('employees_updated', { detail: updated }));
+    }
+
+    return { success: true, employee: updated };
   },
 
   async deleteEmployee(idOrEmpId) {
     const cleanId = String(idOrEmpId).trim();
     const idx = mockEmployees.findIndex(e => String(e.id) === cleanId || String(e.employee_id) === cleanId);
+    let removed = null;
     if (idx !== -1) {
-      const removed = mockEmployees.splice(idx, 1);
+      removed = mockEmployees.splice(idx, 1)[0];
       saveStoredData(STORAGE_KEY_EMP, mockEmployees);
-      return { success: true, employee: removed[0] };
     }
-    return { success: false, message: 'Employee not found' };
+
+    // Delete from Cloud Database
+    if (CloudDbService.isEnabled()) {
+      try {
+        await CloudDbService.deleteCollectionItem('employees', cleanId);
+        if (removed?.employee_id && removed.employee_id !== cleanId) {
+          await CloudDbService.deleteCollectionItem('employees', removed.employee_id);
+        }
+      } catch (e) {
+        console.warn('Could not delete employee from cloud:', e);
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('employees_updated', { detail: { deleted: cleanId } }));
+    }
+
+    return { success: true, employee: removed };
   },
 
   async getEmployeeById(idOrEmpId) {
     const cleanId = String(idOrEmpId).trim();
-    const emp = mockEmployees.find(e => String(e.id) === cleanId || String(e.employee_id) === cleanId);
+    let emp = mockEmployees.find(e => String(e.id) === cleanId || String(e.employee_id) === cleanId);
     if (emp) return { success: true, employee: emp };
+
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudData = await CloudDbService.getCollection('employees');
+        if (Array.isArray(cloudData)) {
+          emp = cloudData.find(e => String(e.id) === cleanId || String(e.employee_id) === cleanId);
+          if (emp) return { success: true, employee: emp };
+        }
+      } catch (e) {}
+    }
+
     return { success: false, message: 'Employee not found' };
   },
 

@@ -106,8 +106,8 @@ export default function OfficialStaffIDCard({
             /* ----- PORTRAIT FRONT VIEW ----- */
             <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900">
               {/* Top Corporate Header */}
-              <div className="bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-950 text-white p-2.5 flex flex-col items-center justify-center border-b-2 border-amber-500 shrink-0 text-center relative shadow-sm">
-                <div className="w-9 h-9 rounded-full bg-white p-0.5 shrink-0 flex items-center justify-center shadow-md mb-1">
+              <div className="bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-950 text-white px-2 py-1.5 flex flex-col items-center justify-center border-b-2 border-amber-500 shrink-0 text-center relative shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-white p-0.5 shrink-0 flex items-center justify-center shadow-md mb-0.5">
                   <img
                     src={effectiveLogo}
                     alt="Factory Logo"
@@ -117,28 +117,28 @@ export default function OfficialStaffIDCard({
                       if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
                     }}
                   />
-                  <span className="hidden w-full h-full rounded-full bg-emerald-800 text-white font-black text-[9px] items-center justify-center">
+                  <span className="hidden w-full h-full rounded-full bg-emerald-800 text-white font-black text-[8px] items-center justify-center">
                     BSSK
                   </span>
                 </div>
-                <div style={kannadaFontStyle} className="space-y-0.5">
+                <div style={kannadaFontStyle} className="space-y-0.2">
                   <h2 className="text-[9.5px] font-black tracking-tight leading-tight text-amber-300 drop-shadow-sm">
                     ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.
                   </h2>
-                  <p className="text-[7px] font-medium text-slate-200">
+                  <p className="text-[6.8px] font-medium text-slate-200 leading-none">
                     ಮರಗೂರ - 586204, ತಾ: ಚಡಚಣ, ಜಿ: ವಿಜಯಪುರ
                   </p>
-                  <div className="inline-block bg-amber-500 text-slate-950 font-black text-[6.5px] px-2 py-0.2 rounded-full tracking-wider uppercase mt-0.5">
+                  <div className="inline-block bg-amber-500 text-slate-950 font-black text-[6px] px-1.5 py-0.2 rounded-full tracking-wider uppercase mt-0.5">
                     ಅಧಿಕೃತ ಸಿಬ್ಬಂದಿ ಗುರುತಿನ ಚೀಟಿ • STAFF ID
                   </div>
                 </div>
               </div>
 
-              {/* Middle Section: Photo & Employee Profile */}
+              {/* Middle Section: Photo & Profile Details */}
               <div className="flex-1 flex flex-col items-center justify-center px-2 py-1 relative">
                 {/* Photo Frame with Seal */}
-                <div className="relative shrink-0 flex flex-col items-center mt-0.5">
-                  <div className="w-[78px] h-[94px] rounded-lg border-2 border-emerald-800 overflow-hidden bg-slate-100 shadow-md relative flex items-center justify-center">
+                <div className="relative shrink-0 flex flex-col items-center">
+                  <div className="w-[70px] h-[86px] rounded-lg border-2 border-emerald-800 overflow-hidden bg-slate-100 shadow-md relative flex items-center justify-center">
                     {emp.photo_url ? (
                       <img
                         src={emp.photo_url}
@@ -147,88 +147,102 @@ export default function OfficialStaffIDCard({
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-b from-slate-200 to-slate-300 flex flex-col items-center justify-center text-slate-500">
-                        <User className="w-8 h-8 text-slate-400" />
-                        <span className="text-[7px] font-bold mt-1 text-slate-600">PHOTO</span>
+                        <User className="w-7 h-7 text-slate-400" />
+                        <span className="text-[6.5px] font-bold mt-0.5 text-slate-600">PHOTO</span>
                       </div>
                     )}
 
                     {/* Official Seal Watermark */}
                     {showSeal && (
                       <div
-                        className="absolute -left-5 -bottom-3 w-[56px] h-[56px] pointer-events-none select-none z-20 opacity-90"
+                        className="absolute -left-5 -bottom-3 w-[52px] h-[52px] pointer-events-none select-none z-20 opacity-90"
                         style={{ transform: 'rotate(-10deg)' }}
                       >
                         <OfficialSocietySeal className="w-full h-full" />
                       </div>
                     )}
                   </div>
-                  <span className="text-[6.5px] text-slate-500 font-medium mt-0.5">ಉದ್ಯೋಗಿ ಸಹಿ / Signature</span>
                 </div>
 
-                {/* Emp ID Badge */}
-                <div className="mt-1">
+                {/* Emp ID Badge & Blood Group Tag on SAME line */}
+                <div className="flex items-center justify-center gap-1.5 mt-1">
                   <span className="bg-emerald-950 text-amber-300 text-[8.5px] font-black font-mono px-2 py-0.5 rounded-full border border-amber-400 shadow-sm inline-block">
                     {empId}
                   </span>
+                  {bloodGroup && (
+                    <span className="bg-rose-50 text-rose-700 border border-rose-300 text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm flex items-center gap-0.5">
+                      <span>🩸</span> {bloodGroup}
+                    </span>
+                  )}
                 </div>
 
                 {/* Names */}
-                <div className="text-center mt-0.5 w-full px-1" style={kannadaFontStyle}>
+                <div className="text-center mt-1 w-full px-1" style={kannadaFontStyle}>
                   <div className="font-black text-[12.5px] text-slate-950 leading-tight truncate">
                     {empNameKannada}
                   </div>
                   {empNameEnglish && (
-                    <div className="text-[8px] font-bold text-slate-600 font-sans tracking-wide truncate uppercase">
+                    <div className="text-[8px] font-bold text-slate-600 font-sans tracking-wide truncate uppercase mt-0.5">
                       {empNameEnglish}
                     </div>
                   )}
                 </div>
 
                 {/* Designation & Department */}
-                <div className="mt-0.5 text-center w-full px-1" style={kannadaFontStyle}>
-                  <div className="inline-block bg-emerald-100/90 text-emerald-950 font-black text-[8.5px] px-2 py-0.5 rounded border border-emerald-300 max-w-full truncate">
+                <div className="mt-1 text-center w-full px-1" style={kannadaFontStyle}>
+                  <div className="inline-block bg-emerald-100/90 text-emerald-950 font-black text-[8.5px] px-2 py-0.5 rounded border border-emerald-300 max-w-full truncate shadow-xs">
                     {designation}
                   </div>
-                  <div className="text-[7.5px] font-bold text-slate-700 mt-0.5 truncate">
-                    {department}
-                  </div>
+                  {department && department !== '—' && (
+                    <div className="text-[7.5px] font-bold text-slate-700 mt-0.5 truncate">
+                      {department}
+                    </div>
+                  )}
                 </div>
 
-                {/* Compact Details Box */}
-                <div className="w-full bg-slate-100/80 border border-slate-200 rounded-lg p-1.5 mt-1 text-[7.5px] text-slate-700 space-y-0.5">
-                  <div className="flex items-center justify-between">
-                    <span>ರಕ್ತದ ಗುಂಪು:</span>
-                    <strong className="text-rose-700 font-black font-mono">{bloodGroup || '—'}</strong>
+                {/* Compact Mobile & Joining Date line */}
+                {(mobile !== '—' || joiningDate !== '—') && (
+                  <div className="flex items-center justify-center gap-2 text-[7.2px] text-slate-600 font-mono mt-1 border-t border-slate-200/80 pt-0.5 w-full">
+                    {mobile !== '—' && <span>📞 {mobile}</span>}
+                    {mobile !== '—' && joiningDate !== '—' && <span className="text-slate-400">•</span>}
+                    {joiningDate !== '—' && <span>ಸೇರ್ಪಡೆ: {joiningDate}</span>}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span>ಮೊಬೈಲ್:</span>
-                    <strong className="font-mono text-slate-900">{mobile}</strong>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>ಸೇರ್ಪಡೆ:</span>
-                    <strong className="font-mono text-slate-900">{joiningDate}</strong>
-                  </div>
-                </div>
+                )}
               </div>
 
-              {/* Bottom Footer with MD Signature */}
-              <div className="px-3 py-1.5 border-t border-slate-200 bg-white/90 flex items-center justify-between text-[7px] text-slate-600">
-                <div className="text-left font-bold text-emerald-900">
-                  ಅಧಿಕೃತ ಸಿಬ್ಬಂದಿ ಪತ್ರ
-                </div>
+              {/* Bottom Signatures Section - PROMINENT, LARGE & FULLY VISIBLE */}
+              <div className="px-3 py-1.5 border-t border-slate-300/80 bg-white/95 flex items-end justify-between text-[7px] text-slate-700 shrink-0">
+                {/* Left: Employee Sign */}
                 <div className="flex flex-col items-center">
-                  <img
-                    src={effectiveMdSig}
-                    alt="MD Sign"
-                    className="h-4 object-contain"
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                  <span className="font-bold text-slate-900">ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು (MD)</span>
+                  <div className="h-6 flex items-end justify-center">
+                    <span className="font-serif italic text-slate-700 text-[8.5px] border-b border-slate-400 px-1.5 pb-0.5">
+                      {empNameEnglish ? empNameEnglish.split(' ')[0] : 'Sign'}
+                    </span>
+                  </div>
+                  <span className="text-[6.2px] font-bold text-slate-600 mt-0.5">ಉದ್ಯೋಗಿ ಸಹಿ</span>
+                </div>
+
+                {/* Right: Managing Director Sign (CLEAR & PROMINENT) */}
+                <div className="flex flex-col items-center">
+                  <div className="h-7 flex items-end justify-center">
+                    <img
+                      src={effectiveMdSig}
+                      alt="MD Signature"
+                      className="h-7 object-contain block drop-shadow-sm"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  <div className="w-20 border-t border-slate-400"></div>
+                  <span className="text-[6.8px] font-black text-slate-900 mt-0.5 leading-tight">
+                    ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು (MD)
+                  </span>
                 </div>
               </div>
 
               {/* Bottom Decorative Band */}
-              <div className="h-1 bg-gradient-to-r from-emerald-800 via-amber-400 to-emerald-900"></div>
+              <div className="h-1 bg-gradient-to-r from-emerald-900 via-amber-400 to-emerald-900 shrink-0"></div>
             </div>
           ) : (
             /* ----- PORTRAIT BACK VIEW ----- */
@@ -238,10 +252,10 @@ export default function OfficialStaffIDCard({
                 <h3 className="text-[9px] font-black text-slate-900 leading-tight">
                   ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.
                 </h3>
-                <p className="text-[7px] text-slate-500 font-medium">
+                <p className="text-[6.8px] text-slate-500 font-medium">
                   ಮರಗೂರ - 586204, ತಾ: ಚಡಚಣ, ಜಿ: ವಿಜಯಪುರ
                 </p>
-                <div className="text-[7px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200 inline-block mt-0.5">
+                <div className="text-[6.8px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200 inline-block mt-0.5">
                   ಸಿಬ್ಬಂದಿ ಶಾಸನಬದ್ಧ ದಾಖಲೆ & ಹಾಜರಾತಿ
                 </div>
               </div>
@@ -250,23 +264,35 @@ export default function OfficialStaffIDCard({
               <div className="my-auto flex flex-col items-center justify-center">
                 {showQrCode && (
                   <div className="bg-white p-1 rounded-xl border-2 border-emerald-600 shadow-md">
-                    <StaffAttendanceQR employee={emp} size={104} />
+                    <StaffAttendanceQR employee={emp} size={96} />
                   </div>
                 )}
                 <div className="mt-1 text-center" style={kannadaFontStyle}>
-                  <div className="text-[8.5px] font-black text-emerald-950 flex items-center justify-center gap-1">
+                  <div className="text-[8px] font-black text-emerald-950 flex items-center justify-center gap-1">
                     <span>📱 ಹಾಜರಾತಿ QR ಕೋಡ್</span>
                   </div>
-                  <p className="text-[6.8px] text-slate-500">
+                  <p className="text-[6.5px] text-slate-500">
                     ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ತ್ವರಿತ ಹಾಜರಾತಿ ದಾಖಲಿಸಿ
                   </p>
                 </div>
               </div>
 
-              {/* Extended Details Grid */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-[7.5px] text-slate-800 space-y-0.5" style={kannadaFontStyle}>
+              {/* Complete Extended Details Grid on Back */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-[7.2px] text-slate-800 space-y-0.5" style={kannadaFontStyle}>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">ಆಧಾರ್:</span>
+                  <span className="text-slate-500">ರಕ್ತದ ಗುಂಪು:</span>
+                  <strong className="text-rose-700 font-mono font-black">{bloodGroup || '—'}</strong>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">ಮೊಬೈಲ್ ಸಂಖ್ಯೆ:</span>
+                  <strong className="font-mono text-slate-900">{mobile}</strong>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">ಸೇರ್ಪಡೆ ದಿನಾಂಕ:</span>
+                  <strong className="font-mono text-slate-900">{joiningDate}</strong>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">ಆಧಾರ್ ಕಾರ್ಡ್:</span>
                   <strong className="font-mono text-slate-900">{aadhaarNo}</strong>
                 </div>
                 <div className="flex items-center justify-between">
@@ -288,14 +314,14 @@ export default function OfficialStaffIDCard({
               </div>
 
               {/* Statutory Rules & Barcode */}
-              <div className="border-t border-slate-200 pt-1 text-center space-y-0.5">
-                <p className="text-[6.5px] text-slate-500">
+              <div className="border-t border-slate-200 pt-0.5 text-center space-y-0.5">
+                <p className="text-[6.2px] text-slate-500">
                   • ಕಾರ್ಖಾನೆಯ ಆವರಣದಲ್ಲಿ ಗುರುತಿನ ಚೀಟಿ ಧರಿಸುವುದು ಕಡ್ಡಾಯವಾಗಿದೆ.
                 </p>
-                <div className="text-[8px] font-mono tracking-widest text-slate-700 font-bold">
+                <div className="text-[7.5px] font-mono tracking-widest text-slate-700 font-bold">
                   ||||| ||| {empId} |||||
                 </div>
-                <div className="text-[7px] text-slate-600 font-bold pt-0.5">
+                <div className="text-[6.8px] text-slate-600 font-bold">
                   ಸಿಬ್ಬಂದಿ ನಿರ್ವಾಹಕರು (Personnel Manager)
                 </div>
               </div>
@@ -458,7 +484,7 @@ export default function OfficialStaffIDCard({
                   <img
                     src={effectiveMdSig}
                     alt="MD Sign"
-                    className="h-4 object-contain"
+                    className="h-5 object-contain"
                     onError={(e) => {
                       e.target.style.display = 'none';
                     }}

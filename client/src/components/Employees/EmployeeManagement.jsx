@@ -66,6 +66,16 @@ export default function EmployeeManagement() {
 
   useEffect(() => {
     loadEmployees();
+    const interval = setInterval(loadEmployees, 8000);
+    const handleFocus = () => loadEmployees();
+    const handleUpdate = () => loadEmployees();
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('employees_updated', handleUpdate);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('employees_updated', handleUpdate);
+    };
   }, []);
 
   const loadEmployees = async () => {
@@ -85,7 +95,7 @@ export default function EmployeeManagement() {
     setFormData({
       ...initialForm,
       employee_id: nextEmpId,
-      epf_uan_no: `UAN-1002938475${String(nextNum).padStart(2, '0')}`
+      epf_uan_no: ''
     });
     setShowAddEditModal(true);
   };
