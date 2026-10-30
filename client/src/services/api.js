@@ -1890,6 +1890,63 @@ export const ApiService = {
         }
         return 0;
       });
+    } else if (search) {
+      const qLower = search.trim().toLowerCase();
+      const isNum = /^\d+$/.test(qLower);
+      filtered = [...filtered].sort((a, b) => {
+        const aSh = String(a.share_no || a.share_number || '').trim().toLowerCase();
+        const bSh = String(b.share_no || b.share_number || '').trim().toLowerCase();
+
+        if (isNum) {
+          // 1. Exact share_no match FIRST
+          const aExact = aSh === qLower;
+          const bExact = bSh === qLower;
+          if (aExact && !bExact) return -1;
+          if (!aExact && bExact) return 1;
+
+          // 2. Starts with share_no (prefix match)
+          const aStarts = aSh.startsWith(qLower);
+          const bStarts = bSh.startsWith(qLower);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          if (aStarts && bStarts) {
+            return (parseInt(aSh, 10) || 0) - (parseInt(bSh, 10) || 0);
+          }
+
+          // 3. Contains share_no
+          const aContains = aSh.includes(qLower);
+          const bContains = bSh.includes(qLower);
+          if (aContains && !bContains) return -1;
+          if (!aContains && bContains) return 1;
+
+          // 4. Exact receipt_no match
+          const aRec = String(a.receipt_no || '').trim().toLowerCase();
+          const bRec = String(b.receipt_no || '').trim().toLowerCase();
+          const aRecExact = aRec === qLower;
+          const bRecExact = bRec === qLower;
+          if (aRecExact && !bRecExact) return -1;
+          if (!aRecExact && bRecExact) return 1;
+
+          // 5. Contains receipt_no
+          const aRecContains = aRec.includes(qLower);
+          const bRecContains = bRec.includes(qLower);
+          if (aRecContains && !bRecContains) return -1;
+          if (!aRecContains && bRecContains) return 1;
+        } else {
+          const aName = String(a.shareholder_name || a.name || '').toLowerCase();
+          const bName = String(b.shareholder_name || b.name || '').toLowerCase();
+          const aExact = aName === qLower;
+          const bExact = bName === qLower;
+          if (aExact && !bExact) return -1;
+          if (!aExact && bExact) return 1;
+
+          const aStarts = aName.startsWith(qLower);
+          const bStarts = bName.startsWith(qLower);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+        }
+        return 0;
+      });
     }
 
     const total = filtered.length;

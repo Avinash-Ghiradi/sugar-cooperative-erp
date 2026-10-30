@@ -5,7 +5,11 @@ const cwd = path.join(__dirname, '..');
 console.log('Running git commands in:', cwd);
 
 execSync('git add -A', { cwd, stdio: 'inherit' });
-execSync('git commit -m "feat(vargavane): add official statutory header box to all 14 print pages"', { cwd, stdio: 'inherit' });
+try {
+  execSync('git commit -m "fix: prioritize exact shareholder number match first before partial matches in search"', { cwd, stdio: 'inherit' });
+} catch (e) {
+  console.log('Commit note:', e.message);
+}
 execSync('git push origin main', { cwd, stdio: 'inherit' });
 
 console.log('Now building and deploying to gh-pages...');

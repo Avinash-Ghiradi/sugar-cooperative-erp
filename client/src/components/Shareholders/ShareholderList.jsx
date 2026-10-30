@@ -7,7 +7,7 @@ import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
   Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle,
   History, GitMerge, ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Sparkles,
-  Lock, ShieldCheck, EyeOff, KeyRound, ChevronsLeft, ChevronsRight
+  Lock, ShieldCheck, EyeOff, KeyRound, ChevronsLeft, ChevronsRight, X
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
 import ShareholderForm from './ShareholderForm';
@@ -25,13 +25,14 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const searchDebounceRef = useRef(null);
+  const fetchRequestIdRef = useRef(0);
 
   const handleSearchChange = (val) => {
     setSearchInput(val);
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     searchDebounceRef.current = setTimeout(() => {
       setSearch(val);
-    }, 150);
+    }, 250);
   };
   const [selectedVillage, setSelectedVillage] = useState('');
   const [selectedCircle, setSelectedCircle] = useState('');
@@ -405,6 +406,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
   };
 
   const fetchShareholders = async (page = 1) => {
+    const currentReqId = ++fetchRequestIdRef.current;
     setLoading(true);
     const res = await ApiService.getShareholders({
       page,
@@ -420,11 +422,14 @@ export default function ShareholderList({ initialShowMerge = false }) {
       sortOrder
     });
 
-    if (res && res.success) {
-      setShareholders(res.data);
-      setPagination(res.pagination);
+    // Guard against out-of-order responses overwriting newer searches
+    if (currentReqId === fetchRequestIdRef.current) {
+      if (res && res.success) {
+        setShareholders(res.data);
+        setPagination(res.pagination);
+      }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handlePageChange = (newPage) => {
@@ -702,8 +707,28 @@ export default function ShareholderList({ initialShowMerge = false }) {
             placeholder="Search Name (ಕನ್ನಡ / English), Share No, Book No, Mobile, Aadhaar..."
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 outline-none transition-all placeholder:text-slate-500"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                setSearch(searchInput);
+              }
+            }}
+            className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-200 outline-none transition-all placeholder:text-slate-500"
           />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={() => {
+                if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                setSearchInput('');
+                setSearch('');
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-0.5 rounded-full"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Book No Filter */}

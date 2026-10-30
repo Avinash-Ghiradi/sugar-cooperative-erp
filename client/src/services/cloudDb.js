@@ -124,18 +124,28 @@ export const CloudDbService = {
     }
   },
 
-  // 5. Query Shareholders with pagination & filters
+    // 5. Query Shareholders with pagination & filters
   async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', amount = '', sortBy = '', sortOrder = 'asc' }) {
     if (!this.isEnabled()) return null;
 
     try {
       const offset = (page - 1) * limit;
-      let queryParams = [];
+      const cleanSearch = (search || '').trim();
+      const q = encodeURIComponent(cleanSearch);
+      const isNum = cleanSearch.length > 0 && /^\d+$/.test(cleanSearch);
 
-      // Sort: default to newest first (id.desc) so newly approved shareholders appear on Page 1 Row 1!
+      // Common filter params (status, book_no, etc.)
+      const filterParams = [];
+      if (status) filterParams.push(`status=eq.${encodeURIComponent(status)}`);
+      if (book_no) filterParams.push(`book_no=eq.${encodeURIComponent(book_no)}`);
+      if (schedule_cast) filterParams.push(`schedule_cast=eq.${encodeURIComponent(schedule_cast)}`);
+      if (village_id) filterParams.push(`place=ilike.*${encodeURIComponent(village_id)}*`);
+      if (circle_id) filterParams.push(`circle=ilike.*${encodeURIComponent(circle_id)}*`);
+      if (amount) filterParams.push(`total_amount=eq.${encodeURIComponent(amount)}`);
+
+      // Determine SQL Order
       let orderCol = 'id';
       let dir = 'desc';
-
       if (!sortBy) {
         orderCol = 'id';
         dir = 'desc';
@@ -155,60 +165,142 @@ export const CloudDbService = {
         orderCol = 'address';
         dir = sortOrder === 'desc' ? 'desc' : 'asc';
       }
-      queryParams.push(`order=${orderCol}.${dir}`);
-
-      // Filters
-      if (search) {
-        const q = encodeURIComponent(search.trim());
-        const isNum = /^\d+$/.test(search.trim());
-        if (isNum && search.trim().length <= 6) {
-          // Numbers <= 6 digits: primarily match share_no, receipt_no, or shareholder_name
-          queryParams.push(`or=(share_no.eq.${q},share_no.ilike.${q}*,shareholder_name.ilike.*${q}*,receipt_no.eq.${q})`);
-        } else {
-          queryParams.push(`or=(shareholder_name.ilike.*${q}*,share_no.ilike.*${q}*,mobile_no.ilike.*${q}*,place.ilike.*${q}*,aadhaar_card_no.ilike.*${q}*)`);
-        }
-      }
-      if (status) queryParams.push(`status=eq.${encodeURIComponent(status)}`);
-      if (book_no) queryParams.push(`book_no=eq.${encodeURIComponent(book_no)}`);
-      if (schedule_cast) queryParams.push(`schedule_cast=eq.${encodeURIComponent(schedule_cast)}`);
-      if (village_id) queryParams.push(`place=ilike.*${encodeURIComponent(village_id)}*`);
-      if (circle_id) queryParams.push(`circle=ilike.*${encodeURIComponent(circle_id)}*`);
-      if (amount) queryParams.push(`total_amount=eq.${encodeURIComponent(amount)}`);
-
-      const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
-      const endpoint = `shareholders${queryString}`;
 
       const cfg = this.getConfig();
       const cleanUrl = cfg.url.trim().replace(/\/+$/, '');
+      const authHeaders = {
+        'apikey': cfg.anonKey.trim(),
+        'Authorization': `Bearer ${cfg.anonKey.trim()}`,
+        'Content-Type': 'application/json'
+      };
 
-      const res = await fetch(`${cleanUrl}/rest/v1/${endpoint}`, {
-        headers: {
-          'apikey': cfg.anonKey.trim(),
-          'Authorization': `Bearer ${cfg.anonKey.trim()}`,
-          'Content-Type': 'application/json',
-          'Range': `${offset}-${offset + limit - 1}`,
-          'Prefer': 'count=exact'
+      let data = [];
+      let total = 0;
+
+      // When searching a number on page 1 without explicit custom sorting:
+      // Run parallel queries: exact & prefix share_no matches FIRST, then contained matches!
+      if (cleanSearch && isNum && cleanSearch.length <= 6 && page === 1 && !sortBy) {
+        const prefixParams = [
+          `or=(share_no.eq.${q},share_no.ilike.${q}*)`,
+          ...filterParams,
+          `order=${orderCol}.${dir}`,
+          `limit=${limit}`
+        ];
+        const allParams = [
+          `or=(share_no.eq.${q},share_no.ilike.${q}*,share_no.ilike.*${q}*,receipt_no.eq.${q},shareholder_name.ilike.*${q}*)`,
+          ...filterParams,
+          `order=${orderCol}.${dir}`,
+          `limit=${limit}`
+        ];
+
+        const [prefixRes, allRes] = await Promise.all([
+          fetch(`${cleanUrl}/rest/v1/shareholders?${prefixParams.join('&')}`, { headers: authHeaders }),
+          fetch(`${cleanUrl}/rest/v1/shareholders?${allParams.join('&')}`, {
+            headers: { ...authHeaders, 'Range': `0-${limit - 1}`, 'Prefer': 'count=exact' }
+          })
+        ]);
+
+        const prefixData = prefixRes.ok ? await prefixRes.json() : [];
+        const allData = allRes.ok ? await allRes.json() : [];
+
+        const contentRange = allRes.headers.get('content-range');
+        total = allData.length;
+        if (contentRange && contentRange.includes('/')) {
+          total = parseInt(contentRange.split('/')[1], 10) || total;
         }
-      });
 
-      if (!res.ok) return null;
+        const prefixIds = new Set(prefixData.map(r => r.id));
+        const remaining = allData.filter(r => !prefixIds.has(r.id));
+        data = [...prefixData, ...remaining].slice(0, limit);
+      } else {
+        // Standard single query (for page > 1, text search, or custom sort)
+        let queryParams = [`order=${orderCol}.${dir}`];
+        if (cleanSearch) {
+          if (isNum && cleanSearch.length <= 6) {
+            queryParams.push(`or=(share_no.eq.${q},share_no.ilike.${q}*,share_no.ilike.*${q}*,receipt_no.eq.${q},shareholder_name.ilike.*${q}*)`);
+          } else {
+            queryParams.push(`or=(shareholder_name.ilike.*${q}*,share_no.ilike.*${q}*,mobile_no.ilike.*${q}*,place.ilike.*${q}*,aadhaar_card_no.ilike.*${q}*)`);
+          }
+        }
+        queryParams.push(...filterParams);
 
-      const data = await res.json();
-      if (search && Array.isArray(data)) {
-        const cleanSearch = search.trim().toLowerCase();
+        const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+        const res = await fetch(`${cleanUrl}/rest/v1/shareholders${queryString}`, {
+          headers: {
+            ...authHeaders,
+            'Range': `${offset}-${offset + limit - 1}`,
+            'Prefer': 'count=exact'
+          }
+        });
+
+        if (!res.ok) return null;
+
+        data = await res.json();
+        const contentRange = res.headers.get('content-range');
+        total = data.length;
+        if (contentRange && contentRange.includes('/')) {
+          total = parseInt(contentRange.split('/')[1], 10) || total;
+        }
+      }
+
+      // Relevance Ranking (when default sort and search query provided)
+      if (cleanSearch && Array.isArray(data) && !sortBy) {
+        const qLower = cleanSearch.toLowerCase();
         data.sort((a, b) => {
-          const aExact = String(a.share_no || '').trim().toLowerCase() === cleanSearch;
-          const bExact = String(b.share_no || '').trim().toLowerCase() === cleanSearch;
-          if (aExact && !bExact) return -1;
-          if (!aExact && bExact) return 1;
+          const aSh = String(a.share_no || '').trim().toLowerCase();
+          const bSh = String(b.share_no || '').trim().toLowerCase();
+
+          if (isNum) {
+            // 1. Exact share_no match FIRST
+            const aExact = aSh === qLower;
+            const bExact = bSh === qLower;
+            if (aExact && !bExact) return -1;
+            if (!aExact && bExact) return 1;
+
+            // 2. Starts with share_no (prefix match)
+            const aStarts = aSh.startsWith(qLower);
+            const bStarts = bSh.startsWith(qLower);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+            if (aStarts && bStarts) {
+              return (parseInt(aSh, 10) || 0) - (parseInt(bSh, 10) || 0);
+            }
+
+            // 3. Contains share_no
+            const aContains = aSh.includes(qLower);
+            const bContains = bSh.includes(qLower);
+            if (aContains && !bContains) return -1;
+            if (!aContains && bContains) return 1;
+
+            // 4. Exact receipt_no match
+            const aRec = String(a.receipt_no || '').trim().toLowerCase();
+            const bRec = String(b.receipt_no || '').trim().toLowerCase();
+            const aRecExact = aRec === qLower;
+            const bRecExact = bRec === qLower;
+            if (aRecExact && !bRecExact) return -1;
+            if (!aRecExact && bRecExact) return 1;
+
+            // 5. Contains receipt_no
+            const aRecContains = aRec.includes(qLower);
+            const bRecContains = bRec.includes(qLower);
+            if (aRecContains && !bRecContains) return -1;
+            if (!aRecContains && bRecContains) return 1;
+          } else {
+            // Text ranking (name exact -> startsWith -> contains)
+            const aName = String(a.shareholder_name || '').toLowerCase();
+            const bName = String(b.shareholder_name || '').toLowerCase();
+            const aExact = aName === qLower;
+            const bExact = bName === qLower;
+            if (aExact && !bExact) return -1;
+            if (!aExact && bExact) return 1;
+
+            const aStarts = aName.startsWith(qLower);
+            const bStarts = bName.startsWith(qLower);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+          }
           return 0;
         });
-      }
-      const contentRange = res.headers.get('content-range'); // e.g. "0-19/17076"
-      let total = data.length;
-      if (contentRange && contentRange.includes('/')) {
-        const parts = contentRange.split('/');
-        total = parseInt(parts[1], 10) || total;
       }
 
       return {
@@ -218,7 +310,7 @@ export const CloudDbService = {
           total,
           page,
           limit,
-          totalPages: Math.ceil(total / limit)
+          totalPages: Math.max(1, Math.ceil(total / limit))
         }
       };
     } catch (err) {

@@ -28,6 +28,7 @@ export default function IDCardGenerator() {
   const [circles, setCircles] = useState([]);
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
+  const loadReqIdRef = useRef(0);
   const [previewCard, setPreviewCard] = useState(null);
   const [showReferenceSample, setShowReferenceSample] = useState(false);
   const [printLayout, setPrintLayout] = useState(() => {
@@ -124,6 +125,7 @@ export default function IDCardGenerator() {
   };
 
   const loadShareholders = async () => {
+    const curId = ++loadReqIdRef.current;
     setLoading(true);
     const res = await ApiService.getShareholders({
       page: 1,
@@ -133,13 +135,15 @@ export default function IDCardGenerator() {
       place: placeFilter,
       status: 'Active'
     });
-    if (res && res.data) {
-      setShareholders(res.data);
-      if (selectedCards.length === 0 && res.data.length > 0) {
-        setSelectedCards([res.data[0]]); // Default to 1 selected member
+    if (curId === loadReqIdRef.current) {
+      if (res && res.data) {
+        setShareholders(res.data);
+        if (selectedCards.length === 0 && res.data.length > 0) {
+          setSelectedCards([res.data[0]]); // Default to 1 selected member
+        }
       }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const toggleSelectCard = (sh) => {
