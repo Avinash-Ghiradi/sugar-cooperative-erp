@@ -180,22 +180,26 @@ export function getShareholderSharesCount(s) {
   const rAmt = parseFloat(s.receipt_amount) || 0;
   const aAmt = parseFloat(s.amount) || 0;
   const addAmt = parseFloat(s.additional_amount) || 0;
-  const tAmt = (s.total_amount !== undefined && s.total_amount !== null && !isNaN(parseFloat(s.total_amount)))
+  const tAmt = (s.total_amount !== undefined && s.total_amount !== null && !isNaN(parseFloat(s.total_amount)) && parseFloat(s.total_amount) > 0)
     ? parseFloat(s.total_amount)
     : (rAmt > 0 || aAmt > 0 || addAmt > 0 ? (rAmt + aAmt + addAmt) : ((parseInt(s.number_of_shares, 10) || 0) * 2000));
 
   const isClassB = String(s.schedule_cast || '').toLowerCase().includes('ಬ') || String(s.schedule_cast || '').toLowerCase().includes('b');
   const baseRate = isClassB ? 5000 : 2000;
 
-  // Partial installment payment (< baseRate, e.g. ₹1,000) does NOT constitute a complete share:
+  // Partial installment payment (< baseRate, e.g. ₹1,000 for Class A/D or < ₹5,000 for Class B) does NOT constitute a complete share:
   if (tAmt < baseRate) return 0;
+
+  // Complete shares earned from total paid amount
+  const computedFromAmt = Math.floor(tAmt / baseRate);
 
   if (s.number_of_shares !== undefined && s.number_of_shares !== null && !isNaN(parseInt(s.number_of_shares, 10))) {
     const raw = parseInt(s.number_of_shares, 10);
-    if (tAmt < baseRate) return 0;
-    return raw;
+    if (raw > 0) {
+      return Math.max(raw, computedFromAmt);
+    }
   }
-  return Math.floor(tAmt / baseRate);
+  return computedFromAmt;
 }
 
 export function isShareholderInactive(sh) {
@@ -1288,6 +1292,14 @@ export function ensureDBReady() {
                 if (r.number_of_shares !== 0) {
                   r.number_of_shares = 0;
                   r.remaining_balance = tAmt;
+                  normalizedShareCount++;
+                }
+              } else if (tAmt >= baseRate) {
+                const correctShares = Math.floor(tAmt / baseRate);
+                const rawShares = parseInt(r.number_of_shares, 10);
+                if (isNaN(rawShares) || rawShares === 0 || (rawShares < correctShares && !r.is_merged_secondary)) {
+                  r.number_of_shares = Math.max(isNaN(rawShares) ? 0 : rawShares, correctShares);
+                  r.remaining_balance = tAmt % baseRate;
                   normalizedShareCount++;
                 }
               }
@@ -2507,7 +2519,7 @@ export const ApiService = {
       const totalAmt = parseFloat(data.total_amount) || (receiptAmt + (parseFloat(data.amount) || 0)) || (parseInt(data.number_of_shares, 10) ? parseInt(data.number_of_shares, 10) * 2000 : 0);
       const isClassB = String(data.schedule_cast || '').toLowerCase().includes('ಬ') || String(data.schedule_cast || '').toLowerCase().includes('b');
       const baseRate = isClassB ? 5000 : 2000;
-      const numShares = totalAmt < baseRate ? 0 : (data.number_of_shares !== undefined && data.number_of_shares !== null && !isNaN(parseInt(data.number_of_shares, 10)) ? parseInt(data.number_of_shares, 10) : Math.floor(totalAmt / baseRate));
+      const numShares = totalAmt < baseRate ? 0 : (data.number_of_shares !== undefined && data.number_of_shares !== null && !isNaN(parseInt(data.number_of_shares, 10)) && parseInt(data.number_of_shares, 10) > 0 ? Math.max(parseInt(data.number_of_shares, 10), Math.floor(totalAmt / baseRate)) : Math.floor(totalAmt / baseRate));
 
       const rawPlace = (data.place || data.village_name || '').trim().normalize('NFC');
       const placeKey = rawPlace.toLowerCase();
@@ -5969,18 +5981,28 @@ const newSh = {
         delete savedShPasswords[shKey];
         if (mobKey) delete savedShPasswords[mobKey];
         if (last10) delete savedShPasswords[last10];
+        if (CloudDbService.isEnabled()) {
+          CloudDbService.deleteCollectionItem('shareholder_passwords', shKey).catch(() => {});
+        }
       } else {
         savedShPasswords[shKey] = cleanPass;
         if (mobKey) savedShPasswords[mobKey] = cleanPass;
         if (last10) savedShPasswords[last10] = cleanPass;
+        if (CloudDbService.isEnabled()) {
+          CloudDbService.saveCollectionItem('shareholder_passwords', shKey, {
+            share_no: shKey,
+            name: shName,
+            mobile: mobKey,
+            last10: last10,
+            password: cleanPass,
+            updated_at: new Date().toISOString()
+          }).catch(() => {});
+        }
       }
       localStorage.setItem('sugar_erp_sh_passwords', JSON.stringify(savedShPasswords));
 
       if (sh) {
         sh.password = cleanPass;
-        if (CloudDbService.isEnabled()) {
-          CloudDbService.updateShareholder(sh.share_no || sh.id, { password: cleanPass }).catch(() => {});
-        }
       }
 
       const auditEntry = {
@@ -6039,14 +6061,97 @@ const newSh = {
       is_default_password: (emp.password || 'Shares123') === 'Shares123'
     }));
 
-    // 2. Search shareholders
+    // 2. Load shareholder passwords (local + cloud)
     let savedShPasswords = {};
     try {
       savedShPasswords = JSON.parse(localStorage.getItem('sugar_erp_sh_passwords') || '{}');
     } catch (e) {}
 
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudPasswords = await CloudDbService.getCollection('shareholder_passwords');
+        if (Array.isArray(cloudPasswords)) {
+          for (const item of cloudPasswords) {
+            if (item && item.password) {
+              const k = String(item.share_no || item.id || item.record_id || '').trim();
+              if (k) savedShPasswords[k] = item.password;
+              if (item.mobile) savedShPasswords[String(item.mobile).trim()] = item.password;
+              if (item.last10) savedShPasswords[String(item.last10).trim()] = item.password;
+            }
+          }
+        }
+      } catch (err) {}
+    }
+
     const matchedShareholders = [];
-    if (q) {
+    const addedShareNos = new Set();
+
+    const addShareholderResult = (sh, explicitPassword = null) => {
+      if (!sh) return;
+      const shNo = String(sh.share_no || sh.share_number || sh.id || '').trim();
+      if (!shNo || addedShareNos.has(shNo)) return;
+      addedShareNos.add(shNo);
+
+      const mob = String(sh.mobile_no || sh.mobile || '').replace(/\D/g, '');
+      const last10 = mob.length >= 10 ? mob.slice(-10) : mob;
+      const customPass = explicitPassword || savedShPasswords[shNo] || (last10 && savedShPasswords[last10]) || (mob && savedShPasswords[mob]) || (sh.password && sh.password !== 'Shares123' ? sh.password : null);
+
+      matchedShareholders.push({
+        id: sh.id || shNo,
+        share_no: shNo,
+        name: sh.shareholder_name || sh.name || `ಷೇರುದಾರ #${shNo}`,
+        place: sh.place || sh.village || '',
+        taluk: sh.taluk || '',
+        mobile_no: sh.mobile_no || sh.mobile || '',
+        number_of_shares: getShareholderSharesCount(sh),
+        account_type: 'shareholder',
+        current_password: customPass || 'Shares123',
+        is_default_password: !customPass || customPass === 'Shares123'
+      });
+    };
+
+    // If query is empty: Eagerly show custom-password holders first, then initial 35 shareholders
+    if (!q) {
+      // Add custom-password holders
+      for (const [k, pwd] of Object.entries(savedShPasswords)) {
+        if (!pwd || pwd === 'Shares123') continue;
+        const found = mockShareholders.find(s => String(s.share_no || s.share_number) === k || String(s.mobile_no || s.mobile || '').replace(/\D/g, '').endsWith(k));
+        if (found) {
+          addShareholderResult(found, pwd);
+        } else {
+          addShareholderResult({
+            share_no: k,
+            name: `ಷೇರುದಾರ #${k}`,
+            mobile_no: k.length >= 10 ? k : '',
+            place: 'ಧೂಳಖೇಡ',
+            number_of_shares: 1,
+            password: pwd
+          }, pwd);
+        }
+      }
+
+      // Add initial batch of active shareholders
+      for (let i = 0; i < mockShareholders.length && matchedShareholders.length < 35; i++) {
+        addShareholderResult(mockShareholders[i]);
+      }
+    } else {
+      // Query provided: Check matching custom passwords
+      for (const [k, pwd] of Object.entries(savedShPasswords)) {
+        if (k.includes(q) || (pwd && pwd.toLowerCase().includes(q))) {
+          const found = mockShareholders.find(s => String(s.share_no || s.share_number) === k || String(s.mobile_no || s.mobile || '').replace(/\D/g, '').endsWith(k));
+          if (found) addShareholderResult(found, pwd);
+          else {
+            addShareholderResult({
+              share_no: k,
+              name: `ಷೇರುದಾರ #${k}`,
+              mobile_no: k.length >= 10 ? k : '',
+              password: pwd
+            }, pwd);
+          }
+        }
+      }
+
+      // Search mockShareholders
       for (let i = 0; i < mockShareholders.length; i++) {
         const sh = mockShareholders[i];
         const shNo = String(sh.share_no || sh.share_number || '').trim();
@@ -6060,25 +6165,27 @@ const newSh = {
         const matchMob = cleanDigits.length >= 3 && mob.includes(cleanDigits);
 
         if (matchNo || matchName || matchPlace || matchMob) {
-          const shKey = String(sh.share_no || sh.share_number || sh.id).trim();
-          const mobKey = mob;
-          const last10 = mob.length >= 10 ? mob.slice(-10) : mob;
-          const customPass = savedShPasswords[shKey] || (last10 && savedShPasswords[last10]) || savedShPasswords[mobKey] || (sh.password && sh.password !== 'Shares123' ? sh.password : null);
-
-          matchedShareholders.push({
-            id: sh.id,
-            share_no: sh.share_no || sh.share_number,
-            name: sh.shareholder_name || sh.name,
-            place: sh.place || sh.village,
-            taluk: sh.taluk,
-            mobile_no: sh.mobile_no || sh.mobile || '',
-            number_of_shares: getShareholderSharesCount(sh),
-            account_type: 'shareholder',
-            current_password: customPass || 'Shares123',
-            is_default_password: !customPass || customPass === 'Shares123'
-          });
+          addShareholderResult(sh);
           if (matchedShareholders.length >= 50) break;
         }
+      }
+
+      // Also search Cloud DB if enabled and results < 15
+      if (CloudDbService.isEnabled() && matchedShareholders.length < 15) {
+        try {
+          let cloudUrl = '';
+          if (/^\d+$/.test(q)) {
+            cloudUrl = `shareholders?or=(share_no.eq.${q},mobile_no.ilike.*${cleanDigits}*)&limit=15`;
+          } else {
+            cloudUrl = `shareholders?or=(shareholder_name.ilike.*${encodeURIComponent(q)}*,place.ilike.*${encodeURIComponent(q)}*)&limit=15`;
+          }
+          const cloudRes = await CloudDbService.request(cloudUrl);
+          if (Array.isArray(cloudRes)) {
+            for (const csh of cloudRes) {
+              addShareholderResult(csh);
+            }
+          }
+        } catch (e) {}
       }
     }
 

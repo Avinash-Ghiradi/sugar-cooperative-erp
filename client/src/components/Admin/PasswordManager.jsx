@@ -42,6 +42,22 @@ export default function PasswordManager() {
   // Audit logs state
   const [auditLogs, setAuditLogs] = useState([]);
 
+  const loadShareholders = async (query = '') => {
+    setShSearching(true);
+    try {
+      const res = await ApiService.searchForPasswordManager(query);
+      if (res && res.shareholders) {
+        setShSearchResults(res.shareholders);
+      }
+      const stats = ApiService.getShareholderPasswordStats();
+      setShStats(stats || { customPasswordsCount: 0 });
+    } catch (err) {
+      console.warn('Shareholder search error:', err);
+    } finally {
+      setShSearching(false);
+    }
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -57,6 +73,9 @@ export default function PasswordManager() {
         const pwdLogs = logsRes.filter(l => l.action === 'ADMIN_PASSWORD_RESET' || (l.module && l.module.includes('Password')));
         setAuditLogs(pwdLogs);
       }
+
+      // Eagerly pre-load shareholders list so Tab 2 displays passwords right away
+      await loadShareholders('');
     } catch (err) {
       console.warn('Error loading password manager data:', err);
     } finally {
@@ -70,24 +89,10 @@ export default function PasswordManager() {
     return () => window.removeEventListener('employees_updated', loadData);
   }, []);
 
-  // Live shareholder search debounced
+  // Live shareholder search debounced (eagerly queries even on empty to show default list)
   useEffect(() => {
-    if (!shSearchQuery.trim()) {
-      setShSearchResults([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      setShSearching(true);
-      try {
-        const res = await ApiService.searchForPasswordManager(shSearchQuery);
-        if (res && res.shareholders) {
-          setShSearchResults(res.shareholders);
-        }
-      } catch (err) {
-        console.warn('Shareholder search error:', err);
-      } finally {
-        setShSearching(false);
-      }
+    const timer = setTimeout(() => {
+      loadShareholders(shSearchQuery);
     }, 250);
 
     return () => clearTimeout(timer);
@@ -113,10 +118,8 @@ export default function PasswordManager() {
       if (res && res.success) {
         showToast(res.message || 'ಪಾಸ್‌ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ Shares123 ಗೆ ಮರುಹೊಂದಿಸಲಾಗಿದೆ!', 'success');
         loadData();
-        if (accountType === 'shareholder' && shSearchQuery) {
-          // Re-trigger search to update view
-          const updated = await ApiService.searchForPasswordManager(shSearchQuery);
-          if (updated && updated.shareholders) setShSearchResults(updated.shareholders);
+        if (accountType === 'shareholder') {
+          await loadShareholders(shSearchQuery);
         }
       } else {
         showToast(res?.message || 'ಮರುಹೊಂದಿಕೆ ವಿಫಲವಾಗಿದೆ', 'error');
@@ -161,9 +164,8 @@ export default function PasswordManager() {
         showToast(res.message || 'ಹೊಸ ಪಾಸ್‌ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ!', 'success');
         setModalOpen(false);
         loadData();
-        if (targetAccount.type === 'shareholder' && shSearchQuery) {
-          const updated = await ApiService.searchForPasswordManager(shSearchQuery);
-          if (updated && updated.shareholders) setShSearchResults(updated.shareholders);
+        if (targetAccount.type === 'shareholder') {
+          await loadShareholders(shSearchQuery);
         }
       } else {
         setModalError(res?.message || 'ಪಾಸ್‌ವರ್ಡ್ ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ.');
@@ -243,6 +245,13 @@ export default function PasswordManager() {
       return id.includes(q) || name.includes(q) || engName.includes(q) || mobile.includes(q) || role.includes(q);
     });
   }, [employees, roleFilter, statusFilter, searchQuery]);
+
+  const filteredShareholders = useMemo(() => {
+    if (shFilterCustomOnly) {
+      return shSearchResults.filter(s => !s.is_default_password);
+    }
+    return shSearchResults;
+  }, [shSearchResults, shFilterCustomOnly]);
 
   return (
     <div className="space-y-6">
@@ -346,7 +355,12 @@ export default function PasswordManager() {
           }`}
         >
           <KeyRound className="w-4 h-4" />
-          <span>೨. ಷೇರುದಾರರ ಪಾಸ್‌ವರ್ಡ್ ರಿಸೆಟ್ (17,076 ಷೇರುದಾರರು)</span>
+          <span>೨. ಷೇರುದಾರರ ಪಾಸ್‌ವರ್ಡ್ ನಿರ್ವಹಣೆ ({shSearchResults.length > 0 ? shSearchResults.length : '17,076'})</span>
+          {(shStats.customPasswordsCount > 0 || shSearchResults.some(s => !s.is_default_password)) && (
+            <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black text-[10px]">
+              {shStats.customPasswordsCount || shSearchResults.filter(s => !s.is_default_password).length}
+            </span>
+          )}
         </button>
 
         <button
@@ -544,22 +558,22 @@ export default function PasswordManager() {
         </div>
       )}
 
-      {/* TAB 2: Shareholder Password Reset */}
+      {/* TAB 2: Shareholder Password Reset & Management */}
       {activeTab === 'shareholders' && (
         <div className="space-y-4">
-          {/* Shareholder Search Box */}
-          <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
+          {/* Shareholder Search Box & Filter Bar */}
+          <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <Search className="w-4 h-4 text-emerald-400" /> ಷೇರುದಾರರ ಖಾತೆ ಹುಡುಕಿ (Search Shareholder to Reset Password)
+                  <Search className="w-4 h-4 text-emerald-400" /> ಷೇರುದಾರರ ಪಾಸ್‌ವರ್ಡ್ ನಿರ್ವಹಣೆ (Shareholder Password Manager)
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  ಷೇರು ಸಂಖ್ಯೆ (Share No), ಮೊಬೈಲ್ ಸಂಖ್ಯೆ (Mobile), ಅಥವಾ ಷೇರುದಾರರ ಹೆಸರು ನಮೂದಿಸಿ ನೇರವಾಗಿ ರಿಸೆಟ್ ಮಾಡಿ
+                  ಷೇರುದಾರರ ಪಾಸ್‌ವರ್ಡ್ ಪರಿಶೀಲಿಸಿ, 1-ಕ್ಲಿಕ್‌ನಲ್ಲಿ ರಿಸೆಟ್ ಮಾಡಿ ಅಥವಾ ನೇರವಾಗಿ ಹೊಸ ಪಾಸ್‌ವರ್ಡ್ ನಿಗದಿಪಡಿಸಿ
                 </p>
               </div>
 
-              <div className="text-xs text-slate-400 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl font-mono">
+              <div className="text-xs text-slate-400 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl font-mono self-start sm:self-auto">
                 ಡೀಫಾಲ್ಟ್ ಪಾಸ್‌ವರ್ಡ್: <strong className="text-amber-300">Shares123</strong>
               </div>
             </div>
@@ -568,39 +582,57 @@ export default function PasswordManager() {
               <Search className="w-5 h-5 text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                autoFocus
                 value={shSearchQuery}
                 onChange={(e) => setShSearchQuery(e.target.value)}
-                placeholder="ಷೇರು ಸಂಖ್ಯೆ (ಉದಾ: #102), 10 ಅಂಕಿಗಳ ಮೊಬೈಲ್ (9845...), ಅಥವಾ ಹೆಸರು ನಮೂದಿಸಿ..."
+                placeholder="ಷೇರು ಸಂಖ್ಯೆ (ಉದಾ: #7950), 10 ಅಂಕಿಗಳ ಮೊಬೈಲ್ (6362...), ಅಥವಾ ಹೆಸರು ನಮೂದಿಸಿ..."
                 className="w-full bg-slate-900 border border-slate-700/80 rounded-2xl pl-11 pr-10 py-3 text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none text-sm font-medium shadow-inner"
               />
               {shSearching && (
                 <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin absolute right-3.5 top-1/2 -translate-y-1/2" />
               )}
             </div>
+
+            {/* Quick Filter Buttons */}
+            <div className="flex items-center gap-2 pt-1 flex-wrap text-xs">
+              <button
+                type="button"
+                onClick={() => setShFilterCustomOnly(false)}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  !shFilterCustomOnly
+                    ? 'bg-emerald-600 text-white shadow'
+                    : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>ಎಲ್ಲಾ ಷೇರುದಾರರು ({shSearchResults.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShFilterCustomOnly(true)}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  shFilterCustomOnly
+                    ? 'bg-emerald-600 text-white shadow'
+                    : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                }`}
+              >
+                <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                <span>ಬದಲಾಯಿಸಿದ ಕಸ್ಟಮ್ ಪಾಸ್‌ವರ್ಡ್ ಮಾತ್ರ ({shSearchResults.filter(s => !s.is_default_password).length})</span>
+              </button>
+            </div>
           </div>
 
           {/* Shareholder Results Table */}
           <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            {!shSearchQuery.trim() ? (
+            {filteredShareholders.length === 0 && !shSearching ? (
               <div className="p-10 text-center space-y-3 text-slate-400">
                 <KeyRound className="w-10 h-10 text-slate-600 mx-auto" />
-                <h4 className="text-sm font-bold text-slate-300">ಷೇರುದಾರರ ಹುಡುಕಾಟ</h4>
+                <h4 className="text-sm font-bold text-slate-300">ಯಾವುದೇ ಷೇರುದಾರರ ದಾಖಲೆ ಕಂಡುಬಂದಿಲ್ಲ</h4>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  ಯಾವುದೇ ಷೇರುದಾರರು ತಮ್ಮ ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿದ್ದರೆ ಅಥವಾ ರಿಸೆಟ್ ಬಯಸಿದರೆ, ಮೇಲ್ಭಾಗದ ಹುಡುಕಾಟ ಬಾಕ್ಸ್‌ನಲ್ಲಿ ಅವರ ಷೇರು ನಂ ಅಥವಾ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ.
+                  {shFilterCustomOnly
+                    ? 'ಯಾವುದೇ ಷೇರುದಾರರು ಇನ್ನೂ ತಮ್ಮ ಕಸ್ಟಮ್ ಪಾಸ್‌ವರ್ಡ್ ರಚಿಸಿಲ್ಲ. "ಎಲ್ಲಾ ಷೇರುದಾರರು" ಆಯ್ಕೆಮಾಡಿ.'
+                    : `'${shSearchQuery}' ಗೆ ಸಂಬಂಧಿಸಿದ ಯಾವುದೇ ದಾಖಲೆ ಸಿಗಲಿಲ್ಲ. ಬೇರೆ ಷೇರು ಸಂಖ್ಯೆ ಅಥವಾ ಮೊಬೈಲ್ ನಮೂದಿಸಿ.`}
                 </p>
-                <div className="pt-2">
-                  <button
-                    onClick={() => setShSearchQuery('1')}
-                    className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-mono border border-slate-800 cursor-pointer"
-                  >
-                    ಉದಾಹರಣೆಗೆ: #1 ಹುಡುಕಿ
-                  </button>
-                </div>
-              </div>
-            ) : shSearchResults.length === 0 && !shSearching ? (
-              <div className="p-8 text-center text-slate-400 text-xs">
-                '{shSearchQuery}' ಗೆ ಸಂಬಂಧಿಸಿದ ಯಾವುದೇ ಷೇರುದಾರರ ದಾಖಲೆ ಕಂಡುಬಂದಿಲ್ಲ.
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -617,7 +649,7 @@ export default function PasswordManager() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                    {shSearchResults.map((sh) => {
+                    {filteredShareholders.map((sh) => {
                       const key = `sh-${sh.share_no}`;
                       const isVisible = !!visiblePasswords[key];
                       const isCopied = copiedKey === key;
