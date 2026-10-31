@@ -1592,7 +1592,7 @@ export default function EmployeeManagement() {
           <style>{`
             @page {
               size: ${printLayout === 'a4' ? 'A4 portrait' : (cardOrientation === 'portrait' ? '54mm 85.6mm' : '85.6mm 54mm')};
-              margin: ${printLayout === 'a4' ? '8mm 6mm' : '0mm'};
+              margin: ${printLayout === 'a4' ? '12mm 10mm' : '0mm'};
             }
             @media print {
               html, body {
@@ -1619,6 +1619,30 @@ export default function EmployeeManagement() {
               .staff-print-hide {
                 display: none !important;
               }
+              .id-card-print-single {
+                width: ${cardOrientation === 'portrait' ? '54mm' : '85.6mm'} !important;
+                height: ${cardOrientation === 'portrait' ? '85.6mm' : '54mm'} !important;
+                max-width: ${cardOrientation === 'portrait' ? '54mm' : '85.6mm'} !important;
+                max-height: ${cardOrientation === 'portrait' ? '85.6mm' : '54mm'} !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                position: relative !important;
+                display: block !important;
+                vertical-align: top !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+              }
+              .id-card-print-single .id-card-container-outer {
+                width: ${cardOrientation === 'portrait' ? '238px' : '372px'} !important;
+                height: ${cardOrientation === 'portrait' ? '372px' : '238px'} !important;
+                min-width: ${cardOrientation === 'portrait' ? '238px' : '372px'} !important;
+                min-height: ${cardOrientation === 'portrait' ? '372px' : '238px'} !important;
+                transform: scale(${cardOrientation === 'portrait' ? '0.857540, 0.869698' : '0.869698, 0.857540'}) !important;
+                transform-origin: 0 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+              }
               .id-card-a4-member-pair {
                 display: flex !important;
                 flex-direction: row !important;
@@ -1626,26 +1650,17 @@ export default function EmployeeManagement() {
                 margin: 0 auto !important;
                 padding: 0 !important;
                 justify-content: center !important;
-                align-items: stretch !important;
+                align-items: center !important;
                 border: 1.5px dashed #334155 !important;
+                border-radius: 12px !important;
                 width: ${cardOrientation === 'portrait' ? '108mm' : '171.2mm'} !important;
                 height: ${cardOrientation === 'portrait' ? '85.6mm' : '54mm'} !important;
                 box-sizing: border-box !important;
+                overflow: hidden !important;
                 background: #ffffff !important;
                 position: relative !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
-              }
-              .id-card-print-single {
-                width: ${cardOrientation === 'portrait' ? '54mm' : '85.6mm'} !important;
-                height: ${cardOrientation === 'portrait' ? '85.6mm' : '54mm'} !important;
-                max-width: ${cardOrientation === 'portrait' ? '54mm' : '85.6mm'} !important;
-                max-height: ${cardOrientation === 'portrait' ? '85.6mm' : '54mm'} !important;
-                box-sizing: border-box !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                background: #ffffff !important;
-                position: relative !important;
               }
               .id-card-center-fold-line {
                 width: 0px !important;
@@ -1668,8 +1683,8 @@ export default function EmployeeManagement() {
                 font-size: 8px !important;
                 font-weight: 700 !important;
                 color: #334155 !important;
-                line-height: 1.2 !important;
-                padding: 3px 0 !important;
+                line-height: 1.4 !important;
+                padding: 4px 1mm !important;
                 user-select: none !important;
                 box-sizing: border-box !important;
                 background: #ffffff !important;
@@ -1689,6 +1704,10 @@ export default function EmployeeManagement() {
                 letter-spacing: 0.3px !important;
                 text-align: center !important;
               }
+              .page-break-after-avoid {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
             }
             @media screen {
               .staff-id-card-print-portal {
@@ -1701,13 +1720,13 @@ export default function EmployeeManagement() {
             <div className="w-full">
               {printLayout === 'a4' ? (
                 /* A4 Printable Sheet with Attached Pair for Easy Folding */
-                <div className="w-full max-w-[200mm] mx-auto p-4 flex flex-col items-center my-auto">
+                <div className="w-full max-w-[200mm] mx-auto pt-8 pb-4 flex flex-col items-center">
                   {cardSide === 'both' ? (
                     <div className="flex flex-col items-center">
                       {/* Top Scissor Cut & Fold Header Guide */}
                       <div className="id-card-guide-top">
                         <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut outer line)</span>
-                        <span className="id-card-guide-fold-marker">▼ ಮಡಚುವ ಗೆರೆ (Fold Line) ▼</span>
+                        <span className="id-card-guide-fold-marker">▼ ಮಧ್ಯದಲ್ಲಿ ಮಡಚುವ ಗೆರೆ (Fold Line) ▼</span>
                         <span className="id-card-guide-cut-text">✂ Cut</span>
                       </div>
 
@@ -1749,8 +1768,8 @@ export default function EmployeeManagement() {
 
                       {/* Bottom Scissor Cut & Fold Footer Guide */}
                       <div className="id-card-guide-bottom">
-                        <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸಿ (Cut)</span>
-                        <span className="id-card-guide-fold-marker">▲ ಮಡಚುವ ಗೆರೆ (Fold Line) ▲</span>
+                        <span className="id-card-guide-cut-text">✂ ಹೊರಗಿನ ಗೆರೆಯಲ್ಲಿ ಕತ್ತರಿಸಿ (Cut outer)</span>
+                        <span className="id-card-guide-fold-marker">▲ ಮಧ್ಯದ ಗೆರೆಯಲ್ಲಿ ಮಡಚಿ (Fold Line) ▲</span>
                         <span className="id-card-guide-cut-text">#{selectedEmpForCard.employee_id} - {selectedEmpForCard.name}</span>
                       </div>
                     </div>
@@ -1764,6 +1783,7 @@ export default function EmployeeManagement() {
                         className="id-card-print-single"
                         style={{
                           border: '1.5px dashed #334155',
+                          borderRadius: '12px',
                           width: cardOrientation === 'portrait' ? '54mm' : '85.6mm',
                           height: cardOrientation === 'portrait' ? '85.6mm' : '54mm',
                           boxSizing: 'border-box'
@@ -1797,6 +1817,7 @@ export default function EmployeeManagement() {
                         className="id-card-print-single"
                         style={{
                           border: '1.5px dashed #334155',
+                          borderRadius: '12px',
                           width: cardOrientation === 'portrait' ? '54mm' : '85.6mm',
                           height: cardOrientation === 'portrait' ? '85.6mm' : '54mm',
                           boxSizing: 'border-box'
@@ -1827,7 +1848,7 @@ export default function EmployeeManagement() {
                 <div className="flex flex-wrap items-center justify-center gap-6 p-2 min-h-screen">
                   {cardSide === 'both' ? (
                     <>
-                      <div className="page-break-after-avoid">
+                      <div className="page-break-after-avoid id-card-print-single">
                         <OfficialStaffIDCard
                           employee={selectedEmpForCard}
                           showBack={false}
@@ -1841,7 +1862,7 @@ export default function EmployeeManagement() {
                           customMdSignature={staffCardSettings.customMdSignature}
                         />
                       </div>
-                      <div className="page-break-after-avoid">
+                      <div className="page-break-after-avoid id-card-print-single">
                         <OfficialStaffIDCard
                           employee={selectedEmpForCard}
                           showBack={true}
@@ -1857,31 +1878,35 @@ export default function EmployeeManagement() {
                       </div>
                     </>
                   ) : cardSide === 'front' ? (
-                    <OfficialStaffIDCard
-                      employee={selectedEmpForCard}
-                      showBack={false}
-                      showSeal={showSeal}
-                      showQrCode={showQrCode}
-                      orientation={cardOrientation}
-                      customFrontBackground={staffCardSettings.customFrontBackground}
-                      customBackBackground={staffCardSettings.customBackBackground}
-                      backgroundOpacity={staffCardSettings.backgroundOpacity}
-                      customLogo={staffCardSettings.customLogo}
-                      customMdSignature={staffCardSettings.customMdSignature}
-                    />
+                    <div className="id-card-print-single">
+                      <OfficialStaffIDCard
+                        employee={selectedEmpForCard}
+                        showBack={false}
+                        showSeal={showSeal}
+                        showQrCode={showQrCode}
+                        orientation={cardOrientation}
+                        customFrontBackground={staffCardSettings.customFrontBackground}
+                        customBackBackground={staffCardSettings.customBackBackground}
+                        backgroundOpacity={staffCardSettings.backgroundOpacity}
+                        customLogo={staffCardSettings.customLogo}
+                        customMdSignature={staffCardSettings.customMdSignature}
+                      />
+                    </div>
                   ) : (
-                    <OfficialStaffIDCard
-                      employee={selectedEmpForCard}
-                      showBack={true}
-                      showSeal={showSeal}
-                      showQrCode={showQrCode}
-                      orientation={cardOrientation}
-                      customFrontBackground={staffCardSettings.customFrontBackground}
-                      customBackBackground={staffCardSettings.customBackBackground}
-                      backgroundOpacity={staffCardSettings.backgroundOpacity}
-                      customLogo={staffCardSettings.customLogo}
-                      customMdSignature={staffCardSettings.customMdSignature}
-                    />
+                    <div className="id-card-print-single">
+                      <OfficialStaffIDCard
+                        employee={selectedEmpForCard}
+                        showBack={true}
+                        showSeal={showSeal}
+                        showQrCode={showQrCode}
+                        orientation={cardOrientation}
+                        customFrontBackground={staffCardSettings.customFrontBackground}
+                        customBackBackground={staffCardSettings.customBackBackground}
+                        backgroundOpacity={staffCardSettings.backgroundOpacity}
+                        customLogo={staffCardSettings.customLogo}
+                        customMdSignature={staffCardSettings.customMdSignature}
+                      />
+                    </div>
                   )}
                 </div>
               )}

@@ -152,6 +152,7 @@ export default function OfficialStaffIDCard({
   showSeal = true,
   showQrCode = true,
   orientation = 'portrait', // 'portrait' (ಲಂಬ - 54x85.6mm) or 'landscape' (ಅಡ್ಡ - 85.6x54mm)
+  scale = 1,
   customLogo,
   customMdSignature,
   customFrontBackground,
@@ -207,8 +208,16 @@ export default function OfficialStaffIDCard({
   // =========================================================================
   if (isPortrait) {
     return (
-      <div className={`inline-block select-none ${className}`}>
-        <div className="w-[238px] h-[372px] print:w-[54mm] print:h-[85.6mm] rounded-xl print:rounded-none overflow-hidden shadow-2xl border-2 border-slate-700 print:border-0 bg-white relative flex flex-col justify-between font-sans print:shadow-none box-sizing: border-box">
+      <div
+        className={`relative select-none id-card-container-outer inline-block ${className}`}
+        style={{
+          width: `${238 * scale}px`,
+          height: `${372 * scale}px`,
+          transformOrigin: 'top left',
+          ...kannadaFontStyle
+        }}
+      >
+        <div className="w-full h-full rounded-xl overflow-hidden shadow-xl border-2 border-slate-700 bg-white relative flex flex-col justify-between font-sans box-sizing: border-box">
           {!showBack ? (
             /* ----- PORTRAIT FRONT VIEW ----- */
             <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900 overflow-hidden">
@@ -466,9 +475,17 @@ export default function OfficialStaffIDCard({
   // 2. LANDSCAPE ORIENTATION (ಅಡ್ಡ - 372px x 238px / 85.6mm x 54mm)
   // =========================================================================
   return (
-    <div className={`inline-block select-none ${className}`}>
-      {/* Outer Card Dimensions: Standard CR80 ID Card standard 372px x 238px (85.6mm x 54mm @ 112 DPI) */}
-      <div className="w-[372px] h-[238px] print:w-[85.6mm] print:h-[54mm] rounded-xl print:rounded-none overflow-hidden shadow-xl border-2 border-slate-700 print:border-0 bg-white relative flex flex-col justify-between font-sans print:shadow-none box-sizing: border-box">
+    <div
+      className={`relative select-none id-card-container-outer inline-block ${className}`}
+      style={{
+        width: `${372 * scale}px`,
+        height: `${238 * scale}px`,
+        transformOrigin: 'top left',
+        ...kannadaFontStyle
+      }}
+    >
+      {/* Outer Card Dimensions: Standard CR80 ID Card standard 372px x 238px */}
+      <div className="w-full h-full rounded-xl overflow-hidden shadow-xl border-2 border-slate-700 bg-white relative flex flex-col justify-between font-sans box-sizing: border-box">
         {!showBack ? (
           /* ==================== LANDSCAPE FRONT VIEW ==================== */
           <div className="w-full h-full flex flex-col justify-between relative bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#f1f5f9] text-slate-900 overflow-hidden">
