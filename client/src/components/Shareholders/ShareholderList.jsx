@@ -1372,7 +1372,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
                   ಶೇರು ಸಂಖ್ಯೆ: <strong className="text-emerald-400 font-mono">#{targetEditShareholder.share_no || targetEditShareholder.share_number}</strong> ({targetEditShareholder.shareholder_name || targetEditShareholder.name}) ರವರ ಅಧಿಕೃತ ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ ಮಾಡಲು ಭದ್ರತಾ ಪಿನ್ ನಮೂದಿಸಿ.
                 </p>
                 <p className="text-[10px] text-slate-400">
-                  (ಡೀಫಾಲ್ಟ್ ಪಿನ್: <strong className="text-amber-400 font-mono">1234</strong> ಅಥವಾ ಆಡ್ಮಿನ್ ಪಾಸ್‌ವರ್ಡ್ <strong className="text-slate-300 font-mono">admin123</strong>)
+                  (ಡೀಫಾಲ್ಟ್ ಭದ್ರತಾ ಪಿನ್: <strong className="text-amber-400 font-mono">1234</strong> ಅಥವಾ ಆಡ್ಮಿನ್ ಪಾಸ್‌ವರ್ಡ್)
                 </p>
               </div>
 

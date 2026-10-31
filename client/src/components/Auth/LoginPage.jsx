@@ -3,8 +3,7 @@ import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import {
-  LogIn, Lock, User, Eye, EyeOff, ShieldCheck, AlertTriangle,
-  Briefcase, CheckCircle2, KeyRound, Sparkles
+  LogIn, Lock, User, Eye, EyeOff, ShieldCheck, AlertTriangle
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -49,11 +48,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickFill = (id, pass) => {
-    setIdentifier(id);
-    setPassword(pass);
-    setError('');
-  };
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -173,41 +167,6 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-
-          {/* Quick Credential Helpers */}
-          <div className="pt-2 border-t border-slate-800/80 space-y-2">
-            <div className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>ತ್ವರಿತ ಲಾಗಿನ್ ಡೆಮೊ (Quick Access):</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin', 'admin123')}
-                className="p-2.5 bg-slate-950/70 hover:bg-slate-950 border border-slate-800 hover:border-emerald-600/50 rounded-xl text-left transition-all cursor-pointer group"
-              >
-                <div className="font-bold text-slate-200 text-[11px] group-hover:text-emerald-400">
-                  System Admin
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono">
-                  admin / admin123
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('EMP-001', 'Shares123')}
-                className="p-2.5 bg-slate-950/70 hover:bg-slate-950 border border-slate-800 hover:border-emerald-600/50 rounded-xl text-left transition-all cursor-pointer group"
-              >
-                <div className="font-bold text-slate-200 text-[11px] group-hover:text-amber-400">
-                  Staff Login
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono">
-                  EMP-001 / Shares123
-                </div>
-              </button>
-            </div>
-          </div>
 
           {/* Policy / Security Notice */}
           <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-2xl text-[10.5px] text-emerald-300/90 space-y-1">
