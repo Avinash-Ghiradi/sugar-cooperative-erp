@@ -3459,14 +3459,7 @@ const newSh = {
     if (idx !== -1) {
       const existing = mockVarasaTransfers[idx];
 
-      // LOCK CHECK: Once approved by admin, do NOT allow editing
-      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(existing.approval_status)) {
-        return {
-          success: false,
-          isLocked: true,
-          message: 'ಈ ವಾರಸು ವರ್ಗಾವಣೆ ಅರ್ಜಿಯು ಈಗಾಗಲೇ ಅಡ್ಮಿನ್ ಅವರಿಂದ ಮಂಜೂರಾಗಿದೆ (Approved & Locked). ಮಂಜೂರಾದ ನಂತರ ವಿವರಗಳನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.'
-        };
-      }
+      // Editing permitted for all records including approved
 
       const updated = {
         ...existing,
@@ -3483,6 +3476,11 @@ const newSh = {
       if (CloudDbService.isEnabled()) {
         const cloudKey = updated.transfer_id || String(updated.id);
         CloudDbService.saveCollectionItem('varasa', cloudKey, updated).catch(() => {});
+      }
+
+      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(updated.approval_status)) {
+        reconcileApprovedTransfersIntoMaster(mockShareholders);
+        saveToIndexedDB(mockShareholders).catch(() => {});
       }
 
       return { success: true, data: updated };
@@ -3761,14 +3759,15 @@ const newSh = {
     const idx = mockVargavaneTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
     if (idx !== -1) {
       const existing = mockVargavaneTransfers[idx];
-      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(existing.approval_status)) {
-        return { success: false, message: 'ಅನುಮೋದಿತ ವರ್ಗಾವಣೆ ದಾಖಲೆಯನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ (Cannot update approved Vargavane transfer).' };
-      }
       mockVargavaneTransfers[idx] = { ...existing, ...data };
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
       if (CloudDbService.isEnabled()) {
         CloudDbService.saveCollectionItem('vargavane', mockVargavaneTransfers[idx].transfer_id || String(mockVargavaneTransfers[idx].id), mockVargavaneTransfers[idx])
           .catch(err => console.warn('Cloud DB updateVargavane error:', err));
+      }
+      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(mockVargavaneTransfers[idx].approval_status)) {
+        reconcileApprovedTransfersIntoMaster(mockShareholders);
+        saveToIndexedDB(mockShareholders).catch(() => {});
       }
       return { success: true, data: mockVargavaneTransfers[idx] };
     }
@@ -3779,10 +3778,6 @@ const newSh = {
     await ensureDBReady();
     const idx = mockVargavaneTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
     if (idx !== -1) {
-      const existing = mockVargavaneTransfers[idx];
-      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(existing.approval_status)) {
-        return { success: false, message: 'ಅನುಮೋದಿತ ವರ್ಗಾವಣೆ ದಾಖಲೆಯನ್ನು ಅಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ (Cannot delete approved Vargavane transfer).' };
-      }
       const removed = mockVargavaneTransfers.splice(idx, 1)[0];
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
       if (CloudDbService.isEnabled()) {
@@ -3800,6 +3795,10 @@ const newSh = {
     if (item) {
       item.approval_status = approval_status;
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+      if (CloudDbService.isEnabled()) {
+        const cloudKey = item.transfer_id || String(item.id);
+        CloudDbService.saveCollectionItem('vargavane', cloudKey, item).catch(() => {});
+      }
       if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});

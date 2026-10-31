@@ -206,10 +206,7 @@ export default function VargavaneTransferModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isApproved) {
-      if (showToast) showToast('ಅನುಮೋದಿತ ವರ್ಗಾವಣೆ ದಾಖಲೆಯನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ (Locked after approval).', 'error');
-      return;
-    }
+    // Allowed to edit and update approved vargavane transfer records
     if (!form.transferor_name?.trim()) {
       if (showToast) showToast('Please enter Transferor Shareholder name.', 'error');
       setActiveTab('transferor');

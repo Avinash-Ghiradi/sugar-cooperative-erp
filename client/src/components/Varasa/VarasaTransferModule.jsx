@@ -750,22 +750,23 @@ export default function VarasaTransferModule() {
                     {/* Status Workflow */}
                     <td className="py-3 px-3 text-center">
                       <select
-                        value={v.approval_status}
-                        disabled={isTransferApproved(v)}
+                        value={['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Approved' : ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status) ? 'Completed' : v.approval_status || 'Application Received'}
                         onChange={(e) => handleStatusUpdate(v.transfer_id || v.id, e.target.value)}
-                        title={isTransferApproved(v) ? 'ಅಡ್ಮಿನ್ ಅವರಿಂದ ಮಂಜೂರಾಗಿದೆ - ಸ್ಥಿತಿ ಲಾಕ್ ಆಗಿದೆ (Approved & Locked)' : 'Change Status'}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full outline-none border ${
-                          isTransferApproved(v)
-                            ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700 cursor-not-allowed opacity-90'
+                        title="ಸ್ಥಿತಿ ಬದಲಾಯಿಸಿ (Change Status)"
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full outline-none border cursor-pointer transition-colors shadow-sm ${
+                          ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)
+                            ? 'bg-emerald-950/90 text-emerald-300 border-emerald-600 hover:border-emerald-400'
+                            : ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status)
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-700 hover:border-emerald-500'
                             : v.approval_status === 'Under Verification'
-                            ? 'bg-amber-950 text-amber-300 border-amber-800 cursor-pointer'
-                            : 'bg-slate-900 text-slate-400 border-slate-700 cursor-pointer'
+                            ? 'bg-amber-950 text-amber-300 border-amber-800 hover:border-amber-500'
+                            : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500'
                         }`}
                       >
-                        <option value="Application Received">Application Received</option>
-                        <option value="Under Verification">Under Verification</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Completed">Completed & Transferred</option>
+                        <option value="Application Received" className="bg-slate-900 text-slate-200">Application Received</option>
+                        <option value="Under Verification" className="bg-slate-900 text-amber-300">Under Verification</option>
+                        <option value="Approved" className="bg-slate-900 text-emerald-300">Approved</option>
+                        <option value="Completed" className="bg-slate-900 text-emerald-300">Completed & Transferred</option>
                       </select>
                     </td>
 
@@ -804,44 +805,26 @@ export default function VarasaTransferModule() {
                           <Printer className="w-3.5 h-3.5 text-teal-400" />
                         </button>
 
-                        {isTransferApproved(v) ? (
-                          <span
-                            className="p-1.5 rounded-lg bg-slate-900/60 text-amber-400/80 border border-amber-800/60 cursor-not-allowed inline-flex items-center justify-center"
-                            title="ಮಂಜೂರಾದ ವಾರಸು ದಾಖಲೆಯನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ (Approved by Admin - Locked from Editing)"
-                          >
-                            <Lock className="w-3.5 h-3.5 text-amber-400" />
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingTransfer(v);
-                              setShowAddModal(true);
-                            }}
-                            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                            title="Edit Varasa Record"
-                          >
-                            <Edit3 className="w-3.5 h-3.5 text-sky-400" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingTransfer(v);
+                            setShowAddModal(true);
+                          }}
+                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                          title="Edit Varasa Record (ದಾಖಲೆ ತಿದ್ದುಪಡಿ)"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-sky-400" />
+                        </button>
 
-                        {isTransferApproved(v) ? (
-                          <span
-                            className="p-1.5 rounded-lg bg-slate-900/40 text-slate-600 border border-slate-800/60 cursor-not-allowed inline-flex items-center justify-center opacity-40"
-                            title="ಮಂಜೂರಾದ ದಾಖಲೆಯನ್ನು ಅಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ (Locked)"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(v.transfer_id || v.id)}
-                            className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                            title="Delete Record"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(v.transfer_id || v.id)}
+                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                          title="Delete Record (ದಾಖಲೆ ಅಳಿಸಿ)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>

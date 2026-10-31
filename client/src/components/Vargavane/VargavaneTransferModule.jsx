@@ -746,7 +746,7 @@ export default function VargavaneTransferModule() {
                     {/* Status Workflow */}
                     <td className="py-3 px-3 text-center">
                       <select
-                        value={v.approval_status}
+                        value={['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Approved' : ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status) ? 'Completed' : v.approval_status || 'Application Received'}
                         onChange={(e) => handleStatusUpdate(v.transfer_id || v.id, e.target.value)}
                         className={`text-[10px] font-bold px-2.5 py-1 rounded-full outline-none border cursor-pointer ${
                           v.approval_status === 'Completed'
@@ -800,37 +800,26 @@ export default function VargavaneTransferModule() {
                           <Printer className="w-3.5 h-3.5 text-teal-400" />
                         </button>
 
-                        {['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? (
-                          <span
-                            className="p-1.5 rounded-lg bg-slate-900/60 text-slate-500 cursor-not-allowed"
-                            title="ಅನುಮೋದಿತ ಶೇರು ವರ್ಗಾವಣೆ ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ (Locked after approval)"
-                          >
-                            <Lock className="w-3.5 h-3.5 text-slate-500" />
-                          </span>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingTransfer(v);
-                                setShowAddModal(true);
-                              }}
-                              className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                              title="Edit Vargavane Record"
-                            >
-                              <Edit3 className="w-3.5 h-3.5 text-sky-400" />
-                            </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingTransfer(v);
+                            setShowAddModal(true);
+                          }}
+                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                          title="Edit Vargavane Record (ದಾಖಲೆ ತಿದ್ದುಪಡಿ)"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-sky-400" />
+                        </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(v.transfer_id || v.id)}
-                              className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                              title="Delete Record"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(v.transfer_id || v.id)}
+                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                          title="Delete Record (ದಾಖಲೆ ಅಳಿಸಿ)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>

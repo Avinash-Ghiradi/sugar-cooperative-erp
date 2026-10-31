@@ -284,10 +284,7 @@ export default function VarasaTransferModal({
       return;
     }
 
-    if (isApproved) {
-      if (showToast) showToast('ಈ ವಾರಸು ವರ್ಗಾವಣೆ ಅರ್ಜಿಯು ಅಡ್ಮಿನ್ ಅವರಿಂದ ಮಂಜೂರಾಗಿದೆ (Approved & Locked). ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.', 'error');
-      return;
-    }
+    // Allowed to edit and update approved varasa transfer records
 
     try {
       if (initialData) {
@@ -371,14 +368,14 @@ export default function VarasaTransferModal({
           </button>
         </div>
 
-        {/* Approved & Locked Banner */}
+        {/* Approved Record Info Banner */}
         {isApproved && (
-          <div className="mx-6 mt-4 p-3 bg-amber-950/60 border border-amber-800/80 rounded-2xl flex items-center gap-3 text-amber-300 text-xs shadow-inner">
-            <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+          <div className="mx-6 mt-4 p-3 bg-emerald-950/40 border border-emerald-800/80 rounded-2xl flex items-center gap-3 text-emerald-300 text-xs shadow-inner">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
             <div>
-              <span className="font-bold block">ದಾಖಲೆ ಲಾಕ್ ಆಗಿದೆ (Record Approved & Locked)</span>
-              <span className="text-[11px] text-amber-200/80">
-                ಈ ವಾರಸು ವರ್ಗಾವಣೆ ಅರ್ಜಿಯು ಆಡಳಿತಾಧಿಕಾರಿಗಳಿಂದ (Admin) ಅಧಿಕೃತವಾಗಿ ಮಂಜೂರಾಗಿದೆ. ಮಂಜೂರಾದ ನಂತರ ವಿವರಗಳನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಲು ಅನುಮತಿ ಇಲ್ಲ.
+              <span className="font-bold block">ದಾಖಲೆ ಮಂಜೂರಾಗಿದೆ (Approved Record - Editable)</span>
+              <span className="text-[11px] text-emerald-200/80">
+                ಅಗತ್ಯವಿದ್ದರೆ ವಿವರಗಳನ್ನು ತಿದ್ದುಪಡಿ ಮಾಡಿ 'Update Application' ಕ್ಲಿಕ್ ಮಾಡುವ ಮೂಲಕ ನವೀಕರಿಸಬಹುದು.
               </span>
             </div>
           </div>
@@ -1061,20 +1058,13 @@ export default function VarasaTransferModal({
                 <span>ಪ್ರಿವ್ಯೂ (Preview)</span>
               </button>
 
-              {isApproved ? (
-                <div className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-amber-800/60 text-amber-400 rounded-xl text-xs font-bold cursor-not-allowed">
-                  <Lock className="w-4 h-4" />
-                  <span>ಮಂಜೂರಾಗಿದೆ - ತಿದ್ದುಪಡಿ ನಿಷೇಧಿಸಲಾಗಿದೆ (Locked)</span>
-                </div>
-              ) : (
-                <button
-                  type="submit"
-                  className="flex items-center gap-1.5 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{initialData ? 'Update Application' : 'Submit Application'}</span>
-                </button>
-              )}
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>{initialData ? 'Update Application' : 'Submit Application'}</span>
+              </button>
             </div>
           </div>
         </form>
