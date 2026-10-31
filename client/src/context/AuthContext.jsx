@@ -3,22 +3,48 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 export const ROLE_PERMISSIONS = {
-  Admin: ['dashboard', 'shareholders', 'enrollment', 'transactions', 'attendance', 'sugar_allotment', 'varasa', 'vargavane', 'merge_shares', 'villages', 'circles', 'reports', 'id_cards', 'employees', 'users', 'audit_logs', 'settings', 'import_export', 'backup'],
-  Cashier: ['dashboard', 'shareholders', 'enrollment', 'transactions', 'reports', 'merge_shares'],
-  'Computer Operator': ['dashboard', 'shareholders', 'enrollment', 'attendance', 'sugar_allotment', 'varasa', 'vargavane', 'merge_shares', 'reports', 'id_cards', 'villages', 'circles', 'import_export'],
-  Employee: ['dashboard', 'attendance', 'reports']
+  Admin: [
+    'dashboard', 'shareholders', 'enrollment', 'transactions', 'attendance',
+    'sugar_allotment', 'varasa', 'vargavane', 'merge_shares', 'villages',
+    'circles', 'reports', 'id_cards', 'employees', 'users', 'audit_logs',
+    'settings', 'import_export', 'backup'
+  ],
+  Cashier: [
+    'dashboard', 'shareholders', 'enrollment', 'transactions', 'reports', 'merge_shares'
+  ],
+  'Computer Operator': [
+    'dashboard', 'shareholders', 'enrollment', 'attendance', 'sugar_allotment',
+    'varasa', 'vargavane', 'merge_shares', 'reports', 'id_cards', 'villages',
+    'circles', 'import_export'
+  ],
+  'Attendance Operator': [
+    'dashboard', 'attendance', 'reports'
+  ],
+  'Sugar Operator': [
+    'dashboard', 'sugar_allotment', 'reports'
+  ],
+  Employee: [
+    'dashboard', 'attendance', 'reports'
+  ]
+};
+
+export const ROLE_LABELS = {
+  Admin: 'Admin (ಸಂಪೂರ್ಣ ನಿರ್ವಾಹಕರು - Full Access)',
+  Cashier: 'Cashier (ಮುಖ್ಯ ಖಜಾಂಚಿ - ಹಣಕಾಸು & ಷೇರು)',
+  'Computer Operator': 'Computer Operator (ಕಂಪ್ಯೂಟರ್ ಆಪರೇಟರ್ - ಷೇರು, ನೋಂದಣಿ, ಸಕ್ಕರೆ, ಹಾಜರಾತಿ, ID ಕಾರ್ಡ್)',
+  'Attendance Operator': 'Attendance Operator (ಹಾಜರಾತಿ ನಿರ್ವಾಹಕರು)',
+  'Sugar Operator': 'Sugar Operator (ಸಕ್ಕರೆ ಹಂಚಿಕೆ ನಿರ್ವಾಹಕರು)',
+  Employee: 'Employee (ಸಾಮಾನ್ಯ ಸಿಬ್ಬಂದಿ - ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ & ಹಾಜರಾತಿ)'
 };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('sugar_erp_user');
-    return saved ? JSON.parse(saved) : {
-      id: 1,
-      username: 'admin',
-      name: 'System Administrator',
-      role: 'Admin',
-      employee_id: 'EMP-001'
-    };
+    try {
+      const saved = localStorage.getItem('sugar_erp_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
   });
 
   const [activeModule, setActiveModule] = useState(() => {
@@ -44,12 +70,21 @@ export const AuthProvider = ({ children }) => {
   const login = (userData) => {
     setUser(userData);
     setActiveModule('dashboard');
-    showToast(`Welcome back, ${userData.name}! (${userData.role})`);
+    showToast(`ಸ್ವಾಗತ, ${userData.name}! (${userData.role})`, 'success');
   };
 
   const logout = () => {
     setUser(null);
-    showToast('Logged out successfully');
+    showToast('ಲಾಗ್‌ಔಟ್ ಯಶಸ್ವಿಯಾಗಿದೆ (Logged out successfully)', 'info');
+  };
+
+  const updateCurrentUser = (updatedFields) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updatedFields };
+      localStorage.setItem('sugar_erp_user', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const hasPermission = (moduleName) => {
@@ -70,6 +105,7 @@ export const AuthProvider = ({ children }) => {
       user,
       login,
       logout,
+      updateCurrentUser,
       activeModule,
       setActiveModule,
       activeReportSubTab,

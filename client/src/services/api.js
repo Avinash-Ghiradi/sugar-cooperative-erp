@@ -5552,6 +5552,8 @@ const newSh = {
       emergency_contact: data.emergency_contact || '',
       epf_uan_no: data.epf_uan_no || '',
       salary_grade: data.salary_grade || '',
+      role: data.role || 'Employee',
+      password: data.password || 'Shares123',
       photo_url: data.photo_url || '',
       signature_url: data.signature_url || '',
       status: data.status || 'Active'
@@ -5583,7 +5585,12 @@ const newSh = {
     const idx = mockEmployees.findIndex(e => String(e.id) === cleanId || String(e.employee_id) === cleanId);
     let updated = null;
     if (idx !== -1) {
-      updated = { ...mockEmployees[idx], ...data };
+      updated = {
+        ...mockEmployees[idx],
+        ...data,
+        role: data.role !== undefined ? data.role : (mockEmployees[idx].role || 'Employee'),
+        password: data.password !== undefined ? data.password : (mockEmployees[idx].password || 'Shares123')
+      };
       mockEmployees[idx] = updated;
     } else {
       updated = { id: cleanId, employee_id: cleanId, ...data };
@@ -5633,6 +5640,133 @@ const newSh = {
     }
 
     return { success: true, employee: removed };
+  },
+
+  async authenticateUser({ identifier, password }) {
+    if (!identifier || !password) {
+      return { success: false, message: 'ದಯವಿಟ್ಟು ಸಿಬ್ಬಂದಿ ಐಡಿ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ (Please enter ID and password).' };
+    }
+    const cleanId = String(identifier).trim();
+    const cleanPass = String(password).trim();
+
+    // 1. Check System Administrator
+    if (cleanId.toLowerCase() === 'admin') {
+      const savedAdminPass = (typeof localStorage !== 'undefined' && localStorage.getItem('sugar_erp_admin_password')) || 'admin123';
+      if (cleanPass === savedAdminPass) {
+        return {
+          success: true,
+          user: {
+            id: 1,
+            username: 'admin',
+            employee_id: 'ADMIN',
+            name: 'System Administrator',
+            kannada_name: 'ಮುಖ್ಯ ಸಿಸ್ಟಮ್ ನಿರ್ವಾಹಕರು (Admin)',
+            role: 'Admin',
+            department: 'ಆಡಳಿತ ವಿಭಾಗ (Administration)',
+            designation: 'System Administrator'
+          }
+        };
+      } else {
+        return { success: false, message: 'ತಪ್ಪಾದ Admin ಪಾಸ್‌ವರ್ಡ್! (Incorrect Admin Password).' };
+      }
+    }
+
+    // 2. Fetch and check Employee records
+    await this.getEmployees();
+
+    const emp = mockEmployees.find(e => {
+      const eId = String(e.employee_id || '').trim().toLowerCase();
+      const mobile = String(e.mobile || e.mobile_no || '').trim();
+      const name = String(e.name || '').trim().toLowerCase();
+      const engName = String(e.name_english || '').trim().toLowerCase();
+      const target = cleanId.toLowerCase();
+      return eId === target || mobile === cleanId || name === target || engName === target;
+    });
+
+    if (!emp) {
+      return { success: false, message: `ಸಿಬ್ಬಂದಿ ಐಡಿ '${cleanId}' ಕಂಡುಬಂದಿಲ್ಲ (Staff ID / Mobile not found).` };
+    }
+
+    if (emp.status === 'Resigned' || emp.status === 'Inactive') {
+      return { success: false, message: 'ಈ ಸಿಬ್ಬಂದಿ ಖಾತೆಯು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ (Account Inactive). ದಯವಿಟ್ಟು ಆಡಳಿತಾಧಿಕಾರಿಗಳನ್ನು ಸಂಪರ್ಕಿಸಿ.' };
+    }
+
+    const expectedPassword = emp.password || 'Shares123';
+    if (cleanPass !== expectedPassword) {
+      return {
+        success: false,
+        message: 'ತಪ್ಪಾದ ಪಾಸ್‌ವರ್ಡ್! (Incorrect Password). ಡೀಫಾಲ್ಟ್ ಪಾಸ್‌ವರ್ಡ್: Shares123 ಆಗಿದೆ.'
+      };
+    }
+
+    // Update last login
+    emp.last_login = new Date().toISOString();
+    saveStoredData(STORAGE_KEY_EMP, mockEmployees);
+
+    return {
+      success: true,
+      user: {
+        id: emp.id,
+        employee_id: emp.employee_id,
+        username: emp.employee_id,
+        name: emp.name_english || emp.name,
+        kannada_name: emp.name,
+        role: emp.role || 'Employee',
+        department: emp.department || '—',
+        designation: emp.designation || '—',
+        mobile: emp.mobile,
+        photo_url: emp.photo_url || null,
+        is_default_password: expectedPassword === 'Shares123'
+      }
+    };
+  },
+
+  async changePassword({ identifier, currentPassword, newPassword }) {
+    if (!newPassword || newPassword.trim().length < 4) {
+      return { success: false, message: 'ಹೊಸ ಪಾಸ್‌ವರ್ಡ್ ಕನಿಷ್ಠ 4 ಅಕ್ಷರಗಳನ್ನು ಹೊಂದಿರಬೇಕು (Minimum 4 characters required).' };
+    }
+    const cleanId = String(identifier || '').trim();
+    const cleanCurrent = String(currentPassword || '').trim();
+    const cleanNew = String(newPassword).trim();
+
+    if (cleanId.toLowerCase() === 'admin') {
+      const savedAdminPass = (typeof localStorage !== 'undefined' && localStorage.getItem('sugar_erp_admin_password')) || 'admin123';
+      if (cleanCurrent !== savedAdminPass) {
+        return { success: false, message: 'ಪ್ರಸ್ತುತ Admin ಪಾಸ್‌ವರ್ಡ್ ತಪ್ಪಾಗಿದೆ (Current admin password incorrect).' };
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('sugar_erp_admin_password', cleanNew);
+      }
+      return { success: true, message: 'Admin ಪಾಸ್‌ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ (Password updated successfully)!' };
+    }
+
+    await this.getEmployees();
+    const emp = mockEmployees.find(e => {
+      const eId = String(e.employee_id || '').trim().toLowerCase();
+      const mobile = String(e.mobile || e.mobile_no || '').trim();
+      const target = cleanId.toLowerCase();
+      return eId === target || mobile === cleanId;
+    });
+
+    if (!emp) {
+      return { success: false, message: 'ಸಿಬ್ಬಂದಿ ವಿವರ ಕಂಡುಬಂದಿಲ್ಲ (Staff not found).' };
+    }
+
+    const expected = emp.password || 'Shares123';
+    if (cleanCurrent !== expected) {
+      return { success: false, message: 'ಪ್ರಸ್ತುತ ಪಾಸ್‌ವರ್ಡ್ ತಪ್ಪಾಗಿದೆ (Current password incorrect).' };
+    }
+
+    emp.password = cleanNew;
+    saveStoredData(STORAGE_KEY_EMP, mockEmployees);
+    if (CloudDbService.isEnabled()) {
+      await CloudDbService.saveCollectionItem('employees', emp.employee_id, emp).catch(() => {});
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('employees_updated', { detail: emp }));
+    }
+
+    return { success: true, message: 'ಸಿಬ್ಬಂದಿ ಪಾಸ್‌ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ (Password updated successfully)!' };
   },
 
   async getEmployeeById(idOrEmpId) {
