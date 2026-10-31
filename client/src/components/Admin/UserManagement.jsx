@@ -136,25 +136,27 @@ export default function UserManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 text-slate-200">
-              {/* System Administrator Row */}
-              <tr className="bg-slate-900/40 hover:bg-slate-900/70 transition-colors">
-                <td className="py-3 px-4 font-mono font-bold text-rose-400">ADMIN</td>
-                <td className="py-3 px-4 font-bold text-slate-100">
-                  <div>System Administrator</div>
-                  <div className="text-[10px] text-slate-400">ಮುಖ್ಯ ಸಿಸ್ಟಮ್ ನಿರ್ವಾಹಕರು</div>
+              {/* Legacy System Administrator Row - Disabled */}
+              <tr className="bg-slate-950/40 opacity-60">
+                <td className="py-3 px-4 font-mono font-bold text-slate-500">ADMIN</td>
+                <td className="py-3 px-4 text-slate-400">
+                  <div className="line-through font-semibold text-slate-400">System Administrator</div>
+                  <div className="text-[10px] text-rose-400">ಡೀಫಾಲ್ಟ್ ಖಾತೆ ರದ್ದುಗೊಂಡಿದೆ</div>
                 </td>
-                <td className="py-3 px-4 text-slate-300">ಆಡಳಿತ ವಿಭಾಗ / IT</td>
+                <td className="py-3 px-4 text-slate-500">ಆಡಳಿತ ವಿಭಾಗ / IT</td>
                 <td className="py-3 px-4">
-                  <span className="px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800 font-bold text-[10px]">
-                    Admin (Full Access)
+                  <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800 font-mono text-[10px]">
+                    Disabled
                   </span>
                 </td>
-                <td className="py-3 px-4 text-emerald-400 font-mono text-[11px]">Active Session</td>
+                <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">—</td>
                 <td className="py-3 px-4 text-center">
-                  <span className="px-2 py-0.5 bg-emerald-950 text-emerald-400 rounded-full text-[10px] font-semibold border border-emerald-800">Active</span>
+                  <span className="px-2 py-0.5 bg-rose-950/50 text-rose-400 rounded-full text-[10px] font-semibold border border-rose-900/50">
+                    Disabled (ರದ್ದುಗೊಂಡಿದೆ)
+                  </span>
                 </td>
-                <td className="py-3 px-4 text-center text-slate-500 text-[11px] font-mono">
-                  Protected System Account
+                <td className="py-3 px-4 text-center text-slate-400 text-[11px]">
+                  ಅಧಿಕಾರವನ್ನು ಅಧಿಕೃತ ಸಿಬ್ಬಂದಿಗೆ ನೀಡಲಾಗಿದೆ
                 </td>
               </tr>
 

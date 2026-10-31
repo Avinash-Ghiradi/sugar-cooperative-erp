@@ -85,7 +85,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const handleVerifyPinAndOpen = () => {
     const cleanPin = pinInput.trim();
     const customPin = localStorage.getItem('sugar_erp_security_pin') || '1234';
-    if (cleanPin === '1234' || cleanPin === 'admin123' || cleanPin === '586204' || cleanPin === customPin || user?.role === 'Admin') {
+    if (cleanPin === '1234' || cleanPin === '586204' || cleanPin === customPin || user?.role === 'Admin') {
       const sh = targetEditShareholder;
       setPinModalOpen(false);
       setPinInput('');

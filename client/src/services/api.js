@@ -5649,28 +5649,13 @@ const newSh = {
     const cleanId = String(identifier).trim();
     const cleanPass = String(password).trim();
 
-    // 1. Check System Administrator
+    // 1. Disallow legacy 'admin' login completely - Admin role is assigned to official staff
     if (cleanId.toLowerCase() === 'admin') {
-      const savedAdminPass = (typeof localStorage !== 'undefined' && localStorage.getItem('sugar_erp_admin_password')) || 'admin123';
-      if (cleanPass === savedAdminPass) {
-        return {
-          success: true,
-          user: {
-            id: 1,
-            username: 'admin',
-            employee_id: 'ADMIN',
-            name: 'System Administrator',
-            kannada_name: 'ಮುಖ್ಯ ಸಿಸ್ಟಮ್ ನಿರ್ವಾಹಕರು (Admin)',
-            role: 'Admin',
-            department: 'ಆಡಳಿತ ವಿಭಾಗ (Administration)',
-            designation: 'System Administrator'
-          }
-        };
-      } else {
-        return { success: false, message: 'ತಪ್ಪಾದ Admin ಪಾಸ್‌ವರ್ಡ್! (Incorrect Admin Password).' };
-      }
+      return {
+        success: false,
+        message: 'ಸಾಮಾನ್ಯ "admin" ಖಾತೆ ಲಾಗಿನ್ ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ (Default admin login is disabled). ನಿರ್ವಾಹಕ (Admin) ಅಧಿಕಾರವನ್ನು ಅಧಿಕೃತ ಸಿಬ್ಬಂದಿಗೆ ನಿಗದಿಪಡಿಸಲಾಗಿದ್ದು, ದಯವಿಟ್ಟು ನಿಮ್ಮ ಸಿಬ್ಬಂದಿ ಐಡಿ (Staff ID / Mobile) ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ಬಳಸಿ ಲಾಗಿನ್ ಆಗಿ.'
+      };
     }
-
     // 2. Fetch and check Employee records
     await this.getEmployees();
 
@@ -5730,16 +5715,11 @@ const newSh = {
     const cleanNew = String(newPassword).trim();
 
     if (cleanId.toLowerCase() === 'admin') {
-      const savedAdminPass = (typeof localStorage !== 'undefined' && localStorage.getItem('sugar_erp_admin_password')) || 'admin123';
-      if (cleanCurrent !== savedAdminPass) {
-        return { success: false, message: 'ಪ್ರಸ್ತುತ Admin ಪಾಸ್‌ವರ್ಡ್ ತಪ್ಪಾಗಿದೆ (Current admin password incorrect).' };
-      }
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('sugar_erp_admin_password', cleanNew);
-      }
-      return { success: true, message: 'Admin ಪಾಸ್‌ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ (Password updated successfully)!' };
+      return {
+        success: false,
+        message: 'ಸಾಮಾನ್ಯ "admin" ಖಾತೆಯು ರದ್ದುಗೊಂಡಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಸಿಬ್ಬಂದಿ ಖಾತೆಯ ಮೂಲಕ ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾಯಿಸಿ.'
+      };
     }
-
     await this.getEmployees();
     const emp = mockEmployees.find(e => {
       const eId = String(e.employee_id || '').trim().toLowerCase();

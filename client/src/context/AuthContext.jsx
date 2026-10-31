@@ -41,7 +41,16 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('sugar_erp_user');
-      return saved ? JSON.parse(saved) : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Disallow legacy admin account session; must login as staff
+        if (parsed?.username?.toLowerCase() === 'admin' || parsed?.employee_id === 'ADMIN' || parsed?.id === 1) {
+          localStorage.removeItem('sugar_erp_user');
+          return null;
+        }
+        return parsed;
+      }
+      return null;
     } catch (e) {
       return null;
     }

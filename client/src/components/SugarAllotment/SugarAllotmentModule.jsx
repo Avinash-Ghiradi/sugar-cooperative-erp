@@ -2701,7 +2701,7 @@ export default function SugarAllotmentModule() {
                   onChange={(e) => setPinInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      if (pinInput === '1234' || pinInput === 'admin123' || user?.role === 'Admin') {
+                      if (pinInput === '1234' || user?.role === 'Admin') {
                         setPinVerified(true);
                         showToast('ಅಧಿಕೃತ ಪಿನ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ. ಶಾಸನಬದ್ಧ ತಿದ್ದುಪಡಿ ನಮೂನೆ ತೆರೆಯಲಾಗುತ್ತಿದೆ...');
                       } else {
@@ -2728,7 +2728,7 @@ export default function SugarAllotmentModule() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (pinInput === '1234' || pinInput === 'admin123' || user?.role === 'Admin') {
+                    if (pinInput === '1234' || user?.role === 'Admin') {
                       setPinVerified(true);
                       showToast('ಅಧಿಕೃತ ಪಿನ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ. ಶಾಸನಬದ್ಧ ತಿದ್ದುಪಡಿ ನಮೂನೆ ತೆರೆಯಲಾಗುತ್ತಿದೆ...');
                     } else {

@@ -113,7 +113,7 @@ export default function LoginPage() {
                   autoFocus
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="EMP-001 ಅಥವಾ ಮೊಬೈಲ್ ನಂ ಅಥವಾ admin"
+                  placeholder="EMP-001 ಅಥವಾ ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ನಂ..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all pl-10"
                 />
                 <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
