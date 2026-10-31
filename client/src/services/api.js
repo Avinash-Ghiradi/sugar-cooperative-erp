@@ -5669,9 +5669,94 @@ const newSh = {
     });
 
     if (!emp) {
-      return { success: false, message: `ಸಿಬ್ಬಂದಿ ಐಡಿ '${cleanId}' ಕಂಡುಬಂದಿಲ್ಲ (Staff ID / Mobile not found).` };
-    }
+      // 3. If not an employee, check Shareholder records by Mobile Number or Share Number
+      let sh = null;
+      const cleanDigits = cleanId.replace(/\D/g, '');
+      const last10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
 
+      await ensureDBReady().catch(() => {});
+
+      if (Array.isArray(mockShareholders) && mockShareholders.length > 0) {
+        sh = mockShareholders.find(s => {
+          const mob = String(s.mobile_no || s.mobile || s.mobile_number || '').replace(/\D/g, '');
+          const nomineeMob = String(s.nominee_mobile_no || '').replace(/\D/g, '');
+          const shNo = String(s.share_no || s.share_number || '').trim();
+
+          if (last10 && last10.length >= 8) {
+            if (mob.endsWith(last10) || nomineeMob.endsWith(last10) || mob === cleanDigits || nomineeMob === cleanDigits) {
+              return true;
+            }
+          }
+          if (shNo === cleanId || shNo === cleanDigits) {
+            return true;
+          }
+          return false;
+        });
+      }
+
+      if (!sh && CloudDbService.isEnabled()) {
+        try {
+          if (last10 && last10.length >= 8) {
+            const cloudRes = await CloudDbService.request(`shareholders?or=(mobile_no.ilike.*${last10}*,nominee_mobile_no.ilike.*${last10}*)&limit=1`);
+            if (Array.isArray(cloudRes) && cloudRes.length > 0) {
+              sh = cloudRes[0];
+            }
+          }
+          if (!sh) {
+            const cloudRes = await CloudDbService.getShareholderById(cleanId);
+            if (cloudRes && cloudRes.success && cloudRes.shareholder) {
+              sh = cloudRes.shareholder;
+            }
+          }
+        } catch (err) {
+          console.warn('Cloud DB shareholder auth lookup error:', err);
+        }
+      }
+
+      if (sh) {
+        let savedShPasswords = {};
+        try {
+          savedShPasswords = JSON.parse(localStorage.getItem('sugar_erp_sh_passwords') || '{}');
+        } catch (e) {}
+
+        const shKey = String(sh.share_no || sh.share_number || sh.id || cleanId).trim();
+        const mobKey = String(sh.mobile_no || sh.mobile || cleanDigits).trim();
+        const expectedPassword = savedShPasswords[shKey] || (last10 && savedShPasswords[last10]) || savedShPasswords[mobKey] || sh.password || 'Shares123';
+
+        if (cleanPass !== expectedPassword) {
+          return {
+            success: false,
+            message: 'ತಪ್ಪಾದ ಪಾಸ್‌ವರ್ಡ್! (Incorrect Password). ಷೇರುದಾರರ ಡೀಫಾಲ್ಟ್ ಪಾಸ್‌ವರ್ಡ್: Shares123 ಆಗಿದೆ.'
+          };
+        }
+
+        const sharesCount = getShareholderSharesCount(sh);
+
+        return {
+          success: true,
+          user: {
+            id: sh.id || sh.share_no,
+            share_no: sh.share_no || sh.share_number,
+            username: String(sh.mobile_no || sh.mobile || sh.share_no),
+            name: sh.shareholder_name || sh.name,
+            kannada_name: sh.shareholder_name || sh.name,
+            name_english: sh.name_english || sh.shareholder_name || sh.name,
+            role: 'Shareholder',
+            mobile: sh.mobile_no || sh.mobile || cleanDigits,
+            village: sh.place || sh.village || '',
+            taluk: sh.taluk || '',
+            district: sh.district || '',
+            circle: sh.circle || '',
+            total_amount: sh.total_amount || (sharesCount > 0 ? sharesCount * 2000 : 1000),
+            number_of_shares: sharesCount,
+            photo_url: sh.photo_url || null,
+            is_default_password: expectedPassword === 'Shares123'
+          }
+        };
+      }
+
+      return { success: false, message: `ಸಿಬ್ಬಂದಿ ಐಡಿ ಅಥವಾ ಷೇರುದಾರರ ಮೊಬೈಲ್ '${cleanId}' ಕಂಡುಬಂದಿಲ್ಲ (Staff ID / Shareholder Mobile not found).` };
+    }
     if (emp.status === 'Resigned' || emp.status === 'Inactive') {
       return { success: false, message: 'ಈ ಸಿಬ್ಬಂದಿ ಖಾತೆಯು ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ (Account Inactive). ದಯವಿಟ್ಟು ಆಡಳಿತಾಧಿಕಾರಿಗಳನ್ನು ಸಂಪರ್ಕಿಸಿ.' };
     }
@@ -5729,7 +5814,46 @@ const newSh = {
     });
 
     if (!emp) {
-      return { success: false, message: 'ಸಿಬ್ಬಂದಿ ವಿವರ ಕಂಡುಬಂದಿಲ್ಲ (Staff not found).' };
+      // Check if identifier belongs to a shareholder
+      let savedShPasswords = {};
+      try {
+        savedShPasswords = JSON.parse(localStorage.getItem('sugar_erp_sh_passwords') || '{}');
+      } catch (e) {}
+
+      const cleanDigits = cleanId.replace(/\D/g, '');
+      const last10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
+
+      let sh = mockShareholders.find(s => {
+        const mob = String(s.mobile_no || s.mobile || s.mobile_number || '').replace(/\D/g, '');
+        const shNo = String(s.share_no || s.share_number || '').trim();
+        return (last10 && (mob.endsWith(last10) || mob === cleanDigits)) || shNo === cleanId;
+      });
+
+      if (sh || savedShPasswords[cleanId] || (last10 && savedShPasswords[last10])) {
+        const shKey = sh ? String(sh.share_no || sh.share_number || sh.id).trim() : cleanId;
+        const mobKey = sh ? String(sh.mobile_no || sh.mobile || cleanDigits).trim() : cleanDigits;
+        const expected = savedShPasswords[shKey] || (last10 && savedShPasswords[last10]) || savedShPasswords[mobKey] || (sh && sh.password) || 'Shares123';
+
+        if (cleanCurrent !== expected) {
+          return { success: false, message: 'ಪ್ರಸ್ತುತ ಪಾಸ್‌ವರ್ಡ್ ತಪ್ಪಾಗಿದೆ (Current password incorrect).' };
+        }
+
+        savedShPasswords[shKey] = cleanNew;
+        if (mobKey) savedShPasswords[mobKey] = cleanNew;
+        if (last10) savedShPasswords[last10] = cleanNew;
+        localStorage.setItem('sugar_erp_sh_passwords', JSON.stringify(savedShPasswords));
+
+        if (sh) {
+          sh.password = cleanNew;
+          if (CloudDbService.isEnabled()) {
+            CloudDbService.updateShareholder(sh.share_no || sh.id, { password: cleanNew }).catch(() => {});
+          }
+        }
+
+        return { success: true, message: 'ಷೇರುದಾರರ ಪಾಸ್‌ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ (Password updated successfully)!' };
+      }
+
+      return { success: false, message: 'ಸಿಬ್ಬಂದಿ ಅಥವಾ ಷೇರುದಾರರ ವಿವರ ಕಂಡುಬಂದಿಲ್ಲ (Account not found).' };
     }
 
     const expected = emp.password || 'Shares123';

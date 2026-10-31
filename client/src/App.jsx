@@ -22,6 +22,7 @@ import DataImportExport from './components/Admin/DataImportExport';
 import BackupManager from './components/Admin/BackupManager';
 import SettingsModule from './components/Settings/SettingsModule';
 import LoginPage from './components/Auth/LoginPage';
+import ShareholderPortal from './components/Shareholders/ShareholderPortal';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import { ShieldCheck, LogIn, Lock, CheckCircle2 } from 'lucide-react';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from './services/organizationService';

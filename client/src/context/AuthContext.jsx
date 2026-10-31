@@ -25,6 +25,9 @@ export const ROLE_PERMISSIONS = {
   ],
   Employee: [
     'dashboard', 'attendance', 'reports'
+  ],
+  Shareholder: [
+    'shareholder_portal', 'shareholder_profile'
   ]
 };
 
@@ -34,7 +37,8 @@ export const ROLE_LABELS = {
   'Computer Operator': 'Computer Operator (ಕಂಪ್ಯೂಟರ್ ಆಪರೇಟರ್ - ಷೇರು, ನೋಂದಣಿ, ಸಕ್ಕರೆ, ಹಾಜರಾತಿ, ID ಕಾರ್ಡ್)',
   'Attendance Operator': 'Attendance Operator (ಹಾಜರಾತಿ ನಿರ್ವಾಹಕರು)',
   'Sugar Operator': 'Sugar Operator (ಸಕ್ಕರೆ ಹಂಚಿಕೆ ನಿರ್ವಾಹಕರು)',
-  Employee: 'Employee (ಸಾಮಾನ್ಯ ಸಿಬ್ಬಂದಿ - ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ & ಹಾಜರಾತಿ)'
+  Employee: 'Employee (ಸಾಮಾನ್ಯ ಸಿಬ್ಬಂದಿ - ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ & ಹಾಜರಾತಿ)',
+  Shareholder: 'Shareholder (ಷೇರುದಾರ ಸದಸ್ಯರು - ಸ್ವಂತ ವಿವರ ಮಾತ್ರ)'
 };
 
 export const AuthProvider = ({ children }) => {

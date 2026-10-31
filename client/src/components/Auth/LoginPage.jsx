@@ -113,7 +113,7 @@ export default function LoginPage() {
                   autoFocus
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="EMP-001 ಅಥವಾ ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ನಂ..."
+                  placeholder="ಸಿಬ್ಬಂದಿ ಐಡಿ (EMP-001) ಅಥವಾ ಷೇರುದಾರರ ಮೊಬೈಲ್ ನಂ..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all pl-10"
                 />
                 <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -169,19 +169,22 @@ export default function LoginPage() {
           </form>
 
           {/* Policy / Security Notice */}
-          <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-2xl text-[10.5px] text-emerald-300/90 space-y-1">
+          <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-2xl text-[10.5px] text-emerald-300/90 space-y-1.5">
             <div className="font-bold flex items-center gap-1.5 text-emerald-300">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>ಪಾಸ್‌ವರ್ಡ್ & ಕರ್ತವ್ಯದ ಪಾತ್ರದ ಸೂಚನೆ (RBAC Policy):</span>
+              <span>ಲಾಗಿನ್ & ಪ್ರವೇಶ ನಿಯಮಗಳು (Login & Access Policy):</span>
             </div>
             <p className="leading-relaxed">
-              • ಪ್ರತಿಯೊಬ್ಬ ಸಿಬ್ಬಂದಿಗೆ ಡೀಫಾಲ್ಟ್ ಪಾಸ್‌ವರ್ಡ್ <strong className="font-mono text-amber-300">Shares123</strong> ಇರುತ್ತದೆ.
+              • <strong>ಸಿಬ್ಬಂದಿ ಲಾಗಿನ್:</strong> ಸಿಬ್ಬಂದಿ ಐಡಿ (EMP-001) ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ಬಳಸಿ ERP ಗೆ ಲಾಗಿನ್ ಆಗಿ.
+            </p>
+            <p className="leading-relaxed">
+              • <strong>ಷೇರುದಾರರ ಲಾಗಿನ್:</strong> ಷೇರುದಾರರು ತಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ಮತ್ತು ಡೀಫಾಲ್ಟ್ ಪಾಸ್‌ವರ್ಡ್ <strong className="font-mono text-amber-300">Shares123</strong> ಬಳಸಿ ತಮ್ಮದೇ ಷೇರು ವಿವರ, ಲೆಡ್ಜರ್, ಸಕ್ಕರೆ ಕೋಟಾ & ID ಕಾರ್ಡ್ ಮಾತ್ರ ನೋಡಬಹುದು.
             </p>
             <p className="leading-relaxed">
               • ಲಾಗಿನ್ ಆದ ನಂತರ ಮೇಲ್ಭಾಗದ ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ ತಮ್ಮದೇ ಹೊಸ ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾಯಿಸಿಕೊಳ್ಳಬಹುದು.
             </p>
-            <p className="leading-relaxed">
-              • ನಿರ್ವಾಹಕರು ನಿಯೋಜಿಸಿದ ಪಾತ್ರದ (Assigned Role) ಪ್ರಕಾರ ಮಾತ್ರ ವೈಶಿಷ್ಟ್ಯಗಳು ಲಭ್ಯವಾಗುತ್ತವೆ.
+            <p className="leading-relaxed text-amber-300/90 font-medium">
+              • ನಿರ್ವಾಹಕರು ನಿಯೋಜಿಸಿದ ಅಧಿಕೃತ ಪಾತ್ರದ (Assigned Role) ಪ್ರಕಾರ ಮಾತ್ರ ಸಿಸ್ಟಮ್ ವೈಶಿಷ್ಟ್ಯಗಳು ಲಭ್ಯವಾಗುತ್ತವೆ.
             </p>
           </div>
         </div>
