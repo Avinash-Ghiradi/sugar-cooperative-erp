@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 export default function UserManagement() {
-  const { showToast, user } = useAuth();
+  const { showToast, user, setActiveModule } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -78,8 +78,11 @@ export default function UserManagement() {
 
   const handleResetPassword = async (emp) => {
     if (window.confirm(`ಸಿಬ್ಬಂದಿ ${emp.name} (${emp.employee_id}) ಪಾಸ್‌ವರ್ಡ್ ಅನ್ನು ಡೀಫಾಲ್ಟ್ 'Shares123' ಗೆ ಮರುಹೊಂದಿಸಬೇಕೇ?`)) {
-      const res = await ApiService.updateEmployee(emp.id || emp.employee_id, {
-        password: 'Shares123'
+      const res = await ApiService.adminResetPassword({
+        type: 'employee',
+        id: emp.employee_id,
+        newPassword: 'Shares123',
+        adminUser: user?.name || user?.username || 'Admin'
       });
       if (res && res.success) {
         showToast(`ಸಿಬ್ಬಂದಿ ${emp.name} ಪಾಸ್‌ವರ್ಡ್ ಅನ್ನು 'Shares123' ಗೆ ರಿಸೆಟ್ ಮಾಡಲಾಗಿದೆ!`, 'success');
@@ -112,12 +115,22 @@ export default function UserManagement() {
           <p className="text-xs text-slate-400 mt-0.5">ಸಿಬ್ಬಂದಿ ಲಾಗಿನ್ ಖಾತೆಗಳು, ನಿಯೋಜಿತ ಕರ್ತವ್ಯದ ಪಾತ್ರಗಳು & ಅಧಿಕಾರ ನಿರ್ಬಂಧ ನಿರ್ವಹಣೆ</p>
         </div>
 
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> ಹೊಸ ಬಳಕೆದಾರರ ಖಾತೆ ರಚಿಸಿ
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveModule('password_manager')}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/70 rounded-xl text-xs font-semibold shadow-lg shadow-amber-950/40 transition-all cursor-pointer"
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>ಪಾಸ್‌ವರ್ಡ್ ನಿರ್ವಾಹಕ (Password Manager) ➔</span>
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> ಹೊಸ ಬಳಕೆದಾರರ ಖಾತೆ ರಚಿಸಿ
+          </button>
+        </div>
       </div>
 
       {/* Users Table */}

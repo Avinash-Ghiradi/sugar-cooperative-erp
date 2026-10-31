@@ -134,6 +134,19 @@ export default function Navbar({ onMenuToggle }) {
 
                 {/* Dropdown Action Items */}
                 <div className="p-1 space-y-0.5 text-xs">
+                  {user?.role === 'Admin' && (
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        setActiveModule('password_manager');
+                      }}
+                      className="w-full px-3 py-2 text-left text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer font-semibold"
+                    >
+                      <KeyRound className="w-4 h-4 text-amber-400" />
+                      <span>ಪಾಸ್‌ವರ್ಡ್ ನಿರ್ವಾಹಕ (Password Manager)</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={() => {
                       setDropdownOpen(false);

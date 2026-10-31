@@ -17,6 +17,7 @@ import ReportsModule from './components/Reports/ReportsModule';
 import IDCardGenerator from './components/IDCards/IDCardGenerator';
 import EmployeeManagement from './components/Employees/EmployeeManagement';
 import UserManagement from './components/Admin/UserManagement';
+import PasswordManager from './components/Admin/PasswordManager';
 import AuditLogs from './components/Admin/AuditLogs';
 import DataImportExport from './components/Admin/DataImportExport';
 import BackupManager from './components/Admin/BackupManager';
@@ -108,6 +109,7 @@ function AppContent() {
       case 'id_cards': return <IDCardGenerator />;
       case 'employees': return <EmployeeManagement />;
       case 'users': return <UserManagement />;
+      case 'password_manager': return <PasswordManager />;
       case 'audit_logs': return <AuditLogs />;
       case 'import_export': return <SettingsModule initialTab="upload" />;
       case 'backup': return <BackupManager />;

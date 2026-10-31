@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth, ROLE_PERMISSIONS } from '../context/AuthContext';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../services/organizationService';
 import {
+  KeyRound,
   LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert,
   Settings, LogOut, Upload, ArrowRightLeft, UserPlus, ChevronDown, ChevronRight, GitMerge
@@ -19,6 +20,7 @@ const MENU_ITEMS = [
   { id: 'id_cards', label: 'ID Card Generator', icon: Contact },
   { id: 'employees', label: 'Employees', icon: Briefcase },
   { id: 'users', label: 'Users & RBAC', icon: UserCog },
+  { id: 'password_manager', label: 'Password Manager', icon: KeyRound },
   { id: 'audit_logs', label: 'Audit Logs', icon: History },
   { id: 'settings', label: 'Cooperative Settings', icon: Settings },
 ];

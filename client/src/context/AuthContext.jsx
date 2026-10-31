@@ -6,7 +6,7 @@ export const ROLE_PERMISSIONS = {
   Admin: [
     'dashboard', 'shareholders', 'enrollment', 'transactions', 'attendance',
     'sugar_allotment', 'varasa', 'vargavane', 'merge_shares', 'villages',
-    'circles', 'reports', 'id_cards', 'employees', 'users', 'audit_logs',
+    'circles', 'reports', 'id_cards', 'employees', 'users', 'password_manager', 'audit_logs',
     'settings', 'import_export', 'backup'
   ],
   Cashier: [

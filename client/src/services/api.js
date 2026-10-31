@@ -5872,6 +5872,234 @@ const newSh = {
 
     return { success: true, message: 'ಸಿಬ್ಬಂದಿ ಪಾಸ್‌ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ (Password updated successfully)!' };
   },
+  async adminResetPassword({ type, id, newPassword = 'Shares123', adminUser = 'Admin' }) {
+    await ensureDBReady().catch(() => {});
+    const cleanId = String(id || '').trim();
+    const cleanPass = String(newPassword || 'Shares123').trim();
+    const isDefault = cleanPass === 'Shares123';
+
+    if (cleanPass.length < 4) {
+      return { success: false, message: 'ಪಾಸ್‌ವರ್ಡ್ ಕನಿಷ್ಠ 4 ಅಕ್ಷರಗಳನ್ನು ಹೊಂದಿರಬೇಕು (Minimum 4 characters required).' };
+    }
+
+    if (type === 'employee' || !type) {
+      await this.getEmployees();
+      const emp = mockEmployees.find(e => {
+        const eId = String(e.employee_id || '').trim().toLowerCase();
+        const mobile = String(e.mobile || e.mobile_no || '').trim();
+        const target = cleanId.toLowerCase();
+        return eId === target || mobile === cleanId;
+      });
+
+      if (emp) {
+        emp.password = cleanPass;
+        emp.is_default_password = isDefault;
+        saveStoredData(STORAGE_KEY_EMP, mockEmployees);
+
+        if (CloudDbService.isEnabled()) {
+          await CloudDbService.saveCollectionItem('employees', emp.employee_id, emp).catch(() => {});
+        }
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('employees_updated', { detail: emp }));
+        }
+
+        const auditEntry = {
+          id: `LOG-PWD-EMP-${emp.employee_id}-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          username: adminUser,
+          performed_by: adminUser,
+          role: 'Admin',
+          module: 'Password Manager (ಪಾಸ್‌ವರ್ಡ್ ನಿರ್ವಾಹಕ)',
+          action: 'ADMIN_PASSWORD_RESET',
+          record_id: `#${emp.employee_id}`,
+          description: `ನಿರ್ವಾಹಕರು (${adminUser}) ಸಿಬ್ಬಂದಿ #${emp.employee_id} (${emp.name}) ಅವರ ಪಾಸ್‌ವರ್ಡ್ ಅನ್ನು ${isDefault ? "ಡೀಫಾಲ್ಟ್ 'Shares123'" : "'" + cleanPass + "'"} ಗೆ ಯಶಸ್ವಿಯಾಗಿ ಮರುಹೊಂದಿಸಿದ್ದಾರೆ.`
+        };
+        mockAuditLogs.unshift(auditEntry);
+        if (mockAuditLogs.length > 500) mockAuditLogs.pop();
+        saveStoredData(STORAGE_KEY_LOGS, mockAuditLogs);
+
+        return {
+          success: true,
+          type: 'employee',
+          targetName: emp.name,
+          targetId: emp.employee_id,
+          role: emp.role,
+          mobile: emp.mobile,
+          newPassword: cleanPass,
+          isDefault,
+          message: `ಸಿಬ್ಬಂದಿ #${emp.employee_id} (${emp.name}) ಅವರ ಪಾಸ್‌ವರ್ಡ್ ಅನ್ನು ${isDefault ? "ಡೀಫಾಲ್ಟ್ 'Shares123'" : "'" + cleanPass + "'"} ಗೆ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ!`
+        };
+      }
+    }
+
+    // Shareholder password reset
+    let savedShPasswords = {};
+    try {
+      savedShPasswords = JSON.parse(localStorage.getItem('sugar_erp_sh_passwords') || '{}');
+    } catch (e) {}
+
+    const cleanDigits = cleanId.replace(/\D/g, '');
+    const last10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
+
+    let sh = mockShareholders.find(s => {
+      const mob = String(s.mobile_no || s.mobile || s.mobile_number || '').replace(/\D/g, '');
+      const shNo = String(s.share_no || s.share_number || '').trim();
+      return (last10 && last10.length >= 6 && mob.endsWith(last10)) || shNo === cleanId || shNo === cleanDigits;
+    });
+
+    if (!sh && CloudDbService.isEnabled()) {
+      try {
+        if (last10 && last10.length >= 8) {
+          const cloudRes = await CloudDbService.request(`shareholders?or=(mobile_no.ilike.*${last10}*,nominee_mobile_no.ilike.*${last10}*)&limit=1`);
+          if (Array.isArray(cloudRes) && cloudRes.length > 0) sh = cloudRes[0];
+        }
+        if (!sh) {
+          const cloudRes = await CloudDbService.getShareholderById(cleanId);
+          if (cloudRes && cloudRes.success && cloudRes.shareholder) sh = cloudRes.shareholder;
+        }
+      } catch (err) {}
+    }
+
+    if (sh || savedShPasswords[cleanId] || (last10 && savedShPasswords[last10])) {
+      const shKey = sh ? String(sh.share_no || sh.share_number || sh.id).trim() : cleanId;
+      const mobKey = sh ? String(sh.mobile_no || sh.mobile || cleanDigits).trim() : cleanDigits;
+      const shName = sh ? (sh.shareholder_name || sh.name) : `ಷೇರುದಾರ #${cleanId}`;
+
+      if (isDefault) {
+        delete savedShPasswords[shKey];
+        if (mobKey) delete savedShPasswords[mobKey];
+        if (last10) delete savedShPasswords[last10];
+      } else {
+        savedShPasswords[shKey] = cleanPass;
+        if (mobKey) savedShPasswords[mobKey] = cleanPass;
+        if (last10) savedShPasswords[last10] = cleanPass;
+      }
+      localStorage.setItem('sugar_erp_sh_passwords', JSON.stringify(savedShPasswords));
+
+      if (sh) {
+        sh.password = cleanPass;
+        if (CloudDbService.isEnabled()) {
+          CloudDbService.updateShareholder(sh.share_no || sh.id, { password: cleanPass }).catch(() => {});
+        }
+      }
+
+      const auditEntry = {
+        id: `LOG-PWD-SH-${shKey}-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        username: adminUser,
+        performed_by: adminUser,
+        role: 'Admin',
+        module: 'Password Manager (ಪಾಸ್‌ವರ್ಡ್ ನಿರ್ವಾಹಕ)',
+        action: 'ADMIN_PASSWORD_RESET',
+        record_id: `#${shKey}`,
+        share_no: shKey,
+        description: `ನಿರ್ವಾಹಕರು (${adminUser}) ಷೇರುದಾರ #${shKey} (${shName}) ಅವರ ಪಾಸ್‌ವರ್ಡ್ ಅನ್ನು ${isDefault ? "ಡೀಫಾಲ್ಟ್ 'Shares123'" : "'" + cleanPass + "'"} ಗೆ ಯಶಸ್ವಿಯಾಗಿ ಮರುಹೊಂದಿಸಿದ್ದಾರೆ.`
+      };
+      mockAuditLogs.unshift(auditEntry);
+      if (mockAuditLogs.length > 500) mockAuditLogs.pop();
+      saveStoredData(STORAGE_KEY_LOGS, mockAuditLogs);
+
+      return {
+        success: true,
+        type: 'shareholder',
+        targetName: shName,
+        targetId: shKey,
+        mobile: sh ? (sh.mobile_no || sh.mobile) : mobKey,
+        newPassword: cleanPass,
+        isDefault,
+        message: `ಷೇರುದಾರ #${shKey} (${shName}) ಅವರ ಪಾಸ್‌ವರ್ಡ್ ಅನ್ನು ${isDefault ? "ಡೀಫಾಲ್ಟ್ 'Shares123'" : "'" + cleanPass + "'"} ಗೆ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ!`
+      };
+    }
+
+    return {
+      success: false,
+      message: `'${cleanId}' ಗುರುತಿನ ಸಿಬ್ಬಂದಿ ಅಥವಾ ಷೇರುದಾರರು ಕಂಡುಬಂದಿಲ್ಲ (Account not found).`
+    };
+  },
+
+  async searchForPasswordManager(query = '') {
+    await ensureDBReady().catch(() => {});
+    const q = String(query || '').trim().toLowerCase().normalize('NFC');
+    const cleanDigits = q.replace(/\D/g, '');
+
+    // 1. Search employees
+    await this.getEmployees();
+    const matchedEmployees = mockEmployees.filter(emp => {
+      if (!q) return true;
+      const empId = String(emp.employee_id || '').toLowerCase();
+      const name = String(emp.name || '').toLowerCase().normalize('NFC');
+      const engName = String(emp.name_english || '').toLowerCase();
+      const mob = String(emp.mobile || emp.mobile_no || '').replace(/\D/g, '');
+      const role = String(emp.role || '').toLowerCase();
+      return empId.includes(q) || name.includes(q) || engName.includes(q) || (cleanDigits && mob.includes(cleanDigits)) || role.includes(q);
+    }).map(emp => ({
+      ...emp,
+      account_type: 'employee',
+      current_password: emp.password || 'Shares123',
+      is_default_password: (emp.password || 'Shares123') === 'Shares123'
+    }));
+
+    // 2. Search shareholders
+    let savedShPasswords = {};
+    try {
+      savedShPasswords = JSON.parse(localStorage.getItem('sugar_erp_sh_passwords') || '{}');
+    } catch (e) {}
+
+    const matchedShareholders = [];
+    if (q) {
+      for (let i = 0; i < mockShareholders.length; i++) {
+        const sh = mockShareholders[i];
+        const shNo = String(sh.share_no || sh.share_number || '').trim();
+        const shName = String(sh.shareholder_name || sh.name || '').toLowerCase().normalize('NFC');
+        const shPlace = String(sh.place || sh.village || '').toLowerCase().normalize('NFC');
+        const mob = String(sh.mobile_no || sh.mobile || '').replace(/\D/g, '');
+
+        const matchNo = shNo === q || shNo.startsWith(q);
+        const matchName = shName.includes(q);
+        const matchPlace = shPlace.includes(q);
+        const matchMob = cleanDigits.length >= 3 && mob.includes(cleanDigits);
+
+        if (matchNo || matchName || matchPlace || matchMob) {
+          const shKey = String(sh.share_no || sh.share_number || sh.id).trim();
+          const mobKey = mob;
+          const last10 = mob.length >= 10 ? mob.slice(-10) : mob;
+          const customPass = savedShPasswords[shKey] || (last10 && savedShPasswords[last10]) || savedShPasswords[mobKey] || (sh.password && sh.password !== 'Shares123' ? sh.password : null);
+
+          matchedShareholders.push({
+            id: sh.id,
+            share_no: sh.share_no || sh.share_number,
+            name: sh.shareholder_name || sh.name,
+            place: sh.place || sh.village,
+            taluk: sh.taluk,
+            mobile_no: sh.mobile_no || sh.mobile || '',
+            number_of_shares: getShareholderSharesCount(sh),
+            account_type: 'shareholder',
+            current_password: customPass || 'Shares123',
+            is_default_password: !customPass || customPass === 'Shares123'
+          });
+          if (matchedShareholders.length >= 50) break;
+        }
+      }
+    }
+
+    return {
+      success: true,
+      employees: matchedEmployees,
+      shareholders: matchedShareholders
+    };
+  },
+
+  getShareholderPasswordStats() {
+    let savedShPasswords = {};
+    try {
+      savedShPasswords = JSON.parse(localStorage.getItem('sugar_erp_sh_passwords') || '{}');
+    } catch (e) {}
+    const customCount = Object.keys(savedShPasswords).length;
+    return {
+      customPasswordsCount: customCount
+    };
+  },
+
 
   async getEmployeeById(idOrEmpId) {
     const cleanId = String(idOrEmpId).trim();
