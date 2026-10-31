@@ -1197,49 +1197,99 @@ export default function EmployeeManagement() {
             {/* Live Interactive Card Preview Section */}
             <div className="p-6 bg-slate-900/60 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-center gap-6 print:p-0 print:border-none print:bg-transparent">
               {cardSide === 'both' ? (
-                <>
-                  {/* Front Side */}
-                  <div className="space-y-1.5 text-center">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded print:hidden">
-                      ಮುಂಭಾಗ (Front Page)
-                    </span>
-                    <div>
-                      <OfficialStaffIDCard
-                        employee={selectedEmpForCard}
-                        showBack={false}
-                        showSeal={showSeal}
-                        showQrCode={showQrCode}
-                        orientation={cardOrientation}
-                        customFrontBackground={staffCardSettings.customFrontBackground}
-                        customBackBackground={staffCardSettings.customBackBackground}
-                        backgroundOpacity={staffCardSettings.backgroundOpacity}
-                        customLogo={staffCardSettings.customLogo}
-                        customMdSignature={staffCardSettings.customMdSignature}
-                      />
+                printLayout === 'a4' ? (
+                  /* A4 Attached Foldable Sheet Preview */
+                  <div className="flex flex-col items-center space-y-2 max-w-full">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-teal-300 bg-slate-950/90 px-3 py-1 rounded-lg border border-teal-500/40 w-full max-w-2xl">
+                      <span className="flex items-center gap-1">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Outer Cut Box)</span>
+                      <span className="font-bold text-amber-300 flex items-center gap-1">▼ ಮಧ್ಯದಲ್ಲಿ ಮಡಚುವ ಗೆರೆ (Fold Line) ▼</span>
+                      <span>✂ Cut</span>
                     </div>
-                  </div>
 
-                  {/* Back Side with Ultra-large 96px QR Code */}
-                  <div className="space-y-1.5 text-center">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded print:hidden">
-                      ಹಿಂಬದಿ (Back Page - Attendance QR)
-                    </span>
-                    <div>
-                      <OfficialStaffIDCard
-                        employee={selectedEmpForCard}
-                        showBack={true}
-                        showSeal={showSeal}
-                        showQrCode={showQrCode}
-                        orientation={cardOrientation}
-                        customFrontBackground={staffCardSettings.customFrontBackground}
-                        customBackBackground={staffCardSettings.customBackBackground}
-                        backgroundOpacity={staffCardSettings.backgroundOpacity}
-                        customLogo={staffCardSettings.customLogo}
-                        customMdSignature={staffCardSettings.customMdSignature}
-                      />
+                    <div className="border-2 border-dashed border-teal-400/80 rounded-xl flex flex-row items-stretch justify-center bg-white shadow-2xl overflow-hidden p-0 gap-0">
+                      <div className="p-0 m-0">
+                        <OfficialStaffIDCard
+                          employee={selectedEmpForCard}
+                          showBack={false}
+                          showSeal={showSeal}
+                          showQrCode={showQrCode}
+                          orientation={cardOrientation}
+                          customFrontBackground={staffCardSettings.customFrontBackground}
+                          customBackBackground={staffCardSettings.customBackBackground}
+                          backgroundOpacity={staffCardSettings.backgroundOpacity}
+                          customLogo={staffCardSettings.customLogo}
+                          customMdSignature={staffCardSettings.customMdSignature}
+                        />
+                      </div>
+                      <div className="w-0 self-stretch border-l-2 border-dashed border-slate-900 z-20" title="ಮಡಚುವ ಗೆರೆ (Fold Line)"></div>
+                      <div className="p-0 m-0">
+                        <OfficialStaffIDCard
+                          employee={selectedEmpForCard}
+                          showBack={true}
+                          showSeal={showSeal}
+                          showQrCode={showQrCode}
+                          orientation={cardOrientation}
+                          customFrontBackground={staffCardSettings.customFrontBackground}
+                          customBackBackground={staffCardSettings.customBackBackground}
+                          backgroundOpacity={staffCardSettings.backgroundOpacity}
+                          customLogo={staffCardSettings.customLogo}
+                          customMdSignature={staffCardSettings.customMdSignature}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 w-full max-w-2xl px-1">
+                      <span>✂ ಹೊರಗಿನ ಗೆರೆಯಲ್ಲಿ ಕತ್ತರಿಸಿ (Cut along outer line)</span>
+                      <span className="text-amber-300 font-semibold">ಮಧ್ಯದ ಗೆರೆಯಲ್ಲಿ ಮಡಚಿ ಲ್ಯಾಮಿನೇಟ್ ಮಾಡಿ (Fold along center line)</span>
+                      <span>#{selectedEmpForCard.employee_id}</span>
                     </div>
                   </div>
-                </>
+                ) : (
+                  /* CR80 Individual PVC Cards Preview */
+                  <>
+                    {/* Front Side */}
+                    <div className="space-y-1.5 text-center">
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded print:hidden">
+                        ಮುಂಭಾಗ (Front Page)
+                      </span>
+                      <div>
+                        <OfficialStaffIDCard
+                          employee={selectedEmpForCard}
+                          showBack={false}
+                          showSeal={showSeal}
+                          showQrCode={showQrCode}
+                          orientation={cardOrientation}
+                          customFrontBackground={staffCardSettings.customFrontBackground}
+                          customBackBackground={staffCardSettings.customBackBackground}
+                          backgroundOpacity={staffCardSettings.backgroundOpacity}
+                          customLogo={staffCardSettings.customLogo}
+                          customMdSignature={staffCardSettings.customMdSignature}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Back Side with Ultra-large QR Code */}
+                    <div className="space-y-1.5 text-center">
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded print:hidden">
+                        ಹಿಂಬದಿ (Back Page - Attendance QR)
+                      </span>
+                      <div>
+                        <OfficialStaffIDCard
+                          employee={selectedEmpForCard}
+                          showBack={true}
+                          showSeal={showSeal}
+                          showQrCode={showQrCode}
+                          orientation={cardOrientation}
+                          customFrontBackground={staffCardSettings.customFrontBackground}
+                          customBackBackground={staffCardSettings.customBackBackground}
+                          backgroundOpacity={staffCardSettings.backgroundOpacity}
+                          customLogo={staffCardSettings.customLogo}
+                          customMdSignature={staffCardSettings.customMdSignature}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )
               ) : cardSide === 'front' ? (
                 <div className="space-y-1.5 text-center">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded print:hidden">
@@ -1247,17 +1297,17 @@ export default function EmployeeManagement() {
                   </span>
                   <div>
                     <OfficialStaffIDCard
-                        employee={selectedEmpForCard}
-                        showBack={false}
-                        showSeal={showSeal}
-                        showQrCode={showQrCode}
-                        orientation={cardOrientation}
-                        customFrontBackground={staffCardSettings.customFrontBackground}
-                        customBackBackground={staffCardSettings.customBackBackground}
-                        backgroundOpacity={staffCardSettings.backgroundOpacity}
-                        customLogo={staffCardSettings.customLogo}
-                        customMdSignature={staffCardSettings.customMdSignature}
-                      />
+                      employee={selectedEmpForCard}
+                      showBack={false}
+                      showSeal={showSeal}
+                      showQrCode={showQrCode}
+                      orientation={cardOrientation}
+                      customFrontBackground={staffCardSettings.customFrontBackground}
+                      customBackBackground={staffCardSettings.customBackBackground}
+                      backgroundOpacity={staffCardSettings.backgroundOpacity}
+                      customLogo={staffCardSettings.customLogo}
+                      customMdSignature={staffCardSettings.customMdSignature}
+                    />
                   </div>
                 </div>
               ) : (
@@ -1267,17 +1317,17 @@ export default function EmployeeManagement() {
                   </span>
                   <div>
                     <OfficialStaffIDCard
-                        employee={selectedEmpForCard}
-                        showBack={true}
-                        showSeal={showSeal}
-                        showQrCode={showQrCode}
-                        orientation={cardOrientation}
-                        customFrontBackground={staffCardSettings.customFrontBackground}
-                        customBackBackground={staffCardSettings.customBackBackground}
-                        backgroundOpacity={staffCardSettings.backgroundOpacity}
-                        customLogo={staffCardSettings.customLogo}
-                        customMdSignature={staffCardSettings.customMdSignature}
-                      />
+                      employee={selectedEmpForCard}
+                      showBack={true}
+                      showSeal={showSeal}
+                      showQrCode={showQrCode}
+                      orientation={cardOrientation}
+                      customFrontBackground={staffCardSettings.customFrontBackground}
+                      customBackBackground={staffCardSettings.customBackBackground}
+                      backgroundOpacity={staffCardSettings.backgroundOpacity}
+                      customLogo={staffCardSettings.customLogo}
+                      customMdSignature={staffCardSettings.customMdSignature}
+                    />
                   </div>
                 </div>
               )}
@@ -1542,7 +1592,7 @@ export default function EmployeeManagement() {
           <style>{`
             @page {
               size: ${printLayout === 'a4' ? 'A4 portrait' : (cardOrientation === 'portrait' ? '54mm 85.6mm' : '85.6mm 54mm')};
-              margin: ${printLayout === 'a4' ? '10mm 8mm' : '2mm'};
+              margin: ${printLayout === 'a4' ? '8mm 6mm' : '0mm'};
             }
             @media print {
               html, body {
@@ -1569,6 +1619,76 @@ export default function EmployeeManagement() {
               .staff-print-hide {
                 display: none !important;
               }
+              .id-card-a4-member-pair {
+                display: flex !important;
+                flex-direction: row !important;
+                gap: 0 !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                justify-content: center !important;
+                align-items: stretch !important;
+                border: 1.5px dashed #334155 !important;
+                width: ${cardOrientation === 'portrait' ? '108mm' : '171.2mm'} !important;
+                height: ${cardOrientation === 'portrait' ? '85.6mm' : '54mm'} !important;
+                box-sizing: border-box !important;
+                background: #ffffff !important;
+                position: relative !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+              .id-card-print-single {
+                width: ${cardOrientation === 'portrait' ? '54mm' : '85.6mm'} !important;
+                height: ${cardOrientation === 'portrait' ? '85.6mm' : '54mm'} !important;
+                max-width: ${cardOrientation === 'portrait' ? '54mm' : '85.6mm'} !important;
+                max-height: ${cardOrientation === 'portrait' ? '85.6mm' : '54mm'} !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                position: relative !important;
+              }
+              .id-card-center-fold-line {
+                width: 0px !important;
+                min-width: 0px !important;
+                max-width: 0px !important;
+                align-self: stretch !important;
+                height: 100% !important;
+                border-left: 1.5px dashed #0f172a !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                position: relative !important;
+                z-index: 25 !important;
+              }
+              .id-card-guide-top,
+              .id-card-guide-bottom {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                width: ${cardOrientation === 'portrait' ? '108mm' : '171.2mm'} !important;
+                font-size: 8px !important;
+                font-weight: 700 !important;
+                color: #334155 !important;
+                line-height: 1.2 !important;
+                padding: 3px 0 !important;
+                user-select: none !important;
+                box-sizing: border-box !important;
+                background: #ffffff !important;
+                margin: 0 auto !important;
+              }
+              .id-card-guide-cut-text {
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 3px !important;
+                color: #334155 !important;
+                font-size: 7.5px !important;
+              }
+              .id-card-guide-fold-marker {
+                font-weight: 800 !important;
+                color: #0f172a !important;
+                font-size: 8px !important;
+                letter-spacing: 0.3px !important;
+                text-align: center !important;
+              }
             }
             @media screen {
               .staff-id-card-print-portal {
@@ -1580,19 +1700,75 @@ export default function EmployeeManagement() {
           {selectedEmpForCard && (
             <div className="w-full">
               {printLayout === 'a4' ? (
-                /* A4 Printable Sheet with Cut & Fold Guides */
-                <div className="max-w-[190mm] mx-auto p-4 flex flex-col items-center">
-                  {/* Top Guide Text */}
-                  <div className="w-full flex items-center justify-between text-[11px] text-slate-600 font-mono border-b border-dashed border-slate-400 pb-1 mb-4">
-                    <span>✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut outer line)</span>
-                    <span className="font-bold text-slate-800">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ. - ಅಧಿಕೃತ ಸಿಬ್ಬಂದಿ ID</span>
-                    <span>✂ Cut</span>
-                  </div>
-
+                /* A4 Printable Sheet with Attached Pair for Easy Folding */
+                <div className="w-full max-w-[200mm] mx-auto p-4 flex flex-col items-center my-auto">
                   {cardSide === 'both' ? (
-                    <div className="border-2 border-dashed border-slate-500 p-2 rounded-xl inline-flex items-center justify-center gap-4 bg-white relative">
-                      {/* Front Side */}
-                      <div className="p-1">
+                    <div className="flex flex-col items-center">
+                      {/* Top Scissor Cut & Fold Header Guide */}
+                      <div className="id-card-guide-top">
+                        <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut outer line)</span>
+                        <span className="id-card-guide-fold-marker">▼ ಮಡಚುವ ಗೆರೆ (Fold Line) ▼</span>
+                        <span className="id-card-guide-cut-text">✂ Cut</span>
+                      </div>
+
+                      {/* Attached Pair with 0 Gap touching at center fold line */}
+                      <div className="id-card-a4-member-pair">
+                        <div className="id-card-print-single">
+                          <OfficialStaffIDCard
+                            employee={selectedEmpForCard}
+                            showBack={false}
+                            showSeal={showSeal}
+                            showQrCode={showQrCode}
+                            orientation={cardOrientation}
+                            customFrontBackground={staffCardSettings.customFrontBackground}
+                            customBackBackground={staffCardSettings.customBackBackground}
+                            backgroundOpacity={staffCardSettings.backgroundOpacity}
+                            customLogo={staffCardSettings.customLogo}
+                            customMdSignature={staffCardSettings.customMdSignature}
+                          />
+                        </div>
+
+                        {/* Center Fold Line */}
+                        <div className="id-card-center-fold-line" title="ಮಡಚುವ ಗೆರೆ (Fold Line)"></div>
+
+                        <div className="id-card-print-single">
+                          <OfficialStaffIDCard
+                            employee={selectedEmpForCard}
+                            showBack={true}
+                            showSeal={showSeal}
+                            showQrCode={showQrCode}
+                            orientation={cardOrientation}
+                            customFrontBackground={staffCardSettings.customFrontBackground}
+                            customBackBackground={staffCardSettings.customBackBackground}
+                            backgroundOpacity={staffCardSettings.backgroundOpacity}
+                            customLogo={staffCardSettings.customLogo}
+                            customMdSignature={staffCardSettings.customMdSignature}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Bottom Scissor Cut & Fold Footer Guide */}
+                      <div className="id-card-guide-bottom">
+                        <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸಿ (Cut)</span>
+                        <span className="id-card-guide-fold-marker">▲ ಮಡಚುವ ಗೆರೆ (Fold Line) ▲</span>
+                        <span className="id-card-guide-cut-text">#{selectedEmpForCard.employee_id} - {selectedEmpForCard.name}</span>
+                      </div>
+                    </div>
+                  ) : cardSide === 'front' ? (
+                    <div className="flex flex-col items-center">
+                      <div className="id-card-guide-top" style={{ width: cardOrientation === 'portrait' ? '54mm' : '85.6mm' }}>
+                        <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut outer line)</span>
+                        <span className="id-card-guide-cut-text">✂ Cut</span>
+                      </div>
+                      <div
+                        className="id-card-print-single"
+                        style={{
+                          border: '1.5px dashed #334155',
+                          width: cardOrientation === 'portrait' ? '54mm' : '85.6mm',
+                          height: cardOrientation === 'portrait' ? '85.6mm' : '54mm',
+                          boxSizing: 'border-box'
+                        }}
+                      >
                         <OfficialStaffIDCard
                           employee={selectedEmpForCard}
                           showBack={false}
@@ -1606,16 +1782,26 @@ export default function EmployeeManagement() {
                           customMdSignature={staffCardSettings.customMdSignature}
                         />
                       </div>
-
-                      {/* Center Fold Line */}
-                      <div className="w-0.5 self-stretch border-r-2 border-dashed border-slate-400 flex flex-col justify-between items-center py-2 text-[9px] text-slate-500 font-mono">
-                        <span>▲</span>
-                        <span className="rotate-90 whitespace-nowrap tracking-widest uppercase">ಮಡಚಿ (Fold)</span>
-                        <span>▼</span>
+                      <div className="id-card-guide-bottom" style={{ width: cardOrientation === 'portrait' ? '54mm' : '85.6mm' }}>
+                        <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸಿ (Cut)</span>
+                        <span className="id-card-guide-cut-text">#{selectedEmpForCard.employee_id} - {selectedEmpForCard.name}</span>
                       </div>
-
-                      {/* Back Side */}
-                      <div className="p-1">
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <div className="id-card-guide-top" style={{ width: cardOrientation === 'portrait' ? '54mm' : '85.6mm' }}>
+                        <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸುವ ಗೆರೆ (Cut outer line)</span>
+                        <span className="id-card-guide-cut-text">✂ Cut</span>
+                      </div>
+                      <div
+                        className="id-card-print-single"
+                        style={{
+                          border: '1.5px dashed #334155',
+                          width: cardOrientation === 'portrait' ? '54mm' : '85.6mm',
+                          height: cardOrientation === 'portrait' ? '85.6mm' : '54mm',
+                          boxSizing: 'border-box'
+                        }}
+                      >
                         <OfficialStaffIDCard
                           employee={selectedEmpForCard}
                           showBack={true}
@@ -1629,44 +1815,12 @@ export default function EmployeeManagement() {
                           customMdSignature={staffCardSettings.customMdSignature}
                         />
                       </div>
-                    </div>
-                  ) : cardSide === 'front' ? (
-                    <div className="border-2 border-dashed border-slate-500 p-2 rounded-xl inline-block bg-white">
-                      <OfficialStaffIDCard
-                        employee={selectedEmpForCard}
-                        showBack={false}
-                        showSeal={showSeal}
-                        showQrCode={showQrCode}
-                        orientation={cardOrientation}
-                        customFrontBackground={staffCardSettings.customFrontBackground}
-                        customBackBackground={staffCardSettings.customBackBackground}
-                        backgroundOpacity={staffCardSettings.backgroundOpacity}
-                        customLogo={staffCardSettings.customLogo}
-                        customMdSignature={staffCardSettings.customMdSignature}
-                      />
-                    </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-slate-500 p-2 rounded-xl inline-block bg-white">
-                      <OfficialStaffIDCard
-                        employee={selectedEmpForCard}
-                        showBack={true}
-                        showSeal={showSeal}
-                        showQrCode={showQrCode}
-                        orientation={cardOrientation}
-                        customFrontBackground={staffCardSettings.customFrontBackground}
-                        customBackBackground={staffCardSettings.customBackBackground}
-                        backgroundOpacity={staffCardSettings.backgroundOpacity}
-                        customLogo={staffCardSettings.customLogo}
-                        customMdSignature={staffCardSettings.customMdSignature}
-                      />
+                      <div className="id-card-guide-bottom" style={{ width: cardOrientation === 'portrait' ? '54mm' : '85.6mm' }}>
+                        <span className="id-card-guide-cut-text">✂ ಕತ್ತರಿಸಿ (Cut)</span>
+                        <span className="id-card-guide-cut-text">#{selectedEmpForCard.employee_id} - {selectedEmpForCard.name}</span>
+                      </div>
                     </div>
                   )}
-
-                  {/* Bottom Cut & Fold Guide */}
-                  <div className="w-full flex items-center justify-between text-[10px] text-slate-500 font-mono border-t border-dashed border-slate-400 pt-1 mt-4">
-                    <span>✂ ಕತ್ತರಿಸಿ ಮತ್ತು ಮಧ್ಯದಲ್ಲಿ ಮಡಚಿ ಲ್ಯಾಮಿನೇಟ್ ಮಾಡಿ (Cut & Fold for ID Lamination)</span>
-                    <span>#{selectedEmpForCard.employee_id} - {selectedEmpForCard.name}</span>
-                  </div>
                 </div>
               ) : (
                 /* Standard CR80 PVC Plastic Card Print */
