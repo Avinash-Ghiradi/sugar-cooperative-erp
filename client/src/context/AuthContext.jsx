@@ -41,37 +41,66 @@ export const ROLE_LABELS = {
   Shareholder: 'Shareholder (ಷೇರುದಾರ ಸದಸ್ಯರು - ಸ್ವಂತ ವಿವರ ಮಾತ್ರ)'
 };
 
+// 10-Minute Inactivity Auto-Logout Duration (ಕನಿಷ್ಠ 10 ನಿಮಿಷ ನಿಷ್ಕ್ರಿಯತೆ)
+const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 600,000 ms (10 minutes)
+const LAST_ACTIVITY_KEY = 'sugar_erp_last_activity';
+const ACTIVE_MODULE_KEY = 'sugar_erp_active_module';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('sugar_erp_user');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Disallow legacy admin account session; must login as staff
-        if (parsed?.username?.toLowerCase() === 'admin' || parsed?.employee_id === 'ADMIN' || parsed?.id === 1) {
-          localStorage.removeItem('sugar_erp_user');
-          return null;
-        }
-        return parsed;
+      if (!saved) return null;
+
+      const parsed = JSON.parse(saved);
+
+      // Disallow standalone legacy 'admin' mock session without employee ID
+      if (parsed?.username?.toLowerCase() === 'admin' && !parsed?.employee_id && parsed?.role !== 'Admin') {
+        localStorage.removeItem('sugar_erp_user');
+        return null;
       }
-      return null;
+
+      // Check 10-minute inactivity limit on page reload/refresh
+      const lastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY));
+      const now = Date.now();
+      if (lastActivity && (now - lastActivity) > INACTIVITY_TIMEOUT_MS) {
+        // Exceeded 10 minutes of inactivity
+        localStorage.removeItem('sugar_erp_user');
+        localStorage.removeItem(LAST_ACTIVITY_KEY);
+        return null;
+      }
+
+      // Session is valid! Keep user logged in across page refreshes
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(now));
+      return parsed;
     } catch (e) {
       return null;
     }
   });
 
-  const [activeModule, setActiveModule] = useState(() => {
+  const [activeModule, setActiveModuleState] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get('attendance') || params.get('attn') || params.get('share_no')) {
         return 'attendance';
       }
+      const savedModule = localStorage.getItem(ACTIVE_MODULE_KEY);
+      if (savedModule) return savedModule;
     } catch (e) {}
     return 'dashboard';
   });
+
+  const setActiveModule = (mod) => {
+    setActiveModuleState(mod);
+    try {
+      localStorage.setItem(ACTIVE_MODULE_KEY, mod);
+    } catch (e) {}
+  };
+
   const [activeReportSubTab, setActiveReportSubTab] = useState('shareholders');
   const [toastMessage, setToastMessage] = useState(null);
 
+  // Sync user state to localStorage
   useEffect(() => {
     if (user) {
       localStorage.setItem('sugar_erp_user', JSON.stringify(user));
@@ -80,15 +109,57 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
+  // Live 10-minute inactivity detection & auto-logout
+  useEffect(() => {
+    if (!user) return;
+
+    // Track user interaction (mouse, touch, keyboard, scroll, clicks)
+    let lastRecorded = Date.now();
+    const handleUserActivity = () => {
+      const now = Date.now();
+      // Throttle localStorage updates to at most once every 10 seconds for high performance
+      if (now - lastRecorded > 10000) {
+        lastRecorded = now;
+        localStorage.setItem(LAST_ACTIVITY_KEY, String(now));
+      }
+    };
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+    events.forEach(evt => {
+      window.addEventListener(evt, handleUserActivity, { passive: true });
+    });
+
+    // Check inactivity every 15 seconds
+    const interval = setInterval(() => {
+      const lastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY));
+      const now = Date.now();
+      if (lastActivity && (now - lastActivity) >= INACTIVITY_TIMEOUT_MS) {
+        logout('ನಿಷ್ಕ್ರಿಯತೆಯ ಕಾರಣದಿಂದ ಲಾಗ್‌ಔಟ್ ಮಾಡಲಾಗಿದೆ (Auto-logged out due to 10 minutes of inactivity).');
+      }
+    }, 15000);
+
+    return () => {
+      clearInterval(interval);
+      events.forEach(evt => {
+        window.removeEventListener(evt, handleUserActivity);
+      });
+    };
+  }, [user]);
+
   const login = (userData) => {
+    const now = Date.now();
+    localStorage.setItem(LAST_ACTIVITY_KEY, String(now));
     setUser(userData);
     setActiveModule('dashboard');
     showToast(`ಸ್ವಾಗತ, ${userData.name}! (${userData.role})`, 'success');
   };
 
-  const logout = () => {
+  const logout = (reason = null) => {
     setUser(null);
-    showToast('ಲಾಗ್‌ಔಟ್ ಯಶಸ್ವಿಯಾಗಿದೆ (Logged out successfully)', 'info');
+    localStorage.removeItem('sugar_erp_user');
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
+    localStorage.removeItem(ACTIVE_MODULE_KEY);
+    showToast(reason || 'ಲಾಗ್‌ಔಟ್ ಯಶಸ್ವಿಯಾಗಿದೆ (Logged out successfully)', 'info');
   };
 
   const updateCurrentUser = (updatedFields) => {
