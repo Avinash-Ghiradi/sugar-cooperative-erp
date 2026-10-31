@@ -159,7 +159,7 @@ export default function RegisterListPrintModal({
   let totalCollection = 0;
 
   recordsToPrint.forEach(r => {
-    const shares = parseInt(r.number_of_shares || r.no_of_shares || r.shares, 10) || 1;
+    const shares = type === 'shareholder' ? getShareholderSharesCount(r) : (parseInt(r.number_of_shares || r.no_of_shares || r.shares, 10) || 1);
     totalShares += shares;
 
     if (type === 'enrollment') {

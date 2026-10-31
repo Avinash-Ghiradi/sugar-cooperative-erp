@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ApiService } from '../../services/api';
+import { ApiService, getShareholderSharesCount } from '../../services/api';
 import { CloudDbService } from '../../services/cloudDb';
 import { useAuth } from '../../context/AuthContext';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
@@ -298,7 +298,7 @@ export default function AttendanceModule() {
           status: 'Absent',
           time: null,
           photo_url: s.photo_url || null,
-          shares: s.number_of_shares || 1
+          shares: getShareholderSharesCount(s)
         })));
       }
     } else {
@@ -455,7 +455,7 @@ export default function AttendanceModule() {
             status: 'Present',
             time: currentTime,
             photo_url: match.photo_url || null,
-            shares: match.number_of_shares || 1
+            shares: getShareholderSharesCount(match)
           };
 
           setAttendanceList(prev => [newItem, ...prev.filter(item => String(item.entity_id).trim() !== targetId)]);

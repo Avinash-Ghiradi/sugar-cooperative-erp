@@ -1,7 +1,7 @@
 import { getCompanyLogo } from '../../services/organizationService';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive, getShareholderSharesCount, isEligibleForSecondInstallment } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import OfficialShareholderIDCard, { OfficialSocietySeal } from '../IDCards/OfficialShareholderIDCard';
 import {
@@ -11,7 +11,7 @@ import {
   Clock, ArrowRight, Award, GitMerge, SlidersHorizontal
 } from 'lucide-react';
 
-export default function ShareholderProfile({ shareholderId, onClose, initialTab = 'ledger' }) {
+export default function ShareholderProfile({ shareholderId, onClose, initialTab = 'ledger', onEditRecord }) {
   const { setActiveModule } = useAuth();
   const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState(initialTab || 'ledger');
@@ -229,8 +229,10 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
               <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">
                 Shares: {isShareholderInactive(sh) ? (
                   <strong className="text-slate-400 line-through">0 ಷೇರು</strong>
+                ) : getShareholderSharesCount(sh) === 0 ? (
+                  <strong className="text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">0 ಷೇರು (ಅಪೂರ್ಣ)</strong>
                 ) : (
-                  <strong className="text-slate-200">{sh.number_of_shares || 1}</strong>
+                  <strong className="text-slate-200">{getShareholderSharesCount(sh)}</strong>
                 )}
               </span>
 
@@ -376,7 +378,30 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                   <span>ದಾಖಲೆ ಪತ್ರ ಮುದ್ರಿಸಿ (Print Record)</span>
                 </button>
               </div>
-              <div className="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+              {/* Incomplete Share Alert Banner */}
+            {getShareholderSharesCount(sh) === 0 && !isShareholderInactive(sh) && (
+              <div className="md:col-span-2 bg-amber-950/40 border border-amber-600/50 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-amber-200">
+                <div className="flex items-center gap-3">
+                  <Coins className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <div className="text-sm font-bold text-amber-300">ಅಪೂರ್ಣ ಶೇರು ಜಮೆ (Incomplete Share - 0 ಶೇರುಗಳು)</div>
+                    <div className="text-xs text-amber-200/80">
+                      ಈ ಶೇರುದಾರರು ₹{(parseFloat(sh.receipt_amount) || parseFloat(sh.total_amount) || 1000).toLocaleString()} ಮಾತ್ರ ಪಾವತಿಸಿದ್ದಾರೆ. ಸಹಕಾರ ಸಂಘದ ಉಪನಿಯಮಗಳ ಪ್ರಕಾರ 1 ಪೂರ್ಣ ಶೇರಿಗಾಗಿ ಇನ್ನೂ ₹1,000 (2ನೇ ಕಂತು) ಪಾವತಿಸಬೇಕಿದೆ. 2ನೇ ಕಂತು ಜಮೆಯಾದ ನಂತರವೇ 1 ಪೂರ್ಣ ಶೇರು ಮಾನ್ಯವಾಗುತ್ತದೆ.
+                    </div>
+                  </div>
+                </div>
+                {onEditRecord && (
+                  <button
+                    onClick={() => onEditRecord(sh)}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shrink-0 shadow"
+                  >
+                    <Edit className="w-3.5 h-3.5" /> 2ನೇ ಕಂತು ₹1,000 ಜಮೆ ಮಾಡಿ
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
                 <h3 className="font-semibold text-slate-200 text-sm border-b border-slate-800 pb-2 flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-emerald-400" /> Book & Share Certificate Details
                 </h3>
@@ -388,8 +413,10 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                   <span className="text-slate-100 font-bold">
                     {isShareholderInactive(sh) ? (
                       <span className="text-slate-400 line-through">0 Shares (ವರ್ಗಾವಣೆ ➔ #{sh.merged_into_share_no || 'ಮುಖ್ಯ'})</span>
+                    ) : getShareholderSharesCount(sh) === 0 ? (
+                      <span className="text-amber-400 font-bold">0 Shares (ಅಪೂರ್ಣ - ₹1,000 ಬಾಕಿ)</span>
                     ) : (
-                      `${sh.number_of_shares || 1} Shares`
+                      `${getShareholderSharesCount(sh)} Shares`
                     )}
                   </span>
                 </div>
@@ -507,7 +534,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
 
                   <div className="pt-1 flex flex-wrap items-center justify-between text-[11px] text-slate-300 border-t border-slate-800/60">
                     <div>
-                      ಒಟ್ಟು ಸಂಯೋಜಿತ ಶೇರುಗಳು: <strong className="text-emerald-400">{sh.number_of_shares || 1} ಶೇರುಗಳು</strong>
+                      ಒಟ್ಟು ಸಂಯೋಜಿತ ಶೇರುಗಳು: <strong className={getShareholderSharesCount(sh) === 0 ? "text-amber-400" : "text-emerald-400"}>{getShareholderSharesCount(sh) === 0 ? "0 ಶೇರುಗಳು (ಅಪೂರ್ಣ - ₹1,000 ಬಾಕಿ)" : `${getShareholderSharesCount(sh)} ಶೇರುಗಳು`}</strong>
                     </div>
                     <div>
                       ಒಟ್ಟು ಶೇರು ಬಂಡವಾಳ ಜಮೆ: <strong className="text-amber-400 font-mono">₹ {Number(sh.total_amount || 0).toLocaleString()}</strong>
@@ -1349,7 +1376,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
                         <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ವರ್ಗ / ಪ್ರವರ್ಗ (Category):</td>
                         <td className="p-1.5 font-bold text-emerald-800 border-r border-slate-300">{sh.schedule_cast || 'ಅ - ವರ್ಗ'}</td>
                         <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಒಟ್ಟು ಷೇರುಗಳ ಸಂಖ್ಯೆ:</td>
-                        <td className="p-1.5 font-bold text-slate-900">{sh.number_of_shares || 1} ಷೇರುಗಳು</td>
+                        <td className="p-1.5 font-bold text-slate-900">{getShareholderSharesCount(sh) === 0 ? "0 ಷೇರುಗಳು (ಅಪೂರ್ಣ - ₹1,000 ಬಾಕಿ)" : `${getShareholderSharesCount(sh)} ಷೇರುಗಳು`}</td>
                       </tr>
                       <tr className="border-b border-slate-200">
                         <td className="p-1.5 bg-slate-100 font-semibold text-slate-700 border-r border-slate-300">ಸದಸ್ಯರ ಪ್ರಕಾರ (Member Type):</td>

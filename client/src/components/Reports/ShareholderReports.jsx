@@ -1,7 +1,7 @@
 import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { ApiService, getMemberTypeByCategory, getShareholderOwnership } from '../../services/api';
+import { ApiService, getMemberTypeByCategory, getShareholderOwnership, getShareholderSharesCount } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, BarChart3, Filter, Search, Printer, Download, FileSpreadsheet,
@@ -116,7 +116,7 @@ export default function ShareholderReports() {
       const tNo = (s.tharava_no || '').trim();
       if (tNo && tNo !== '—' && tNo !== '-') tharavaSet.add(tNo);
 
-      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000);
       if (amt > 0) {
         cashAmountCounts.set(amt, (cashAmountCounts.get(amt) || 0) + 1);
       }
@@ -199,7 +199,8 @@ export default function ShareholderReports() {
     // 5. Shares Bracket Filter
     if (filters.sharesBracket) {
       list = list.filter(s => {
-        const cnt = parseInt(s.number_of_shares, 10) || 1;
+        const cnt = getShareholderSharesCount(s);
+        if (filters.sharesBracket === '0') return cnt === 0;
         if (filters.sharesBracket === '1') return cnt === 1;
         if (filters.sharesBracket === '2') return cnt === 2;
         if (filters.sharesBracket === '3-5') return cnt >= 3 && cnt <= 5;
@@ -272,7 +273,7 @@ export default function ShareholderReports() {
       const targetAmt = parseFloat(filters.cashAmount);
       if (!isNaN(targetAmt)) {
         list = list.filter(s => {
-          const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+          const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000);
           return amt === targetAmt;
         });
       }
@@ -283,7 +284,7 @@ export default function ShareholderReports() {
       const min = parseFloat(filters.minCash);
       if (!isNaN(min)) {
         list = list.filter(s => {
-          const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+          const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000);
           return amt >= min;
         });
       }
@@ -292,7 +293,7 @@ export default function ShareholderReports() {
       const max = parseFloat(filters.maxCash);
       if (!isNaN(max)) {
         list = list.filter(s => {
-          const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+          const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000);
           return amt <= max;
         });
       }
@@ -304,9 +305,9 @@ export default function ShareholderReports() {
   // High-Level KPI Aggregates
   const kpis = useMemo(() => {
     const totalCount = filteredShareholders.length;
-    const totalShares = filteredShareholders.reduce((sum, s) => sum + (parseInt(s.number_of_shares, 10) || 1), 0);
+    const totalShares = filteredShareholders.reduce((sum, s) => sum + getShareholderSharesCount(s), 0);
     const totalAmount = filteredShareholders.reduce((sum, s) => {
-      const amt = parseFloat(s.total_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+      const amt = parseFloat(s.total_amount) || (getShareholderSharesCount(s) * 2000);
       return sum + amt;
     }, 0);
 
@@ -527,7 +528,7 @@ export default function ShareholderReports() {
       const count = matched.length;
       const totalShares = matched.reduce((sum, s) => sum + (parseInt(s.number_of_shares, 10) || 1), 0);
       const totalAmount = matched.reduce((sum, s) => {
-        const amt = parseFloat(s.total_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+        const amt = parseFloat(s.total_amount) || (getShareholderSharesCount(s) * 2000);
         return sum + amt;
       }, 0);
 
@@ -546,7 +547,7 @@ export default function ShareholderReports() {
   const amountwiseData = useMemo(() => {
     const map = new Map();
     filteredShareholders.forEach(s => {
-      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
+      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000);
       const shares = parseInt(s.number_of_shares, 10) || 1;
 
       if (!map.has(amt)) {
@@ -824,7 +825,7 @@ export default function ShareholderReports() {
           s.schedule_cast || '',
           s.member_type || '',
           parseInt(s.number_of_shares, 10) || 1,
-          parseFloat(s.total_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000),
+          parseFloat(s.total_amount) || (getShareholderSharesCount(s) * 2000),
           s.ownership || s.relationship || 'ಸ್ವಂತ (Self)',
           s.date || s.reg_date || s.registration_date || '',
           s.tharava_no || '',
@@ -1117,6 +1118,7 @@ export default function ShareholderReports() {
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500"
               >
                 <option value="">ಎಲ್ಲಾ ಶೇರುಗಳು (All Share Counts)</option>
+                <option value="0">0 ಶೇರುಗಳು (ಅಪೂರ್ಣ - ₹1,000 ಬಾಕಿ)</option>
                 <option value="1">1 ಶೇರು ಮಾತ್ರ (1 Share - ₹ 2,000)</option>
                 <option value="2">2 ಶೇರುಗಳು (2 Shares - ₹ 4,000)</option>
                 <option value="3-5">3 ರಿಂದ 5 ಶೇರುಗಳು (3 to 5 Shares)</option>

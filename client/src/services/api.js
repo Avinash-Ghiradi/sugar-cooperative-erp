@@ -165,6 +165,39 @@ export function getMemberTypeByCategory(category, explicitType = null) {
 
 // -------------------------------------------------------------
 // Helper: Determine if a shareholder record is inactive, merged-out secondary, or disabled
+// -------------------------------------------------------------
+// Helper: Accurately retrieve complete shares count according to cooperative bylaws
+// Rule:
+//   - If total paid < 2000 (e.g. ₹1,000 paid for Class A/D or < ₹5,000 for Class B),
+//     it is an INCOMPLETE share installment -> Returns 0 complete shares!
+//   - Once another ₹1,000 is paid (total paid >= ₹2,000), it becomes 1 complete share.
+//   - Inactive / Merged-out secondary / Transferred members return 0 shares.
+export function getShareholderSharesCount(s) {
+  if (!s) return 0;
+  if (s.is_merged_secondary || s.merged_into || s.status === 'Merged' || s.status === 'Transferred' || s.status === 'Inactive' || s.is_disabled) {
+    return 0;
+  }
+  const rAmt = parseFloat(s.receipt_amount) || 0;
+  const aAmt = parseFloat(s.amount) || 0;
+  const addAmt = parseFloat(s.additional_amount) || 0;
+  const tAmt = (s.total_amount !== undefined && s.total_amount !== null && !isNaN(parseFloat(s.total_amount)))
+    ? parseFloat(s.total_amount)
+    : (rAmt > 0 || aAmt > 0 || addAmt > 0 ? (rAmt + aAmt + addAmt) : ((parseInt(s.number_of_shares, 10) || 0) * 2000));
+
+  const isClassB = String(s.schedule_cast || '').toLowerCase().includes('ಬ') || String(s.schedule_cast || '').toLowerCase().includes('b');
+  const baseRate = isClassB ? 5000 : 2000;
+
+  // Partial installment payment (< baseRate, e.g. ₹1,000) does NOT constitute a complete share:
+  if (tAmt < baseRate) return 0;
+
+  if (s.number_of_shares !== undefined && s.number_of_shares !== null && !isNaN(parseInt(s.number_of_shares, 10))) {
+    const raw = parseInt(s.number_of_shares, 10);
+    if (tAmt < baseRate) return 0;
+    return raw;
+  }
+  return Math.floor(tAmt / baseRate);
+}
+
 export function isShareholderInactive(sh) {
   if (!sh) return false;
   if (sh.is_merged_secondary || sh.is_disabled) return true;
@@ -898,7 +931,7 @@ export function reconcileApprovedMergesIntoMaster(shareholdersList = mockShareho
             secChanged = true;
           }
           if (sec.original_shares === undefined) {
-            sec.original_shares = sec.number_of_shares || 1;
+            sec.original_shares = sec.number_of_shares !== undefined ? sec.number_of_shares : 0;
             secChanged = true;
           }
           if (sec.original_receipt_amount === undefined) {
@@ -1243,10 +1276,27 @@ export function ensureDBReady() {
             }
 
             // Reconcile approved transfers to ensure transferee names are always active
+            // Statutory normalization: shareholders who paid only ₹1,000 have 0 complete shares (until 2nd installment is paid)
+            let normalizedShareCount = 0;
+            for (let i = 0; i < records.length; i++) {
+              const r = records[i];
+              if (r.is_merged) continue;
+              const tAmt = parseFloat(r.total_amount) || (parseFloat(r.receipt_amount) || 0) + (parseFloat(r.amount) || 0);
+              const isClassB = String(r.schedule_cast || '').toLowerCase().includes('ಬ') || String(r.schedule_cast || '').toLowerCase().includes('b');
+              const baseRate = isClassB ? 5000 : 2000;
+              if (tAmt < baseRate) {
+                if (r.number_of_shares !== 0) {
+                  r.number_of_shares = 0;
+                  r.remaining_balance = tAmt;
+                  normalizedShareCount++;
+                }
+              }
+            }
+
             const reconciledCount = reconcileApprovedTransfersIntoMaster(records);
             const reconciledMerges = reconcileApprovedMergesIntoMaster(records);
             mockShareholders = records;
-            if (reconciledCount > 0 || reconciledMerges > 0) {
+            if (reconciledCount > 0 || reconciledMerges > 0 || normalizedShareCount > 0) {
               await saveToIndexedDB(mockShareholders).catch(() => {});
             }
           } else {
@@ -1584,7 +1634,7 @@ export const ApiService = {
     for (let i = 0; i < mockShareholders.length; i++) {
       const s = mockShareholders[i];
       const p = (s.place || s.village_name || '').trim();
-      const shares = parseInt(s.number_of_shares, 10) || 1;
+      const shares = getShareholderSharesCount(s);
       if (p) {
         if (!villageMap.has(p)) {
           villageMap.set(p, {
@@ -1699,7 +1749,7 @@ export const ApiService = {
     shList.forEach(s => {
       const rawSc = (s.schedule_cast || 'ಅ - ವರ್ಗ').trim().normalize('NFC');
       const sc = rawSc || 'ಅ - ವರ್ಗ';
-      const shares = parseInt(s.number_of_shares) || 1;
+      const shares = getShareholderSharesCount(s);
       scCounts[sc] = (scCounts[sc] || 0) + 1;
       scShares[sc] = (scShares[sc] || 0) + shares;
     });
@@ -2453,9 +2503,11 @@ export const ApiService = {
       const shareNo = data.share_no || String(currentId);
       const bookNo = data.book_no || 'B.No: 1';
       const receiptNo = data.receipt_no || String(currentId);
-      const receiptAmt = parseFloat(data.receipt_amount) || 2000;
-      const numShares = parseInt(data.number_of_shares) || 1;
-      const totalAmt = parseFloat(data.total_amount) || parseFloat(data.amount) || (numShares * 2000);
+      const receiptAmt = parseFloat(data.receipt_amount) || 0;
+      const totalAmt = parseFloat(data.total_amount) || (receiptAmt + (parseFloat(data.amount) || 0)) || (parseInt(data.number_of_shares, 10) ? parseInt(data.number_of_shares, 10) * 2000 : 0);
+      const isClassB = String(data.schedule_cast || '').toLowerCase().includes('ಬ') || String(data.schedule_cast || '').toLowerCase().includes('b');
+      const baseRate = isClassB ? 5000 : 2000;
+      const numShares = totalAmt < baseRate ? 0 : (data.number_of_shares !== undefined && data.number_of_shares !== null && !isNaN(parseInt(data.number_of_shares, 10)) ? parseInt(data.number_of_shares, 10) : Math.floor(totalAmt / baseRate));
 
       const rawPlace = (data.place || data.village_name || '').trim().normalize('NFC');
       const placeKey = rawPlace.toLowerCase();
@@ -2506,6 +2558,7 @@ export const ApiService = {
         amount: (parseFloat(data.amount) > 0 && (String(data.reciept).trim() !== String(receiptNo).trim() || totalAmt > receiptAmt)) ? parseFloat(data.amount) : 0,
         total_amount: totalAmt,
         number_of_shares: numShares,
+        remaining_balance: totalAmt < baseRate ? totalAmt : (totalAmt % baseRate),
         share_value: totalAmt,
         schedule_cast: (data.schedule_cast || 'ಅ - ವರ್ಗ').normalize('NFC'),
         address: (data.address || '').normalize('NFC'),
@@ -4849,7 +4902,7 @@ const newSh = {
       const rawPlace = (s.place || s.village_name || '').trim().normalize('NFC');
       if (!rawPlace) continue;
       const key = rawPlace.toLowerCase();
-      const shares = parseInt(s.number_of_shares) || 1;
+      const shares = getShareholderSharesCount(s);
 
       if (placeMap.has(key)) {
         const item = placeMap.get(key);
@@ -5069,7 +5122,7 @@ const newSh = {
       const pl = (s.place || s.village_name || '').trim().toLowerCase().normalize('NFC');
       if (pl) {
         placeCountMap.set(pl, (placeCountMap.get(pl) || 0) + 1);
-        placeSharesMap.set(pl, (placeSharesMap.get(pl) || 0) + (parseInt(s.number_of_shares) || 1));
+        placeSharesMap.set(pl, (placeSharesMap.get(pl) || 0) + getShareholderSharesCount(s));
       }
     });
 
@@ -5769,7 +5822,7 @@ const newSh = {
           const sAmt1 = parseFloat(item.receipt_amount) || 0;
           const sAmt2 = parseFloat(item.amount) || 0;
           const sTot = parseFloat(item.total_amount) || (sAmt1 + sAmt2) || 2000;
-          const sCount = parseInt(item.number_of_shares) || (sTot ? Math.max(1, Math.floor(sTot / 2000)) : 1);
+          const sCount = getShareholderSharesCount(item);
           
           combinedShares += sCount;
           combinedTotalAmt += sTot;
@@ -5860,7 +5913,7 @@ const newSh = {
       const sAmt1 = parseFloat(item.receipt_amount) || 0;
       const sAmt2 = parseFloat(item.amount) || 0;
       const sTot = parseFloat(item.total_amount) || (sAmt1 + sAmt2) || 2000;
-      const sCount = parseInt(item.number_of_shares) || (sTot ? Math.max(1, Math.floor(sTot / 2000)) : 1);
+      const sCount = getShareholderSharesCount(item);
       
       combinedShares += sCount;
       combinedTotalAmt += sTot;
@@ -6117,7 +6170,7 @@ const newSh = {
           place: s.place || s.village_name,
           taluk: s.taluk,
           circle: s.circle,
-          number_of_shares: parseInt(s.number_of_shares) || 1,
+          number_of_shares: getShareholderSharesCount(s),
           total_amount: parseFloat(s.total_amount) || 2000,
           receipt_amount: parseFloat(s.receipt_amount) || 0,
           amount: parseFloat(s.amount) || 0,
@@ -6231,7 +6284,7 @@ const newSh = {
       const sAmt1 = parseFloat(item.receipt_amount) || 0;
       const sAmt2 = parseFloat(item.amount) || 0;
       let sTot = parseFloat(item.total_amount) || (sAmt1 + sAmt2) || 2000;
-      let sCount = parseInt(item.number_of_shares) || (sTot ? Math.max(1, Math.floor(sTot / 2000)) : 1);
+      let sCount = getShareholderSharesCount(item);
 
       // Guard against double counting previously merged amounts on the primary record
       if (item.id === primary.id && sTot > 2000 && sourceRecords.length >= 2 && !approvedTotalAmt) {
@@ -6575,7 +6628,7 @@ const newSh = {
       const sAmt1 = parseFloat(item.receipt_amount) || 0;
       const sAmt2 = parseFloat(item.amount) || 0;
       const sTot = parseFloat(item.total_amount) || (sAmt1 + sAmt2) || 2000;
-      const sCount = parseInt(item.number_of_shares) || (sTot ? Math.max(1, Math.floor(sTot / 2000)) : 1);
+      const sCount = getShareholderSharesCount(item);
 
       combinedShares += sCount;
       combinedTotalAmt += sTot;

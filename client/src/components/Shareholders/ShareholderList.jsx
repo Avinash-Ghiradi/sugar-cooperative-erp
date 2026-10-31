@@ -1,7 +1,7 @@
 import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive } from '../../services/api';
+import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive, getShareholderSharesCount } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
@@ -281,7 +281,8 @@ export default function ShareholderList({ initialShowMerge = false }) {
           reciept: getVal(cReciept) || '',
           amount: parseFloat(getVal(cAmt)) || 0,
           total_amount: parseFloat(getVal(cTotalAmt)) || (parseFloat(getVal(cReceiptAmt)) || 0) + (parseFloat(getVal(cAmt)) || 0) || 2000,
-          number_of_shares: parseInt(getVal(cShares)) || 1,
+          number_of_shares: ((parseFloat(getVal(cTotalAmt)) || (parseFloat(getVal(cReceiptAmt)) || 0) + (parseFloat(getVal(cAmt)) || 0) || 2000) < 2000) ? 0 : (parseInt(getVal(cShares), 10) || 1),
+          remaining_balance: ((parseFloat(getVal(cTotalAmt)) || (parseFloat(getVal(cReceiptAmt)) || 0) + (parseFloat(getVal(cAmt)) || 0) || 2000) < 2000) ? (parseFloat(getVal(cTotalAmt)) || (parseFloat(getVal(cReceiptAmt)) || 0) + (parseFloat(getVal(cAmt)) || 0) || 1000) : 0,
           schedule_cast: getVal(cCast) || 'ಅ - ವರ್ಗ',
           address: getVal(cAddr),
           nagara: getVal(cNagara),
@@ -463,7 +464,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
       hasSecondInstallment(s) ? (s.reciept || '') : '',
       hasSecondInstallment(s) ? (s.amount || 0) : '',
       isShareholderInactive(s) ? 0 : (s.total_amount || s.share_value || 2000),
-      isShareholderInactive(s) ? 0 : (s.number_of_shares || 1),
+      getShareholderSharesCount(s),
       `"${s.schedule_cast || 'ಅ - ವರ್ಗ'}"`,
       `"${s.address || ''}"`,
       `"${s.nagara || ''}"`,
@@ -537,7 +538,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
       tableHtml += `<td>${hasSecondInstallment(s) ? (s.reciept || '') : ''}</td>`;
       tableHtml += `<td>${hasSecondInstallment(s) ? (s.amount || 0) : ''}</td>`;
       tableHtml += `<td>${isShareholderInactive(s) ? 0 : (s.total_amount || s.share_value || 2000)}</td>`;
-      tableHtml += `<td>${isShareholderInactive(s) ? 0 : (s.number_of_shares || 1)}</td>`;
+      tableHtml += `<td>${getShareholderSharesCount(s)}</td>`;
       tableHtml += `<td>${s.schedule_cast || 'ಅ - ವರ್ಗ'}</td>`;
       tableHtml += `<td>${s.address || ''}</td>`;
       tableHtml += `<td>${s.nagara || ''}</td>`;
@@ -1176,8 +1177,15 @@ export default function ShareholderList({ initialShowMerge = false }) {
                         <span className="text-slate-500 line-through text-xs" title={`ವರ್ಗಾವಣೆಗೊಂಡಿದೆ ➔ #${sh.merged_into_share_no || ''}`}>
                           0
                         </span>
+                      ) : getShareholderSharesCount(sh) === 0 ? (
+                        <span
+                          className="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                          title="ಅಪೂರ್ಣ ಶೇರು (ಒಟ್ಟು ಜಮಾ: ₹1,000 | 1 ಪೂರ್ಣ ಶೇರಿಗಾಗಿ ಇನ್ನೂ ₹1,000 ಜಮಾ ಮಾಡಬೇಕು)"
+                        >
+                          0
+                        </span>
                       ) : (
-                        <span className="text-emerald-400">{sh.number_of_shares || 1}</span>
+                        <span className="text-emerald-400">{getShareholderSharesCount(sh)}</span>
                       )}
                     </td>
 

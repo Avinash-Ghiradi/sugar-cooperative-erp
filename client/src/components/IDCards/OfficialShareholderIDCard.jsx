@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import React, { useState, useEffect } from 'react';
-import { getMemberTypeByCategory } from '../../services/api';
+import { getMemberTypeByCategory, getShareholderSharesCount } from '../../services/api';
 import { CloudDbService } from '../../services/cloudDb';
 import { getCompanyLogo } from '../../services/organizationService';
 
@@ -398,7 +398,7 @@ export default function OfficialShareholderIDCard({
   const sh = shareholder || {};
   const classLetter = getClassLetter(sh.schedule_cast);
   const cleanMemberType = getMemberTypeByCategory(sh.schedule_cast, sh.member_type).replace(/\s*\(\s*Cane\s*Grower\s*\)/gi, '').trim();
-  const sharesCount = sh.number_of_shares || 1;
+  const sharesCount = getShareholderSharesCount(sh);
   const shareNo = sh.share_no || sh.share_number || '3335';
   const memberName = sh.shareholder_name || sh.name || 'ಸದಸ್ಯರ ಹೆಸರು';
   const placeName = sh.place || sh.village_name || 'ಅಥರ್ಗಾ';

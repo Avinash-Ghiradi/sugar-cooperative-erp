@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ApiService, isShareholderInactive } from '../../services/api';
+import { ApiService, isShareholderInactive, getShareholderSharesCount } from '../../services/api';
 import { getCompanyLogo, getHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
 import officialCircleData from '../../services/officialCircleData.json';
@@ -471,7 +471,7 @@ export default function SugarAllotmentModule() {
       const qty = parseInt(searchShareQty.trim(), 10);
       if (!isNaN(qty)) {
         list = list.filter(s => {
-          const sQty = parseInt(s.number_of_shares, 10) || 1;
+          const sQty = getShareholderSharesCount(s);
           return sQty === qty;
         });
       }
@@ -543,7 +543,7 @@ export default function SugarAllotmentModule() {
     if (columnFilters.share_qty) {
       const targetQty = parseInt(columnFilters.share_qty, 10);
       list = list.filter(s => {
-        const q = parseInt(s.number_of_shares, 10) || 1;
+        const q = getShareholderSharesCount(s);
         return q === targetQty;
       });
     }
@@ -583,8 +583,8 @@ export default function SugarAllotmentModule() {
           const catB = String(b.schedule_cast || 'ಅ - ವರ್ಗ');
           cmp = catA.localeCompare(catB, 'kn');
         } else if (sortColumn === 'share_qty') {
-          const qA = parseInt(a.number_of_shares, 10) || 1;
-          const qB = parseInt(b.number_of_shares, 10) || 1;
+          const qA = getShareholderSharesCount(a);
+          const qB = getShareholderSharesCount(b);
           cmp = qA - qB;
         } else if (sortColumn === 'member_type') {
           const rawA = editedRows[a.id]?.member_type !== undefined ? editedRows[a.id].member_type : (a.member_type || a.status || '-');
@@ -1057,7 +1057,7 @@ export default function SugarAllotmentModule() {
 
       printableRows.forEach((s, idx) => {
         const surname = getSurname(s.shareholder_name || s.name || '');
-        const shares = parseInt(s.number_of_shares, 10) || 1;
+        const shares = getShareholderSharesCount(s);
         const memType = editedRows[s.id]?.member_type || s.member_type || s.status || '-';
         const mob = editedRows[s.id]?.mobile_no !== undefined ? editedRows[s.id].mobile_no : (s.mobile_no || s.mobile || '');
         const rem = editedRows[s.id]?.remarks !== undefined ? editedRows[s.id].remarks : (s.remarks || '');
@@ -1130,7 +1130,7 @@ export default function SugarAllotmentModule() {
   const qualifiedForBatchReceipt = useMemo(() => {
     const { include_zero_shares_receipt, exclude_member_types_receipt, exclude_categories_receipt } = settings;
     return processedShareholders.filter(s => {
-      const shares = parseInt(s.number_of_shares, 10) || 0;
+      const shares = getShareholderSharesCount(s);
       if (!include_zero_shares_receipt && shares <= 0) return false;
       const mt = (editedRows[s.id]?.member_type || s.member_type || s.status || '-').trim();
       if (exclude_member_types_receipt.includes(mt)) return false;
@@ -1991,7 +1991,7 @@ export default function SugarAllotmentModule() {
                             0
                           </span>
                         ) : (
-                          s.number_of_shares || 1
+                          getShareholderSharesCount(s)
                         )}
                       </td>
 
@@ -2471,7 +2471,7 @@ export default function SugarAllotmentModule() {
 
                 <div className="border-t border-b py-2 my-2 space-y-1 text-[11px] bg-slate-50 p-2.5 rounded-xl">
                   {(() => {
-                    const shares = parseInt(activeReceiptModal.number_of_shares, 10) || 1;
+                    const shares = getShareholderSharesCount(activeReceiptModal);
                     const kg = shares * settings.kg_per_share;
                     const totalAmt = kg * settings.sugar_rate_per_kg;
                     return (
@@ -2575,7 +2575,7 @@ export default function SugarAllotmentModule() {
                   let totalKg = 0;
                   let totalAmt = 0;
                   qualifiedForBatchReceipt.forEach(s => {
-                    const sh = parseInt(s.number_of_shares, 10) || 1;
+                    const sh = getShareholderSharesCount(s);
                     const kg = sh * settings.kg_per_share;
                     totalKg += kg;
                     totalAmt += kg * settings.sugar_rate_per_kg;
@@ -2617,7 +2617,7 @@ export default function SugarAllotmentModule() {
                   </style></head><body>`;
 
                   qualifiedForBatchReceipt.forEach((s, idx) => {
-                    const sh = parseInt(s.number_of_shares, 10) || 1;
+                    const sh = getShareholderSharesCount(s);
                     const kg = sh * settings.kg_per_share;
                     const amt = kg * settings.sugar_rate_per_kg;
 

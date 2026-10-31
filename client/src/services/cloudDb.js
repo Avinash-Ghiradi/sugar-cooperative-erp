@@ -365,8 +365,16 @@ export const CloudDbService = {
     if (sanitized.total_amount === undefined && (r.share_amount || r.total_amt)) {
       sanitized.total_amount = parseFloat(r.share_amount || r.total_amt) || 2000;
     }
-    if (sanitized.number_of_shares === undefined && (r.no_shares || r.shares)) {
-      sanitized.number_of_shares = parseInt(r.no_shares || r.shares) || 1;
+    if (sanitized.number_of_shares === undefined) {
+      const tot = parseFloat(sanitized.total_amount) || (parseFloat(r.receipt_amount) || 0) + (parseFloat(r.amount) || 0);
+      const isClassB = String(sanitized.schedule_cast || r.schedule_cast || '').toLowerCase().includes('ಬ');
+      const baseRate = isClassB ? 5000 : 2000;
+      if (tot < baseRate && !sanitized.is_merged) {
+        sanitized.number_of_shares = 0;
+        sanitized.remaining_balance = tot;
+      } else if (r.no_shares || r.shares) {
+        sanitized.number_of_shares = parseInt(r.no_shares || r.shares, 10) || Math.floor(tot / baseRate);
+      }
     }
 
     return sanitized;
@@ -503,7 +511,11 @@ export const CloudDbService = {
         total_amount: (r.status === 'Inactive' || r.is_disabled || r.is_merged_secondary) ? 0 : (parseFloat(r.total_amount) || 0),
         remaining_balance: parseFloat(r.remaining_balance) || 0,
         new_shares_count: parseInt(r.new_shares_count, 10) || 0,
-        number_of_shares: (r.status === 'Inactive' || r.is_disabled || r.is_merged_secondary) ? 0 : (r.number_of_shares !== undefined && r.number_of_shares !== null && !isNaN(parseInt(r.number_of_shares, 10)) ? parseInt(r.number_of_shares, 10) : 1),
+        number_of_shares: (r.status === 'Inactive' || r.is_disabled || r.is_merged_secondary)
+          ? 0
+          : ((parseFloat(r.total_amount) || (parseFloat(r.receipt_amount) || 0) + (parseFloat(r.amount) || 0)) < (String(r.schedule_cast || '').toLowerCase().includes('ಬ') ? 5000 : 2000) && !r.is_merged)
+            ? 0
+            : (r.number_of_shares !== undefined && r.number_of_shares !== null && !isNaN(parseInt(r.number_of_shares, 10)) ? parseInt(r.number_of_shares, 10) : 0),
         schedule_cast: r.schedule_cast || 'ಅ - ವರ್ಗ',
         address: r.address || '',
         place: r.place || r.village_name || '',
