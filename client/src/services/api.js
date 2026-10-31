@@ -5515,21 +5515,24 @@ const newSh = {
     if (CloudDbService.isEnabled()) {
       try {
         const cloudData = await CloudDbService.getCollection('employees');
-        if (Array.isArray(cloudData)) {
+        if (Array.isArray(cloudData) && cloudData.length > 0) {
+          // Cloud DB is master source of truth - deduplicate by employee_id and by unique mobile
           const empMap = new Map();
-          cloudData.forEach(e => {
-            const k = String(e.employee_id || e.id).trim();
-            if (k) empMap.set(k, e);
-          });
+          const mobileMap = new Map();
 
-          // Upload any local records not yet present in Cloud DB
-          for (const localEmp of mockEmployees) {
-            const k = String(localEmp.employee_id || localEmp.id).trim();
-            if (k && !empMap.has(k)) {
-              await CloudDbService.saveCollectionItem('employees', k, localEmp).catch(() => {});
-              empMap.set(k, localEmp);
+          cloudData.forEach(e => {
+            const empId = String(e.employee_id || e.id || '').trim();
+            const mob = String(e.mobile || e.mobile_no || '').replace(/\D/g, '');
+            if (!empId) return;
+
+            // If mobile exists and already seen, favor the newer record
+            if (mob && mobileMap.has(mob)) {
+              const existingKey = mobileMap.get(mob);
+              empMap.delete(existingKey);
             }
-          }
+            if (mob) mobileMap.set(mob, empId);
+            empMap.set(empId, e);
+          });
 
           mockEmployees = Array.from(empMap.values());
           saveStoredData(STORAGE_KEY_EMP, mockEmployees);
@@ -5594,30 +5597,36 @@ const newSh = {
 
   async updateEmployee(idOrEmpId, data) {
     const cleanId = String(idOrEmpId).trim();
+    const newEmpId = String(data.employee_id || cleanId).trim();
     const idx = mockEmployees.findIndex(e => String(e.id) === cleanId || String(e.employee_id) === cleanId);
     let updated = null;
     if (idx !== -1) {
       updated = {
         ...mockEmployees[idx],
         ...data,
+        employee_id: newEmpId,
         role: data.role !== undefined ? data.role : (mockEmployees[idx].role || 'Employee'),
         password: data.password !== undefined ? data.password : (mockEmployees[idx].password || 'Shares123')
       };
       mockEmployees[idx] = updated;
     } else {
-      updated = { id: cleanId, employee_id: cleanId, ...data };
+      updated = { id: newEmpId, employee_id: newEmpId, ...data };
       mockEmployees.unshift(updated);
     }
-    saveStoredData(STORAGE_KEY_EMP, mockEmployees);
 
-    // Update in Cloud Database
+    // If employee_id changed (e.g. EMP-001 -> 10299), delete the old record from Cloud DB immediately to prevent duplicates!
     if (CloudDbService.isEnabled()) {
       try {
-        await CloudDbService.saveCollectionItem('employees', updated.employee_id || cleanId, updated);
+        if (cleanId && newEmpId && cleanId !== newEmpId) {
+          await CloudDbService.deleteCollectionItem('employees', cleanId).catch(() => {});
+          mockEmployees = mockEmployees.filter(e => String(e.employee_id) !== cleanId && String(e.id) !== cleanId);
+        }
+        await CloudDbService.saveCollectionItem('employees', newEmpId, updated);
       } catch (e) {
         console.warn('Could not update employee in cloud:', e);
       }
     }
+    saveStoredData(STORAGE_KEY_EMP, mockEmployees);
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('employees_updated', { detail: updated }));
@@ -5628,19 +5637,21 @@ const newSh = {
 
   async deleteEmployee(idOrEmpId) {
     const cleanId = String(idOrEmpId).trim();
-    const idx = mockEmployees.findIndex(e => String(e.id) === cleanId || String(e.employee_id) === cleanId);
-    let removed = null;
-    if (idx !== -1) {
-      removed = mockEmployees.splice(idx, 1)[0];
-      saveStoredData(STORAGE_KEY_EMP, mockEmployees);
-    }
+    const removedList = mockEmployees.filter(e => String(e.id) === cleanId || String(e.employee_id) === cleanId);
+    mockEmployees = mockEmployees.filter(e => String(e.id) !== cleanId && String(e.employee_id) !== cleanId);
+    saveStoredData(STORAGE_KEY_EMP, mockEmployees);
 
-    // Delete from Cloud Database
+    // Delete from Cloud Database completely
     if (CloudDbService.isEnabled()) {
       try {
-        await CloudDbService.deleteCollectionItem('employees', cleanId);
-        if (removed?.employee_id && removed.employee_id !== cleanId) {
-          await CloudDbService.deleteCollectionItem('employees', removed.employee_id);
+        await CloudDbService.deleteCollectionItem('employees', cleanId).catch(() => {});
+        for (const rem of removedList) {
+          if (rem.employee_id && rem.employee_id !== cleanId) {
+            await CloudDbService.deleteCollectionItem('employees', rem.employee_id).catch(() => {});
+          }
+          if (rem.id && String(rem.id) !== cleanId) {
+            await CloudDbService.deleteCollectionItem('employees', String(rem.id)).catch(() => {});
+          }
         }
       } catch (e) {
         console.warn('Could not delete employee from cloud:', e);
@@ -5651,7 +5662,7 @@ const newSh = {
       window.dispatchEvent(new CustomEvent('employees_updated', { detail: { deleted: cleanId } }));
     }
 
-    return { success: true, employee: removed };
+    return { success: true, message: 'Employee deleted successfully' };
   },
 
   async authenticateUser({ identifier, password }) {
@@ -5730,6 +5741,24 @@ const newSh = {
         try {
           savedShPasswords = JSON.parse(localStorage.getItem('sugar_erp_sh_passwords') || '{}');
         } catch (e) {}
+
+        // Pull latest shareholder passwords from Cloud DB
+        if (CloudDbService.isEnabled()) {
+          try {
+            const cloudPwds = await CloudDbService.getCollection('shareholder_passwords');
+            if (Array.isArray(cloudPwds)) {
+              for (const p of cloudPwds) {
+                if (p && p.password) {
+                  const pk = String(p.share_no || p.id || '').trim();
+                  if (pk) savedShPasswords[pk] = p.password;
+                  if (p.mobile) savedShPasswords[String(p.mobile).trim()] = p.password;
+                  if (p.last10) savedShPasswords[String(p.last10).trim()] = p.password;
+                }
+              }
+              localStorage.setItem('sugar_erp_sh_passwords', JSON.stringify(savedShPasswords));
+            }
+          } catch (e) {}
+        }
 
         const shKey = String(sh.share_no || sh.share_number || sh.id || cleanId).trim();
         const mobKey = String(sh.mobile_no || sh.mobile || cleanDigits).trim();
@@ -5857,8 +5886,21 @@ const newSh = {
 
         if (sh) {
           sh.password = cleanNew;
-          if (CloudDbService.isEnabled()) {
-            CloudDbService.updateShareholder(sh.share_no || sh.id, { password: cleanNew }).catch(() => {});
+        }
+
+        // Save to Cloud DB collection 'shareholder_passwords' so all devices/browsers worldwide see the updated password!
+        if (CloudDbService.isEnabled()) {
+          try {
+            await CloudDbService.saveCollectionItem('shareholder_passwords', shKey, {
+              share_no: shKey,
+              name: sh ? (sh.shareholder_name || sh.name) : undefined,
+              mobile: mobKey,
+              last10: last10,
+              password: cleanNew,
+              updated_at: new Date().toISOString()
+            });
+          } catch (e) {
+            console.warn('Could not save shareholder password to cloud:', e);
           }
         }
 

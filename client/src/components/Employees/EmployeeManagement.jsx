@@ -81,10 +81,10 @@ export default function EmployeeManagement() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    loadEmployees();
-    const interval = setInterval(loadEmployees, 8000);
-    const handleFocus = () => loadEmployees();
-    const handleUpdate = () => loadEmployees();
+    loadEmployees(true);
+    const interval = setInterval(() => loadEmployees(false), 20000);
+    const handleFocus = () => loadEmployees(false);
+    const handleUpdate = () => loadEmployees(false);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('employees_updated', handleUpdate);
     return () => {
@@ -186,13 +186,18 @@ export default function EmployeeManagement() {
     }
   };
 
-  const loadEmployees = async () => {
-    setLoading(true);
-    const res = await ApiService.getEmployees();
-    if (res && res.data) {
-      setEmployees(res.data);
+  const loadEmployees = async (showLoading = false) => {
+    if (showLoading) setLoading(true);
+    try {
+      const res = await ApiService.getEmployees();
+      if (res && res.data) {
+        setEmployees(res.data);
+      }
+    } catch (err) {
+      console.warn('loadEmployees error:', err);
+    } finally {
+      if (showLoading) setLoading(false);
     }
-    setLoading(false);
   };
 
   // Open Add Modal
@@ -340,12 +345,13 @@ export default function EmployeeManagement() {
     }
 
     if (editingEmployee) {
-      const res = await ApiService.updateEmployee(editingEmployee.id || editingEmployee.employee_id, formData);
+      const targetId = editingEmployee.employee_id || editingEmployee.id;
+      const res = await ApiService.updateEmployee(targetId, formData);
       if (res && res.success) {
         showToast(`ಸಿಬ್ಬಂದಿ ${formData.name} ವಿವರಗಳನ್ನು ನವೀಕರಿಸಲಾಗಿದೆ!`, 'success');
         stopWebcam();
         setShowAddEditModal(false);
-        loadEmployees();
+        await loadEmployees(false);
       } else {
         showToast('ನವೀಕರಣ ವಿಫಲವಾಗಿದೆ: ' + (res.message || 'Error'), 'error');
       }
@@ -355,7 +361,7 @@ export default function EmployeeManagement() {
         showToast(`ಹೊಸ ಸಿಬ್ಬಂದಿ ${formData.name} (${res.employee_id}) ಯಶಸ್ವಿಯಾಗಿ ನೋಂದಣಿಯಾಗಿದೆ!`, 'success');
         stopWebcam();
         setShowAddEditModal(false);
-        loadEmployees();
+        await loadEmployees(false);
       } else {
         showToast('ನೋಂದಣಿ ವಿಫಲವಾಗಿದೆ', 'error');
       }
