@@ -23,6 +23,7 @@ import BackupManager from './components/Admin/BackupManager';
 import SettingsModule from './components/Settings/SettingsModule';
 import LoginPage from './components/Auth/LoginPage';
 import ShareholderPortal from './components/Shareholders/ShareholderPortal';
+import ChangePasswordModal from './components/Auth/ChangePasswordModal';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import { ShieldCheck, LogIn, Lock, CheckCircle2 } from 'lucide-react';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from './services/organizationService';
@@ -60,6 +61,19 @@ function AppContent() {
 
   if (!user) {
     return <LoginPage />;
+  }
+
+  // Force mandatory password change if user logged in with default password (Shares123)
+  if (user.is_default_password) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+        <ChangePasswordModal
+          isOpen={true}
+          forced={true}
+          onClose={() => {}}
+        />
+      </div>
+    );
   }
 
   // Dedicated member portal exclusively for shareholders to see their details and history only
