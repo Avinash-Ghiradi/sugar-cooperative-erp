@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { ApiService, getShareholderSharesCount, isShareholderInactive } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
-import OfficialShareholderIDCard, { ShareholderAttendanceQR, OfficialSocietySeal } from '../IDCards/OfficialShareholderIDCard';
+import OfficialShareholderIDCard, { ShareholderAttendanceQR } from '../IDCards/OfficialShareholderIDCard';
 import ChangePasswordModal from '../Auth/ChangePasswordModal';
 import {
-  BookOpen, Contact, PackageCheck, CalendarCheck, Lock, LogOut, KeyRound,
-  ShieldCheck, Printer, Phone, MapPin, Building2, CreditCard, Award,
-  CheckCircle2, RefreshCw, AlertCircle, FileText, UserCheck, QrCode, ArrowRight
+  BookOpen, Contact, PackageCheck, QrCode, History, CreditCard, Award,
+  UserCheck, MapPin, Phone, ShieldCheck, Printer, KeyRound, LogOut,
+  RefreshCw, AlertCircle, Clock, GitMerge, FileSpreadsheet, ArrowRightLeft,
+  FileText, Coins, CheckCircle2, ChevronRight, User
 } from 'lucide-react';
 
 export default function ShareholderPortal() {
@@ -15,7 +16,7 @@ export default function ShareholderPortal() {
   const companyLogo = useCompanyLogo();
 
   const [shareholder, setShareholder] = useState(null);
-  const [history, setHistory] = useState({ transactions: [], sugarAllotments: [] });
+  const [history, setHistory] = useState({ transactions: [], sugarAllotments: [], timeline: [] });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ledger');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -29,24 +30,28 @@ export default function ShareholderPortal() {
     setLoading(true);
     const targetId = user?.share_no || user?.id || user?.username;
     if (targetId) {
-      const res = await ApiService.getShareholderById(targetId);
-      if (res && res.success && res.shareholder) {
-        setShareholder(res.shareholder);
-        setHistory(res.history || { transactions: [], sugarAllotments: [] });
-      } else if (user) {
-        // Fallback to user session data
-        setShareholder({
-          share_no: user.share_no,
-          shareholder_name: user.name,
-          name: user.name,
-          mobile_no: user.mobile,
-          place: user.village,
-          taluk: user.taluk,
-          district: user.district,
-          circle: user.circle,
-          total_amount: user.total_amount || 2000,
-          number_of_shares: user.number_of_shares || 1
-        });
+      try {
+        const res = await ApiService.getShareholderById(targetId);
+        if (res && res.success && res.shareholder) {
+          setShareholder(res.shareholder);
+          setHistory(res.history || { transactions: [], sugarAllotments: [], timeline: [] });
+        } else if (user) {
+          // Fallback to user session data
+          setShareholder({
+            share_no: user.share_no,
+            shareholder_name: user.name,
+            name: user.name,
+            mobile_no: user.mobile,
+            place: user.village,
+            taluk: user.taluk,
+            district: user.district,
+            circle: user.circle,
+            total_amount: user.total_amount || 2000,
+            number_of_shares: user.number_of_shares || 1
+          });
+        }
+      } catch (e) {
+        console.warn('Error loading shareholder profile:', e);
       }
     }
     setLoading(false);
@@ -56,11 +61,7 @@ export default function ShareholderPortal() {
     loadData();
   }, [user]);
 
-  const handlePrintCard = () => {
-    window.print();
-  };
-
-  const handlePrintLedger = () => {
+  const handlePrint = () => {
     window.print();
   };
 
@@ -69,7 +70,7 @@ export default function ShareholderPortal() {
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
         <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin mb-3" />
         <p className="text-slate-300 text-sm font-semibold">ಷೇರುದಾರರ ಸದಸ್ಯರ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...</p>
-        <p className="text-slate-500 text-xs mt-1">Loading official shareholder portal...</p>
+        <p className="text-slate-500 text-xs mt-1">Loading official shareholder portal & history...</p>
       </div>
     );
   }
@@ -77,6 +78,9 @@ export default function ShareholderPortal() {
   const sh = shareholder || user || {};
   const sharesCount = getShareholderSharesCount(sh);
   const totalAmt = parseFloat(sh.total_amount) || (sharesCount > 0 ? sharesCount * 2000 : 1000);
+  const timelineEvents = history?.timeline || [];
+  const transactionsList = history?.transactions || [];
+  const sugarAllotmentsList = history?.sugarAllotments || [];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans print:bg-white print:text-black">
@@ -274,15 +278,15 @@ export default function ShareholderPortal() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('id_card')}
+            onClick={() => setActiveTab('history')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'id_card'
+              activeTab === 'history'
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
             }`}
           >
-            <Contact className="w-4 h-4" />
-            <span>2. ಅಧಿಕೃತ ಗುರುತಿನ ಚೀಟಿ (Official ID Card)</span>
+            <History className="w-4 h-4 text-purple-400" />
+            <span>2. ಇತಿಹಾಸ & ವಹಿವಾಟುಗಳು ({timelineEvents.length || transactionsList.length || 1})</span>
           </button>
 
           <button
@@ -294,8 +298,21 @@ export default function ShareholderPortal() {
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
             }`}
           >
-            <PackageCheck className="w-4 h-4" />
-            <span>3. ಸಕ್ಕರೆ ಕೋಟಾ & ಹಂಚಿಕೆ ({history.sugarAllotments?.length || 0})</span>
+            <PackageCheck className="w-4 h-4 text-sky-400" />
+            <span>3. ಸಕ್ಕರೆ ಕೋಟಾ & ಹಂಚಿಕೆ ({sugarAllotmentsList.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('id_card')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'id_card'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+            }`}
+          >
+            <Contact className="w-4 h-4 text-amber-400" />
+            <span>4. ಅಧಿಕೃತ ಗುರುತಿನ ಚೀಟಿ (Official ID Card)</span>
           </button>
 
           <button
@@ -307,8 +324,8 @@ export default function ShareholderPortal() {
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
             }`}
           >
-            <QrCode className="w-4 h-4" />
-            <span>4. ಹಾಜರಾತಿ & ಮತದಾನ QR</span>
+            <QrCode className="w-4 h-4 text-teal-400" />
+            <span>5. ಹಾಜರಾತಿ & ಮಹಾಸಭೆಯ QR</span>
           </button>
         </div>
 
@@ -327,7 +344,7 @@ export default function ShareholderPortal() {
 
               <button
                 type="button"
-                onClick={handlePrintLedger}
+                onClick={handlePrint}
                 className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 shadow-md cursor-pointer transition-all"
               >
                 <Printer className="w-3.5 h-3.5 text-emerald-400" />
@@ -506,38 +523,162 @@ export default function ShareholderPortal() {
           </div>
         )}
 
-        {/* TAB 2: OFFICIAL ID CARD */}
-        {activeTab === 'id_card' && (
+        {/* TAB 2: HISTORY & TIMELINE & TRANSACTIONS */}
+        {activeTab === 'history' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800 no-print">
+            <div className="flex items-center justify-between gap-4 no-print">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Contact className="w-4 h-4 text-emerald-400" /> ಅಧಿಕೃತ ಸದಸ್ಯ ಗುರುತಿನ ಚೀಟಿ (Official Shareholder ID Card)
+                  <History className="w-4 h-4 text-purple-400" /> ಸದಸ್ಯತ್ವದ ಸಂಪೂರ್ಣ ಇತಿಹಾಸ & ವಹಿವಾಟುಗಳು (Member History & Timeline)
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">ಮುದ್ರಣ ಹಾಗೂ ಸ್ಕ್ಯಾನರ್ ಪರಿಶೀಲನೆಗೆ ಅಧಿಕೃತ ಡಿಜಿಟಲ್ ಐಡಿ ಕಾರ್ಡ್</p>
+                <p className="text-xs text-slate-400 mt-0.5">ನೋಂದಣಿ, ಷೇರು ಪಾವತಿ, ವರ್ಗಾವಣೆ, ವಿಲೀನ ಮತ್ತು ಶಾಸನಬದ್ಧ ಇತಿಹಾಸದ ದಾಖಲೆಗಳು</p>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={handlePrintCard}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>ID ಕಾರ್ಡ್ ಪ್ರಿಂಟ್ ಮಾಡಿ (Print ID Card)</span>
-                </button>
-              </div>
+              <span className="text-xs px-3 py-1 rounded-full font-bold bg-purple-950 text-purple-300 border border-purple-800">
+                {timelineEvents.length || transactionsList.length || 1} ದಾಖಲೆಗಳು
+              </span>
             </div>
 
-            {/* ID Card Display Container */}
-            <div className="bg-slate-950 p-4 sm:p-6 rounded-3xl border border-slate-800 flex flex-col items-center justify-center overflow-x-auto">
-              <OfficialShareholderIDCard
-                shareholder={sh}
-                side={idCardSide}
-                printLayout={printLayout}
-                cardSize={cardSize}
-                showSeal={true}
-              />
+            {/* Timeline View */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-6">
+              <h4 className="font-bold text-xs text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                <Clock className="w-4 h-4 text-emerald-400" /> ಕಾಲಾನುಕ್ರಮದ ಸದಸ್ಯತ್ವ ಇತಿಹಾಸ (Chronological Events)
+              </h4>
+
+              {timelineEvents.length === 0 ? (
+                // Fallback timeline event from shareholder record
+                <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+                  <div className="relative">
+                    <div className="absolute -left-6 top-2 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-950 border border-slate-900" />
+                    <div className="p-4 rounded-2xl border border-emerald-800/60 bg-emerald-950/20 shadow-lg space-y-2">
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-800/60 pb-2">
+                        <span className="font-bold text-white text-xs flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-emerald-400" /> ಅಧಿಕೃತ ಸದಸ್ಯತ್ವ ನೋಂದಣಿ (Official Statutory Membership)
+                        </span>
+                        <span className="text-[11px] font-mono text-slate-400">{sh.date || sh.reg_date || 'ಮೂಲ ದಾಖಲೆ'}</span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ ಶೇರುದಾರರಾಗಿ #{sh.share_no || sh.share_number} ನೋಂದಾಯಿಸಲಾಗಿದೆ. ಪಾವತಿಸಿದ ಶೇರು ಮೊತ್ತ: ₹{totalAmt.toLocaleString('en-IN')}, ವರ್ಗ: {sh.schedule_cast || 'ಅ - ವರ್ಗ'}, ಪುಸ್ತಕ ಸಂಖ್ಯೆ: {sh.book_no || '1'}.
+                      </p>
+                      <div className="text-[11px] text-slate-400 flex items-center gap-3 pt-1">
+                        <span>ರಶೀದಿ ನಂ: <strong className="text-slate-200 font-mono">#{sh.receipt_no || '—'}</strong></span>
+                        <span>ಪ್ರಮಾಣಪತ್ರ: <strong className="text-slate-200 font-mono">{sh.certificate_no || '—'}</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+                  {timelineEvents.map((evt, idx) => {
+                    const isMerge = evt.type && evt.type.includes('MERGE');
+                    const isVarasa = evt.type === 'VARASA_TRANSFER';
+                    const isVargavane = evt.type === 'VARGAVANE_TRANSFER';
+                    const isEdit = evt.type === 'SHAREHOLDER_UPDATE';
+
+                    const dotColor = isMerge
+                      ? 'bg-amber-400 ring-amber-950'
+                      : isVarasa
+                      ? 'bg-purple-500 ring-purple-950'
+                      : isVargavane
+                      ? 'bg-cyan-500 ring-cyan-950'
+                      : isEdit
+                      ? 'bg-sky-500 ring-sky-950'
+                      : 'bg-emerald-500 ring-emerald-950';
+
+                    const borderColor = isMerge
+                      ? 'border-amber-700/60 bg-amber-950/25'
+                      : isVarasa
+                      ? 'border-purple-800/60 bg-purple-950/20'
+                      : isVargavane
+                      ? 'border-cyan-800/60 bg-cyan-950/20'
+                      : isEdit
+                      ? 'border-sky-800/60 bg-sky-950/20'
+                      : 'border-emerald-800/60 bg-emerald-950/20';
+
+                    return (
+                      <div key={evt.id || idx} className="relative">
+                        <div className={`absolute -left-6 top-2 w-3.5 h-3.5 rounded-full ${dotColor} ring-4 border border-slate-900 shadow-md`} />
+                        <div className={`p-4 rounded-2xl border ${borderColor} shadow-lg space-y-2`}>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-800/60 pb-2">
+                            <div className="flex items-center gap-2">
+                              {isMerge && <GitMerge className="w-4 h-4 text-amber-400" />}
+                              {isVarasa && <FileSpreadsheet className="w-4 h-4 text-purple-400" />}
+                              {isVargavane && <ArrowRightLeft className="w-4 h-4 text-cyan-400" />}
+                              {isEdit && <FileText className="w-4 h-4 text-sky-400" />}
+                              {!isMerge && !isVarasa && !isVargavane && !isEdit && <ShieldCheck className="w-4 h-4 text-emerald-400" />}
+                              <span className="font-bold text-white text-xs">{evt.title}</span>
+                            </div>
+                            <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-slate-500" /> {evt.date}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            {evt.description}
+                          </p>
+                          {evt.performed_by && (
+                            <div className="text-[10.5px] text-slate-500 flex items-center gap-1.5 pt-1">
+                              <span>ನಮೂದು:</span> <span className="text-slate-400 font-semibold">{evt.performed_by}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Transactions History Table */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+              <div className="p-4 border-b border-slate-800 font-bold text-xs text-slate-200 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-emerald-400" />
+                <span>ಷೇರು ಬಂಡವಾಳ & ಹಣಕಾಸು ರಸೀದಿಗಳ ಇತಿಹಾಸ (Financial Ledger)</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px]">
+                    <tr>
+                      <th className="py-3 px-4">ರಸೀದಿ ಸಂಖ್ಯೆ</th>
+                      <th className="py-3 px-4">ದಿನಾಂಕ</th>
+                      <th className="py-3 px-4">ವಿವರ / ಖಾತೆ</th>
+                      <th className="py-3 px-4">ಷೇರುಗಳು</th>
+                      <th className="py-3 px-4">ಜಮೆ ಮೊತ್ತ</th>
+                      <th className="py-3 px-4 text-center">ಸ್ಥಿತಿ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                    {transactionsList.length > 0 ? (
+                      transactionsList.map((tx, idx) => (
+                        <tr key={idx} className="hover:bg-slate-800/40">
+                          <td className="py-3 px-4 font-mono font-bold text-amber-300">#{tx.receipt_no || tx.transaction_id || idx + 1}</td>
+                          <td className="py-3 px-4">{tx.date || tx.created_at || '—'}</td>
+                          <td className="py-3 px-4 text-slate-300">{tx.description || tx.type || 'ಷೇರು ಬಂಡವಾಳ ಪಾವತಿ'}</td>
+                          <td className="py-3 px-4 font-mono text-emerald-400 font-bold">{tx.shares || 1} ಷೇರು</td>
+                          <td className="py-3 px-4 font-mono font-bold text-white">₹{(tx.amount || 2000).toLocaleString('en-IN')}</td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 text-[10px] font-bold border border-emerald-800">
+                              ಜಮೆಯಾಗಿದೆ (Credited)
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr className="hover:bg-slate-800/40">
+                        <td className="py-3 px-4 font-mono font-bold text-amber-300">#{sh.receipt_no || '261'}</td>
+                        <td className="py-3 px-4">{sh.date || sh.reg_date || '—'}</td>
+                        <td className="py-3 px-4 text-slate-300">ಮೂಲ ಷೇರು ಬಂಡವಾಳ ರಶೀದಿ ಪಾವತಿ ({sh.schedule_cast || 'ಅ - ವರ್ಗ'})</td>
+                        <td className="py-3 px-4 font-mono text-emerald-400 font-bold">{sharesCount} ಷೇರು</td>
+                        <td className="py-3 px-4 font-mono font-bold text-white">₹{totalAmt.toLocaleString('en-IN')}</td>
+                        <td className="py-3 px-4 text-center">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 text-[10px] font-bold border border-emerald-800">
+                            ಅಧಿಕೃತವಾಗಿ ಜಮೆಯಾಗಿದೆ
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -569,7 +710,7 @@ export default function ShareholderPortal() {
               <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4">
                 <div className="text-xs text-slate-400">ಪಡೆದ ಒಟ್ಟು ಸಕ್ಕರೆ ಚೀಲಗಳು</div>
                 <div className="text-2xl font-bold text-sky-400 font-mono mt-1">
-                  {history.sugarAllotments?.reduce((sum, a) => sum + (Number(a.allotted_quantity || a.quantity) || 0), 0) || 0} ಚೀಲ
+                  {sugarAllotmentsList.reduce((sum, a) => sum + (Number(a.allotted_quantity || a.quantity) || 0), 0) || 0} ಚೀಲ
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1">
                   ವಿತರಣಾ ದಾಖಲೆಗಳ ಪ್ರಕಾರ
@@ -579,7 +720,7 @@ export default function ShareholderPortal() {
               <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4">
                 <div className="text-xs text-slate-400">ಬಾಕಿ ಲಭ್ಯ ಸಕ್ಕರೆ ಕೋಟಾ</div>
                 <div className="text-2xl font-bold text-amber-300 font-mono mt-1">
-                  {Math.max(0, (sharesCount * 1) - (history.sugarAllotments?.reduce((sum, a) => sum + (Number(a.allotted_quantity || a.quantity) || 0), 0) || 0))} ಚೀಲ
+                  {Math.max(0, (sharesCount * 1) - (sugarAllotmentsList.reduce((sum, a) => sum + (Number(a.allotted_quantity || a.quantity) || 0), 0) || 0))} ಚೀಲ
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1">
                   ಸಹಕಾರಿ ಗೋದಾಮಿನಲ್ಲಿ ಲಭ್ಯ
@@ -604,8 +745,8 @@ export default function ShareholderPortal() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                    {history.sugarAllotments && history.sugarAllotments.length > 0 ? (
-                      history.sugarAllotments.map((sa, idx) => (
+                    {sugarAllotmentsList.length > 0 ? (
+                      sugarAllotmentsList.map((sa, idx) => (
                         <tr key={idx} className="hover:bg-slate-800/40">
                           <td className="py-3 px-4 font-mono font-bold text-amber-300">#{sa.allotment_id || sa.receipt_no || idx + 1}</td>
                           <td className="py-3 px-4">{sa.date || sa.allotment_date || '—'}</td>
@@ -632,7 +773,43 @@ export default function ShareholderPortal() {
           </div>
         )}
 
-        {/* TAB 4: ATTENDANCE & AGM QR CODE */}
+        {/* TAB 4: OFFICIAL ID CARD */}
+        {activeTab === 'id_card' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800 no-print">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Contact className="w-4 h-4 text-emerald-400" /> ಅಧಿಕೃತ ಸದಸ್ಯ ಗುರುತಿನ ಚೀಟಿ (Official Shareholder ID Card)
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">ಮುದ್ರಣ ಹಾಗೂ ಸ್ಕ್ಯಾನರ್ ಪರಿಶೀಲನೆಗೆ ಅಧಿಕೃತ ಡಿಜಿಟಲ್ ಐಡಿ ಕಾರ್ಡ್</p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>ID ಕಾರ್ಡ್ ಪ್ರಿಂಟ್ ಮಾಡಿ (Print ID Card)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* ID Card Display Container */}
+            <div className="bg-slate-950 p-4 sm:p-6 rounded-3xl border border-slate-800 flex flex-col items-center justify-center overflow-x-auto">
+              <OfficialShareholderIDCard
+                shareholder={sh}
+                side={idCardSide}
+                printLayout={printLayout}
+                cardSize={cardSize}
+                showSeal={true}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: ATTENDANCE & AGM QR CODE */}
         {activeTab === 'attendance' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between gap-4 no-print">

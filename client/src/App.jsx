@@ -62,6 +62,11 @@ function AppContent() {
     return <LoginPage />;
   }
 
+  // Dedicated member portal exclusively for shareholders to see their details and history only
+  if (user.role === 'Shareholder') {
+    return <ShareholderPortal />;
+  }
+
   const renderActiveModule = () => {
     if (!hasPermission(activeModule)) {
       return (
