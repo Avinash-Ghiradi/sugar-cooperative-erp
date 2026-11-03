@@ -961,6 +961,7 @@ export default function VarasaTransferModal({
                     className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-slate-100 font-semibold outline-none"
                   >
                     <option value="Application Received">Application Received (ಅರ್ಜಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ)</option>
+                    <option value="Application Received & Sent for Sign">Application Received & Sent for Sign (ಅರ್ಜಿ ಸ್ವೀಕರಿಸಿ ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ)</option>
                     <option value="Under Verification">Under Verification (ಪರಿಶೀಲನೆಯಲ್ಲಿದೆ)</option>
                     <option value="Approved">Approved (ಮಂಜೂರಾಗಿದೆ)</option>
                     <option value="Completed">Completed & Transferred (ವರ್ಗಾವಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ)</option>

@@ -98,19 +98,31 @@ export default function TopHorizontalScrollbar({ targetRef, className = '', labe
 
   return (
     <div className={`flex items-center gap-2 bg-slate-950/90 border border-slate-700/80 px-3 py-1.5 rounded-xl shadow-md mb-2 select-none z-30 sticky top-0 ${className}`}>
-      {/* Scroll Left Button */}
-      <button
-        type="button"
-        onClick={() => scrollByAmount(-350)}
-        disabled={scrollLeft <= 2}
-        className="p-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-emerald-400 border border-slate-700 transition-colors shrink-0 cursor-pointer shadow-sm"
-        title="Scroll left (ಎಡಕ್ಕೆ ಚಲಿಸಿ)"
-      >
-        <ChevronsLeft className="w-4 h-4" />
-      </button>
+      {/* Both Navigation Buttons (Backward and Forward) on Left */}
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={() => scrollByAmount(-350)}
+          disabled={scrollLeft <= 2}
+          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-emerald-400 hover:text-emerald-300 border border-slate-700 hover:border-emerald-600 transition-all shrink-0 cursor-pointer shadow-sm flex items-center justify-center"
+          title="Scroll Backward / Left (ಹಿಂದಕ್ಕೆ / ಎಡಕ್ಕೆ ಚಲಿಸಿ)"
+        >
+          <ChevronsLeft className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => scrollByAmount(350)}
+          disabled={scrollLeft >= maxScroll - 5}
+          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-emerald-400 hover:text-emerald-300 border border-slate-700 hover:border-emerald-600 transition-all shrink-0 cursor-pointer shadow-sm flex items-center justify-center"
+          title="Scroll Forward / Right (ಮುಂದಕ್ಕೆ / ಬಲಕ್ಕೆ ಚಲಿಸಿ)"
+        >
+          <ChevronsRight className="w-4 h-4" />
+        </button>
+      </div>
 
       {/* Label or hint */}
-      <span className="text-[10px] text-slate-400 font-semibold hidden md:inline shrink-0">
+      <span className="text-[10px] text-slate-300 font-semibold hidden sm:inline shrink-0">
         {label || 'ಮೇಲಿನ ಅಡ್ಡಪಟ್ಟಿ (Top Scroller):'}
       </span>
 
@@ -127,25 +139,37 @@ export default function TopHorizontalScrollbar({ targetRef, className = '', labe
           }}
           title="ಕೋಷ್ಟಕವನ್ನು ಎಡ-ಬಲಕ್ಕೆ ಚಲಿಸಲು ಈ ಸ್ಕ್ರಾಲ್ ಬಾರ್ ಎಳೆಯಿರಿ (Drag or scroll to move table)"
         >
-          <div style={{ width: `${scrollWidth}px`, height: '2px' }} />
+          <div style={{ width: `${scrollWidth}px`, height: "2px" }} />
         </div>
       </div>
 
-      {/* Scroll Right Button */}
-      <button
-        type="button"
-        onClick={() => scrollByAmount(350)}
-        disabled={scrollLeft >= maxScroll - 5}
-        className="p-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-emerald-400 border border-slate-700 transition-colors shrink-0 cursor-pointer shadow-sm"
-        title="Scroll right (ಬಲಕ್ಕೆ ಚಲಿಸಿ)"
-      >
-        <ChevronsRight className="w-4 h-4" />
-      </button>
+      {/* Both Navigation Buttons (Backward and Forward) on Right */}
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={() => scrollByAmount(-350)}
+          disabled={scrollLeft <= 2}
+          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-emerald-400 hover:text-emerald-300 border border-slate-700 hover:border-emerald-600 transition-all shrink-0 cursor-pointer shadow-sm flex items-center justify-center"
+          title="Scroll Backward / Left (ಹಿಂದಕ್ಕೆ / ಎಡಕ್ಕೆ ಚಲಿಸಿ)"
+        >
+          <ChevronsLeft className="w-4 h-4" />
+        </button>
 
-      {/* Percentage pill */}
-      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-400 border border-emerald-800 shrink-0">
-        {scrollPercent}%
-      </span>
+        <button
+          type="button"
+          onClick={() => scrollByAmount(350)}
+          disabled={scrollLeft >= maxScroll - 5}
+          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-emerald-400 hover:text-emerald-300 border border-slate-700 hover:border-emerald-600 transition-all shrink-0 cursor-pointer shadow-sm flex items-center justify-center"
+          title="Scroll Forward / Right (ಮುಂದಕ್ಕೆ / ಬಲಕ್ಕೆ ಚಲಿಸಿ)"
+        >
+          <ChevronsRight className="w-4 h-4" />
+        </button>
+
+        {/* Percentage pill */}
+        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-400 border border-emerald-800 shrink-0">
+          {scrollPercent}%
+        </span>
+      </div>
     </div>
   );
 }

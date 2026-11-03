@@ -143,6 +143,7 @@ export default function VargavaneTransferModule() {
   // Stats calculation
   const totalApps = transfers.length;
   const receivedApps = transfers.filter(t => t.approval_status === 'Application Received').length;
+  const sentForSignApps = transfers.filter(t => t.approval_status === 'Application Received & Sent for Sign').length;
   const underVerification = transfers.filter(t => t.approval_status === 'Under Verification').length;
   const approvedApps = transfers.filter(t => t.approval_status === 'Approved').length;
   const completedApps = transfers.filter(t => t.approval_status === 'Completed').length;
@@ -459,7 +460,7 @@ export default function VargavaneTransferModule() {
       </div>
 
       {/* KPI Stats Metrics Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
         <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 shadow-md">
           <span className="text-[11px] text-slate-400 block mb-1">Total Transfers</span>
           <span className="text-xl font-bold text-slate-100 font-mono">{totalApps.toLocaleString()}</span>
@@ -467,6 +468,10 @@ export default function VargavaneTransferModule() {
         <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 shadow-md">
           <span className="text-[11px] text-amber-400 block mb-1">Received (ಸ್ವೀಕೃತ)</span>
           <span className="text-xl font-bold text-amber-400 font-mono">{receivedApps.toLocaleString()}</span>
+        </div>
+        <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-3.5 shadow-md">
+          <span className="text-[11px] text-cyan-400 block mb-1">Sent for Sign (ಸಹಿಗೆ)</span>
+          <span className="text-xl font-bold text-cyan-400 font-mono">{sentForSignApps.toLocaleString()}</span>
         </div>
         <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 shadow-md">
           <span className="text-[11px] text-sky-400 block mb-1">Under Verification</span>
@@ -507,6 +512,7 @@ export default function VargavaneTransferModule() {
           >
             <option value="">All Statuses (ಎಲ್ಲಾ ಹಂತಗಳು)</option>
             <option value="Application Received">Application Received</option>
+            <option value="Application Received & Sent for Sign">Application Received & Sent for Sign</option>
             <option value="Under Verification">Under Verification</option>
             <option value="Approved">Approved</option>
             <option value="Completed">Completed</option>
@@ -746,19 +752,23 @@ export default function VargavaneTransferModule() {
                     {/* Status Workflow */}
                     <td className="py-3 px-3 text-center">
                       <select
-                        value={['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Approved' : ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status) ? 'Completed' : v.approval_status || 'Application Received'}
+                        value={['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Approved' : ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status) ? 'Completed' : ['Application Received & Sent for Sign', 'ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Application Received & Sent for Sign' : v.approval_status || 'Application Received'}
                         onChange={(e) => handleStatusUpdate(v.transfer_id || v.id, e.target.value)}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full outline-none border cursor-pointer ${
-                          v.approval_status === 'Completed'
-                            ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                            : v.approval_status === 'Approved'
-                            ? 'bg-sky-950 text-sky-300 border-sky-800'
+                        title="ಸ್ಥಿತಿ ಬದಲಾಯಿಸಿ (Change Status)"
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full outline-none border cursor-pointer transition-colors shadow-sm ${
+                          v.approval_status === 'Completed' || v.approval_status === 'ಮಂಜೂರಾಗಿದೆ'
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-800 hover:border-emerald-500'
+                            : v.approval_status === 'Approved' || v.approval_status === 'ಅನುಮೋದಿಸಲಾಗಿದೆ'
+                            ? 'bg-sky-950 text-sky-300 border-sky-800 hover:border-sky-500'
                             : v.approval_status === 'Under Verification'
-                            ? 'bg-amber-950 text-amber-300 border-amber-800'
-                            : 'bg-slate-900 text-slate-400 border-slate-700'
+                            ? 'bg-amber-950 text-amber-300 border-amber-800 hover:border-amber-500'
+                            : v.approval_status === 'Application Received & Sent for Sign'
+                            ? 'bg-cyan-950 text-cyan-300 border-cyan-800 hover:border-cyan-500'
+                            : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500'
                         }`}
                       >
                         <option value="Application Received">Application Received</option>
+                        <option value="Application Received & Sent for Sign">Application Received & Sent for Sign</option>
                         <option value="Under Verification">Under Verification</option>
                         <option value="Approved">Approved</option>
                         <option value="Completed">Completed & Transferred</option>
