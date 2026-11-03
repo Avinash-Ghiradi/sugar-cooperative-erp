@@ -48,7 +48,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
   // Options
   const [villages, setVillages] = useState([]);
   const [circles, setCircles] = useState([]);
-  const [bookList, setBookList] = useState(['B.No: 1', 'B.No: 2', 'B.No: 3', 'B.No: 4', 'B.No: 5']);
+  const [bookList, setBookList] = useState(Array.from({ length: 78 }, (_, i) => `B.No: ${i + 1}`));
   const [castList, setCastList] = useState([]);
   const [amountList, setAmountList] = useState([]);
 

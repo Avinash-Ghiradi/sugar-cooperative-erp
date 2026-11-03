@@ -1703,7 +1703,18 @@ export const ApiService = {
         cItem.shareholder_count++;
         cItem.total_shares += shares;
       }
-      if (s.book_no) bookSet.add(s.book_no.trim());
+      if (s.book_no) {
+        const b = String(s.book_no).trim();
+        const m = b.match(/B\.No:\s*(\d+)/i);
+        if (m) {
+          bookSet.add(`B.No: ${parseInt(m[1])}`);
+        } else if (/^\d+$/.test(b)) {
+          const num = parseInt(b);
+          if (num >= 1 && num <= 78) {
+            bookSet.add(`B.No: ${num}`);
+          }
+        }
+      }
       if (s.schedule_cast) castSet.add(s.schedule_cast.trim());
       const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || 0;
       if (amt > 0) amtMap.set(amt, (amtMap.get(amt) || 0) + 1);
@@ -1837,6 +1848,7 @@ export const ApiService = {
               if (isShareholderInactive(s)) return acc;
               return acc + (parseInt(s.number_of_shares) || 1);
             }, 0);
+            cloudStats.stats.totalBooks = 78;
           } else if (cloudStats.stats.totalShareholders === 0) {
             cloudStats.stats.totalShares = 0;
             cloudStats.stats.totalVillages = 0;
@@ -1871,7 +1883,7 @@ export const ApiService = {
       }, 0),
         totalVillages: isReset ? 0 : (mockCircleDirectory.length || 0),
         totalCircles: isReset ? 0 : 9,
-        totalBooks: isReset ? 0 : 11,
+        totalBooks: isReset ? 0 : 78,
         totalCategories: isReset ? 0 : charts.scheduleCastBreakdown.length,
         topCategory: isReset || charts.scheduleCastBreakdown.length === 0 ? '—' : `${charts.scheduleCastBreakdown[0].category} (${charts.scheduleCastBreakdown[0].count.toLocaleString()})`,
         pendingVarasa: mockVarasaTransfers.filter(v => !['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length,
@@ -5539,15 +5551,25 @@ const newSh = {
     const bookSet = new Set();
     for (let i = 0; i < mockShareholders.length; i++) {
       const b = (mockShareholders[i].book_no || '').trim();
-      if (b) bookSet.add(b);
+      if (b) {
+        const m = b.match(/B\.No:\s*(\d+)/i);
+        if (m) {
+          bookSet.add(`B.No: ${parseInt(m[1])}`);
+        } else if (/^\d+$/.test(b)) {
+          const num = parseInt(b);
+          if (num >= 1 && num <= 78) {
+            bookSet.add(`B.No: ${num}`);
+          }
+        }
+      }
     }
     if (bookSet.size === 0) {
-      return { success: true, data: [] };
+      return { success: true, data: Array.from({ length: 78 }, (_, i) => `B.No: ${i + 1}`) };
     }
     const list = Array.from(bookSet).sort((a, b) => {
       const numA = parseInt(a.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.replace(/\D/g, '')) || 0;
-      return numA - numB || a.localeCompare(b);
+      return numA - numB;
     });
     return { success: true, data: list };
   },

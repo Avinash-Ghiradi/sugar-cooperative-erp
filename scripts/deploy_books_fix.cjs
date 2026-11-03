@@ -4,7 +4,7 @@ const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
 const distDir = path.join(rootDir, 'client', 'dist');
-const tempBackupDir = path.join(rootDir, '..', `temp_dist_loading_${Date.now()}`);
+const tempBackupDir = path.join(rootDir, '..', `temp_dist_books_${Date.now()}`);
 
 function run(cmd) {
   console.log(`Running: ${cmd}`);
@@ -15,9 +15,9 @@ try {
   // 1. Commit and push main branch
   run('git add -A');
   try {
-    run('git commit -m "feat: add premium orbital loading animations with official BSSKN emblem and global top progress bar across all modules"');
+    run('git commit -m "fix: correct Total Books (Ledgers) count to 78 across Dashboard, Shareholder List, and Cloud DB"');
   } catch (e) {
-    console.log('Nothing to commit on main:', e.message);
+    console.log('Commit note:', e.message);
   }
   run('git push origin main');
 
@@ -42,7 +42,7 @@ try {
   // 5. Commit and push to gh-pages
   run('git add -A');
   const timestamp = Date.now();
-  run(`git commit -m "Deploy orbital loading animations and top progress indicator (${timestamp})"`);
+  run(`git commit -m "Deploy Total Books (Ledgers) fix to 78 (${timestamp})"`);
   run('git push origin gh-pages');
 
   // 6. Return to main
