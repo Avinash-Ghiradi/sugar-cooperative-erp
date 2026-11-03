@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { PwaProvider } from './context/PwaContext';
 import { syncAllCloudWorkflows, checkAndApplyCloudReset } from './services/api';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -144,8 +145,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <PwaProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </PwaProvider>
   );
 }

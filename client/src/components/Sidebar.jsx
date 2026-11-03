@@ -1,7 +1,9 @@
 import React from 'react';
 import { useAuth, ROLE_PERMISSIONS } from '../context/AuthContext';
+import { usePwa } from '../context/PwaContext';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../services/organizationService';
 import {
+  Download,
   KeyRound,
   LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert,
@@ -245,6 +247,27 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           );
         })}
       </nav>
+
+      {/* Chrome App Banner */}
+      {!isInstalled && (
+        <div className="px-3 pb-2">
+          <button
+            onClick={installApp}
+            className="w-full flex items-center justify-between p-2 rounded-xl bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/30 text-emerald-300 hover:border-emerald-400/60 transition-all text-xs font-bold cursor-pointer shadow-sm group"
+            title="ಕ್ರೋಮ್ ಡೆಸ್ಕ್‌ಟಾಪ್ ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ"
+          >
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+                <Download className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-[11px]">ಕ್ರೋಮ್ ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್</span>
+            </div>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
+              App
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Footer / User Profile & Logout */}
       <div className="p-3 border-t border-slate-800 bg-slate-900/40">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { usePwa } from '../../context/PwaContext';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import {
   LogIn, Lock, User, Eye, EyeOff, ShieldCheck, AlertTriangle
@@ -8,6 +9,7 @@ import {
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { installApp, isInstalled } = usePwa();
   const companyLogo = useCompanyLogo();
 
   const [identifier, setIdentifier] = useState('');
@@ -166,6 +168,20 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
+
+            {/* Install Chrome App Button on Login */}
+            {!isInstalled && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={installApp}
+                  className="w-full py-2.5 px-3 bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>ಡೆಸ್ಕ್‌ಟಾಪ್ ಕ್ರೋಮ್ ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ (Install App)</span>
+                </button>
+              </div>
+            )}
           </form>
         </div>
 
