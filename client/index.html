@@ -24,16 +24,77 @@
     <link href="https://fonts.googleapis.com/css2?family=Anek+Kannada:wght@100..800&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Kannada:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body class="bg-slate-900 text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <div id="root">
+      <div id="pwa-loader" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background-color:#020617;color:#e2e8f0;font-family:sans-serif;flex-direction:column;gap:14px;padding:20px;text-align:center;">
+        <div style="width:44px;height:44px;border:3px solid #059669;border-top-color:transparent;border-radius:50%;animation:pwa-spin 1s linear infinite;"></div>
+        <p style="font-size:14px;color:#94a3b8;font-weight:600;">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ</p>
+        <p style="font-size:12px;color:#64748b;">Statutory ERP ವ್ಯವಸ್ಥೆ ಲೋಡ್ ಆಗುತ್ತಿದೆ...</p>
+        <button id="pwa-force-reload" onclick="forceAppRefresh()" style="display:none;margin-top:10px;padding:8px 18px;background:#059669;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;">
+          ಕ್ಯಾಶ್ ಕ್ಲಿಯರ್ & ಪುನಃ ಲೋಡ್ (Clear Cache & Reload)
+        </button>
+      </div>
+      <style>
+        @keyframes pwa-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      </style>
+    </div>
+
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').catch((err) => {
-            console.warn('[SW] Service worker registration failed:', err);
+      // Global emergency cache clearer function
+      window.forceAppRefresh = function() {
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            return Promise.all(names.map(function(n) { return caches.delete(n); }));
+          }).then(function() {
+            if ('serviceWorker' in navigator) {
+              return navigator.serviceWorker.getRegistrations().then(function(regs) {
+                return Promise.all(regs.map(function(r) { return r.unregister(); }));
+              });
+            }
+          }).finally(function() {
+            window.location.reload(true);
+          });
+        } else {
+          window.location.reload(true);
+        }
+      };
+
+      // Show reload button if React bundle takes more than 4 seconds
+      setTimeout(function() {
+        var btn = document.getElementById('pwa-force-reload');
+        if (btn) btn.style.display = 'inline-block';
+      }, 4000);
+
+      // Clean old caches on startup to prevent blank pages from stale bundles
+      if ('caches' in window) {
+        caches.keys().then(function(keys) {
+          keys.forEach(function(key) {
+            if (key.indexOf('bsskn-erp-v1') !== -1) {
+              caches.delete(key);
+            }
           });
         });
       }
+
+      // Register non-blocking service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('./sw.js').then(function(reg) {
+            reg.update();
+          }).catch(function(err) {
+            console.warn('[SW] Registration failed:', err);
+          });
+        });
+
+        var swRefreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          if (!swRefreshing) {
+            swRefreshing = true;
+            window.location.reload();
+          }
+        });
+      }
     </script>
+
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
