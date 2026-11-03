@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import { getCompanyLogo } from '../../services/organizationService';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';

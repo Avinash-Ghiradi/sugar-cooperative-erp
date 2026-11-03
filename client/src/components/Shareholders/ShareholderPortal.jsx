@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import React, { useState, useEffect } from 'react';
 import { ApiService, getShareholderSharesCount, isShareholderInactive } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';

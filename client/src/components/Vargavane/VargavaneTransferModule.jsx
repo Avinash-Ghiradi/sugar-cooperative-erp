@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '../../services/api';

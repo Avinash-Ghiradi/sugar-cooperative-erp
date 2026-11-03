@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../../services/api';
 import { History, Search, ShieldCheck, RefreshCw, Filter, GitMerge, FileText, ArrowRightLeft, UserCheck } from 'lucide-react';

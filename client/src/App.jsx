@@ -27,6 +27,7 @@ import LoginPage from './components/Auth/LoginPage';
 import ShareholderPortal from './components/Shareholders/ShareholderPortal';
 import ChangePasswordModal from './components/Auth/ChangePasswordModal';
 import ErrorBoundary from './components/Common/ErrorBoundary';
+import TopProgressBar, { triggerLoadingStart, triggerLoadingEnd } from './components/Common/TopProgressBar';
 import { ShieldCheck, LogIn, Lock, CheckCircle2 } from 'lucide-react';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from './services/organizationService';
 
@@ -61,8 +62,25 @@ function AppContent() {
     };
   }, []);
 
+  // Top progress bar indicator on module navigation
+  useEffect(() => {
+    triggerLoadingStart();
+    const timer = setTimeout(() => {
+      triggerLoadingEnd();
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      triggerLoadingEnd();
+    };
+  }, [activeModule]);
+
   if (!user) {
-    return <LoginPage />;
+    return (
+      <>
+        <TopProgressBar />
+        <LoginPage />
+      </>
+    );
   }
 
   // Force mandatory password change if user logged in with default password (Shares123)
@@ -121,6 +139,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex print:bg-white print:text-black print:min-h-0 print:p-0 print:m-0">
+      <TopProgressBar />
       {/* Toast Notification Floating Banner */}
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50 bg-emerald-950 border border-emerald-500 text-emerald-200 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce no-print">

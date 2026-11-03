@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ApiService, isShareholderInactive, getShareholderSharesCount } from '../../services/api';
 import { CloudDbService } from '../../services/cloudDb';

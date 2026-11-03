@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import React, { useState, useEffect, useMemo } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -434,7 +435,17 @@ export default function PasswordManager() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                  {filteredEmployees.length === 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan="6" className="py-12">
+                        <LoadingAnimation
+                          variant="card"
+                          message="ಸಿಬ್ಬಂದಿ ಪಾಸ್‌ವರ್ಡ್ ಮಾಹಿತಿಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+                          subMessage="Loading Staff Credentials & RBAC Access..."
+                        />
+                      </td>
+                    </tr>
+                  ) : filteredEmployees.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="py-8 text-center text-slate-500">
                         ಯಾವುದೇ ಸಿಬ್ಬಂದಿ ಖಾತೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ.
@@ -649,7 +660,25 @@ export default function PasswordManager() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                    {filteredShareholders.map((sh) => {
+                    {loading ? (
+                      <tr>
+                        <td colSpan="7" className="py-12">
+                          <LoadingAnimation
+                            variant="card"
+                            size="lg"
+                            message="ಶೇರುದಾರರ ಪಾಸ್‌ವರ್ಡ್ ಮಾಹಿತಿಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+                            subMessage="Searching Shareholder Authentication & Passwords..."
+                          />
+                        </td>
+                      </tr>
+                    ) : filteredShareholders.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="py-10 text-center text-slate-500">
+                          ಯಾವುದೇ ಶೇರುದಾರರ ಪಾಸ್‌ವರ್ಡ್ ಖಾತೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredShareholders.map((sh) => {
                       const key = `sh-${sh.share_no}`;
                       const isVisible = !!visiblePasswords[key];
                       const isCopied = copiedKey === key;
@@ -759,7 +788,7 @@ export default function PasswordManager() {
                           </td>
                         </tr>
                       );
-                    })}
+                    }))}
                   </tbody>
                 </table>
               </div>

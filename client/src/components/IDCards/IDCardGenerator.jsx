@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService, isShareholderInactive } from '../../services/api';
 import OfficialShareholderIDCard, {
