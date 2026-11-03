@@ -1,6 +1,6 @@
 import LoadingAnimation from '../Common/LoadingAnimation';
 import TableScrollerContainer from '../Common/TableScrollerContainer';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import * as XLSX from 'xlsx';
@@ -11,7 +11,8 @@ import VarasaDocxExportModal from './VarasaDocxExportModal';
 import {
   FileSpreadsheet, Search, Plus, CheckCircle2, Clock, X, Lock, Save,
   Download, Upload, Filter, Printer, Trash2, Edit3, User, MapPin,
-  Phone, CreditCard, ShieldCheck, Check, AlertCircle, RefreshCw, Eye, FileText
+  Phone, CreditCard, ShieldCheck, Check, AlertCircle, RefreshCw, Eye, FileText,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 
 const isTransferApproved = (t) => {
@@ -81,23 +82,84 @@ export default function VarasaTransferModule() {
   };
 
 
+  // Load all transfers once on mount
   useEffect(() => {
     loadTransfers();
-  }, [search, statusFilter, talukFilter]);
+  }, []);
 
-  const loadTransfers = async () => {
-    setLoading(true);
-    const res = await ApiService.getVarasaTransfers({
-      search,
-      status: statusFilter,
-      taluk: talukFilter
-    });
-    if (res && res.data) {
-      setTransfers(res.data);
+  const loadTransfers = async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const res = await ApiService.getVarasaTransfers();
+      if (res && res.data) {
+        setTransfers(res.data);
+      }
+    } catch (e) {
+      console.warn('loadTransfers error:', e);
+    } finally {
+      if (!silent) setLoading(false);
     }
-    setLoading(false);
   };
 
+  // Instant in-memory filtering (0ms latency, zero lag on keystroke)
+  const filteredTransfers = useMemo(() => {
+    let list = transfers;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase().normalize('NFC');
+      list = list.filter(v => {
+        const vMember = (v.varasa_member || v.heir_name || '').toLowerCase().normalize('NFC');
+        const shName = (v.shareholder_name || v.existing_shareholder_name || '').toLowerCase().normalize('NFC');
+        const shNo = String(v.share_no || v.existing_share_number || '').toLowerCase();
+        const mob = String(v.heir_mobile || '').toLowerCase();
+        const aadh = String(v.heir_aadhaar || '').toLowerCase();
+        const rNo = String(v.receipt_no || '').toLowerCase();
+        const hPlace = (v.heir_place || '').toLowerCase().normalize('NFC');
+        const sPlace = (v.shareholder_place || '').toLowerCase().normalize('NFC');
+        const tId = (v.transfer_id || '').toLowerCase();
+
+        return vMember.includes(q) || shName.includes(q) || shNo.includes(q) ||
+          mob.includes(q) || aadh.includes(q) || rNo.includes(q) ||
+          hPlace.includes(q) || sPlace.includes(q) || tId.includes(q);
+      });
+    }
+    if (statusFilter) {
+      if (statusFilter === 'Approved') {
+        list = list.filter(v => ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status));
+      } else if (statusFilter === 'Completed') {
+        list = list.filter(v => ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status));
+      } else if (statusFilter === 'Application Received & Sent for Sign') {
+        list = list.filter(v => ['Application Received & Sent for Sign', 'ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ'].includes(v.approval_status));
+      } else {
+        list = list.filter(v => v.approval_status === statusFilter);
+      }
+    }
+    if (talukFilter) {
+      const tq = talukFilter.trim().toLowerCase().normalize('NFC');
+      list = list.filter(v => 
+        (v.heir_taluk && v.heir_taluk.toLowerCase().normalize('NFC').includes(tq)) ||
+        (v.shareholder_taluk && v.shareholder_taluk.toLowerCase().normalize('NFC').includes(tq))
+      );
+    }
+    return list;
+  }, [transfers, search, statusFilter, talukFilter]);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50); // 25, 50, 100, or 'all'
+
+  // Reset page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, talukFilter]);
+
+  const totalPages = pageSize === 'all' ? 1 : Math.ceil(filteredTransfers.length / pageSize) || 1;
+  const paginatedTransfers = useMemo(() => {
+    if (pageSize === 'all') return filteredTransfers;
+    const start = (currentPage - 1) * pageSize;
+    return filteredTransfers.slice(start, start + pageSize);
+  }, [filteredTransfers, currentPage, pageSize]);
+
+  // Instant optimistic status update (0ms latency, persists to cloud in background)
   const handleStatusUpdate = async (transferId, newStatus) => {
     if (newStatus === 'Completed') {
       if (user?.role !== 'Admin') {
@@ -108,10 +170,27 @@ export default function VarasaTransferModule() {
       setAdminApproveModal({ open: true, transfer: item, remarks: '' });
       return;
     }
-    const res = await ApiService.updateVarasaStatus(transferId, newStatus);
-    if (res && res.success) {
-      showToast(`Application updated to: ${newStatus}`);
-      loadTransfers();
+
+    // 1. Optimistic UI update instantly
+    setTransfers(prev => prev.map(t => {
+      if (String(t.transfer_id) === String(transferId) || String(t.id) === String(transferId)) {
+        return { ...t, approval_status: newStatus, updated_at: new Date().toISOString() };
+      }
+      return t;
+    }));
+
+    // 2. Persist in background
+    try {
+      const res = await ApiService.updateVarasaStatus(transferId, newStatus);
+      if (res && res.success) {
+        showToast(`ಅರ್ಜಿ ಸ್ಥಿತಿ ನವೀಕರಿಸಲಾಗಿದೆ: ${newStatus}`);
+      } else {
+        showToast(res?.message || 'ಸ್ಥಿತಿ ನವೀಕರಣ ವಿಫಲವಾಗಿದೆ', 'error');
+        loadTransfers(true);
+      }
+    } catch (err) {
+      showToast('ದೋಷ: ' + err.message, 'error');
+      loadTransfers(true);
     }
   };
 
@@ -595,7 +674,7 @@ export default function VarasaTransferModule() {
             <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" />
             <span>Loading Varasa legal-heir records...</span>
           </div>
-        ) : transfers.length === 0 ? (
+        ) : filteredTransfers.length === 0 ? (
           <div className="p-16 text-center space-y-3">
             <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 mx-auto flex items-center justify-center text-slate-500">
               <FileSpreadsheet className="w-6 h-6" />
@@ -616,6 +695,7 @@ export default function VarasaTransferModule() {
             </button>
           </div>
         ) : (
+          <>
           <TableScrollerContainer label="22 ಕಾಲಂಗಳ ವಾರಸುದಾರರ ಶೇರು ವರ್ಗಾವಣೆ ವಹಿ (Scroll Varasa):">
             <table className="w-full text-left text-xs whitespace-nowrap">
               <thead className="bg-emerald-800 border-b-2 border-emerald-400 text-white uppercase font-bold text-[10.5px] tracking-wider">
@@ -623,7 +703,7 @@ export default function VarasaTransferModule() {
                   <th className="py-3 px-3 text-center border-r border-emerald-700/40 w-10">
                     <input
                       type="checkbox"
-                      checked={transfers.length > 0 && transfers.every(t => selectedIds.has(t.id || t.transfer_id))}
+                      checked={paginatedTransfers.length > 0 && paginatedTransfers.every(t => selectedIds.has(t.id || t.transfer_id))}
                       onChange={toggleSelectAllCurrent}
                       className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                       title="ಪ್ರಸ್ತುತ ಎಲ್ಲಾ ವಾರಸುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ"
@@ -644,7 +724,7 @@ export default function VarasaTransferModule() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                {transfers.map((v, idx) => {
+                {paginatedTransfers.map((v, idx) => {
                   const rowId = v.id || v.transfer_id;
                   const isSelected = selectedIds.has(rowId);
                   return (
@@ -757,17 +837,23 @@ export default function VarasaTransferModule() {
                     {/* Status Workflow */}
                     <td className="py-3 px-3 text-center">
                       <select
-                        value={['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Approved' : ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status) ? 'Completed' : ['Application Received & Sent for Sign', 'ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Application Received & Sent for Sign' : v.approval_status || 'Application Received'}
+                        value={
+                          ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Approved' :
+                          ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status) ? 'Completed' :
+                          ['Application Received & Sent for Sign', 'ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Application Received & Sent for Sign' :
+                          v.approval_status === 'Under Verification' ? 'Under Verification' :
+                          v.approval_status || 'Application Received'
+                        }
                         onChange={(e) => handleStatusUpdate(v.transfer_id || v.id, e.target.value)}
                         title="ಸ್ಥಿತಿ ಬದಲಾಯಿಸಿ (Change Status)"
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full outline-none border cursor-pointer transition-colors shadow-sm ${
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full outline-none border cursor-pointer transition-all shadow-sm ${
                           ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)
                             ? 'bg-emerald-950/90 text-emerald-300 border-emerald-600 hover:border-emerald-400'
                             : ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status)
                             ? 'bg-emerald-950 text-emerald-300 border-emerald-700 hover:border-emerald-500'
                             : v.approval_status === 'Under Verification'
-                            ? 'bg-amber-950 text-amber-300 border-amber-800 hover:border-amber-500'
-                            : v.approval_status === 'Application Received & Sent for Sign'
+                            ? 'bg-amber-950/90 text-amber-300 border-amber-600 hover:border-amber-400'
+                            : ['Application Received & Sent for Sign', 'ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ'].includes(v.approval_status)
                             ? 'bg-cyan-950/90 text-cyan-300 border-cyan-600 hover:border-cyan-400'
                             : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500'
                         }`}
@@ -843,6 +929,81 @@ export default function VarasaTransferModule() {
               </tbody>
             </table>
           </TableScrollerContainer>
+
+          {/* Smooth 60fps Pagination Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-slate-950/80 border border-slate-800/80 rounded-2xl mt-3 text-xs">
+            <div className="flex items-center gap-3 text-slate-400">
+              <span>
+                ಒಟ್ಟು <strong className="text-emerald-400">{filteredTransfers.length}</strong> ವಾರಸು ದಾಖಲೆಗಳು
+                {pageSize !== 'all' && (
+                  <> (ಪುಟ <strong className="text-white">{currentPage}</strong> / {totalPages})</>
+                )}
+              </span>
+              <div className="flex items-center gap-1.5 ml-2">
+                <span className="text-[11px] text-slate-500">ಪ್ರತಿ ಪುಟಕ್ಕೆ:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-slate-200 outline-none text-[11px] cursor-pointer"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value="all">ಎಲ್ಲವೂ (All)</option>
+                </select>
+              </div>
+            </div>
+
+            {pageSize !== 'all' && totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300"
+                  title="ಮೊದಲ ಪುಟ (First Page)"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 flex items-center gap-1 font-medium"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>ಹಿಂದಿನ (Prev)</span>
+                </button>
+
+                <div className="px-3 py-1 font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 rounded-lg">
+                  {currentPage} / {totalPages}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 flex items-center gap-1 font-medium"
+                >
+                  <span>ಮುಂದಿನ (Next)</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300"
+                  title="ಕೊನೆಯ ಪುಟ (Last Page)"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+          </>
         )}
       </div>
 
@@ -1083,7 +1244,7 @@ export default function VarasaTransferModule() {
       <VarasaDocxExportModal
         isOpen={docxModalOpen}
         onClose={() => setDocxModalOpen(false)}
-        allFilteredRecords={transfers}
+        allFilteredRecords={filteredTransfers}
         selectedIds={selectedIds}
         initialScope={docxScope}
         filterSummary={{

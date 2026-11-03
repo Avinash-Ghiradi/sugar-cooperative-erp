@@ -1612,9 +1612,7 @@ function deduplicateVarasaList(list) {
           : (item.transfer_id || existing.transfer_id),
         heir_photo: existing.heir_photo || item.heir_photo || '',
         shareholder_photo: existing.shareholder_photo || item.shareholder_photo || '',
-        approval_status: ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(existing.approval_status)
-          ? existing.approval_status
-          : (item.approval_status || existing.approval_status)
+        approval_status: item.approval_status || existing.approval_status || 'Application Received'
       };
       map.set(existingKey, merged);
     } else {
@@ -3566,18 +3564,20 @@ const newSh = {
     const apiRes = await fetchApi(`/varasa/${transfer_id}/status`, { method: 'PUT', body: JSON.stringify({ approval_status }) });
     if (apiRes && apiRes.success) return apiRes;
 
-    const item = mockVarasaTransfers.find(v => v.transfer_id === transfer_id || String(v.id) === String(transfer_id));
+    const item = mockVarasaTransfers.find(v => String(v.transfer_id) === String(transfer_id) || String(v.id) === String(transfer_id));
     if (item) {
       item.approval_status = approval_status;
+      item.updated_at = new Date().toISOString();
       saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
       if (CloudDbService.isEnabled()) {
         const cloudKey = item.transfer_id || String(item.id);
-        CloudDbService.saveCollectionItem('varasa', cloudKey, item).catch(() => {});
+        await CloudDbService.saveCollectionItem('varasa', cloudKey, item).catch(() => {});
       }
       if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
+      return { success: true, item };
     }
     return { success: true };
   },
@@ -3691,9 +3691,14 @@ const newSh = {
           });
           mockVargavaneTransfers.forEach(item => {
             const key = String(item.transfer_id || item.id || '').trim();
-            if (key && !map.has(key)) {
-              map.set(key, item);
-              CloudDbService.saveCollectionItem('vargavane', key, item).catch(() => {});
+            if (key) {
+              if (map.has(key)) {
+                const cloudItem = map.get(key);
+                map.set(key, { ...cloudItem, ...item });
+              } else {
+                map.set(key, item);
+                CloudDbService.saveCollectionItem('vargavane', key, item).catch(() => {});
+              }
             }
           });
           mockVargavaneTransfers = Array.from(map.values());
@@ -3841,19 +3846,20 @@ const newSh = {
 
   async updateVargavaneStatus(transfer_id, approval_status) {
     await ensureDBReady();
-    const item = mockVargavaneTransfers.find(v => v.transfer_id === transfer_id || String(v.id) === String(transfer_id));
+    const item = mockVargavaneTransfers.find(v => String(v.transfer_id) === String(transfer_id) || String(v.id) === String(transfer_id));
     if (item) {
       item.approval_status = approval_status;
+      item.updated_at = new Date().toISOString();
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
       if (CloudDbService.isEnabled()) {
         const cloudKey = item.transfer_id || String(item.id);
-        CloudDbService.saveCollectionItem('vargavane', cloudKey, item).catch(() => {});
+        await CloudDbService.saveCollectionItem('vargavane', cloudKey, item).catch(() => {});
       }
       if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
-      return { success: true };
+      return { success: true, item };
     }
     return { success: false };
   },
