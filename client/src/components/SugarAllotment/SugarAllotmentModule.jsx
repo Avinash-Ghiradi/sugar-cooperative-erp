@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ApiService, isShareholderInactive, getShareholderSharesCount } from '../../services/api';
+import { CloudDbService } from '../../services/cloudDb';
 import { getCompanyLogo, getHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
 import officialCircleData from '../../services/officialCircleData.json';
@@ -8,7 +9,7 @@ import ErrorBoundary from '../Common/ErrorBoundary';
 import {
   PackageCheck, Search, Printer, X, Save, Settings, ChevronDown, ChevronUp,
   MapPin, Sparkles, Filter, Check, ShieldCheck, History, Edit, FileText,
-  CheckCircle2, AlertTriangle, Eye, RotateCcw, XCircle
+  CheckCircle2, AlertTriangle, Eye, RotateCcw, XCircle, RefreshCw
 } from 'lucide-react';
 
 const MEMBER_TYPE_OPTIONS = [
@@ -214,11 +215,27 @@ export default function SugarAllotmentModule() {
     loadInitialData();
   }, []);
 
-  const loadInitialData = async () => {
+  const loadInitialData = async (forceRefresh = false) => {
     setLoading(true);
     try {
-      const rawSh = await ApiService.getAllShareholdersRaw();
-      const list = Array.isArray(rawSh) ? rawSh : [];
+      if (forceRefresh) {
+        await ApiService.restoreOfficialData().catch(() => {});
+      }
+      let rawSh = await ApiService.getAllShareholdersRaw();
+      let list = Array.isArray(rawSh) ? rawSh : [];
+
+      // If local list is still empty, emergency fetch directly from Cloud DB
+      if (list.length === 0 && CloudDbService.isEnabled()) {
+        try {
+          const cloudRes = await CloudDbService.getShareholders({ page: 1, limit: 324 });
+          if (cloudRes && cloudRes.success && Array.isArray(cloudRes.data) && cloudRes.data.length > 0) {
+            list = cloudRes.data;
+          }
+        } catch (e) {
+          console.warn('Fallback cloud fetch for sugar allotment failed:', e);
+        }
+      }
+
       setAllShareholders(list);
       setFilteredShareholders(list.slice(0, 324)); // Default initial display
 
@@ -236,6 +253,9 @@ export default function SugarAllotmentModule() {
       });
       const sortedPlaces = Array.from(pSet).sort((a, b) => a.localeCompare(b, 'kn'));
       setAllPlaces(sortedPlaces);
+      if (forceRefresh && list.length > 0) {
+        showToast(`ಯಶಸ್ವಿಯಾಗಿ ${list.length.toLocaleString()} ಶೇರುದಾರರ ಡೇಟಾ ಲೋಡ್ ಆಗಿದೆ!`, 'success');
+      }
     } catch (err) {
       console.error('Failed to load sugar allotment data:', err);
       showToast('Error loading data: ' + err.message, 'error');
@@ -1760,6 +1780,17 @@ export default function SugarAllotmentModule() {
           >
             ಕ್ಲಿಯರ್
           </button>
+
+          {/* Reload / Sync Data Button */}
+          <button
+            type="button"
+            onClick={() => loadInitialData(true)}
+            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+            title="ಶೇರುದಾರರ ಸಂಪೂರ್ಣ ಡೇಟಾ ಮರುಲೋಡ್ ಮಾಡಿ"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+            <span>ಮರುಲೋಡ್</span>
+          </button>
         </div>
       </div>
 
@@ -1784,18 +1815,33 @@ export default function SugarAllotmentModule() {
         </div>
 
         {loading ? (
-          <div className="p-16 text-center text-slate-400 font-medium">
-            ಶೇರುದಾರರ ಮಾಹಿತಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ...
+          <div className="p-16 text-center text-slate-400 font-medium flex flex-col items-center gap-3">
+            <RefreshCw className="w-6 h-6 text-cyan-400 animate-spin" />
+            <span>ಶೇರುದಾರರ ಮಾಹಿತಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ...</span>
           </div>
         ) : processedShareholders.length === 0 ? (
-          <div className="p-16 text-center text-slate-400 font-medium space-y-2">
-            <p>ಆಯ್ಕೆಮಾಡಿದ ಫಿಲ್ಟರ್‌ಗೆ ಯಾವುದೇ ಶೇರುದಾರರು ಕಂಡುಬಂದಿಲ್ಲ.</p>
-            <button
-              onClick={handleClearFilters}
-              className="px-4 py-1.5 bg-[#1d70b8] text-white rounded-lg text-xs font-bold cursor-pointer"
-            >
-              ಫಿಲ್ಟರ್ ತೆರವುಗೊಳಿಸಿ
-            </button>
+          <div className="p-16 text-center text-slate-400 font-medium space-y-3">
+            {allShareholders.length === 0 ? (
+              <>
+                <p className="text-amber-400 font-bold">ಶೇರುದಾರರ ಮಾಹಿತಿ ಲೋಡ್ ಆಗಿಲ್ಲ ಅಥವಾ ನೆಟ್‌ವರ್ಕ್ ನಿಧಾನವಾಗಿದೆ.</p>
+                <button
+                  onClick={() => loadInitialData(true)}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 mx-auto cursor-pointer shadow-lg transition-all"
+                >
+                  <RotateCcw className="w-4 h-4" /> ಶೇರುದಾರರ ಡೇಟಾ ಮರುಲೋಡ್ ಮಾಡಿ (Reload Data)
+                </button>
+              </>
+            ) : (
+              <>
+                <p>ಆಯ್ಕೆಮಾಡಿದ ಫಿಲ್ಟರ್‌ಗೆ ಯಾವುದೇ ಶೇರುದಾರರು ಕಂಡುಬಂದಿಲ್ಲ.</p>
+                <button
+                  onClick={handleClearFilters}
+                  className="px-4 py-1.5 bg-[#1d70b8] hover:bg-blue-600 text-white rounded-lg text-xs font-bold cursor-pointer"
+                >
+                  ಫಿಲ್ಟರ್ ತೆರವುಗೊಳಿಸಿ
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto max-h-[70vh]">

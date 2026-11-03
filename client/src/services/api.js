@@ -597,22 +597,35 @@ let dbInitPromise = null;
 
 async function fetchOfficialShareholdersFallback() {
   try {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+    const cleanDir = pathname.substring(0, pathname.lastIndexOf('/') + 1);
     const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) ? import.meta.env.BASE_URL : './';
     const cleanBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-    let res = null;
-    try {
-      res = await fetch(`${cleanBase}officialShareholdersData.json`);
-    } catch (e1) {}
-    if (!res || !res.ok) {
+
+    const urlsToTry = [
+      `${cleanBase}officialShareholdersData.json`,
+      './officialShareholdersData.json',
+      'officialShareholdersData.json',
+      origin ? `${origin}${cleanDir}officialShareholdersData.json` : '',
+      '/sugar-cooperative-erp/officialShareholdersData.json',
+      origin ? `${origin}/sugar-cooperative-erp/officialShareholdersData.json` : '',
+      'https://avinash-ghiradi.github.io/sugar-cooperative-erp/officialShareholdersData.json'
+    ].filter(Boolean);
+
+    const uniqueUrls = Array.from(new Set(urlsToTry));
+
+    for (const url of uniqueUrls) {
       try {
-        res = await fetch('./officialShareholdersData.json');
-      } catch (e2) {}
-    }
-    if (res && res.ok) {
-      const officialData = await res.json();
-      if (Array.isArray(officialData) && officialData.length > 0) {
-        return officialData;
-      }
+        const res = await fetch(url);
+        if (res && res.ok) {
+          const officialData = await res.json();
+          if (Array.isArray(officialData) && officialData.length > 0) {
+            console.log(`[SugarERP] Successfully loaded official dataset (${officialData.length} records) from: ${url}`);
+            return officialData;
+          }
+        }
+      } catch (e) {}
     }
   } catch (err) {
     console.warn('Auto-seed fetch failed:', err);
@@ -1211,9 +1224,17 @@ export function ensureDBReady() {
           let records = (dbData && Array.isArray(dbData)) ? dbData : [];
           const isBlankReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true');
 
-          // If IndexedDB has no records, fetch from Cloud DB or official dataset once UNLESS user intentionally erased/reset
+          // If IndexedDB has no records, fetch official dataset (<1s static CDN) FIRST, with Cloud DB as backup
           if (records.length < 17000 && !isBlankReset) {
-            if (CloudDbService.isEnabled()) {
+            // STEP 1: Fast official static dataset first (<1 second instant load on any computer)
+            const officialData = await fetchOfficialShareholdersFallback();
+            if (officialData && officialData.length > 0) {
+              records = officialData;
+              await saveToIndexedDB(records).catch(() => {});
+            }
+
+            // STEP 2: If official static dataset failed AND Cloud DB is enabled, try Cloud DB download
+            if (records.length < 17000 && CloudDbService.isEnabled()) {
               try {
                 const cloudRecords = await CloudDbService.downloadAllFromCloud();
                 if (cloudRecords && cloudRecords.length > 0) {
@@ -1221,13 +1242,6 @@ export function ensureDBReady() {
                   await saveToIndexedDB(records).catch(() => {});
                 }
               } catch (e) {}
-            }
-            if (records.length < 17000) {
-              const officialData = await fetchOfficialShareholdersFallback();
-              if (officialData && officialData.length > 0) {
-                records = officialData;
-                await saveToIndexedDB(records).catch(() => {});
-              }
             }
           }
 
@@ -1308,18 +1322,30 @@ export function ensureDBReady() {
             const reconciledCount = reconcileApprovedTransfersIntoMaster(records);
             const reconciledMerges = reconcileApprovedMergesIntoMaster(records);
             mockShareholders = records;
+            isDBReady = true;
             if (reconciledCount > 0 || reconciledMerges > 0 || normalizedShareCount > 0) {
               await saveToIndexedDB(mockShareholders).catch(() => {});
             }
           } else {
             mockShareholders = [];
+            if (isBlankReset) {
+              isDBReady = true;
+            } else {
+              // Network error or incomplete initial load - do NOT freeze isDBReady so retries can succeed!
+              isDBReady = false;
+              dbInitPromise = null;
+            }
           }
         } catch (e) {
           console.warn('ensureDBReady indexedDB error:', e);
+          isDBReady = false;
+          dbInitPromise = null;
         }
       }
 
-      isDBReady = true;
+      if (mockShareholders && mockShareholders.length > 0) {
+        isDBReady = true;
+      }
       return mockShareholders;
     })();
   }
@@ -1871,6 +1897,30 @@ export const ApiService = {
 
   async getAllShareholdersRaw() {
     await ensureDBReady();
+    if (!mockShareholders || mockShareholders.length === 0) {
+      console.warn('[SugarERP] mockShareholders is empty in getAllShareholdersRaw, attempting emergency reload...');
+      const emergencyData = await fetchOfficialShareholdersFallback();
+      if (emergencyData && emergencyData.length > 0) {
+        mockShareholders = emergencyData;
+        saveToIndexedDB(mockShareholders).catch(() => {});
+        isDBReady = true;
+      } else if (CloudDbService.isEnabled()) {
+        try {
+          const cloudRes = await CloudDbService.getShareholders({ page: 1, limit: 324 });
+          if (cloudRes && cloudRes.success && Array.isArray(cloudRes.data) && cloudRes.data.length > 0) {
+            return cloudRes.data.map(s => {
+              const own = getShareholderOwnership(s);
+              return {
+                ...s,
+                ownership: own,
+                relationship: own,
+                member_type: getMemberTypeByCategory(s.schedule_cast, s.member_type)
+              };
+            });
+          }
+        } catch (e) {}
+      }
+    }
     return (mockShareholders || []).map(s => {
       const own = getShareholderOwnership(s);
       return {
