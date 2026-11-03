@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePwa } from '../../context/PwaContext';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import {
-  LogIn, Lock, User, Eye, EyeOff, ShieldCheck, AlertTriangle
+  LogIn, Lock, User, Eye, EyeOff, ShieldCheck, AlertTriangle, Download
 } from 'lucide-react';
 
 export default function LoginPage() {
