@@ -46,6 +46,7 @@ const REPORT_SUB_ITEMS = [
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const { user, activeModule, setActiveModule, activeReportSubTab, setActiveReportSubTab, hasPermission, logout } = useAuth();
+  const { installApp, isInstalled } = usePwa();
   const [reportsExpanded, setReportsExpanded] = React.useState(true);
   const [shareholdersExpanded, setShareholdersExpanded] = React.useState(true);
   const companyLogo = useCompanyLogo();
