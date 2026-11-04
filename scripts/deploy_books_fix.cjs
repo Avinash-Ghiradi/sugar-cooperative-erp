@@ -15,7 +15,7 @@ try {
   // 1. Commit and push main branch
   run('git add -A');
   try {
-    run('git commit -m "fix: correct Total Books (Ledgers) count to 78 across Dashboard, Shareholder List, and Cloud DB"');
+    run('git commit -m "fix: register all 98 statutory ledger books across Dashboard, Shareholder List, and Cloud DB"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -42,7 +42,7 @@ try {
   // 5. Commit and push to gh-pages
   run('git add -A');
   const timestamp = Date.now();
-  run(`git commit -m "Deploy Total Books (Ledgers) fix to 78 (${timestamp})"`);
+  run(`git commit -m "Deploy all 98 statutory ledger books (${timestamp})"`);
   run('git push origin gh-pages');
 
   // 6. Return to main

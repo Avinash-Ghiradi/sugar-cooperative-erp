@@ -117,7 +117,7 @@ export default function Dashboard() {
     // Row 3: Geography, Circles & Books
     { title: 'Total Villages / Places', value: stats.totalVillages.toLocaleString(), icon: Building2, color: 'blue', link: 'villages' },
     { title: 'Total Circles', value: stats.totalCircles.toLocaleString(), icon: MapPin, color: 'indigo', link: 'circles' },
-    { title: 'Total Books (Ledgers)', value: (stats.totalBooks || 78).toLocaleString(), icon: BookOpen, color: 'sky', link: 'shareholders' },
+    { title: 'Total Books (Ledgers)', value: (stats.totalBooks || 98).toLocaleString(), icon: BookOpen, color: 'sky', link: 'shareholders' },
     { title: 'Enrollment Capital', value: `₹ ${(stats.totalEnrollmentAmount || 0).toLocaleString()}`, icon: Coins, color: 'emerald', link: 'enrollment' },
   ];
 

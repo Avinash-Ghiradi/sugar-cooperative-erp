@@ -931,7 +931,7 @@ export const CloudDbService = {
           totalShares: totalShareholders,
           totalVillages: totalShareholders > 0 ? 357 : 0,
           totalCircles: totalShareholders > 0 ? 9 : 0,
-          totalBooks: totalShareholders > 0 ? 78 : 0,
+          totalBooks: totalShareholders > 0 ? 98 : 0,
           totalCategories: totalShareholders > 0 ? 4 : 0,
           topCategory: totalShareholders > 0 ? 'ಅ - ವರ್ಗ' : '—',
           pendingVarasa,
