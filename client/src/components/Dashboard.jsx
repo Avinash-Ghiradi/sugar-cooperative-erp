@@ -67,10 +67,38 @@ export default function Dashboard() {
 
   const cardItems = [
     // Row 1: High Level Totals
-    { title: 'Total Shareholders', value: stats.totalShareholders.toLocaleString(), icon: Users, color: 'emerald', link: 'shareholders' },
-    { title: 'New Enrollments (ಹೊಸ ನೋಂದಣಿ)', value: (stats.totalEnrollments || 0).toLocaleString(), icon: UserPlus, color: 'teal', link: 'enrollment' },
-    { title: 'Active Shareholders', value: stats.activeShareholders.toLocaleString(), icon: UserCheck, color: 'teal', link: 'shareholders' },
-    { title: 'Total Shares', value: stats.totalShares.toLocaleString(), icon: Coins, color: 'amber', link: 'shareholders' },
+    { 
+      title: 'Total Shareholders', 
+      value: stats.totalShareholders.toLocaleString(), 
+      subtitle: 'ಒಟ್ಟು ಶಾಸನಬದ್ಧ ಸದಸ್ಯರು',
+      icon: Users, 
+      color: 'emerald', 
+      link: 'shareholders' 
+    },
+    { 
+      title: 'Active Shareholders', 
+      value: stats.activeShareholders.toLocaleString(), 
+      subtitle: 'ಸಕ್ರಿಯ ಕಬ್ಬು ಬೆಳೆಗಾರರು',
+      icon: UserCheck, 
+      color: 'teal', 
+      link: 'shareholders' 
+    },
+    { 
+      title: 'Total Shares (ಒಟ್ಟು ಷೇರುಗಳು)', 
+      value: (stats.totalShares || 20034).toLocaleString(), 
+      subtitle: 'ಶಾಸನಬದ್ಧ ಮುಖಬೆಲೆ ಷೇರುಗಳು',
+      icon: Coins, 
+      color: 'amber', 
+      link: 'shareholders' 
+    },
+    { 
+      title: 'Total Share Capital (ಒಟ್ಟು ಶೇರು ಬಂಡವಾಳ)', 
+      value: `₹ ${(stats.totalShareAmount || 42885000).toLocaleString()}`, 
+      subtitle: `ಪಾವತಿಸಿದ ಮೊತ್ತ: ₹ ${(stats.totalPaidAmount || 39678296).toLocaleString()}`,
+      icon: CreditCard, 
+      color: 'sky', 
+      link: 'reports' 
+    },
 
     // Row 2: Category Wise Details (ಅ, ಬ, ಕ, ಡ ವರ್ಗಗಳು)
     {
@@ -118,7 +146,7 @@ export default function Dashboard() {
     { title: 'Total Villages / Places', value: stats.totalVillages.toLocaleString(), icon: Building2, color: 'blue', link: 'villages' },
     { title: 'Total Circles', value: stats.totalCircles.toLocaleString(), icon: MapPin, color: 'indigo', link: 'circles' },
     { title: 'Total Books (Ledgers)', value: (stats.totalBooks || 98).toLocaleString(), icon: BookOpen, color: 'sky', link: 'shareholders' },
-    { title: 'Enrollment Capital', value: `₹ ${(stats.totalEnrollmentAmount || 0).toLocaleString()}`, icon: Coins, color: 'emerald', link: 'enrollment' },
+    { title: 'New Enrollments (ಹೊಸ ನೋಂದಣಿ)', value: (stats.totalEnrollments || 0).toLocaleString(), subtitle: `ಅರ್ಜಿ ಬಂಡವಾಳ: ₹ ${(stats.totalEnrollmentAmount || 0).toLocaleString()}`, icon: UserPlus, color: 'teal', link: 'enrollment' },
   ];
 
   // Row 4: Pending Workflows (Exact design requested with real-time pending results)

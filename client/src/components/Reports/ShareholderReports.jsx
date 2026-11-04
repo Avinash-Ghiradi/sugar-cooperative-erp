@@ -395,8 +395,8 @@ export default function ShareholderReports() {
       const place = (s.place || s.village_name || 'ಗೊತ್ತಿಲ್ಲದ ಗ್ರಾಮ').trim();
       const circle = (s.circle || s.circle_name || 'ಇತರೆ').trim();
       const taluk = (s.taluk || 'ಇಂಡಿ').trim();
-      const shares = parseInt(s.number_of_shares, 10) || 1;
-      const amt = parseFloat(s.total_amount) || (shares * 2000);
+      const shares = getShareholderSharesCount(s);
+      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (shares * 2000);
 
       if (!map.has(place)) {
         map.set(place, {
@@ -442,8 +442,8 @@ export default function ShareholderReports() {
     filteredShareholders.forEach(s => {
       const cat = (s.schedule_cast || 'ಇತರೆ ವರ್ಗ').trim();
       const memberType = getMemberTypeByCategory(cat, s.member_type);
-      const shares = parseInt(s.number_of_shares, 10) || 1;
-      const amt = parseFloat(s.total_amount) || (shares * 2000);
+      const shares = getShareholderSharesCount(s);
+      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (shares * 2000);
 
       if (!map.has(cat)) {
         map.set(cat, {
@@ -476,8 +476,8 @@ export default function ShareholderReports() {
     filteredShareholders.forEach(s => {
       const circle = (s.circle || s.circle_name || 'ಇತರೆ (Other)').trim();
       const place = (s.place || s.village_name || '').trim();
-      const shares = parseInt(s.number_of_shares, 10) || 1;
-      const amt = parseFloat(s.total_amount) || (shares * 2000);
+      const shares = getShareholderSharesCount(s);
+      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (shares * 2000);
 
       if (!map.has(circle)) {
         map.set(circle, {
@@ -512,6 +512,7 @@ export default function ShareholderReports() {
   // 4. SHARESWISE AGGREGATION (1, 2, 3-5, 6-10, 11+)
   const shareswiseData = useMemo(() => {
     const tiers = [
+      { key: '0', label: '0 ಶೇರುಗಳು (ಅಪೂರ್ಣ ಕಂತು)', desc: 'ಕಂತು ಅಪೂರ್ಣವಾಗಿರುವ ಸದಸ್ಯರು (0 ಷೇರು)', min: 0, max: 0 },
       { key: '1', label: '1 ಶೇರು (1 Share)', desc: '₹ 2,000 ಮುಖಬೆಲೆ - ಸಾಮಾನ್ಯ ಬೆಳೆಗಾರ ಸದಸ್ಯರು', min: 1, max: 1 },
       { key: '2', label: '2 ಶೇರುಗಳು (2 Shares)', desc: '₹ 4,000 ಮುಖಬೆಲೆ - ಮಧ್ಯಮ ಶೇರುದಾರರು', min: 2, max: 2 },
       { key: '3-5', label: '3 ರಿಂದ 5 ಶೇರುಗಳು (3-5 Shares)', desc: '₹ 6,000 - ₹ 10,000 ಮುಖಬೆಲೆ', min: 3, max: 5 },
@@ -521,14 +522,14 @@ export default function ShareholderReports() {
 
     return tiers.map(tier => {
       const matched = filteredShareholders.filter(s => {
-        const cnt = parseInt(s.number_of_shares, 10) || 1;
+        const cnt = getShareholderSharesCount(s);
         return cnt >= tier.min && cnt <= tier.max;
       });
 
       const count = matched.length;
-      const totalShares = matched.reduce((sum, s) => sum + (parseInt(s.number_of_shares, 10) || 1), 0);
+      const totalShares = matched.reduce((sum, s) => sum + getShareholderSharesCount(s), 0);
       const totalAmount = matched.reduce((sum, s) => {
-        const amt = parseFloat(s.total_amount) || (getShareholderSharesCount(s) * 2000);
+        const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000);
         return sum + amt;
       }, 0);
 
@@ -548,7 +549,7 @@ export default function ShareholderReports() {
     const map = new Map();
     filteredShareholders.forEach(s => {
       const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000);
-      const shares = parseInt(s.number_of_shares, 10) || 1;
+      const shares = getShareholderSharesCount(s);
 
       if (!map.has(amt)) {
         map.set(amt, {
@@ -824,8 +825,8 @@ export default function ShareholderReports() {
           s.taluk || '',
           s.schedule_cast || '',
           s.member_type || '',
-          parseInt(s.number_of_shares, 10) || 1,
-          parseFloat(s.total_amount) || (getShareholderSharesCount(s) * 2000),
+          getShareholderSharesCount(s),
+          parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000),
           s.ownership || s.relationship || 'ಸ್ವಂತ (Self)',
           s.date || s.reg_date || s.registration_date || '',
           s.tharava_no || '',
@@ -1892,8 +1893,8 @@ export default function ShareholderReports() {
                     <tbody className="divide-y divide-slate-800/80 print:divide-gray-300 text-slate-200 print:text-black">
                       {detailedPaginated.map((s, idx) => {
                         const rowIdx = detailedPageSize === 'all' ? idx + 1 : (detailedPage - 1) * detailedPageSize + idx + 1;
-                        const shares = parseInt(s.number_of_shares, 10) || 1;
-                        const amt = parseFloat(s.total_amount) || (shares * 2000);
+                        const shares = getShareholderSharesCount(s);
+                        const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (shares * 2000);
 
                         return (
                           <tr key={s.id || s.shareholder_id || idx} className="hover:bg-slate-900/60 transition-colors">

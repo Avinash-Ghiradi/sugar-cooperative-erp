@@ -177,29 +177,21 @@ export function getShareholderSharesCount(s) {
   if (s.is_merged_secondary || s.merged_into || s.status === 'Merged' || s.status === 'Transferred' || s.status === 'Inactive' || s.is_disabled) {
     return 0;
   }
+  if (s.number_of_shares !== undefined && s.number_of_shares !== null && !isNaN(parseInt(s.number_of_shares, 10))) {
+    return parseInt(s.number_of_shares, 10);
+  }
   const rAmt = parseFloat(s.receipt_amount) || 0;
   const aAmt = parseFloat(s.amount) || 0;
   const addAmt = parseFloat(s.additional_amount) || 0;
   const tAmt = (s.total_amount !== undefined && s.total_amount !== null && !isNaN(parseFloat(s.total_amount)) && parseFloat(s.total_amount) > 0)
     ? parseFloat(s.total_amount)
-    : (rAmt > 0 || aAmt > 0 || addAmt > 0 ? (rAmt + aAmt + addAmt) : ((parseInt(s.number_of_shares, 10) || 0) * 2000));
+    : (rAmt > 0 || aAmt > 0 || addAmt > 0 ? (rAmt + aAmt + addAmt) : 0);
 
   const isClassB = String(s.schedule_cast || '').toLowerCase().includes('ಬ') || String(s.schedule_cast || '').toLowerCase().includes('b');
   const baseRate = isClassB ? 5000 : 2000;
 
-  // Partial installment payment (< baseRate, e.g. ₹1,000 for Class A/D or < ₹5,000 for Class B) does NOT constitute a complete share:
   if (tAmt < baseRate) return 0;
-
-  // Complete shares earned from total paid amount
-  const computedFromAmt = Math.floor(tAmt / baseRate);
-
-  if (s.number_of_shares !== undefined && s.number_of_shares !== null && !isNaN(parseInt(s.number_of_shares, 10))) {
-    const raw = parseInt(s.number_of_shares, 10);
-    if (raw > 0) {
-      return Math.max(raw, computedFromAmt);
-    }
-  }
-  return computedFromAmt;
+  return Math.floor(tAmt / baseRate);
 }
 
 export function isShareholderInactive(sh) {
@@ -1855,7 +1847,7 @@ export const ApiService = {
     shList.forEach(s => {
       const rawSc = (s.schedule_cast || 'ಅ - ವರ್ಗ').trim().normalize('NFC');
       const sc = rawSc || 'ಅ - ವರ್ಗ';
-      const shares = getShareholderSharesCount(s);
+      const shares = parseInt(s.number_of_shares, 10) || 0;
       scCounts[sc] = (scCounts[sc] || 0) + 1;
       scShares[sc] = (scShares[sc] || 0) + shares;
     });
@@ -1873,10 +1865,11 @@ export const ApiService = {
       shareholdersByCircle,
       scheduleCastBreakdown,
       shareRange: [
-        { range: '1 Share (ಅ)', count: shList.filter(s => (parseInt(s.number_of_shares) || 1) === 1).length },
-        { range: '2-4 Shares', count: shList.filter(s => (parseInt(s.number_of_shares) || 1) >= 2 && (parseInt(s.number_of_shares) || 1) <= 4).length },
-        { range: '5-10 Shares', count: shList.filter(s => (parseInt(s.number_of_shares) || 1) >= 5 && (parseInt(s.number_of_shares) || 1) <= 10).length },
-        { range: '14+ Shares', count: shList.filter(s => (parseInt(s.number_of_shares) || 1) > 10).length }
+        { range: '0 Shares (ಅಪೂರ್ಣ)', count: shList.filter(s => (parseInt(s.number_of_shares, 10) || 0) === 0).length },
+        { range: '1 Share (ಅ)', count: shList.filter(s => (parseInt(s.number_of_shares, 10) || 0) === 1).length },
+        { range: '2-4 Shares', count: shList.filter(s => { const n = parseInt(s.number_of_shares, 10) || 0; return n >= 2 && n <= 4; }).length },
+        { range: '5-10 Shares', count: shList.filter(s => { const n = parseInt(s.number_of_shares, 10) || 0; return n >= 5 && n <= 10; }).length },
+        { range: '11+ Shares', count: shList.filter(s => (parseInt(s.number_of_shares, 10) || 0) > 10).length }
       ],
       varasaStatusBreakdown: [
         { status: 'Application Received', count: varasaList.filter(v => v.approval_status === 'Application Received').length },
@@ -1905,7 +1898,16 @@ export const ApiService = {
             cloudStats.charts = this._computeDashboardCharts(mockShareholders, mockVarasaTransfers, mockVargavaneTransfers);
             cloudStats.stats.totalShares = mockShareholders.reduce((acc, s) => {
               if (isShareholderInactive(s)) return acc;
-              return acc + (parseInt(s.number_of_shares) || 1);
+              const n = parseInt(s.number_of_shares, 10);
+              return acc + (!isNaN(n) && n > 0 ? n : 0);
+            }, 0);
+            cloudStats.stats.totalShareAmount = mockShareholders.reduce((acc, s) => {
+              if (isShareholderInactive(s)) return acc;
+              return acc + (parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || 0);
+            }, 0);
+            cloudStats.stats.totalPaidAmount = mockShareholders.reduce((acc, s) => {
+              if (isShareholderInactive(s)) return acc;
+              return acc + (parseFloat(s.receipt_amount) || 0);
             }, 0);
             cloudStats.stats.totalBooks = 98;
           } else if (cloudStats.stats.totalShareholders === 0) {
@@ -1937,9 +1939,18 @@ export const ApiService = {
         activeShareholders: isReset ? 0 : mockShareholders.filter(s => s.status === 'Active').length,
         inactiveShareholders: isReset ? 0 : mockShareholders.filter(s => s.status === 'Inactive').length,
         totalShares: isReset ? 0 : mockShareholders.reduce((acc, s) => {
-        if (isShareholderInactive(s)) return acc;
-        return acc + (parseInt(s.number_of_shares) || 1);
-      }, 0),
+          if (isShareholderInactive(s)) return acc;
+          const n = parseInt(s.number_of_shares, 10);
+          return acc + (!isNaN(n) && n > 0 ? n : 0);
+        }, 0),
+        totalShareAmount: isReset ? 0 : mockShareholders.reduce((acc, s) => {
+          if (isShareholderInactive(s)) return acc;
+          return acc + (parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || 0);
+        }, 0),
+        totalPaidAmount: isReset ? 0 : mockShareholders.reduce((acc, s) => {
+          if (isShareholderInactive(s)) return acc;
+          return acc + (parseFloat(s.receipt_amount) || 0);
+        }, 0),
         totalVillages: isReset ? 0 : (mockCircleDirectory.length || 0),
         totalCircles: isReset ? 0 : 9,
         totalBooks: isReset ? 0 : 98,
