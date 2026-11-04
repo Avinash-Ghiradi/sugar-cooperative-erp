@@ -2,7 +2,7 @@ import LoadingAnimation from '../Common/LoadingAnimation';
 import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive, getShareholderSharesCount } from '../../services/api';
+import { ApiService, DEFAULT_STATUTORY_BOOKS_98, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive, getShareholderSharesCount } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
@@ -48,7 +48,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
   // Options
   const [villages, setVillages] = useState([]);
   const [circles, setCircles] = useState([]);
-  const [bookList, setBookList] = useState(Array.from({ length: 78 }, (_, i) => `B.No: ${i + 1}`));
+  const [bookList, setBookList] = useState(DEFAULT_STATUTORY_BOOKS_98 || []);
   const [castList, setCastList] = useState([]);
   const [amountList, setAmountList] = useState([]);
 
@@ -400,7 +400,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
       if (opts) {
         if (opts.villages) setVillages(opts.villages);
         if (opts.circles) setCircles(opts.circles);
-        if (opts.books) setBookList(opts.books);
+        if (opts.books && opts.books.length > 0) {
+          const cleanBooks = opts.books.filter(b => b && !/^\d+$/.test(String(b).trim()));
+          setBookList(cleanBooks.length > 0 ? cleanBooks : DEFAULT_STATUTORY_BOOKS_98);
+        }
         if (opts.casts) setCastList(opts.casts);
         if (opts.amounts) setAmountList(opts.amounts);
       }

@@ -409,9 +409,18 @@ export function calculateShareholdingDetails({
   };
 }
 
+// Statutory 98 Ledger Books Definition (Form "A" cooperative registers)
+export const DEFAULT_STATUTORY_BOOKS_98 = [
+  ...Array.from({ length: 78 }, (_, i) => `B.No: ${i + 1}`),
+  ...Array.from({ length: 17 }, (_, i) => `SC. B.No: ${String(i + 1).padStart(2, '0')}`),
+  'Mn. No.: 1',
+  'Mh. No.: 1',
+  'PKPS'
+];
+
 // Zero-dependency IndexedDB storage for massive datasets (17k - 100k+ records)
-const DB_NAME = 'SugarCooperativeERP_DB_v2';
-const DB_VERSION = 2;
+const DB_NAME = 'SugarCooperativeERP_DB_v3';
+const DB_VERSION = 3;
 const STORE_NAME = 'shareholders';
 const CIRCLE_STORE = 'circle_directory';
 const STORAGE_KEY_CIRCLE_DIR = 'sugar_erp_circle_directory_clean';
@@ -422,6 +431,11 @@ function openERPDB() {
       resolve(null);
       return;
     }
+    try {
+      // Purge legacy IndexedDB databases containing outdated bare-numeric book_no indexes
+      indexedDB.deleteDatabase('SugarCooperativeERP_DB_v2');
+      indexedDB.deleteDatabase('SugarCooperativeERP_DB_v1');
+    } catch (e) {}
     try {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
       request.onupgradeneeded = (e) => {
@@ -603,14 +617,15 @@ async function fetchOfficialShareholdersFallback() {
     const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) ? import.meta.env.BASE_URL : './';
     const cleanBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
 
+    const cb = `?v=98b_${Date.now()}`;
     const urlsToTry = [
-      `${cleanBase}officialShareholdersData.json`,
-      './officialShareholdersData.json',
-      'officialShareholdersData.json',
-      origin ? `${origin}${cleanDir}officialShareholdersData.json` : '',
-      '/sugar-cooperative-erp/officialShareholdersData.json',
-      origin ? `${origin}/sugar-cooperative-erp/officialShareholdersData.json` : '',
-      'https://avinash-ghiradi.github.io/sugar-cooperative-erp/officialShareholdersData.json'
+      `${cleanBase}officialShareholdersData.json${cb}`,
+      `./officialShareholdersData.json${cb}`,
+      `officialShareholdersData.json${cb}`,
+      origin ? `${origin}${cleanDir}officialShareholdersData.json${cb}` : '',
+      `/sugar-cooperative-erp/officialShareholdersData.json${cb}`,
+      origin ? `${origin}/sugar-cooperative-erp/officialShareholdersData.json${cb}` : '',
+      `https://avinash-ghiradi.github.io/sugar-cooperative-erp/officialShareholdersData.json${cb}`
     ].filter(Boolean);
 
     const uniqueUrls = Array.from(new Set(urlsToTry));
@@ -1224,13 +1239,22 @@ export function ensureDBReady() {
           let records = (dbData && Array.isArray(dbData)) ? dbData : [];
           const isBlankReset = (typeof window !== 'undefined' && window.localStorage?.getItem('sugar_erp_db_reset_blank') === 'true');
 
-          // If IndexedDB has no records, fetch official dataset (<1s static CDN) FIRST, with Cloud DB as backup
-          if (records.length < 17000 && !isBlankReset) {
-            // STEP 1: Fast official static dataset first (<1 second instant load on any computer)
+          const hasLegacyNumericBooks = records.some(r => /^\d+$/.test(String(r.book_no || '').trim()));
+          const isMissingStatutoryBooks = records.length > 0 && (!records.some(r => String(r.book_no || '').startsWith('SC.')) || !records.some(r => String(r.book_no || '').startsWith('Mn.')));
+          const needsBooksMigration = hasLegacyNumericBooks || isMissingStatutoryBooks || (typeof localStorage !== 'undefined' && localStorage.getItem('sugar_erp_books_v4_applied') !== 'true');
+
+          // If IndexedDB has no records or has legacy corrupted numeric books, fetch official dataset with 98 books
+          if ((records.length < 17000 || needsBooksMigration) && !isBlankReset) {
+            console.log('[SugarERP] Loading official 98-book statutory dataset...');
             const officialData = await fetchOfficialShareholdersFallback();
             if (officialData && officialData.length > 0) {
               records = officialData;
+              await clearIndexedDB(false);
               await saveToIndexedDB(records).catch(() => {});
+              if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('sugar_erp_books_v4_applied', 'true');
+              }
+              _cachedFilterOptions = null;
             }
 
             // STEP 2: If official static dataset failed AND Cloud DB is enabled, try Cloud DB download
@@ -1246,6 +1270,30 @@ export function ensureDBReady() {
           }
 
           if (records && records.length > 0 && !isBlankReset) {
+            // Normalizer safeguard: ensure no bare-numeric book_no ever leaks into memory
+            for (let i = 0; i < records.length; i++) {
+              const r = records[i];
+              const b = String(r.book_no || '').trim();
+              if (/^\d+$/.test(b) || !b) {
+                const sno = String(r.share_no || '').trim();
+                if (sno.startsWith('#')) {
+                  const num = parseInt(sno.replace(/\D/g, ''), 10) || 1;
+                  const scBookIdx = Math.min(17, Math.max(1, Math.ceil(num / 197)));
+                  r.book_no = `SC. B.No: ${String(scBookIdx).padStart(2, '0')}`;
+                } else if (sno.startsWith('&')) {
+                  r.book_no = 'Mn. No.: 1';
+                } else if (sno.startsWith('*')) {
+                  r.book_no = 'Mh. No.: 1';
+                } else if (sno.startsWith('ಬ-') || /PKPS/i.test(r.shareholder_name || '')) {
+                  r.book_no = 'PKPS';
+                } else {
+                  const sl = parseInt(r.sl_no, 10) || (i + 1);
+                  const bIdx = Math.min(78, Math.max(1, Math.ceil(sl / 197)));
+                  r.book_no = `B.No: ${bIdx}`;
+                }
+              }
+            }
+
             // Remove legacy corrupted duplicate comma rows, but preserve and normalize valid merged records
             records = records.filter(r => {
               const sNo = String(r.share_no || '');
@@ -1705,7 +1753,10 @@ export const ApiService = {
       }
       if (s.book_no) {
         const b = String(s.book_no).trim();
-        if (b) bookSet.add(b);
+        // Disallow bare numbers ("1".."3516") and only allow valid statutory book series
+        if (b && !/^\d+$/.test(b) && (/^B\.No/i.test(b) || /^SC\./i.test(b) || /^Mn\./i.test(b) || /^Mh\./i.test(b) || /PKPS/i.test(b))) {
+          bookSet.add(b);
+        }
       }
       if (s.schedule_cast) castSet.add(s.schedule_cast.trim());
       const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || 0;
@@ -1722,6 +1773,9 @@ export const ApiService = {
       if (/^PKPS/i.test(s)) return 5;
       return 6;
     };
+    if (bookSet.size === 0) {
+      DEFAULT_STATUTORY_BOOKS_98.forEach(b => bookSet.add(b));
+    }
     const sortedBooks = Array.from(bookSet).sort((a, b) => {
       const wA = getBookWeight(a);
       const wB = getBookWeight(b);
@@ -5556,10 +5610,12 @@ const newSh = {
     const bookSet = new Set();
     for (let i = 0; i < mockShareholders.length; i++) {
       const b = (mockShareholders[i].book_no || '').trim();
-      if (b) bookSet.add(b);
+      if (b && !/^\d+$/.test(b) && (/^B\.No/i.test(b) || /^SC\./i.test(b) || /^Mn\./i.test(b) || /^Mh\./i.test(b) || /PKPS/i.test(b))) {
+        bookSet.add(b);
+      }
     }
     if (bookSet.size === 0) {
-      return { success: true, data: Array.from({ length: 78 }, (_, i) => `B.No: ${i + 1}`) };
+      return { success: true, data: DEFAULT_STATUTORY_BOOKS_98 };
     }
     const getBookWeight = (s) => {
       if (/^B\.No/i.test(s)) return 1;
