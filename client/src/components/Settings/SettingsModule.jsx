@@ -450,10 +450,10 @@ export default function SettingsModule({ initialTab = 'org' }) {
         tableHtml += `<td>${s.aadhaar_card_no || s.aadhaar_ref || ''}</td>`;
         tableHtml += `<td>${s.reg_date || s.registration_date || ''}</td>`;
         tableHtml += `<td>${s.receipt_no || ''}</td>`;
-        tableHtml += `<td>${s.receipt_amount || s.amount || 2000}</td>`;
-        tableHtml += `<td>${s.date || s.reg_date || ''}</td>`;
-        tableHtml += `<td>${s.reciept || s.receipt_no || ''}</td>`;
-        tableHtml += `<td>${s.amount || s.receipt_amount || 2000}</td>`;
+        tableHtml += `<td>${s.receipt_amount || 0}</td>`;
+        tableHtml += `<td>${s.date || ''}</td>`;
+        tableHtml += `<td>${s.reciept || ''}</td>`;
+        tableHtml += `<td>${s.amount || 0}</td>`;
         tableHtml += `<td>${s.total_amount || s.share_value || 2000}</td>`;
         tableHtml += `<td>${s.number_of_shares || 1}</td>`;
         tableHtml += `<td>${s.schedule_cast || 'ಅ - ವರ್ಗ'}</td>`;
@@ -522,10 +522,10 @@ export default function SettingsModule({ initialTab = 'org' }) {
         `"${s.aadhaar_card_no || s.aadhaar_ref || ''}"`,
         `"${s.reg_date || s.registration_date || ''}"`,
         s.receipt_no || '',
-        s.receipt_amount || s.amount || 2000,
-        `"${s.date || s.reg_date || ''}"`,
-        s.reciept || s.receipt_no || '',
-        s.amount || s.receipt_amount || 2000,
+        s.receipt_amount || 0,
+        `"${s.date || ''}"`,
+        s.reciept || '',
+        s.amount || 0,
         s.total_amount || s.share_value || 2000,
         s.number_of_shares || 1,
         `"${s.schedule_cast || 'ಅ - ವರ್ಗ'}"`,

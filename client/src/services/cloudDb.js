@@ -325,23 +325,33 @@ export const CloudDbService = {
   // Sanitize any shareholder payload to match exact PostgreSQL schema columns
   fixShiftedShareholder(s) {
     if (!s) return s;
-    const aadh = String(s.aadhaar_card_no || '').trim();
+    let updated = { ...s };
+    const aadh = String(updated.aadhaar_card_no || '').trim();
     // Detect if aadhaar_card_no contains a date (e.g. 10/Aug/1982 or 10/08/1982 or slashes)
     if (aadh && (aadh.includes('/') || aadh.toLowerCase().includes('aug') || aadh.toLowerCase().includes('jan') || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(aadh))) {
       const realDate = aadh;
-      const realReceiptNo = String(s.reg_date || '').trim();
-      const realReceiptAmt = parseFloat(s.receipt_no) || parseFloat(s.receipt_amount) || 0;
-      return {
-        ...s,
-        aadhaar_card_no: '',
-        aadhaar_ref: '',
-        reg_date: realDate,
-        registration_date: realDate,
-        receipt_no: realReceiptNo,
-        receipt_amount: realReceiptAmt
-      };
+      const realReceiptNo = String(updated.reg_date || '').trim();
+      const realReceiptAmt = parseFloat(updated.receipt_no) || parseFloat(updated.receipt_amount) || 0;
+      updated.aadhaar_card_no = '';
+      updated.aadhaar_ref = '';
+      updated.reg_date = realDate;
+      updated.registration_date = realDate;
+      updated.receipt_no = realReceiptNo;
+      updated.receipt_amount = realReceiptAmt;
     }
-    return s;
+
+    // Clear cloned 2nd installment fields if reciept matches receipt_no
+    const rec1 = String(updated.receipt_no || '').trim();
+    const rec2 = String(updated.reciept || '').trim();
+    const date1 = String(updated.reg_date || updated.registration_date || '').trim();
+    const date2 = String(updated.date || '').trim();
+    if (rec2 && rec2 === rec1 && (date2 === date1 || !date2)) {
+      updated.date = '';
+      updated.reciept = '';
+      updated.amount = 0;
+    }
+
+    return updated;
   },
 
   sanitizeShareholderRecord(r = {}) {
