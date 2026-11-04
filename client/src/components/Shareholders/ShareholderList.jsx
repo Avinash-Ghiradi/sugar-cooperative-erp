@@ -1133,16 +1133,29 @@ export default function ShareholderList({ initialShowMerge = false }) {
                     <td className="py-2.5 px-2 text-center text-slate-300 font-semibold">{sh.gender || 'M'}</td>
 
                     {/* 6. Aadhaar Card No */}
-                    <td className="py-2.5 px-3 font-mono text-slate-300">{sh.aadhaar_card_no || sh.aadhaar_ref || '—'}</td>
+                    <td className="py-2.5 px-3 font-mono text-slate-300">
+                      {sh.aadhaar_card_no && !sh.aadhaar_card_no.includes('/') ? sh.aadhaar_card_no : '—'}
+                    </td>
 
                     {/* 7. Reg. Date */}
-                    <td className="py-2.5 px-3 text-slate-400">{sh.reg_date || sh.registration_date}</td>
+                    <td className="py-2.5 px-3 text-slate-400">
+                      {(sh.aadhaar_card_no && sh.aadhaar_card_no.includes('/')) ? sh.aadhaar_card_no : (sh.reg_date || sh.registration_date || '—')}
+                    </td>
 
                     {/* 8. Receipt No */}
-                    <td className="py-2.5 px-2 text-center font-mono text-slate-300">{sh.receipt_no || sh.id}</td>
+                    <td className="py-2.5 px-2 text-center font-mono text-slate-300">
+                      {(sh.aadhaar_card_no && sh.aadhaar_card_no.includes('/')) ? (sh.reg_date || sh.receipt_no || '—') : (sh.receipt_no || sh.id || '—')}
+                    </td>
 
                     {/* 9. Receipt Amount */}
-                    <td className="py-2.5 px-3 text-right font-mono font-medium">₹ {(sh.receipt_amount || sh.total_amount || 2000).toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-medium text-emerald-400 font-bold">
+                      ₹ {((sh.aadhaar_card_no && sh.aadhaar_card_no.includes('/'))
+                        ? (parseFloat(sh.receipt_no) || parseFloat(sh.receipt_amount) || 0)
+                        : (sh.receipt_amount !== undefined && sh.receipt_amount !== null && !isNaN(parseFloat(sh.receipt_amount))
+                            ? parseFloat(sh.receipt_amount)
+                            : (parseFloat(sh.total_amount) < 2000 ? parseFloat(sh.total_amount) : (parseFloat(sh.receipt_amount) === 0 ? 0 : 2000)))
+                      ).toLocaleString()}
+                    </td>
 
                     {/* 10. Date (2nd Installment Date) */}
                     <td className="py-2.5 px-3 text-slate-400">

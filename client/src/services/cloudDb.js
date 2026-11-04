@@ -200,8 +200,10 @@ export const CloudDbService = {
           })
         ]);
 
-        const prefixData = prefixRes.ok ? await prefixRes.json() : [];
-        const allData = allRes.ok ? await allRes.json() : [];
+        const rawPrefix = prefixRes.ok ? await prefixRes.json() : [];
+        const rawAll = allRes.ok ? await allRes.json() : [];
+        const prefixData = rawPrefix.map(r => this.fixShiftedShareholder(r));
+        const allData = rawAll.map(r => this.fixShiftedShareholder(r));
 
         const contentRange = allRes.headers.get('content-range');
         total = allData.length;
@@ -235,7 +237,8 @@ export const CloudDbService = {
 
         if (!res.ok) return null;
 
-        data = await res.json();
+        const rawData = await res.json();
+        data = (rawData || []).map(r => this.fixShiftedShareholder(r));
         const contentRange = res.headers.get('content-range');
         total = data.length;
         if (contentRange && contentRange.includes('/')) {
@@ -320,6 +323,27 @@ export const CloudDbService = {
   },
 
   // Sanitize any shareholder payload to match exact PostgreSQL schema columns
+  fixShiftedShareholder(s) {
+    if (!s) return s;
+    const aadh = String(s.aadhaar_card_no || '').trim();
+    // Detect if aadhaar_card_no contains a date (e.g. 10/Aug/1982 or 10/08/1982 or slashes)
+    if (aadh && (aadh.includes('/') || aadh.toLowerCase().includes('aug') || aadh.toLowerCase().includes('jan') || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(aadh))) {
+      const realDate = aadh;
+      const realReceiptNo = String(s.reg_date || '').trim();
+      const realReceiptAmt = parseFloat(s.receipt_no) || parseFloat(s.receipt_amount) || 0;
+      return {
+        ...s,
+        aadhaar_card_no: '',
+        aadhaar_ref: '',
+        reg_date: realDate,
+        registration_date: realDate,
+        receipt_no: realReceiptNo,
+        receipt_amount: realReceiptAmt
+      };
+    }
+    return s;
+  },
+
   sanitizeShareholderRecord(r = {}) {
     const validCols = new Set([
       'book_no', 'sl_no', 'share_no', 'shareholder_name', 'gender',
@@ -648,7 +672,7 @@ export const CloudDbService = {
         }
       }
 
-      return allRecords;
+      return (allRecords || []).map(r => this.fixShiftedShareholder(r));
     } catch (err) {
       console.warn('downloadAllFromCloud error:', err);
       return null;

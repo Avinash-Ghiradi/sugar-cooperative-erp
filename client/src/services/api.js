@@ -172,6 +172,26 @@ export function getMemberTypeByCategory(category, explicitType = null) {
 //     it is an INCOMPLETE share installment -> Returns 0 complete shares!
 //   - Once another ₹1,000 is paid (total paid >= ₹2,000), it becomes 1 complete share.
 //   - Inactive / Merged-out secondary / Transferred members return 0 shares.
+export function fixShiftedShareholder(s) {
+  if (!s) return s;
+  const aadh = String(s.aadhaar_card_no || '').trim();
+  if (aadh && (aadh.includes('/') || aadh.toLowerCase().includes('aug') || aadh.toLowerCase().includes('jan') || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(aadh))) {
+    const realDate = aadh;
+    const realReceiptNo = String(s.reg_date || '').trim();
+    const realReceiptAmt = parseFloat(s.receipt_no) || parseFloat(s.receipt_amount) || 0;
+    return {
+      ...s,
+      aadhaar_card_no: '',
+      aadhaar_ref: '',
+      reg_date: realDate,
+      registration_date: realDate,
+      receipt_no: realReceiptNo,
+      receipt_amount: realReceiptAmt
+    };
+  }
+  return s;
+}
+
 export function getShareholderSharesCount(s) {
   if (!s) return 0;
   if (s.is_merged_secondary || s.merged_into || s.status === 'Merged' || s.status === 'Transferred' || s.status === 'Inactive' || s.is_disabled) {
