@@ -381,7 +381,7 @@ export default function SettingsModule({ initialTab = 'org' }) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Downloading complete 17,076 shareholder master Excel (.xlsx) file');
+    showToast('Downloading complete 17,085 shareholder master Excel (.xlsx) file');
   };
 
   const handleDownloadExcelTemplate = () => {
@@ -633,10 +633,10 @@ export default function SettingsModule({ initialTab = 'org' }) {
     }
   };
 
-  const handleSyncOfficial17076 = async () => {
+  const handleSyncOfficial17085 = async () => {
     setIsProcessingFile(true);
-    setUploadProgress({ uploaded: 0, total: 17076, percentage: 0 });
-    showToast('Syncing official 17,076 records across all 10 circles and Cloud Database...');
+    setUploadProgress({ uploaded: 0, total: 17085, percentage: 0 });
+    showToast('Syncing official 17,085 records across all 10 circles and Cloud Database...');
     try {
       const res = await ApiService.restoreOfficialData((p) => {
         setUploadProgress(p);
@@ -657,7 +657,7 @@ export default function SettingsModule({ initialTab = 'org' }) {
 
   const handlePullFromCloud = async () => {
     setIsProcessingFile(true);
-    setUploadProgress({ downloaded: 0, total: 17076, percentage: 0 });
+    setUploadProgress({ downloaded: 0, total: 17085, percentage: 0 });
     showToast('Pulling complete shareholder registry from Supabase Cloud Database...');
     try {
       const res = await ApiService.syncAllShareholdersFromCloud((p) => {
@@ -986,9 +986,9 @@ export default function SettingsModule({ initialTab = 'org' }) {
                   type="button"
                   onClick={handleDownloadOfficialExcel}
                   className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 hover:text-white rounded-xl text-xs font-semibold border border-emerald-500/40 transition-all shadow-sm cursor-pointer"
-                  title="Download complete official 17,076 shareholder master Excel file"
+                  title="Download complete official 17,085 shareholder master Excel file"
                 >
-                  <Download className="w-4 h-4 text-emerald-400" /> Download Master Excel (17,076 Records)
+                  <Download className="w-4 h-4 text-emerald-400" /> Download Master Excel (17,085 Records)
                 </button>
                 <button
                   type="button"
@@ -1179,10 +1179,10 @@ export default function SettingsModule({ initialTab = 'org' }) {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-emerald-200 flex items-center gap-2">
-                    Sync / Restore Official 17,076 Shareholder Master Data (ಅಧಿಕೃತ 17,076 ಶೇರುದಾರರ ಮಾಹಿತಿ ಮರುಸ್ಥಾಪನೆ)
+                    Sync / Restore Official 17,085 Shareholder Master Data (ಅಧಿಕೃತ 17,085 ಶೇರುದಾರರ ಮಾಹಿತಿ ಮರುಸ್ಥಾಪನೆ)
                   </h3>
                   <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-                    Instantly load the full 17,076 shareholder dataset with 357 village circle mappings into this device. Perfect if database was cleared or setting up on a new device.
+                    Instantly load the full 17,085 shareholder dataset with 357 village circle mappings into this device. Perfect if database was cleared or setting up on a new device.
                   </p>
                 </div>
               </div>
@@ -1202,11 +1202,11 @@ export default function SettingsModule({ initialTab = 'org' }) {
                 <button
                   type="button"
                   disabled={isProcessingFile}
-                  onClick={handleSyncOfficial17076}
+                  onClick={handleSyncOfficial17085}
                   className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
                 >
                   <RefreshCw className={`w-4 h-4 ${isProcessingFile ? 'animate-spin' : ''}`} />
-                  <span>Sync 17,076 Master Records</span>
+                  <span>Sync 17,085 Master Records</span>
                 </button>
               </div>
             </div>
@@ -1393,7 +1393,7 @@ export default function SettingsModule({ initialTab = 'org' }) {
           <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-400 flex items-center gap-3">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
-              If you mistakenly erase records, you can always click <strong className="text-emerald-400 font-semibold">"Sync 17,076 Master Records"</strong> under the Upload tab to restore the official factory dataset at any time.
+              If you mistakenly erase records, you can always click <strong className="text-emerald-400 font-semibold">"Sync 17,085 Master Records"</strong> under the Upload tab to restore the official factory dataset at any time.
             </span>
           </div>
         </div>

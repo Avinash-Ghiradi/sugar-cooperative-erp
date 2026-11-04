@@ -411,8 +411,8 @@ export const DEFAULT_STATUTORY_BOOKS_98 = [
 ];
 
 // Zero-dependency IndexedDB storage for massive datasets (17k - 100k+ records)
-const DB_NAME = 'SugarCooperativeERP_DB_v3';
-const DB_VERSION = 3;
+const DB_NAME = 'SugarCooperativeERP_DB_v4';
+const DB_VERSION = 4;
 const STORE_NAME = 'shareholders';
 const CIRCLE_STORE = 'circle_directory';
 const STORAGE_KEY_CIRCLE_DIR = 'sugar_erp_circle_directory_clean';
@@ -424,7 +424,8 @@ function openERPDB() {
       return;
     }
     try {
-      // Purge legacy IndexedDB databases containing outdated bare-numeric book_no indexes
+      // Purge legacy IndexedDB databases
+      indexedDB.deleteDatabase('SugarCooperativeERP_DB_v3');
       indexedDB.deleteDatabase('SugarCooperativeERP_DB_v2');
       indexedDB.deleteDatabase('SugarCooperativeERP_DB_v1');
     } catch (e) {}
@@ -1844,12 +1845,18 @@ export const ApiService = {
 
     const scCounts = {};
     const scShares = {};
+    const scAmounts = {};
     shList.forEach(s => {
       const rawSc = (s.schedule_cast || 'ಅ - ವರ್ಗ').trim().normalize('NFC');
-      const sc = rawSc || 'ಅ - ವರ್ಗ';
+      let sc = rawSc || 'ಅ - ವರ್ಗ';
+      if (sc.includes('ಅ')) sc = 'ಅ - ವರ್ಗ';
+      else if (sc.includes('ಡ')) sc = 'ಡ - ವರ್ಗ';
+      else if (sc.includes('ಬ')) sc = 'ಬ - ವರ್ಗ';
       const shares = parseInt(s.number_of_shares, 10) || 0;
+      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (shares * 2000);
       scCounts[sc] = (scCounts[sc] || 0) + 1;
       scShares[sc] = (scShares[sc] || 0) + shares;
+      scAmounts[sc] = (scAmounts[sc] || 0) + amt;
     });
 
     const scheduleCastBreakdown = Object.keys(scCounts).map(sc => ({
@@ -1857,6 +1864,7 @@ export const ApiService = {
       name: sc,
       count: scCounts[sc],
       shares: scShares[sc],
+      amount: scAmounts[sc] || 0,
       percentage: shList.length > 0 ? ((scCounts[sc] / shList.length) * 100).toFixed(1) : '0'
     })).sort((a, b) => b.count - a.count);
 
