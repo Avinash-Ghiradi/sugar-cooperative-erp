@@ -36,11 +36,15 @@ function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    // Only perform background cloud workflow sync and focus listeners when user is authenticated
+    if (!user) return;
+
     // 1. Initial sync on app load
     syncAllCloudWorkflows().catch(() => {});
 
     // 2. Real-time multi-browser sync when switching tabs/windows
     const handleSyncOnActive = () => {
+      if (!user) return;
       checkAndApplyCloudReset().then(wiped => {
         if (wiped) {
           if (typeof window !== 'undefined') window.location.reload();
@@ -52,7 +56,7 @@ function AppContent() {
 
     window.addEventListener('focus', handleSyncOnActive);
     const handleVisibility = () => {
-      if (!document.hidden) handleSyncOnActive();
+      if (!document.hidden && user) handleSyncOnActive();
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
@@ -60,7 +64,7 @@ function AppContent() {
       window.removeEventListener('focus', handleSyncOnActive);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, []);
+  }, [user]);
 
   // Top progress bar indicator on module navigation
   useEffect(() => {

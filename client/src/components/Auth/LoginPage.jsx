@@ -53,9 +53,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Decorative background glow */}
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-teal-600/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Decorative background glow (hardware accelerated) */}
+      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none transform-gpu will-change-transform" />
+      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-teal-600/10 rounded-full blur-3xl pointer-events-none transform-gpu will-change-transform" />
 
       <div className="w-full max-w-md space-y-6 relative z-10 animate-fadeIn">
         {/* Factory Header */}
@@ -92,8 +92,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Login Card */}
-        <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
+        {/* Login Card (Optimized 0ms typing response) */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 transform-gpu">
           {error && (
             <div className="p-3 bg-rose-950/60 border border-rose-800/80 rounded-2xl text-xs text-rose-300 flex items-start gap-2.5 animate-shake">
               <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
@@ -110,13 +110,19 @@ export default function LoginPage() {
               </label>
               <div className="relative">
                 <input
+                  id="staff-login-identifier"
+                  name="username"
                   type="text"
                   required
                   autoFocus
+                  autoComplete="username"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="ಸಿಬ್ಬಂದಿ ಐಡಿ (EMP-001) ಅಥವಾ ಷೇರುದಾರರ ಮೊಬೈಲ್ ನಂ..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all pl-10"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors pl-10"
                 />
                 <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               </div>
@@ -130,12 +136,18 @@ export default function LoginPage() {
               </label>
               <div className="relative">
                 <input
+                  id="staff-login-password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete="current-password"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="ನಿಮ್ಮ ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all pl-10 pr-10"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors pl-10 pr-10"
                 />
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <button

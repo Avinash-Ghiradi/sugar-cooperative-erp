@@ -1471,9 +1471,21 @@ export function ensureDBReady() {
   return dbInitPromise;
 }
 
-// Immediate eager initialization of IndexedDB
+// Eager background initialization of IndexedDB only if active user session exists
+// Never blocks or slows down input on the login screen
 if (typeof window !== 'undefined') {
-  ensureDBReady().then(() => syncAllCloudWorkflows().catch(() => {}));
+  const hasUserSession = Boolean(window.localStorage?.getItem('sugar_erp_user'));
+  if (hasUserSession) {
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(() => {
+        ensureDBReady().then(() => syncAllCloudWorkflows().catch(() => {}));
+      }, { timeout: 3000 });
+    } else {
+      setTimeout(() => {
+        ensureDBReady().then(() => syncAllCloudWorkflows().catch(() => {}));
+      }, 1000);
+    }
+  }
 }
 
 export const initialVarasaTransfers = [];
@@ -1859,12 +1871,19 @@ export const ApiService = {
     const syncBaseline = loadStoredFilterOptionsSync();
     if (!forceRefresh && syncBaseline && syncBaseline.villages?.length > 0) {
       _cachedFilterOptions = syncBaseline;
-      // Kick off background recompute when DB is ready without blocking UI
-      ensureDBReady().then(() => {
-        if (mockShareholders && mockShareholders.length > 0) {
-          this._recomputeFilterOptions().catch(() => {});
-        }
-      }).catch(() => {});
+      // Kick off background recompute when DB is ready without blocking UI or typing
+      const triggerBgRecompute = () => {
+        ensureDBReady().then(() => {
+          if (mockShareholders && mockShareholders.length > 0) {
+            this._recomputeFilterOptions().catch(() => {});
+          }
+        }).catch(() => {});
+      };
+      if (typeof window !== 'undefined' && window.requestIdleCallback) {
+        window.requestIdleCallback(triggerBgRecompute, { timeout: 4000 });
+      } else {
+        setTimeout(triggerBgRecompute, 1500);
+      }
       return syncBaseline;
     }
 
