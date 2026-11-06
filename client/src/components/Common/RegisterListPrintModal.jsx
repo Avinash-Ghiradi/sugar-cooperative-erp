@@ -39,13 +39,20 @@ function CooperativeHandshakeIcon({ className = "w-20 h-12" }) {
   );
 }
 
-// Date formatter
+// Date formatter (supports standard dates and Excel serial numbers)
 function formatDocDate(dateStr) {
-  if (!dateStr) {
-    const d = new Date();
-    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-  }
+  if (!dateStr || dateStr === '—' || dateStr === '-') return '—';
   const clean = String(dateStr).trim();
+  const num = Number(clean);
+  if (!isNaN(num) && num > 1000 && num < 70000) {
+    const jsDate = new Date(Math.round((num - 25569) * 86400 * 1000));
+    if (!isNaN(jsDate.getTime())) {
+      const d = String(jsDate.getDate()).padStart(2, '0');
+      const m = String(jsDate.getMonth() + 1).padStart(2, '0');
+      const y = jsDate.getFullYear();
+      return `${d}/${m}/${y}`;
+    }
+  }
   const parts = clean.split(/[-/]/);
   if (parts.length === 3) {
     if (parts[0].length === 4) {
@@ -312,7 +319,7 @@ export default function RegisterListPrintModal({
             return (
               <tr key={item.id || idx} className="border-b border-black/80 hover:bg-slate-50">
                 <td className="border border-black p-1 text-center font-mono">{idx + 1}</td>
-                <td className="border border-black p-1 text-center font-mono">{item.date || '—'}</td>
+                <td className="border border-black p-1 text-center font-mono">{formatDocDate(item.date)}</td>
                 <td className="border border-black p-1 px-1.5 font-bold text-left">{item.full_name || '—'}</td>
                 <td className="border border-black p-1 text-center">{item.place || '—'}</td>
                 <td className="border border-black p-1 text-center">{item.taluk || '—'}</td>
@@ -322,7 +329,7 @@ export default function RegisterListPrintModal({
                 <td className="border border-black p-1 text-center font-mono">{item.receipt_no || '—'}</td>
                 <td className="border border-black p-1 text-center font-mono font-bold">{shares}</td>
                 <td className="border border-black p-1 text-center font-semibold">{item.category || 'ಅ ವರ್ಗ'}</td>
-                <td className="border border-black p-1 text-center font-mono">{item.tharava_date || '—'}</td>
+                <td className="border border-black p-1 text-center font-mono">{formatDocDate(item.tharava_date)}</td>
                 <td className="border border-black p-1 text-center font-mono">{item.tharava_no || '—'}</td>
                 <td className="border border-black p-1 text-center font-mono font-bold">{item.share_no || '—'}</td>
                 <td className="border border-black p-1 text-center text-[10px] font-bold">
