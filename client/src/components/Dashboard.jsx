@@ -33,11 +33,11 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex items-center gap-3 text-emerald-400 font-medium">
-          <RefreshCw className="w-5 h-5 animate-spin" /> Loading Cooperative Dashboard Analytics...
-        </div>
-      </div>
+      <LoadingAnimation
+        variant="page"
+        message="ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಅಂಕಿಅಂಶಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+        subMessage="Loading Cooperative Dashboard Analytics & Real-Time Stats..."
+      />
     );
   }
 

@@ -669,10 +669,11 @@ export default function VargavaneTransferModule() {
       {/* Main Vargavane Table */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
         {loading ? (
-          <div className="p-16 text-center text-slate-400 flex items-center justify-center gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin text-sky-400" />
-            <span>Loading Vargavane share transfer records...</span>
-          </div>
+          <LoadingAnimation
+            variant="card"
+            message="ಸಾಮಾನ್ಯ ಶೇರು ವರ್ಗಾವಣೆ ದಾಖಲೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+            subMessage="Loading Vargavane General Share Transfer Records & Certificates..."
+          />
         ) : filteredTransfers.length === 0 ? (
           <div className="p-16 text-center space-y-3">
             <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 mx-auto flex items-center justify-center text-slate-500">

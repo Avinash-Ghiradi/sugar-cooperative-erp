@@ -1816,10 +1816,11 @@ export default function SugarAllotmentModule() {
         </div>
 
         {loading ? (
-          <div className="p-16 text-center text-slate-400 font-medium flex flex-col items-center gap-3">
-            <RefreshCw className="w-6 h-6 text-cyan-400 animate-spin" />
-            <span>ಶೇರುದಾರರ ಮಾಹಿತಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ...</span>
-          </div>
+          <LoadingAnimation
+            variant="card"
+            message="ಸಕ್ಕರೆ ಕೋಟಾ ಮತ್ತು ಶೇರುದಾರರ ಮಾಹಿತಿ ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+            subMessage="Loading Sugar Allotment Quotas & Shareholder Eligibility..."
+          />
         ) : processedShareholders.length === 0 ? (
           <div className="p-16 text-center text-slate-400 font-medium space-y-3">
             {allShareholders.length === 0 ? (

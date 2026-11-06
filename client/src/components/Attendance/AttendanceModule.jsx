@@ -874,7 +874,11 @@ export default function AttendanceModule() {
       {/* Register Table */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
         {loading ? (
-          <div className="p-12 text-center text-slate-400">Loading daily attendance register...</div>
+          <LoadingAnimation
+            variant="card"
+            message="ಹಾಜರಾತಿ ವಹಿಯನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+            subMessage="Loading Daily Attendance & AGM Register..."
+          />
         ) : filteredList.length === 0 ? (
           <div className="p-12 text-center text-slate-400">
             No attendance records matching the current filter.

@@ -980,10 +980,11 @@ export default function IDCardGenerator() {
       {/* Cards Workbench Grid (ON-SCREEN ONLY - Hidden in Print) */}
       <div className="no-print">
         {loading ? (
-          <div className="p-12 text-center text-slate-400 space-y-2">
-            <RefreshCw className="w-6 h-6 animate-spin text-emerald-400 mx-auto" />
-            <p className="text-xs">Loading shareholder records for ID card generation...</p>
-          </div>
+          <LoadingAnimation
+            variant="card"
+            message="ಗುರುತಿನ ಚೀಟಿ (ID Card) ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+            subMessage="Loading Shareholder ID Cards & Statutory Layout Preview..."
+          />
         ) : shareholders.length === 0 ? (
           <div className="p-12 text-center bg-slate-950/60 border border-slate-800 rounded-2xl space-y-2">
             <p className="text-sm font-semibold text-slate-300">No shareholders found matching the search criteria.</p>

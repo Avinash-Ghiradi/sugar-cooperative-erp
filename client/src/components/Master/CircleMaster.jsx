@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
@@ -639,9 +640,11 @@ export default function CircleMaster() {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2">
-          <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" /> Loading administrative circles...
-        </div>
+        <LoadingAnimation
+          variant="card"
+          message="ವಲಯ ಮತ್ತು ಗ್ರಾಮಗಳ ಮಾಹಿತಿಯನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+          subMessage="Loading Administrative Circles & Official Village Directory..."
+        />
       ) : activeTab === 'circle-wise' ? (
         /* View 1: Circle-wise Grouped List (ವಲಯವಾರು ಗ್ರಾಮಗಳ ಪಟ್ಟಿ) */
         <div className="space-y-4">

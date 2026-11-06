@@ -1,3 +1,28 @@
+export function cleanPlaceName(p) {
+  if (!p || typeof p !== 'string') return '';
+  let str = p.trim();
+  // Strip parentheses content like (ಉಡಪಿ ತಾಲೂಕ, ದ.ಕ.) or (ಇಂಡಿ) or (ಸಿಂದಗಿ) or numbers in parens like (163)
+  str = str.replace(/\([^)]*\)/g, '').trim();
+  // If comma separated like "186/3, ಲಕ್ಷ್ಮೀ ದೇವಾಲಯ ಹತ್ತಿರ, ಹಚ್ಚಾಳ"
+  if (str.includes(',')) {
+    const parts = str.split(',').map(s => s.trim()).filter(Boolean);
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const part = parts[i];
+      if (!/^[\d\/\-\#\s]+$/.test(part) && !/ಹತ್ತಿರ|ಬಳಿ|ಎದುರು|ಹತ್ತರ|ಸಮೀಪ|near|opp/i.test(part)) {
+        str = part;
+        break;
+      }
+    }
+  }
+  // Strip leading house/plot numbers like "186/3 " or "No. 5 " or "#45 "
+  str = str.replace(/^[\d\/\-\#\,\s]+/, '').trim();
+  // Standardize common variant spelling
+  if (str === 'ಅಂಜುಟಗಿ') str = 'ಅಂಜುಟಿಗಿ';
+  // Normalize Unicode
+  str = str.normalize('NFC').trim();
+  return str;
+}
+
 // Data Service Layer supporting both backend REST API and clean client-side storage
 // Official 357-Village Circle Directory mapping provided by user
 import officialCircleData from './officialCircleData.json';

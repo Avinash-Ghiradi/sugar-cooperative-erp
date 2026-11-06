@@ -351,6 +351,30 @@ export const CloudDbService = {
       updated.amount = 0;
     }
 
+    // Clean composite street addresses from place if necessary
+    const rawPlace = String(updated.place || updated.village_name || '').trim();
+    if (rawPlace) {
+      let str = rawPlace.replace(/\([^)]*\)/g, '').trim();
+      if (str.includes(',')) {
+        const parts = str.split(',').map(s => s.trim()).filter(Boolean);
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const part = parts[i];
+          if (!/^[\d\/\-\#\s]+$/.test(part) && !/ಹತ್ತಿರ|ಬಳಿ|ಎದುರು|ಹತ್ತರ|ಸಮೀಪ|near|opp/i.test(part)) {
+            str = part;
+            break;
+          }
+        }
+      }
+      str = str.replace(/^[\d\/\-\#\,\s]+/, '').trim();
+      if (str === 'ಅಂಜುಟಗಿ') str = 'ಅಂಜುಟಿಗಿ';
+      str = str.normalize('NFC').trim();
+      if (str && str !== rawPlace) {
+        if (!updated.address) updated.address = rawPlace;
+        updated.place = str;
+        if (updated.village_name) updated.village_name = str;
+      }
+    }
+
     return updated;
   },
 

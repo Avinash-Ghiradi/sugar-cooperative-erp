@@ -69,9 +69,11 @@ export default function ShareholderPortal() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
-        <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin mb-3" />
-        <p className="text-slate-300 text-sm font-semibold">ಷೇರುದಾರರ ಸದಸ್ಯರ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...</p>
-        <p className="text-slate-500 text-xs mt-1">Loading official shareholder portal & history...</p>
+        <LoadingAnimation
+          variant="page"
+          message="ಷೇರುದಾರರ ಸದಸ್ಯರ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+          subMessage="Loading Official Shareholder Portal & Records..."
+        />
       </div>
     );
   }

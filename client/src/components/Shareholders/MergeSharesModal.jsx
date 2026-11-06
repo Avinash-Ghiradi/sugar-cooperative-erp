@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import React, { useState, useEffect } from 'react';
 import { ApiService, isShareholderInactive } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -903,10 +904,12 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
             {/* Requests List */}
             <div className="p-4 overflow-y-auto flex-1 space-y-3">
               {loadingRequests ? (
-                <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2">
-                  <RefreshCw className="w-5 h-5 animate-spin text-amber-400" />
-                  <span>ಅನುಮೋದನೆ ವಿನಂತಿಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...</span>
-                </div>
+                <LoadingAnimation
+                  variant="card"
+                  size="sm"
+                  message="ಅನುಮೋದನೆ ವಿನಂತಿಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ..."
+                  subMessage="Verifying Share Merging Approval Requests..."
+                />
               ) : filteredRequests.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 space-y-2">
                   <ShieldCheck className="w-10 h-10 mx-auto text-slate-600" />
@@ -1123,10 +1126,12 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
             {/* Candidates List */}
             <div className="p-4 overflow-y-auto flex-1 space-y-3">
               {loadingAuto ? (
-                <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2">
-                  <RefreshCw className="w-5 h-5 animate-spin text-amber-400" />
-                  <span>ಬಹು-ಮೊತ್ತಗಳು ಮತ್ತು ಶೇರುಗಳ ಪರಿಶೀಲನೆ ನಡೆಯುತ್ತಿದೆ...</span>
-                </div>
+                <LoadingAnimation
+                  variant="card"
+                  size="sm"
+                  message="ಬಹು-ಮೊತ್ತಗಳು ಮತ್ತು ಶೇರುಗಳ ಪರಿಶೀಲನೆ ನಡೆಯುತ್ತಿದೆ..."
+                  subMessage="Scanning Multi-Holding Consolidation Candidates..."
+                />
               ) : filteredAutoCandidates.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 space-y-2">
                   <div className="w-12 h-12 rounded-2xl bg-slate-950 border border-slate-800 text-emerald-400 mx-auto flex items-center justify-center">

@@ -120,8 +120,12 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
   if (loading || !profile) {
     return (
       <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-center justify-center p-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-slate-300">
-          Loading statutory shareholder profile...
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+          <LoadingAnimation
+            variant="card"
+            message="ಶೇರುದಾರರ ಪ್ರೊಫೈಲ್ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+            subMessage="Loading Statutory Shareholder Profile & History..."
+          />
         </div>
       </div>
     );

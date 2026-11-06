@@ -769,7 +769,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
           <option value="">All Places ({villages.length})</option>
           {villages.map(v => (
             <option key={v.village_id || v.name} value={v.name}>
-              {v.name} {v.taluk ? `(${v.taluk})` : ''} ({v.shareholder_count || 0})
+              {v.name}
             </option>
           ))}
         </select>
@@ -869,9 +869,11 @@ export default function ShareholderList({ initialShowMerge = false }) {
       {/* Main Table: Full 38-Column Official Cooperative Ledger View */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
         {loading ? (
-          <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" /> Searching statutory cooperative ledger index...
-          </div>
+          <LoadingAnimation
+            variant="card"
+            message="38 ಕಾಲಂಗಳ ಅಧಿಕೃತ ಶಾಸನಬದ್ಧ ಷೇರು ವಹಿಯನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+            subMessage="Searching Official 38-Column Statutory Cooperative Ledger Index..."
+          />
         ) : shareholders.length === 0 ? (
           <div className="p-12 text-center text-slate-400 space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-slate-500 mx-auto flex items-center justify-center">

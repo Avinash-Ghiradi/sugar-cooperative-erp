@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
@@ -1396,10 +1397,11 @@ export default function ShareholderReports() {
 
         {/* LOADING STATE */}
         {loading ? (
-          <div className="p-16 text-center text-slate-400 space-y-3">
-            <RefreshCw className="w-7 h-7 animate-spin text-emerald-400 mx-auto" />
-            <p className="text-xs font-semibold">ಶೇರುದಾರರ ಅಂಕಿಅಂಶಗಳನ್ನು ಸಂಕಲಿಸಲಾಗುತ್ತಿದೆ...</p>
-          </div>
+          <LoadingAnimation
+            variant="card"
+            message="ಶೇರುದಾರರ ಅಂಕಿಅಂಶಗಳನ್ನು ಸಂಕಲಿಸಲಾಗುತ್ತಿದೆ..."
+            subMessage="Compiling 17,000+ Shareholder Demographic & Financial Analytics..."
+          />
         ) : filteredShareholders.length === 0 ? (
           <div className="p-12 text-center bg-slate-900/40 rounded-2xl border border-slate-800 space-y-2">
             <p className="text-sm font-bold text-slate-300">ಆಯ್ಕೆ ಮಾಡಿದ ಫಿಲ್ಟರ್‌ಗೆ ಯಾವುದೇ ಶೇರುದಾರರ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ.</p>

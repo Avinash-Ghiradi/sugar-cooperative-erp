@@ -92,7 +92,11 @@ export default function TransactionsModule() {
       {/* Transactions Table */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
         {loading ? (
-          <div className="p-12 text-center text-slate-400">Loading ledger records...</div>
+          <LoadingAnimation
+            variant="card"
+            message="ಹಣಕಾಸು ವಹಿವಾಟು ದಾಖಲೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+            subMessage="Loading Financial Transactions & Ledger Records..."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">

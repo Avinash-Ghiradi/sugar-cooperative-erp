@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { ApiService } from '../../services/api';
@@ -139,7 +140,11 @@ export default function ReportsModule() {
 
           {/* Report Content Table */}
           {loading ? (
-            <div className="p-12 text-center text-slate-400">ದಾಖಲೆಗಳನ್ನು ಸಂಕಲಿಸಲಾಗುತ್ತಿದೆ...</div>
+            <LoadingAnimation
+              variant="card"
+              message="ವರದಿಗಳನ್ನು ಸಂಕಲಿಸಲಾಗುತ್ತಿದೆ..."
+              subMessage="Compiling Statutory Cooperative Summary Reports..."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">

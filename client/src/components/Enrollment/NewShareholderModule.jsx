@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '../../services/api';
@@ -626,11 +627,12 @@ export default function NewShareholderModule() {
             <tbody className="divide-y divide-slate-800/80">
               {loading ? (
                 <tr>
-                  <td colSpan="18" className="py-12 text-center text-slate-400">
-                    <div className="flex items-center justify-center gap-2">
-                      <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
-                      <span>ಲೋಡ್ ಆಗುತ್ತಿದೆ...</span>
-                    </div>
+                  <td colSpan="18" className="py-12">
+                    <LoadingAnimation
+                      variant="card"
+                      message="ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ದಾಖಲೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+                      subMessage="Loading New Shareholder Enrollment Roster..."
+                    />
                   </td>
                 </tr>
               ) : enrollments.length === 0 ? (

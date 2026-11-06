@@ -625,9 +625,12 @@ export default function EmployeeManagement() {
             <tbody className="divide-y divide-slate-800/60 text-slate-200">
               {loading ? (
                 <tr>
-                  <td colSpan="10" className="py-8 text-center text-slate-400">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-400" />
-                    ಸಿಬ್ಬಂದಿ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...
+                  <td colSpan="10" className="py-12">
+                    <LoadingAnimation
+                      variant="card"
+                      message="ಸಿಬ್ಬಂದಿ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+                      subMessage="Loading Employee Roster & Department Records..."
+                    />
                   </td>
                 </tr>
               ) : filteredEmployees.length === 0 ? (

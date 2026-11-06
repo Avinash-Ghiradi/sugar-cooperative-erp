@@ -1,12 +1,11 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 import { DEFAULT_LOGO_PATH, getCompanyLogo } from '../../services/organizationService';
 
 /**
  * Universal High-End Loading Animation Component
  * 
  * Supports variants:
- * - 'page': Full-page or module-level viewport loader with breathing official BSSKN emblem & orbit rings
+ * - 'page' | 'fullscreen': Full-page or module-level viewport loader with glowing official emblem & orbital rings
  * - 'section' | 'card': Centered inside cards, tables, modal dialogs, and sections
  * - 'skeleton': Shimmering table/card placeholder skeleton preview
  * - 'inline': Compact inline spinner for buttons, badges, and small controls
@@ -14,7 +13,7 @@ import { DEFAULT_LOGO_PATH, getCompanyLogo } from '../../services/organizationSe
 export default function LoadingAnimation({
   variant = 'section',
   message = 'ಮಾಹಿತಿಯನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...',
-  subMessage = 'Statutory ERP Database Connection Active',
+  subMessage = 'Statutory Cooperative ERP Database Connection Active',
   size = 'md',
   showEmblem = true,
   className = '',
@@ -55,7 +54,6 @@ export default function LoadingAnimation({
                 <div className="h-2.5 w-1/2 bg-slate-800/50 rounded"></div>
               </div>
               <div className="w-20 h-6 bg-slate-800/70 rounded-lg shrink-0"></div>
-              {/* Shimmer sweep effect */}
               <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent animate-shimmer"></div>
             </div>
           ))}
@@ -68,12 +66,12 @@ export default function LoadingAnimation({
   if (variant === 'page' || variant === 'fullscreen') {
     return (
       <div
-        className={`min-h-[60vh] flex flex-col items-center justify-center p-6 text-center select-none ${className}`}
+        className={`min-h-[55vh] flex flex-col items-center justify-center p-8 text-center select-none ${className}`}
       >
         {/* Orbital Emblem Core */}
         <div className="relative flex items-center justify-center w-28 h-28 mb-6">
           {/* Outer glowing ripple */}
-          <div className="absolute inset-0 rounded-full bg-emerald-500/15 blur-xl animate-pulse"></div>
+          <div className="absolute inset-0 rounded-full bg-emerald-500/20 blur-xl animate-pulse"></div>
 
           {/* Clockwise rotating dashed emerald ring */}
           <div className="absolute inset-0 rounded-full border-2 border-emerald-500/30 border-dashed animate-orbit-cw"></div>
@@ -81,12 +79,12 @@ export default function LoadingAnimation({
           {/* Counter-clockwise rotating gold/teal gradient ring */}
           <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-emerald-400 border-r-teal-300 animate-orbit-ccw"></div>
 
-          {/* Inner core circle with official BSSKN Emblem */}
+          {/* Inner core circle with official Emblem */}
           <div className="relative w-16 h-16 rounded-full bg-slate-950 border border-emerald-500/40 p-2 shadow-2xl shadow-emerald-500/20 flex items-center justify-center overflow-hidden animate-pulse-glow">
             {showEmblem ? (
               <img
                 src={companyLogo}
-                alt="BSSKN Factory Emblem"
+                alt="Factory Emblem"
                 className="w-full h-full object-contain"
                 onError={(e) => {
                   e.target.style.display = 'none';
@@ -99,17 +97,17 @@ export default function LoadingAnimation({
         </div>
 
         {/* Kannada & English Loading Titles */}
-        <div className="space-y-1.5 max-w-md">
-          <h3 className="text-base font-bold text-slate-100 flex items-center justify-center gap-2">
+        <div className="space-y-2 max-w-lg">
+          <h3 className="text-base sm:text-lg font-bold text-slate-100 flex items-center justify-center gap-2">
             <span>{message}</span>
-            <span className="flex space-x-1">
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce"></span>
+            <span className="flex space-x-1 items-center">
+              <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+              <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+              <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></span>
             </span>
           </h3>
           {subMessage && (
-            <p className="text-xs text-slate-400 font-medium">
+            <p className="text-xs sm:text-sm text-slate-400 font-medium tracking-wide">
               {subMessage}
             </p>
           )}
@@ -125,26 +123,26 @@ export default function LoadingAnimation({
   return (
     <div
       className={`w-full flex flex-col items-center justify-center ${
-        isLarge ? 'p-16 space-y-4 min-h-[300px]' : isSmall ? 'p-6 space-y-2 min-h-[140px]' : 'p-10 space-y-3 min-h-[200px]'
+        isLarge ? 'p-16 space-y-5 min-h-[320px]' : isSmall ? 'p-6 space-y-2.5 min-h-[150px]' : 'p-10 space-y-4 min-h-[220px]'
       } text-center select-none ${className}`}
     >
       {/* Dual Ring Orbital Spinner */}
-      <div className={`relative flex items-center justify-center ${isLarge ? 'w-20 h-20' : isSmall ? 'w-10 h-10' : 'w-14 h-14'}`}>
+      <div className={`relative flex items-center justify-center ${isLarge ? 'w-24 h-24' : isSmall ? 'w-12 h-12' : 'w-20 h-20'}`}>
         {/* Soft background glow */}
-        <div className="absolute inset-0 rounded-full bg-emerald-500/10 blur-md animate-pulse"></div>
+        <div className="absolute inset-0 rounded-full bg-emerald-500/15 blur-lg animate-pulse"></div>
 
         {/* Outer clockwise ring */}
-        <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 border-r-emerald-400 animate-orbit-cw"></div>
+        <div className="absolute inset-0 rounded-full border-2 border-emerald-500/25 border-t-emerald-400 border-r-emerald-300 animate-orbit-cw"></div>
 
         {/* Inner counter-clockwise ring */}
-        <div className="absolute inset-1.5 rounded-full border-2 border-teal-500/20 border-b-teal-300 border-l-teal-300 animate-orbit-ccw"></div>
+        <div className="absolute inset-2 rounded-full border-2 border-teal-500/25 border-b-teal-300 border-l-teal-300 animate-orbit-ccw"></div>
 
-        {/* Center emblem or jewel dot */}
+        {/* Center emblem badge */}
         {showEmblem && !isSmall ? (
-          <div className="relative w-7 h-7 rounded-full bg-slate-900 border border-emerald-500/30 p-1 flex items-center justify-center overflow-hidden">
+          <div className={`relative ${isLarge ? 'w-12 h-12' : 'w-10 h-10'} rounded-full bg-slate-950 border border-emerald-500/40 p-1.5 flex items-center justify-center shadow-lg shadow-emerald-950/50 overflow-hidden`}>
             <img
               src={companyLogo}
-              alt="BSSKN Logo"
+              alt="Logo"
               className="w-full h-full object-contain"
               onError={(e) => {
                 e.target.style.display = 'none';
@@ -152,22 +150,22 @@ export default function LoadingAnimation({
             />
           </div>
         ) : (
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></div>
+          <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_10px_#10b981]"></div>
         )}
       </div>
 
       {/* Message Text with Animated Dots */}
-      <div className="space-y-1">
-        <p className={`${isLarge ? 'text-sm' : isSmall ? 'text-[11px]' : 'text-xs'} font-semibold text-slate-200 flex items-center justify-center gap-1.5`}>
+      <div className="space-y-1.5 max-w-md">
+        <p className={`${isLarge ? 'text-base' : isSmall ? 'text-xs' : 'text-sm sm:text-base'} font-bold text-slate-100 flex items-center justify-center gap-2`}>
           <span>{message}</span>
-          <span className="inline-flex space-x-1">
-            <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-            <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-            <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce"></span>
+          <span className="inline-flex space-x-1 items-center">
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce"></span>
           </span>
         </p>
         {subMessage && (
-          <p className="text-[10px] text-slate-500">
+          <p className="text-xs text-slate-400 font-medium">
             {subMessage}
           </p>
         )}

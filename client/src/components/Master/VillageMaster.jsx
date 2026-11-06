@@ -1,3 +1,4 @@
+import LoadingAnimation from '../Common/LoadingAnimation';
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../../services/api';
 import { Building2, Search, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
@@ -63,9 +64,11 @@ export default function VillageMaster() {
       </div>
 
       {loading ? (
-        <div className="p-12 text-center text-slate-400 flex items-center justify-center gap-2">
-          <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" /> Loading all registered places...
-        </div>
+        <LoadingAnimation
+          variant="card"
+          message="ಗ್ರಾಮಗಳ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+          subMessage="Loading Registered Places & 357 Villages Directory..."
+        />
       ) : (
         <>
           {filtered.length === 0 ? (

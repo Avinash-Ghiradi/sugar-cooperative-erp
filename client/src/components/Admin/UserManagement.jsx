@@ -177,9 +177,12 @@ export default function UserManagement() {
               {/* Dynamic Employee Accounts */}
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="py-6 text-center text-slate-400">
-                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1 text-emerald-400" />
-                    ಸಿಬ್ಬಂದಿ ಲಾಗಿನ್ ಖಾತೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...
+                  <td colSpan="7" className="py-12">
+                    <LoadingAnimation
+                      variant="card"
+                      message="ಸಿಬ್ಬಂದಿ ಲಾಗಿನ್ ಖಾತೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+                      subMessage="Loading Staff Login Accounts & Access Matrix..."
+                    />
                   </td>
                 </tr>
               ) : employees.length === 0 ? (

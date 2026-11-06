@@ -867,7 +867,7 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                 <datalist id="sh-form-places-list">
                   {villages.map(v => (
                     <option key={v.village_id || v.name} value={v.name}>
-                      {v.name} {v.taluk ? `(${v.taluk})` : ''}
+                      {v.name}
                     </option>
                   ))}
                 </datalist>
