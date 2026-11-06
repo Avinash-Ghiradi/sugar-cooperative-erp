@@ -5,6 +5,7 @@ import { useCompanyLogo, useHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_
 import { downloadEnrollmentDocx } from '../../services/enrollmentDocxService';
 import { downloadVarasaDocx } from '../../services/varasaDocxService';
 import { downloadVargavaneDocx } from '../../services/vargavaneDocxService';
+import { getShareholderSharesCount } from '../../services/api';
 
 // Classic Cooperative Handshake SVG Icon fallback
 function CooperativeHandshakeIcon({ className = "w-20 h-12" }) {
