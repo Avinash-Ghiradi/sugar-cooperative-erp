@@ -1,0 +1,3939 @@
+{
+  "villages": [
+    {
+      "village_id": "VIL-003",
+      "name": "ಅಂಜುಟಿಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 169,
+      "total_shares": 190
+    },
+    {
+      "village_id": "VIL-001",
+      "name": "ಅಗರಖೇಡ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 324,
+      "total_shares": 427
+    },
+    {
+      "village_id": "VIL-002",
+      "name": "ಅಗಸನಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 8,
+      "total_shares": 8
+    },
+    {
+      "village_id": "VIL-004",
+      "name": "ಅಣಚಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 40,
+      "total_shares": 41
+    },
+    {
+      "village_id": "VIL-005",
+      "name": "ಅಥರ್ಗಾ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 180,
+      "total_shares": 187
+    },
+    {
+      "village_id": "VIL-006",
+      "name": "ಅಪಜಲಪೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-007",
+      "name": "ಅರಕೇರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-008",
+      "name": "ಅರ್ಜನಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 109,
+      "total_shares": 113
+    },
+    {
+      "village_id": "VIL-009",
+      "name": "ಅರ್ಜುಣಗಿ ಕೆ ಡಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 15,
+      "total_shares": 15
+    },
+    {
+      "village_id": "VIL-010",
+      "name": "ಅರ್ಜುಣಗಿ ಬಿ ಕೆ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 21,
+      "total_shares": 21
+    },
+    {
+      "village_id": "VIL-011",
+      "name": "ಅಲಹಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 10,
+      "total_shares": 10
+    },
+    {
+      "village_id": "VIL-012",
+      "name": "ಅಲಿಯಾಬಾದ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-013",
+      "name": "ಅಸಂತಾಪೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 11,
+      "total_shares": 11
+    },
+    {
+      "village_id": "VIL-014",
+      "name": "ಅಸ್ಕಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 24,
+      "total_shares": 26
+    },
+    {
+      "village_id": "VIL-015",
+      "name": "ಅಹೀರಸಂಗ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 216,
+      "total_shares": 267
+    },
+    {
+      "village_id": "VIL-016",
+      "name": "ಆಲಗೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-017",
+      "name": "ಆಲಮಟ್ಟಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-018",
+      "name": "ಆಲಮೇಲ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 303,
+      "total_shares": 328
+    },
+    {
+      "village_id": "VIL-019",
+      "name": "ಆಸಂಗಿಹಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-020",
+      "name": "ಆಹೇರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 11,
+      "total_shares": 11
+    },
+    {
+      "village_id": "VIL-021",
+      "name": "ಆಳೂರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 55,
+      "total_shares": 66
+    },
+    {
+      "village_id": "VIL-022",
+      "name": "ಆಳೂರ ಎಲ್ ಟಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-023",
+      "name": "ಇಂಗಳಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 129,
+      "total_shares": 211
+    },
+    {
+      "village_id": "VIL-024",
+      "name": "ಇಂಗಳಗಿ ಬಿ ಬಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 30,
+      "total_shares": 31
+    },
+    {
+      "village_id": "VIL-025",
+      "name": "ಇಂಚಗೇರಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 238,
+      "total_shares": 266
+    },
+    {
+      "village_id": "VIL-026",
+      "name": "ಇಂಚಗೇರಿ ಎಲ್ ಟಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-028",
+      "name": "ಇಂಡಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 526,
+      "total_shares": 609
+    },
+    {
+      "village_id": "VIL-029",
+      "name": "ಇಂಡಿ ಎಲ್ ಟಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-030",
+      "name": "ಇಂಡಿ ಡಿಗಿಭಾವಿ ಎಲ್ ಟಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-031",
+      "name": "ಇಂಡಿ ಮಧುರನಗರ ಎಲ್ ಟಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-032",
+      "name": "ಇಂಡಿ ರೇಲ್ವೆಸ್ಟೆಶನ್",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 9,
+      "total_shares": 9
+    },
+    {
+      "village_id": "VIL-027",
+      "name": "ಇಟಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-033",
+      "name": "ಇಬ್ರಾಹಿಂಪೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 24,
+      "total_shares": 24
+    },
+    {
+      "village_id": "VIL-034",
+      "name": "ಇಲಕಲ್",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-035",
+      "name": "ಉಕ್ಕಲಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-036",
+      "name": "ಉಚಿತನಾವದಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 6
+    },
+    {
+      "village_id": "VIL-037",
+      "name": "ಉಮರಜ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 269,
+      "total_shares": 479
+    },
+    {
+      "village_id": "VIL-038",
+      "name": "ಉಮರಾಣಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಕೆರೂರ",
+      "pin_code": "",
+      "shareholder_count": 148,
+      "total_shares": 161
+    },
+    {
+      "village_id": "VIL-039",
+      "name": "ಏಳಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 7,
+      "total_shares": 7
+    },
+    {
+      "village_id": "VIL-040",
+      "name": "ಏಳಗಿ ಪಿ ಹೆಚ್",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 89,
+      "total_shares": 90
+    },
+    {
+      "village_id": "VIL-041",
+      "name": "ಓತಿಹಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 41,
+      "total_shares": 41
+    },
+    {
+      "village_id": "VIL-044",
+      "name": "ಕಂಚನಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಕೆರೂರ",
+      "pin_code": "",
+      "shareholder_count": 7,
+      "total_shares": 7
+    },
+    {
+      "village_id": "VIL-042",
+      "name": "ಕಕ್ಕಳಮೇಲಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 232,
+      "total_shares": 232
+    },
+    {
+      "village_id": "VIL-043",
+      "name": "ಕಗ್ಗೋಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-045",
+      "name": "ಕಡಕೋಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-046",
+      "name": "ಕಡಣಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 33,
+      "total_shares": 37
+    },
+    {
+      "village_id": "VIL-047",
+      "name": "ಕಡ್ಲೆವಾಡ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 16,
+      "total_shares": 17
+    },
+    {
+      "village_id": "VIL-048",
+      "name": "ಕಡ್ಲೆವಾಡ ಪಿಎ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 10,
+      "total_shares": 10
+    },
+    {
+      "village_id": "VIL-049",
+      "name": "ಕಣ್ಣ ಗುಡ್ಡಿಹಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-050",
+      "name": "ಕಥೇವಾಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-051",
+      "name": "ಕನಕನಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 24,
+      "total_shares": 24
+    },
+    {
+      "village_id": "VIL-052",
+      "name": "ಕನಮಡಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-053",
+      "name": "ಕನ್ನೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-054",
+      "name": "ಕನ್ನೋಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 34,
+      "total_shares": 43
+    },
+    {
+      "village_id": "VIL-055",
+      "name": "ಕಪನಿಂಬರಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 96,
+      "total_shares": 136
+    },
+    {
+      "village_id": "VIL-056",
+      "name": "ಕರವಿನಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-057",
+      "name": "ಕರೂಟಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-058",
+      "name": "ಕಲಕೇರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 66,
+      "total_shares": 67
+    },
+    {
+      "village_id": "VIL-059",
+      "name": "ಕಲಹಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-060",
+      "name": "ಕಾಖಂಡಕಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-061",
+      "name": "ಕಾತ್ರಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 22,
+      "total_shares": 30
+    },
+    {
+      "village_id": "VIL-062",
+      "name": "ಕಿಲಾಡೋಣ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-063",
+      "name": "ಕುಬಕಡ್ಡಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-064",
+      "name": "ಕುಮಟೆ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-065",
+      "name": "ಕುಮಶಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 18,
+      "total_shares": 18
+    },
+    {
+      "village_id": "VIL-066",
+      "name": "ಕುಮಸಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 27,
+      "total_shares": 27
+    },
+    {
+      "village_id": "VIL-067",
+      "name": "ಕುರಬತ್ತಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 42,
+      "total_shares": 43
+    },
+    {
+      "village_id": "VIL-068",
+      "name": "ಕುಳೇಕುಮಟಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 43,
+      "total_shares": 43
+    },
+    {
+      "village_id": "VIL-069",
+      "name": "ಕೂಡಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 36,
+      "total_shares": 37
+    },
+    {
+      "village_id": "VIL-070",
+      "name": "ಕೂಡಗಿ ಎಲ್ ಟಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-071",
+      "name": "ಕೆಂಗನಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 29,
+      "total_shares": 30
+    },
+    {
+      "village_id": "VIL-072",
+      "name": "ಕೆರುಟಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-073",
+      "name": "ಕೆರುಟಗಿ ಎಲ್ ಟಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-074",
+      "name": "ಕೆರೂರ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಕೆರೂರ",
+      "pin_code": "",
+      "shareholder_count": 86,
+      "total_shares": 102
+    },
+    {
+      "village_id": "VIL-075",
+      "name": "ಕೆಸರಟ್ಟಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 9,
+      "total_shares": 9
+    },
+    {
+      "village_id": "VIL-076",
+      "name": "ಕೆಸರಾಳ ಎಲ್ ಟಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-077",
+      "name": "ಕೆಸರಾಳ ತಾಂಡಾ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-079",
+      "name": "ಕೊಂಕಣಗಾಂವ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 34,
+      "total_shares": 37
+    },
+    {
+      "village_id": "VIL-082",
+      "name": "ಕೊಂಡಗೂಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 17,
+      "total_shares": 17
+    },
+    {
+      "village_id": "VIL-078",
+      "name": "ಕೊಕಟನೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 53,
+      "total_shares": 53
+    },
+    {
+      "village_id": "VIL-080",
+      "name": "ಕೊಟ್ನಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 6,
+      "total_shares": 6
+    },
+    {
+      "village_id": "VIL-081",
+      "name": "ಕೊಟ್ಯಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-083",
+      "name": "ಕೊಲ್ಹಾರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-084",
+      "name": "ಕೊಳೂರಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 46,
+      "total_shares": 50
+    },
+    {
+      "village_id": "VIL-085",
+      "name": "ಕೋರವಾರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 71,
+      "total_shares": 71
+    },
+    {
+      "village_id": "VIL-086",
+      "name": "ಕೋರಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 48,
+      "total_shares": 48
+    },
+    {
+      "village_id": "VIL-087",
+      "name": "ಕೋರೆಗಾಂವ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-088",
+      "name": "ಕ್ಯಾತನಕೇರಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 33,
+      "total_shares": 33
+    },
+    {
+      "village_id": "VIL-089",
+      "name": "ಖಾನಾಪೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 8,
+      "total_shares": 8
+    },
+    {
+      "village_id": "VIL-090",
+      "name": "ಖೇಡಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 156,
+      "total_shares": 274
+    },
+    {
+      "village_id": "VIL-091",
+      "name": "ಖೈನೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 6
+    },
+    {
+      "village_id": "VIL-092",
+      "name": "ಗಂಗನಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 13,
+      "total_shares": 13
+    },
+    {
+      "village_id": "VIL-093",
+      "name": "ಗಣವಲಗಾ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-094",
+      "name": "ಗಣಿಹಾರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 34,
+      "total_shares": 34
+    },
+    {
+      "village_id": "VIL-095",
+      "name": "ಗದ್ಯಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-096",
+      "name": "ಗಬಸಾವಳಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 13,
+      "total_shares": 14
+    },
+    {
+      "village_id": "VIL-100",
+      "name": "ಗುಂದಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 47,
+      "total_shares": 53
+    },
+    {
+      "village_id": "VIL-101",
+      "name": "ಗುಂದವಾನ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 157,
+      "total_shares": 174
+    },
+    {
+      "village_id": "VIL-097",
+      "name": "ಗುಡ್ಡಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-098",
+      "name": "ಗುಣಕಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-099",
+      "name": "ಗುತ್ತರಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 4,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-102",
+      "name": "ಗುಬ್ಬೇವಾಡ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 67,
+      "total_shares": 80
+    },
+    {
+      "village_id": "VIL-103",
+      "name": "ಗುಲಬರ್ಗಾ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-104",
+      "name": "ಗುಳೇದಗುಡ್ಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-105",
+      "name": "ಗೊರನಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 60,
+      "total_shares": 64
+    },
+    {
+      "village_id": "VIL-106",
+      "name": "ಗೊರವಗುಂಡಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 8,
+      "total_shares": 8
+    },
+    {
+      "village_id": "VIL-107",
+      "name": "ಗೊಲಗೇರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 78,
+      "total_shares": 81
+    },
+    {
+      "village_id": "VIL-108",
+      "name": "ಗೊಳಸಾರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 76,
+      "total_shares": 81
+    },
+    {
+      "village_id": "VIL-109",
+      "name": "ಗೋಟ್ಯಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 56,
+      "total_shares": 58
+    },
+    {
+      "village_id": "VIL-110",
+      "name": "ಗೋಡಿಹಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಕೆರೂರ",
+      "pin_code": "",
+      "shareholder_count": 126,
+      "total_shares": 141
+    },
+    {
+      "village_id": "VIL-111",
+      "name": "ಗೋರನಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-112",
+      "name": "ಗೋಲಗೆರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-359",
+      "name": "ಗೋಲಬಾವಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇತರೆ (Other)",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-113",
+      "name": "ಗೋವಿಂದಪೂರ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 50,
+      "total_shares": 76
+    },
+    {
+      "village_id": "VIL-114",
+      "name": "ಗೋಳಸಾರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-115",
+      "name": "ಘತ್ತರಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 31,
+      "total_shares": 32
+    },
+    {
+      "village_id": "VIL-116",
+      "name": "ಚಟ್ಟರಕಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 75,
+      "total_shares": 75
+    },
+    {
+      "village_id": "VIL-117",
+      "name": "ಚಟ್ನಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 19,
+      "total_shares": 19
+    },
+    {
+      "village_id": "VIL-118",
+      "name": "ಚಡಚಣ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 442,
+      "total_shares": 720
+    },
+    {
+      "village_id": "VIL-119",
+      "name": "ಚಣೇಗಾಂವ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 207,
+      "total_shares": 337
+    },
+    {
+      "village_id": "VIL-120",
+      "name": "ಚವಡಿಹಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 45,
+      "total_shares": 61
+    },
+    {
+      "village_id": "VIL-121",
+      "name": "ಚಾಂದಕವಟೆ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 23,
+      "total_shares": 24
+    },
+    {
+      "village_id": "VIL-122",
+      "name": "ಚಿಕ್ಕಬೇವನೂರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 93,
+      "total_shares": 168
+    },
+    {
+      "village_id": "VIL-123",
+      "name": "ಚಿಕ್ಕಮಣ್ಣೂರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 18,
+      "total_shares": 18
+    },
+    {
+      "village_id": "VIL-124",
+      "name": "ಚಿಕ್ಕರೂಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 64,
+      "total_shares": 64
+    },
+    {
+      "village_id": "VIL-125",
+      "name": "ಚಿಕ್ಕಸಿಂದಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 25,
+      "total_shares": 27
+    },
+    {
+      "village_id": "VIL-126",
+      "name": "ಚಿಮ್ಮಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-127",
+      "name": "ಚೋರಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 35,
+      "total_shares": 59
+    },
+    {
+      "village_id": "VIL-128",
+      "name": "ಜಂಬಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-129",
+      "name": "ಜಮಖಂಡಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 11,
+      "total_shares": 11
+    },
+    {
+      "village_id": "VIL-130",
+      "name": "ಜಾಲವಾದ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 103,
+      "total_shares": 105
+    },
+    {
+      "village_id": "VIL-131",
+      "name": "ಜಿಗಜೀವಣಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 180,
+      "total_shares": 325
+    },
+    {
+      "village_id": "VIL-363",
+      "name": "ಜೀಗಜೇವಣಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪೂರ",
+      "circle_name": "ಇತರೆ (Other)",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-132",
+      "name": "ಜೀರಂಕಲಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 57,
+      "total_shares": 68
+    },
+    {
+      "village_id": "VIL-133",
+      "name": "ಜೇವೂರ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 164,
+      "total_shares": 189
+    },
+    {
+      "village_id": "VIL-134",
+      "name": "ಝಳಕಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 133,
+      "total_shares": 156
+    },
+    {
+      "village_id": "VIL-361",
+      "name": "ಟಾಕಲಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪೂರ",
+      "circle_name": "ಇತರೆ (Other)",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-135",
+      "name": "ಟಾಕಳಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಕೆರೂರ",
+      "pin_code": "",
+      "shareholder_count": 104,
+      "total_shares": 117
+    },
+    {
+      "village_id": "VIL-136",
+      "name": "ಡಂಬಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 27,
+      "total_shares": 27
+    },
+    {
+      "village_id": "VIL-137",
+      "name": "ಢವಳಾರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 13,
+      "total_shares": 13
+    },
+    {
+      "village_id": "VIL-138",
+      "name": "ತಂಗಡಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-139",
+      "name": "ತಡವಲಗಾ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 83,
+      "total_shares": 91
+    },
+    {
+      "village_id": "VIL-140",
+      "name": "ತದ್ದೇವಾಡಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಕೆರೂರ",
+      "pin_code": "",
+      "shareholder_count": 157,
+      "total_shares": 252
+    },
+    {
+      "village_id": "VIL-141",
+      "name": "ತಳೆವಾಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-142",
+      "name": "ತಾಂಬಾ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 219,
+      "total_shares": 241
+    },
+    {
+      "village_id": "VIL-143",
+      "name": "ತಾಂಬಾ ಎಲ್ ಟಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 12,
+      "total_shares": 12
+    },
+    {
+      "village_id": "VIL-144",
+      "name": "ತಾರಾಪೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 17,
+      "total_shares": 17
+    },
+    {
+      "village_id": "VIL-145",
+      "name": "ತಾವರಖೇಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 64,
+      "total_shares": 75
+    },
+    {
+      "village_id": "VIL-146",
+      "name": "ತಾವರಗೇರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-147",
+      "name": "ತಾಳಿಕೋಟ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 16,
+      "total_shares": 18
+    },
+    {
+      "village_id": "VIL-148",
+      "name": "ತಿಕೋಟಾ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-149",
+      "name": "ತಿಡಗುಂದಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 6,
+      "total_shares": 7
+    },
+    {
+      "village_id": "VIL-150",
+      "name": "ತುಮಕೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-151",
+      "name": "ತುರನಕೇರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-152",
+      "name": "ತೆಗ್ಗಿಹಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 73,
+      "total_shares": 78
+    },
+    {
+      "village_id": "VIL-153",
+      "name": "ತೆನಹಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 75,
+      "total_shares": 75
+    },
+    {
+      "village_id": "VIL-154",
+      "name": "ತೇರದಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-155",
+      "name": "ದಸೂರ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 87,
+      "total_shares": 155
+    },
+    {
+      "village_id": "VIL-156",
+      "name": "ದಾವಣಗೇರೆ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-157",
+      "name": "ದಿಂಡವಾರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-158",
+      "name": "ದೆಗಿನಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 27,
+      "total_shares": 41
+    },
+    {
+      "village_id": "VIL-159",
+      "name": "ದೇವಣಗಾಂವ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 87,
+      "total_shares": 87
+    },
+    {
+      "village_id": "VIL-160",
+      "name": "ದೇವರಗೆಣ್ಣೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-161",
+      "name": "ದೇವರನಾವದಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 22,
+      "total_shares": 22
+    },
+    {
+      "village_id": "VIL-162",
+      "name": "ದೇವರನಿಂಬರಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 290,
+      "total_shares": 376
+    },
+    {
+      "village_id": "VIL-163",
+      "name": "ದೇವರಹಿಪ್ಪರಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 142,
+      "total_shares": 145
+    },
+    {
+      "village_id": "VIL-164",
+      "name": "ದೇವೂರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 10,
+      "total_shares": 10
+    },
+    {
+      "village_id": "VIL-165",
+      "name": "ದೇಸುಣಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-166",
+      "name": "ಧಾರವಾಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-167",
+      "name": "ಧುಮಕನಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 66,
+      "total_shares": 88
+    },
+    {
+      "village_id": "VIL-168",
+      "name": "ಧೂಳಖೇಡ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 351,
+      "total_shares": 640
+    },
+    {
+      "village_id": "VIL-169",
+      "name": "ನಂದಗಾಂವ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-170",
+      "name": "ನಂದಗೇರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 7,
+      "total_shares": 7
+    },
+    {
+      "village_id": "VIL-171",
+      "name": "ನಂದರಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 201,
+      "total_shares": 259
+    },
+    {
+      "village_id": "VIL-172",
+      "name": "ನಂದ್ರಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 32,
+      "total_shares": 34
+    },
+    {
+      "village_id": "VIL-173",
+      "name": "ನಾಗಠಾಣ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-174",
+      "name": "ನಾಗನೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-175",
+      "name": "ನಾಗರಹಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 96,
+      "total_shares": 97
+    },
+    {
+      "village_id": "VIL-176",
+      "name": "ನಾಗಾಂವಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-177",
+      "name": "ನಾಗಾಂವಿ ಕೆ ಡಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 9,
+      "total_shares": 9
+    },
+    {
+      "village_id": "VIL-178",
+      "name": "ನಾಗಾಂವಿ ಬಿ ಕೆ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 28,
+      "total_shares": 28
+    },
+    {
+      "village_id": "VIL-179",
+      "name": "ನಾದ ಕೆ ಡಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 31,
+      "total_shares": 33
+    },
+    {
+      "village_id": "VIL-180",
+      "name": "ನಾದ ಬಿ ಕೆ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 40,
+      "total_shares": 40
+    },
+    {
+      "village_id": "VIL-181",
+      "name": "ನಾಲತವಾಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 4,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-182",
+      "name": "ನಾವದಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-184",
+      "name": "ನಿಂಬರಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-185",
+      "name": "ನಿಂಬಾಳ ಕೆ ಡಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 14,
+      "total_shares": 16
+    },
+    {
+      "village_id": "VIL-186",
+      "name": "ನಿಂಬಾಳ ಬಿ ಕೆ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 42,
+      "total_shares": 42
+    },
+    {
+      "village_id": "VIL-183",
+      "name": "ನಿಡಗುಂದಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-187",
+      "name": "ನಿವಾಳಖೇಡ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 36,
+      "total_shares": 36
+    },
+    {
+      "village_id": "VIL-188",
+      "name": "ನೀರಲಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 29,
+      "total_shares": 29
+    },
+    {
+      "village_id": "VIL-189",
+      "name": "ನೀವರಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 246,
+      "total_shares": 501
+    },
+    {
+      "village_id": "VIL-190",
+      "name": "ಪಡಗಾನೂರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 43,
+      "total_shares": 43
+    },
+    {
+      "village_id": "VIL-191",
+      "name": "ಪಡನೂರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 154,
+      "total_shares": 220
+    },
+    {
+      "village_id": "VIL-192",
+      "name": "ಪುರದಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-193",
+      "name": "ಬಂಕಲಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 6,
+      "total_shares": 6
+    },
+    {
+      "village_id": "VIL-196",
+      "name": "ಬಂಟನೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-197",
+      "name": "ಬಂಥನಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 18,
+      "total_shares": 19
+    },
+    {
+      "village_id": "VIL-198",
+      "name": "ಬಂದಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 96,
+      "total_shares": 96
+    },
+    {
+      "village_id": "VIL-194",
+      "name": "ಬಗಲೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 56,
+      "total_shares": 60
+    },
+    {
+      "village_id": "VIL-195",
+      "name": "ಬಟಗೇರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-199",
+      "name": "ಬನ್ನಟ್ಟಿ ಪಿ ಟಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-200",
+      "name": "ಬನ್ನಹಟ್ಟಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 22,
+      "total_shares": 28
+    },
+    {
+      "village_id": "VIL-201",
+      "name": "ಬಬಲಾದ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 71,
+      "total_shares": 82
+    },
+    {
+      "village_id": "VIL-202",
+      "name": "ಬಬಲೇಶ್ವರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 18,
+      "total_shares": 19
+    },
+    {
+      "village_id": "VIL-203",
+      "name": "ಬಮ್ಮನಜೋಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 34,
+      "total_shares": 36
+    },
+    {
+      "village_id": "VIL-204",
+      "name": "ಬಮ್ಮನಹಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 10,
+      "total_shares": 10
+    },
+    {
+      "village_id": "VIL-205",
+      "name": "ಬರಗುಡಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 80,
+      "total_shares": 112
+    },
+    {
+      "village_id": "VIL-206",
+      "name": "ಬರಟಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-207",
+      "name": "ಬರಡೋಲ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 202,
+      "total_shares": 256
+    },
+    {
+      "village_id": "VIL-208",
+      "name": "ಬರೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-209",
+      "name": "ಬಸನಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 31,
+      "total_shares": 32
+    },
+    {
+      "village_id": "VIL-210",
+      "name": "ಬಸವನ ಬಾಗೇವಾಡಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-211",
+      "name": "ಬಸವನಹಟ್ಟಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-212",
+      "name": "ಬಳಗಾನೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 148,
+      "total_shares": 150
+    },
+    {
+      "village_id": "VIL-213",
+      "name": "ಬಳುಂಡಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 11,
+      "total_shares": 11
+    },
+    {
+      "village_id": "VIL-214",
+      "name": "ಬಳ್ಳೊಳ್ಳಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 139,
+      "total_shares": 174
+    },
+    {
+      "village_id": "VIL-360",
+      "name": "ಬಳ್ಳೋಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇತರೆ (Other)",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-215",
+      "name": "ಬಾಗಲಕೋಟ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-216",
+      "name": "ಬಿಂಜಲಭಾವಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 4,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-217",
+      "name": "ಬಿಜ್ಜರಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-218",
+      "name": "ಬೀಳಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-219",
+      "name": "ಬೂದಿಹಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 80,
+      "total_shares": 94
+    },
+    {
+      "village_id": "VIL-220",
+      "name": "ಬೂದಿಹಾಳ ಪಿ ಟಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 8,
+      "total_shares": 8
+    },
+    {
+      "village_id": "VIL-221",
+      "name": "ಬೂಯ್ಯಾರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 101,
+      "total_shares": 162
+    },
+    {
+      "village_id": "VIL-223",
+      "name": "ಬೆಂಗಳೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 15,
+      "total_shares": 20
+    },
+    {
+      "village_id": "VIL-222",
+      "name": "ಬೆಕಿನಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 45,
+      "total_shares": 45
+    },
+    {
+      "village_id": "VIL-224",
+      "name": "ಬೆನಕನಹಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 55,
+      "total_shares": 60
+    },
+    {
+      "village_id": "VIL-225",
+      "name": "ಬೆನಕೊಟಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 44,
+      "total_shares": 44
+    },
+    {
+      "village_id": "VIL-226",
+      "name": "ಬೆವೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-227",
+      "name": "ಬೆಳಗಾಂವಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-228",
+      "name": "ಬೇಲೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-229",
+      "name": "ಬೊಳೆಗಾಂವ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 33,
+      "total_shares": 34
+    },
+    {
+      "village_id": "VIL-230",
+      "name": "ಬೋರಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 57,
+      "total_shares": 59
+    },
+    {
+      "village_id": "VIL-231",
+      "name": "ಬ್ಯಾಕೋಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 46,
+      "total_shares": 53
+    },
+    {
+      "village_id": "VIL-232",
+      "name": "ಬ್ಯಾಡಗಿಹಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 27,
+      "total_shares": 29
+    },
+    {
+      "village_id": "VIL-233",
+      "name": "ಬ್ರಹ್ಮದೇವರಮಡು",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 6,
+      "total_shares": 8
+    },
+    {
+      "village_id": "VIL-234",
+      "name": "ಭಂಟನೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-235",
+      "name": "ಭತಗುಣಕಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 261,
+      "total_shares": 372
+    },
+    {
+      "village_id": "VIL-236",
+      "name": "ಭೈರುಣಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 48,
+      "total_shares": 78
+    },
+    {
+      "village_id": "VIL-238",
+      "name": "ಮಂಗಳೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-244",
+      "name": "ಮಂದ್ರುಪ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-237",
+      "name": "ಮಖಣಾಪೂರ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 4,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-239",
+      "name": "ಮಡ್ಡಿಮಣ್ಣೂರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-240",
+      "name": "ಮಡ್ನಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 27,
+      "total_shares": 27
+    },
+    {
+      "village_id": "VIL-241",
+      "name": "ಮಣಂಕಲಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 23,
+      "total_shares": 23
+    },
+    {
+      "village_id": "VIL-242",
+      "name": "ಮಣ್ಣೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 19,
+      "total_shares": 20
+    },
+    {
+      "village_id": "VIL-243",
+      "name": "ಮದರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 8,
+      "total_shares": 8
+    },
+    {
+      "village_id": "VIL-245",
+      "name": "ಮನಗೂಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-246",
+      "name": "ಮನ್ನಾಪೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-247",
+      "name": "ಮರಗೂರ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 176,
+      "total_shares": 256
+    },
+    {
+      "village_id": "VIL-248",
+      "name": "ಮಲಘಾಣ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 33,
+      "total_shares": 33
+    },
+    {
+      "village_id": "VIL-249",
+      "name": "ಮಲ್ಕನ ದೇವರ ಹಟ್ಟಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-250",
+      "name": "ಮಸಳಿ ಕೆ ಡಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 13,
+      "total_shares": 13
+    },
+    {
+      "village_id": "VIL-251",
+      "name": "ಮಸಳಿ ಬಿ ಕೆ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 144,
+      "total_shares": 174
+    },
+    {
+      "village_id": "VIL-252",
+      "name": "ಮಾಗಣಗೇರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 4,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-253",
+      "name": "ಮಾಡಬಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 4,
+      "total_shares": 8
+    },
+    {
+      "village_id": "VIL-254",
+      "name": "ಮಾಡ್ಯಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-255",
+      "name": "ಮಾರ್ಸನಹಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 30,
+      "total_shares": 30
+    },
+    {
+      "village_id": "VIL-256",
+      "name": "ಮಾವಿನಹಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 76,
+      "total_shares": 104
+    },
+    {
+      "village_id": "VIL-257",
+      "name": "ಮಿಂಚನಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-258",
+      "name": "ಮಿರಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 126,
+      "total_shares": 126
+    },
+    {
+      "village_id": "VIL-259",
+      "name": "ಮುದ್ದೇಬಿಹಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 4,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-260",
+      "name": "ಮುರಡಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 9,
+      "total_shares": 10
+    },
+    {
+      "village_id": "VIL-261",
+      "name": "ಮುಳವಾಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-262",
+      "name": "ಮುಳಸಾವಳಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 21,
+      "total_shares": 21
+    },
+    {
+      "village_id": "VIL-263",
+      "name": "ಮೈಲಾರ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 19,
+      "total_shares": 20
+    },
+    {
+      "village_id": "VIL-264",
+      "name": "ಮೈಸೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-265",
+      "name": "ಮೋರಟಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 37,
+      "total_shares": 37
+    },
+    {
+      "village_id": "VIL-266",
+      "name": "ಯಂಕಂಚಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 66,
+      "total_shares": 67
+    },
+    {
+      "village_id": "VIL-267",
+      "name": "ಯರಗಲ್",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 23,
+      "total_shares": 23
+    },
+    {
+      "village_id": "VIL-268",
+      "name": "ಯರಗಲ್ ಬಿ ಕ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-269",
+      "name": "ಯಲಗೋಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 23,
+      "total_shares": 23
+    },
+    {
+      "village_id": "VIL-270",
+      "name": "ಯಾಳವಾರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-271",
+      "name": "ರಬಕವಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-272",
+      "name": "ರಾಜನಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 9,
+      "total_shares": 9
+    },
+    {
+      "village_id": "VIL-273",
+      "name": "ರಾಮತಿರ್ಥ ಎಲ್ ಟಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-274",
+      "name": "ರಾಮನಹಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 47,
+      "total_shares": 49
+    },
+    {
+      "village_id": "VIL-275",
+      "name": "ರಾಮಪೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 12,
+      "total_shares": 13
+    },
+    {
+      "village_id": "VIL-276",
+      "name": "ರಾಮಪೂರ ಪಿ ಎ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 7,
+      "total_shares": 7
+    },
+    {
+      "village_id": "VIL-277",
+      "name": "ರೇವತಗಾಂವ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 324,
+      "total_shares": 451
+    },
+    {
+      "village_id": "VIL-362",
+      "name": "ರೇವತಗಾವಂ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪೂರ",
+      "circle_name": "ಇತರೆ (Other)",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-278",
+      "name": "ರೊರಟ್ಟಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-279",
+      "name": "ರೋಡಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 61,
+      "total_shares": 68
+    },
+    {
+      "village_id": "VIL-280",
+      "name": "ಲಚ್ಯಾಣ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 92,
+      "total_shares": 94
+    },
+    {
+      "village_id": "VIL-281",
+      "name": "ಲಾಳಸಂಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 76,
+      "total_shares": 82
+    },
+    {
+      "village_id": "VIL-282",
+      "name": "ಲಿಂಗದಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-283",
+      "name": "ಲಿಂಗಾಪೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-284",
+      "name": "ಲೋಣಿ ಕೆ ಡಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 12,
+      "total_shares": 12
+    },
+    {
+      "village_id": "VIL-285",
+      "name": "ಲೋಣಿ ಬಿ ಕೆ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಕೆರೂರ",
+      "pin_code": "",
+      "shareholder_count": 203,
+      "total_shares": 233
+    },
+    {
+      "village_id": "VIL-286",
+      "name": "ವಣಕಿಹಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 19,
+      "total_shares": 19
+    },
+    {
+      "village_id": "VIL-287",
+      "name": "ವರ್ಕಾನಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 19,
+      "total_shares": 19
+    },
+    {
+      "village_id": "VIL-288",
+      "name": "ವಾಡೆ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 14,
+      "total_shares": 14
+    },
+    {
+      "village_id": "VIL-289",
+      "name": "ವಿಜಯಪುರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 9,
+      "total_shares": 12
+    },
+    {
+      "village_id": "VIL-358",
+      "name": "ವಿಜಾಪೂರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇತರೆ (Other)",
+      "pin_code": "",
+      "shareholder_count": 249,
+      "total_shares": 264
+    },
+    {
+      "village_id": "VIL-290",
+      "name": "ವಿಭೂತಿಹಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 9,
+      "total_shares": 10
+    },
+    {
+      "village_id": "VIL-291",
+      "name": "ಶಂಬೇವಾಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 9,
+      "total_shares": 9
+    },
+    {
+      "village_id": "VIL-293",
+      "name": "ಶಿಂಗನಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-292",
+      "name": "ಶಿಗಣಾಪೂರ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 86,
+      "total_shares": 104
+    },
+    {
+      "village_id": "VIL-294",
+      "name": "ಶಿರಕನಹಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 12,
+      "total_shares": 13
+    },
+    {
+      "village_id": "VIL-295",
+      "name": "ಶಿರಗೂರ ಇನಾಂ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 6,
+      "total_shares": 7
+    },
+    {
+      "village_id": "VIL-296",
+      "name": "ಶಿರಗೂರ ಖಾಲ್ಸಾ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 56,
+      "total_shares": 61
+    },
+    {
+      "village_id": "VIL-297",
+      "name": "ಶಿರಡೋಣ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 138,
+      "total_shares": 139
+    },
+    {
+      "village_id": "VIL-298",
+      "name": "ಶಿರನಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 165,
+      "total_shares": 279
+    },
+    {
+      "village_id": "VIL-299",
+      "name": "ಶಿರಶ್ಯಾಡ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 152,
+      "total_shares": 216
+    },
+    {
+      "village_id": "VIL-300",
+      "name": "ಶಿರಸಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 19,
+      "total_shares": 19
+    },
+    {
+      "village_id": "VIL-301",
+      "name": "ಶಿರೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-302",
+      "name": "ಶಿವಣಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-303",
+      "name": "ಶಿವಪೂರ ಕೆ ಡಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 9,
+      "total_shares": 9
+    },
+    {
+      "village_id": "VIL-304",
+      "name": "ಶಿವಪೂರ ಬಿಕೆ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 6,
+      "total_shares": 6
+    },
+    {
+      "village_id": "VIL-305",
+      "name": "ಶೇಷಗಿರಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-306",
+      "name": "ಸಂಗೋಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 19,
+      "total_shares": 19
+    },
+    {
+      "village_id": "VIL-307",
+      "name": "ಸಾತಪೂರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 4,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-308",
+      "name": "ಸಾತಲಗಾಂವ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 3,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-309",
+      "name": "ಸಾತಲಗಾಂವ ಪಿ ಐ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 130,
+      "total_shares": 142
+    },
+    {
+      "village_id": "VIL-310",
+      "name": "ಸಾತಲಗಾಂವ ಪಿ ಬಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 41,
+      "total_shares": 61
+    },
+    {
+      "village_id": "VIL-311",
+      "name": "ಸಾತಿಹಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-312",
+      "name": "ಸಾರವಾಡ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-313",
+      "name": "ಸಾಲೋಟಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 234,
+      "total_shares": 284
+    },
+    {
+      "village_id": "VIL-314",
+      "name": "ಸಾವಳಸಂಗ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 56,
+      "total_shares": 84
+    },
+    {
+      "village_id": "VIL-315",
+      "name": "ಸಾಸಾಬಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 25,
+      "total_shares": 25
+    },
+    {
+      "village_id": "VIL-316",
+      "name": "ಸಾಸ್ತಾನ (ಉಡಪಿ ತಾಲೂಕ, ದ.ಕ.)",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-317",
+      "name": "ಸಿಂದಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 238,
+      "total_shares": 256
+    },
+    {
+      "village_id": "VIL-318",
+      "name": "ಸುಂಗಠಾಣ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 37,
+      "total_shares": 40
+    },
+    {
+      "village_id": "VIL-319",
+      "name": "ಸುರಗಿಹಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 85,
+      "total_shares": 109
+    },
+    {
+      "village_id": "VIL-320",
+      "name": "ಸೊನಕನಹಳ್ಳಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 38,
+      "total_shares": 38
+    },
+    {
+      "village_id": "VIL-321",
+      "name": "ಸೊನ್ನ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-322",
+      "name": "ಸೊನ್ನಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-323",
+      "name": "ಸೋಮಜಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 12,
+      "total_shares": 13
+    },
+    {
+      "village_id": "VIL-324",
+      "name": "ಸೋಮಪುರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-325",
+      "name": "ಸೋಲಾಪೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 8,
+      "total_shares": 12
+    },
+    {
+      "village_id": "VIL-326",
+      "name": "ಹಂಗರಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-327",
+      "name": "ಹಂಚನಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 12,
+      "total_shares": 12
+    },
+    {
+      "village_id": "VIL-329",
+      "name": "ಹಂಜಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 192,
+      "total_shares": 259
+    },
+    {
+      "village_id": "VIL-332",
+      "name": "ಹಂದಿಗನೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 11,
+      "total_shares": 18
+    },
+    {
+      "village_id": "VIL-328",
+      "name": "ಹಚ್ಯಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 49,
+      "total_shares": 49
+    },
+    {
+      "village_id": "VIL-330",
+      "name": "ಹಡಲಸಂಗ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 62,
+      "total_shares": 72
+    },
+    {
+      "village_id": "VIL-331",
+      "name": "ಹತ್ತಳ್ಳಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಕೆರೂರ",
+      "pin_code": "",
+      "shareholder_count": 80,
+      "total_shares": 106
+    },
+    {
+      "village_id": "VIL-333",
+      "name": "ಹರನಾಳ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 33,
+      "total_shares": 33
+    },
+    {
+      "village_id": "VIL-334",
+      "name": "ಹಲಗಲಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-335",
+      "name": "ಹಲಸಂಗಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 232,
+      "total_shares": 260
+    },
+    {
+      "village_id": "VIL-336",
+      "name": "ಹವಳಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-337",
+      "name": "ಹಳಗುಣಕಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 79,
+      "total_shares": 129
+    },
+    {
+      "village_id": "VIL-338",
+      "name": "ಹಾಲಹಳ್ಳಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "pin_code": "586204",
+      "shareholder_count": 5,
+      "total_shares": 6
+    },
+    {
+      "village_id": "VIL-339",
+      "name": "ಹಾವಿನಾಳ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಕೆರೂರ",
+      "pin_code": "",
+      "shareholder_count": 98,
+      "total_shares": 107
+    },
+    {
+      "village_id": "VIL-340",
+      "name": "ಹಾಳಗುಂಡಕನಾಳ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 12,
+      "total_shares": 12
+    },
+    {
+      "village_id": "VIL-342",
+      "name": "ಹಿಂಗಣಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 104,
+      "total_shares": 115
+    },
+    {
+      "village_id": "VIL-341",
+      "name": "ಹಿಕ್ಕಣಗುತ್ತಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 14,
+      "total_shares": 14
+    },
+    {
+      "village_id": "VIL-343",
+      "name": "ಹಿಟ್ನಳ್ಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "pin_code": "",
+      "shareholder_count": 48,
+      "total_shares": 48
+    },
+    {
+      "village_id": "VIL-344",
+      "name": "ಹಿರೇಬೇವನೂರ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 202,
+      "total_shares": 297
+    },
+    {
+      "village_id": "VIL-345",
+      "name": "ಹಿರೇಮಸಳಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "pin_code": "586217",
+      "shareholder_count": 7,
+      "total_shares": 7
+    },
+    {
+      "village_id": "VIL-346",
+      "name": "ಹಿರೇರೂಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "pin_code": "586209",
+      "shareholder_count": 94,
+      "total_shares": 100
+    },
+    {
+      "village_id": "VIL-347",
+      "name": "ಹೀರೆ ಮಣ್ಣೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-348",
+      "name": "ಹುನಗುಂದ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 5,
+      "total_shares": 5
+    },
+    {
+      "village_id": "VIL-349",
+      "name": "ಹುಬನೂರ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-350",
+      "name": "ಹುಬ್ಬಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-351",
+      "name": "ಹೂವಿನಹಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "pin_code": "",
+      "shareholder_count": 19,
+      "total_shares": 20
+    },
+    {
+      "village_id": "VIL-352",
+      "name": "ಹೊನಗನಹಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 2,
+      "total_shares": 2
+    },
+    {
+      "village_id": "VIL-353",
+      "name": "ಹೊನ್ನಳ್ಳಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 8,
+      "total_shares": 8
+    },
+    {
+      "village_id": "VIL-354",
+      "name": "ಹೊನ್ನುಟಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 3,
+      "total_shares": 3
+    },
+    {
+      "village_id": "VIL-355",
+      "name": "ಹೊರ್ತಿ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "pin_code": "586207",
+      "shareholder_count": 214,
+      "total_shares": 248
+    },
+    {
+      "village_id": "VIL-356",
+      "name": "ಹೊಳೆ ಹಂಗರಗಿ",
+      "taluk": "",
+      "district": "",
+      "circle_name": "Post",
+      "pin_code": "",
+      "shareholder_count": 4,
+      "total_shares": 4
+    },
+    {
+      "village_id": "VIL-364",
+      "name": "ಹೋರ್ತಿ",
+      "taluk": "ಇಂಡಿ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಇತರೆ (Other)",
+      "pin_code": "",
+      "shareholder_count": 1,
+      "total_shares": 1
+    },
+    {
+      "village_id": "VIL-357",
+      "name": "ಹೋಳಿಸಂಖ",
+      "taluk": "ಚಡಚಣ",
+      "district": "ವಿಜಯಪುರ",
+      "circle_name": "ಕೆರೂರ",
+      "pin_code": "",
+      "shareholder_count": 89,
+      "total_shares": 130
+    }
+  ],
+  "circles": [
+    {
+      "circle_id": "CIR-07",
+      "name": "ಆಲಮೇಲ - ಸಿಂದಗಿ - ದೇವರಹಿಪ್ಪರಗಿ",
+      "taluk": "ಇಂಡಿ",
+      "shareholder_count": 2981,
+      "total_shares": 3115
+    },
+    {
+      "circle_id": "CIR-01",
+      "name": "ಇಂಡಿ ಸರ್ಕಲ",
+      "taluk": "ಇಂಡಿ",
+      "shareholder_count": 1514,
+      "total_shares": 1991
+    },
+    {
+      "circle_id": "CIR-03",
+      "name": "ಇಂಡಿ ಸ್ಟೇಶನ್‌ ಸರ್ಕಲ",
+      "taluk": "ಇಂಡಿ",
+      "shareholder_count": 1781,
+      "total_shares": 2312
+    },
+    {
+      "circle_id": "CIR-10",
+      "name": "ಇತರೆ (Other)",
+      "taluk": "ಇಂಡಿ",
+      "shareholder_count": 255,
+      "total_shares": 270
+    },
+    {
+      "circle_id": "CIR-09",
+      "name": "ಕೆರೂರ",
+      "taluk": "ಚಡಚಣ",
+      "shareholder_count": 1098,
+      "total_shares": 1356
+    },
+    {
+      "circle_id": "CIR-08",
+      "name": "ಚಡಚಣ ಸರ್ಕಲ",
+      "taluk": "ಚಡಚಣ",
+      "shareholder_count": 2716,
+      "total_shares": 4059
+    },
+    {
+      "circle_id": "CIR-04",
+      "name": "ತಾಂಬಾ ಸರ್ಕಲ",
+      "taluk": "ಇಂಡಿ",
+      "shareholder_count": 1645,
+      "total_shares": 1736
+    },
+    {
+      "circle_id": "CIR-02",
+      "name": "ಧೂಳಖೇಡ ಸರ್ಕಲ",
+      "taluk": "ಚಡಚಣ",
+      "shareholder_count": 3221,
+      "total_shares": 4245
+    },
+    {
+      "circle_id": "CIR-06",
+      "name": "ಸಾಲೋಟಗಿ ಸರ್ಕಲ",
+      "taluk": "ಇಂಡಿ",
+      "shareholder_count": 1443,
+      "total_shares": 1743
+    },
+    {
+      "circle_id": "CIR-05",
+      "name": "Post",
+      "taluk": "ಇಂಡಿ",
+      "shareholder_count": 431,
+      "total_shares": 458
+    }
+  ],
+  "books": [
+    "B.No: 1",
+    "B.No: 2",
+    "B.No: 3",
+    "B.No: 4",
+    "B.No: 5",
+    "B.No: 6",
+    "B.No: 7",
+    "B.No: 8",
+    "B.No: 9",
+    "B.No: 10",
+    "B.No: 11",
+    "B.No: 12",
+    "B.No: 13",
+    "B.No: 14",
+    "B.No: 15",
+    "B.No: 16",
+    "B.No: 17",
+    "B.No: 18",
+    "B.No: 19",
+    "B.No: 20",
+    "B.No: 21",
+    "B.No: 22",
+    "B.No: 23",
+    "B.No: 24",
+    "B.No: 25",
+    "B.No: 26",
+    "B.No: 27",
+    "B.No: 28",
+    "B.No: 29",
+    "B.No: 30",
+    "B.No: 31",
+    "B.No: 32",
+    "B.No: 33",
+    "B.No: 34",
+    "B.No: 35",
+    "B.No: 36",
+    "B.No: 37",
+    "B.No: 38",
+    "B.No: 39",
+    "B.No: 40",
+    "B.No: 41",
+    "B.No: 42",
+    "B.No: 43",
+    "B.No: 44",
+    "B.No: 45",
+    "B.No: 46",
+    "B.No: 47",
+    "B.No: 48",
+    "B.No: 49",
+    "B.No: 50",
+    "B.No: 51",
+    "B.No: 52",
+    "B.No: 53",
+    "B.No: 54",
+    "B.No: 55",
+    "B.No: 56",
+    "B.No: 57",
+    "B.No: 58",
+    "B.No: 59",
+    "B.No: 60",
+    "B.No: 61",
+    "B.No: 62",
+    "B.No: 63",
+    "B.No: 64",
+    "B.No: 65",
+    "B.No: 66",
+    "B.No: 67",
+    "B.No: 68",
+    "B.No: 69",
+    "B.No: 70",
+    "B.No: 71",
+    "B.No: 72",
+    "B.No: 73",
+    "B.No: 74",
+    "B.No: 75",
+    "B.No: 76",
+    "B.No: 77",
+    "B.No: 78",
+    "SC. B.No: 01",
+    "SC. B.No: 02",
+    "SC. B.No: 03",
+    "SC. B.No: 04",
+    "SC. B.No: 05",
+    "SC. B.No: 06",
+    "SC. B.No: 07",
+    "SC. B.No: 08",
+    "SC. B.No: 09",
+    "SC. B.No: 10",
+    "SC. B.No: 11",
+    "SC. B.No: 12",
+    "SC. B.No: 13",
+    "SC. B.No: 14",
+    "SC. B.No: 15",
+    "SC. B.No: 16",
+    "SC. B.No: 17",
+    "Mn. No.: 1",
+    "Mh. No.: 1",
+    "PKPS"
+  ],
+  "casts": [
+    "ಅ - ವರ್ಗ",
+    "ಡ - ವರ್ಗ",
+    "ಬ - ವರ್ಗ"
+  ],
+  "amounts": [
+    {
+      "amount": 1000,
+      "count": 1209
+    },
+    {
+      "amount": 1500,
+      "count": 8
+    },
+    {
+      "amount": 2000,
+      "count": 13103
+    },
+    {
+      "amount": 3000,
+      "count": 89
+    },
+    {
+      "amount": 4000,
+      "count": 1720
+    },
+    {
+      "amount": 5000,
+      "count": 38
+    },
+    {
+      "amount": 6000,
+      "count": 387
+    },
+    {
+      "amount": 7000,
+      "count": 11
+    },
+    {
+      "amount": 7500,
+      "count": 1
+    },
+    {
+      "amount": 8000,
+      "count": 282
+    },
+    {
+      "amount": 9000,
+      "count": 10
+    },
+    {
+      "amount": 10000,
+      "count": 113
+    },
+    {
+      "amount": 11000,
+      "count": 4
+    },
+    {
+      "amount": 12000,
+      "count": 12
+    },
+    {
+      "amount": 13000,
+      "count": 3
+    },
+    {
+      "amount": 14000,
+      "count": 4
+    },
+    {
+      "amount": 15000,
+      "count": 15
+    },
+    {
+      "amount": 16000,
+      "count": 1
+    },
+    {
+      "amount": 20000,
+      "count": 4
+    },
+    {
+      "amount": 24000,
+      "count": 41
+    },
+    {
+      "amount": 25000,
+      "count": 21
+    },
+    {
+      "amount": 29000,
+      "count": 1
+    },
+    {
+      "amount": 30000,
+      "count": 2
+    },
+    {
+      "amount": 35000,
+      "count": 1
+    },
+    {
+      "amount": 40000,
+      "count": 1
+    },
+    {
+      "amount": 48000,
+      "count": 1
+    },
+    {
+      "amount": 50000,
+      "count": 1
+    },
+    {
+      "amount": 108000,
+      "count": 1
+    },
+    {
+      "amount": 200000,
+      "count": 1
+    }
+  ]
+}

@@ -101,12 +101,15 @@ export default function ShareholderList({ initialShowMerge = false }) {
     }
   };
 
+  // Instant synchronous preloaded filter options (0ms delay - 364 places, 10 circles, 98 books, 3 categories, 29 amounts)
+  const initialFilterOpts = ApiService.getFilterOptionsSync();
+
   // Options
-  const [villages, setVillages] = useState([]);
-  const [circles, setCircles] = useState([]);
-  const [bookList, setBookList] = useState(DEFAULT_STATUTORY_BOOKS_98 || []);
-  const [castList, setCastList] = useState([]);
-  const [amountList, setAmountList] = useState([]);
+  const [villages, setVillages] = useState(() => initialFilterOpts?.villages || []);
+  const [circles, setCircles] = useState(() => initialFilterOpts?.circles || []);
+  const [bookList, setBookList] = useState(() => (initialFilterOpts?.books && initialFilterOpts.books.length > 0) ? initialFilterOpts.books : (DEFAULT_STATUTORY_BOOKS_98 || []));
+  const [castList, setCastList] = useState(() => initialFilterOpts?.casts || []);
+  const [amountList, setAmountList] = useState(() => initialFilterOpts?.amounts || []);
 
   // Modals
   const [activeProfileId, setActiveProfileId] = useState(null);
@@ -454,14 +457,14 @@ export default function ShareholderList({ initialShowMerge = false }) {
     try {
       const opts = await ApiService.getFilterOptions(force);
       if (opts) {
-        if (opts.villages) setVillages(opts.villages);
-        if (opts.circles) setCircles(opts.circles);
+        if (opts.villages && opts.villages.length > 0) setVillages(opts.villages);
+        if (opts.circles && opts.circles.length > 0) setCircles(opts.circles);
         if (opts.books && opts.books.length > 0) {
           const cleanBooks = opts.books.filter(b => b && !/^\d+$/.test(String(b).trim()));
           setBookList(cleanBooks.length > 0 ? cleanBooks : DEFAULT_STATUTORY_BOOKS_98);
         }
-        if (opts.casts) setCastList(opts.casts);
-        if (opts.amounts) setAmountList(opts.amounts);
+        if (opts.casts && opts.casts.length > 0) setCastList(opts.casts);
+        if (opts.amounts && opts.amounts.length > 0) setAmountList(opts.amounts);
       }
     } catch (e) {}
   };

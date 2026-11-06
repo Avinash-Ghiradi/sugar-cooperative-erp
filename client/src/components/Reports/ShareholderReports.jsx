@@ -226,6 +226,17 @@ export default function ShareholderReports() {
 
   // Extract distinct master option lists for filters
   const masterOptions = useMemo(() => {
+    if (!allShareholders || allShareholders.length === 0) {
+      const syncBaseline = ApiService.getFilterOptionsSync();
+      return {
+        places: (syncBaseline.villages || []).map(v => v.name).sort((a, b) => a.localeCompare(b, 'kn')),
+        circles: (syncBaseline.circles || []).map(c => c.name).filter(c => c !== 'ಇತರೆ (Other)').sort((a, b) => a.localeCompare(b, 'kn')),
+        categories: (syncBaseline.casts || []).sort((a, b) => a.localeCompare(b, 'kn')),
+        tharavaNumbers: [],
+        cashAmounts: (syncBaseline.amounts || []).sort((a, b) => a.amount - b.amount),
+      };
+    }
+
     const placesSet = new Set();
     const circlesSet = new Set();
     const categoriesSet = new Set();

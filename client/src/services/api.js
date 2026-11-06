@@ -26,6 +26,7 @@ export function cleanPlaceName(p) {
 // Data Service Layer supporting both backend REST API and clean client-side storage
 // Official 357-Village Circle Directory mapping provided by user
 import officialCircleData from './officialCircleData.json';
+import officialFilterOptions from './officialFilterOptions.json';
 import { CloudDbService } from './cloudDb';
 
 const API_BASE = '/api';
@@ -493,12 +494,29 @@ function openERPDB() {
   });
 }
 
-let _cachedFilterOptions = null;
+const STORAGE_KEY_FILTER_OPTIONS = 'sugar_erp_cached_filter_options_v2';
+
+export function loadStoredFilterOptionsSync() {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_FILTER_OPTIONS);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed.villages) && parsed.villages.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+  }
+  return officialFilterOptions;
+}
+
+let _cachedFilterOptions = loadStoredFilterOptionsSync();
 let _cachedRawShareholders = null;
 let _cachedRawShareholdersTime = 0;
 
 export function invalidateShareholderCaches() {
-  _cachedFilterOptions = null;
+  _cachedFilterOptions = loadStoredFilterOptionsSync();
   _cachedRawShareholders = null;
   _cachedRawShareholdersTime = 0;
 }
@@ -1823,12 +1841,40 @@ function deduplicateVarasaList(list) {
 
 
 export const ApiService = {
-  // Ultra-fast single-pass filter options aggregator (Villages, Circles, Books, Casts, Amounts)
-  // Replaces 6 separate slow loops with a single ~30ms pass that is cached in memory (0ms on repeated calls)
-  async getFilterOptions(forceRefresh = false) {
-    await ensureDBReady();
-    if (_cachedFilterOptions && !forceRefresh) {
+  // Instant 0ms synchronous filter options provider (Villages, Circles, Books, Casts, Amounts)
+  getFilterOptionsSync() {
+    if (_cachedFilterOptions && Array.isArray(_cachedFilterOptions.villages) && _cachedFilterOptions.villages.length > 0) {
       return _cachedFilterOptions;
+    }
+    return loadStoredFilterOptionsSync();
+  },
+
+  // Ultra-fast single-pass filter options aggregator (Villages, Circles, Books, Casts, Amounts)
+  // Returns in 0ms from synchronous cache, recomputes dynamically in the background when DB is ready
+  async getFilterOptions(forceRefresh = false) {
+    if (_cachedFilterOptions && Array.isArray(_cachedFilterOptions.villages) && _cachedFilterOptions.villages.length > 0 && !forceRefresh) {
+      return _cachedFilterOptions;
+    }
+
+    const syncBaseline = loadStoredFilterOptionsSync();
+    if (!forceRefresh && syncBaseline && syncBaseline.villages?.length > 0) {
+      _cachedFilterOptions = syncBaseline;
+      // Kick off background recompute when DB is ready without blocking UI
+      ensureDBReady().then(() => {
+        if (mockShareholders && mockShareholders.length > 0) {
+          this._recomputeFilterOptions().catch(() => {});
+        }
+      }).catch(() => {});
+      return syncBaseline;
+    }
+
+    await ensureDBReady();
+    return this._recomputeFilterOptions();
+  },
+
+  async _recomputeFilterOptions() {
+    if (!mockShareholders || mockShareholders.length === 0) {
+      return _cachedFilterOptions || loadStoredFilterOptionsSync();
     }
 
     const villageMap = new Map();
@@ -1840,7 +1886,7 @@ export const ApiService = {
     // 1. Seed from Circle Directory
     for (let i = 0; i < mockCircleDirectory.length; i++) {
       const cd = mockCircleDirectory[i];
-      const p = (cd.address || '').trim();
+      const p = cleanPlaceName(cd.address || cd.village_name || cd.name || '');
       if (p) {
         villageMap.set(p, {
           village_id: `VIL-${String(i + 1).padStart(3, '0')}`,
@@ -1868,7 +1914,7 @@ export const ApiService = {
     // 2. Single high-speed loop through all shareholders
     for (let i = 0; i < mockShareholders.length; i++) {
       const s = mockShareholders[i];
-      const p = (s.place || s.village_name || '').trim();
+      const p = cleanPlaceName(s.place || s.village_name || '');
       const shares = getShareholderSharesCount(s);
       if (p) {
         if (!villageMap.has(p)) {
@@ -1945,6 +1991,11 @@ export const ApiService = {
       casts: sortedCasts,
       amounts: sortedAmts
     };
+    if (typeof window !== 'undefined' && window.localStorage && sortedVillages.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY_FILTER_OPTIONS, JSON.stringify(_cachedFilterOptions));
+      } catch (e) {}
+    }
     return _cachedFilterOptions;
   },
 
