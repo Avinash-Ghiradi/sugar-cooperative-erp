@@ -234,7 +234,8 @@ export default function ShareholderReports() {
     const tharavaSet = new Set();
     const cashAmountCounts = new Map();
 
-    allShareholders.forEach(s => {
+    for (let i = 0; i < allShareholders.length; i++) {
+      const s = allShareholders[i];
       const p = (s.place || s.village_name || '').trim();
       if (p) placesSet.add(p);
 
@@ -247,11 +248,11 @@ export default function ShareholderReports() {
       const tNo = (s.tharava_no || '').trim();
       if (tNo && tNo !== '—' && tNo !== '-') tharavaSet.add(tNo);
 
-      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000);
+      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || ((parseInt(s.number_of_shares, 10) || 1) * 2000);
       if (amt > 0) {
         cashAmountCounts.set(amt, (cashAmountCounts.get(amt) || 0) + 1);
       }
-    });
+    }
 
     const cashAmounts = Array.from(cashAmountCounts.entries())
       .map(([amount, count]) => ({ amount, count }))
@@ -473,6 +474,9 @@ export default function ShareholderReports() {
 
   // Detailed calculation of statutory totals across filteredShareholders
   const detailedTotals = useMemo(() => {
+    if (reportMode !== 'detailed' && !showPrintModal) {
+      return { totalShares: kpis.totalShares, totalShareCapital: kpis.totalAmount, totalAdmissionFees: 0, totalCollection: kpis.totalAmount };
+    }
     let sharesCount = 0;
     let capital = 0;
     let admission = 0;
@@ -507,7 +511,7 @@ export default function ShareholderReports() {
       totalAdmissionFees: admission,
       totalCollection: grandTotal
     };
-  }, [filteredShareholders]);
+  }, [reportMode, showPrintModal, filteredShareholders, kpis]);
 
   // Value extractor for any column
   const getColValue = (s, colId, rowIdx) => {
@@ -608,6 +612,7 @@ export default function ShareholderReports() {
 
   // 1. PLACEWISE AGGREGATION
   const placewiseData = useMemo(() => {
+    if (reportMode !== 'placewise') return [];
     const map = new Map();
     filteredShareholders.forEach(s => {
       const place = (s.place || s.village_name || 'ಗೊತ್ತಿಲ್ಲದ ಗ್ರಾಮ').trim();
@@ -652,10 +657,11 @@ export default function ShareholderReports() {
       // default: count
       return sortOrder === 'asc' ? a.count - b.count : b.count - a.count;
     });
-  }, [filteredShareholders, kpis, sortField, sortOrder]);
+  }, [reportMode, filteredShareholders, kpis, sortField, sortOrder]);
 
   // 2. CATEGORYWISE AGGREGATION
   const categorywiseData = useMemo(() => {
+    if (reportMode !== 'categorywise') return [];
     const map = new Map();
     filteredShareholders.forEach(s => {
       const cat = (s.schedule_cast || 'ಇತರೆ ವರ್ಗ').trim();
@@ -686,10 +692,11 @@ export default function ShareholderReports() {
     }));
 
     return arr.sort((a, b) => b.count - a.count);
-  }, [filteredShareholders, kpis]);
+  }, [reportMode, filteredShareholders, kpis]);
 
   // 3. CIRCLEWISE AGGREGATION
   const circlewiseData = useMemo(() => {
+    if (reportMode !== 'circlewise') return [];
     const map = new Map();
     filteredShareholders.forEach(s => {
       const circle = (s.circle || s.circle_name || 'ಇತರೆ (Other)').trim();
@@ -725,45 +732,47 @@ export default function ShareholderReports() {
     }));
 
     return arr.sort((a, b) => b.count - a.count);
-  }, [filteredShareholders, kpis]);
+  }, [reportMode, filteredShareholders, kpis]);
 
   // 4. SHARESWISE AGGREGATION (1, 2, 3-5, 6-10, 11+)
   const shareswiseData = useMemo(() => {
+    if (reportMode !== 'shareswise') return [];
     const tiers = [
-      { key: '0', label: '0 ಶೇರುಗಳು (ಅಪೂರ್ಣ ಕಂತು)', desc: 'ಕಂತು ಅಪೂರ್ಣವಾಗಿರುವ ಸದಸ್ಯರು (0 ಷೇರು)', min: 0, max: 0 },
-      { key: '1', label: '1 ಶೇರು (1 Share)', desc: '₹ 2,000 ಮುಖಬೆಲೆ - ಸಾಮಾನ್ಯ ಬೆಳೆಗಾರ ಸದಸ್ಯರು', min: 1, max: 1 },
-      { key: '2', label: '2 ಶೇರುಗಳು (2 Shares)', desc: '₹ 4,000 ಮುಖಬೆಲೆ - ಮಧ್ಯಮ ಶೇರುದಾರರು', min: 2, max: 2 },
-      { key: '3-5', label: '3 ರಿಂದ 5 ಶೇರುಗಳು (3-5 Shares)', desc: '₹ 6,000 - ₹ 10,000 ಮುಖಬೆಲೆ', min: 3, max: 5 },
-      { key: '6-10', label: '6 ರಿಂದ 10 ಶೇರುಗಳು (6-10 Shares)', desc: '₹ 12,000 - ₹ 20,000 ಮುಖಬೆಲೆ', min: 6, max: 10 },
-      { key: '11+', label: '11 ಮತ್ತು ಹೆಚ್ಚಿನ ಶೇರುಗಳು (11+ Shares)', desc: 'ಗರಿಷ್ಠ ಶೇರುದಾರರು & ಸಂಸ್ಥೆಗಳು', min: 11, max: 999999 },
+      { key: '0', label: '0 ಶೇರುಗಳು (ಅಪೂರ್ಣ ಕಂತು)', desc: 'ಕಂತು ಅಪೂರ್ಣವಾಗಿರುವ ಸದಸ್ಯರು (0 ಷೇರು)', count: 0, totalShares: 0, totalAmount: 0 },
+      { key: '1', label: '1 ಶೇರು (1 Share)', desc: '₹ 2,000 ಮುಖಬೆಲೆ - ಸಾಮಾನ್ಯ ಬೆಳೆಗಾರ ಸದಸ್ಯರು', count: 0, totalShares: 0, totalAmount: 0 },
+      { key: '2', label: '2 ಶೇರುಗಳು (2 Shares)', desc: '₹ 4,000 ಮುಖಬೆಲೆ - ಮಧ್ಯಮ ಶೇರುದಾರರು', count: 0, totalShares: 0, totalAmount: 0 },
+      { key: '3-5', label: '3 ರಿಂದ 5 ಶೇರುಗಳು (3-5 Shares)', desc: '₹ 6,000 - ₹ 10,000 ಮುಖಬೆಲೆ', count: 0, totalShares: 0, totalAmount: 0 },
+      { key: '6-10', label: '6 ರಿಂದ 10 ಶೇರುಗಳು (6-10 Shares)', desc: '₹ 12,000 - ₹ 20,000 ಮುಖಬೆಲೆ', count: 0, totalShares: 0, totalAmount: 0 },
+      { key: '11+', label: '11 ಮತ್ತು ಹೆಚ್ಚಿನ ಶೇರುಗಳು (11+ Shares)', desc: 'ಗರಿಷ್ಠ ಶೇರುದಾರರು & ಸಂಸ್ಥೆಗಳು', count: 0, totalShares: 0, totalAmount: 0 },
     ];
 
-    return tiers.map(tier => {
-      const matched = filteredShareholders.filter(s => {
-        const cnt = getShareholderSharesCount(s);
-        return cnt >= tier.min && cnt <= tier.max;
-      });
+    for (let i = 0; i < filteredShareholders.length; i++) {
+      const s = filteredShareholders[i];
+      const cnt = getShareholderSharesCount(s);
+      const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (cnt * 2000);
+      let tierIdx = 0;
+      if (cnt === 0) tierIdx = 0;
+      else if (cnt === 1) tierIdx = 1;
+      else if (cnt === 2) tierIdx = 2;
+      else if (cnt <= 5) tierIdx = 3;
+      else if (cnt <= 10) tierIdx = 4;
+      else tierIdx = 5;
 
-      const count = matched.length;
-      const totalShares = matched.reduce((sum, s) => sum + getShareholderSharesCount(s), 0);
-      const totalAmount = matched.reduce((sum, s) => {
-        const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000);
-        return sum + amt;
-      }, 0);
+      tiers[tierIdx].count += 1;
+      tiers[tierIdx].totalShares += cnt;
+      tiers[tierIdx].totalAmount += amt;
+    }
 
-      return {
-        ...tier,
-        count,
-        totalShares,
-        totalAmount,
-        sharePct: kpis.totalShares > 0 ? ((totalShares / kpis.totalShares) * 100).toFixed(1) : 0,
-        memberPct: kpis.totalCount > 0 ? ((count / kpis.totalCount) * 100).toFixed(1) : 0,
-      };
-    });
-  }, [filteredShareholders, kpis]);
+    return tiers.map(tier => ({
+      ...tier,
+      sharePct: kpis.totalShares > 0 ? ((tier.totalShares / kpis.totalShares) * 100).toFixed(1) : 0,
+      memberPct: kpis.totalCount > 0 ? ((tier.count / kpis.totalCount) * 100).toFixed(1) : 0,
+    }));
+  }, [reportMode, filteredShareholders, kpis]);
 
   // 5. CASH AMOUNTWISE AGGREGATION (ನಗದು ಮೊತ್ತವಾರು ವಿಂಗಡಣೆ)
   const amountwiseData = useMemo(() => {
+    if (reportMode !== 'amountwise') return [];
     const map = new Map();
     filteredShareholders.forEach(s => {
       const amt = parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || (getShareholderSharesCount(s) * 2000);
@@ -796,7 +805,7 @@ export default function ShareholderReports() {
       }
       return sortOrder === 'desc' ? b.amount - a.amount : a.amount - b.amount;
     });
-  }, [filteredShareholders, kpis, sortField, sortOrder]);
+  }, [reportMode, filteredShareholders, kpis, sortField, sortOrder]);
 
   // Paginated detailed members list
   const detailedPaginated = useMemo(() => {
@@ -1011,7 +1020,7 @@ export default function ShareholderReports() {
         ['SRI BHIMASHANKAR SAHAKARI SAKKARE KARKHANE NIYAMIT MARGUR'],
         [`ಶೇರು ವಿಭಾಗ - ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ವಹಿ (${activeCols.length} ಕಾಲಂ ರಿಜಿಸ್ಟರ್)`],
         [`ದಿನಾಂಕ: ${new Date().toLocaleDateString('kn-IN')} | ವ್ಯಾಪ್ತಿ: ${filterSummary.join(', ') || 'ಶೋಧಿತ ಎಲ್ಲಾ ದಾಖಲೆಗಳು'} (${filteredShareholders.length} ಜನ)`],
-        [`ಒಟ್ಟು ದಾಖಲೆಗಳು: ${filteredShareholders.length} | ಒಟ್ಟು ಶೇರುಗಳು: ${detailedTotals.totalShares} | ಒಟ್ಟು ಜಮಾ ಮೊತ್ತ: ₹ ${detailedTotals.totalCollection.toLocaleString('en-IN')}`],
+        [`ಒಟ್ಟು ದಾಖಲೆಗಳು: ${filteredShareholders.length} | ಒಟ್ಟು ಶೇರುಗಳು: ${detailedTotals.totalShares || kpis.totalShares} | ಒಟ್ಟು ಜಮಾ ಮೊತ್ತ: ₹ ${(detailedTotals.totalCollection || kpis.totalAmount).toLocaleString('en-IN')}`],
         [],
         excelHeaders
       ];

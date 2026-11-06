@@ -494,6 +494,14 @@ function openERPDB() {
 }
 
 let _cachedFilterOptions = null;
+let _cachedRawShareholders = null;
+let _cachedRawShareholdersTime = 0;
+
+export function invalidateShareholderCaches() {
+  _cachedFilterOptions = null;
+  _cachedRawShareholders = null;
+  _cachedRawShareholdersTime = 0;
+}
 
 async function upsertSingleRecordToIndexedDB(record) {
   try {
@@ -655,7 +663,7 @@ async function fetchOfficialShareholdersFallback() {
     const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) ? import.meta.env.BASE_URL : './';
     const cleanBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
 
-    const cb = `?v=98b_${Date.now()}`;
+    const cb = `?v=98b_v4`;
     const urlsToTry = [
       `${cleanBase}officialShareholdersData.json${cb}`,
       `./officialShareholdersData.json${cb}`,
@@ -1282,7 +1290,7 @@ export function ensureDBReady() {
           const needsBooksMigration = hasLegacyNumericBooks || isMissingStatutoryBooks || (typeof localStorage !== 'undefined' && localStorage.getItem('sugar_erp_books_v4_applied') !== 'true');
 
           // If IndexedDB has no records or has legacy corrupted numeric books, fetch official dataset with 98 books
-          if ((records.length < 17000 || needsBooksMigration) && !isBlankReset) {
+          if (records.length < 1000 && !isBlankReset) {
             console.log('[SugarERP] Loading official 98-book statutory dataset...');
             const officialData = await fetchOfficialShareholdersFallback();
             if (officialData && officialData.length > 0) {
@@ -1292,7 +1300,7 @@ export function ensureDBReady() {
               if (typeof localStorage !== 'undefined') {
                 localStorage.setItem('sugar_erp_books_v4_applied', 'true');
               }
-              _cachedFilterOptions = null;
+              invalidateShareholderCaches();
             }
 
             // STEP 2: If official static dataset failed AND Cloud DB is enabled, try Cloud DB download
@@ -1360,6 +1368,13 @@ export function ensureDBReady() {
               await saveToIndexedDB(records).catch(() => {});
             } else {
               records = dedupedRecords;
+            }
+
+            if (needsBooksMigration && records.length >= 17000) {
+              saveToIndexedDB(records).catch(() => {});
+              if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('sugar_erp_books_v4_applied', 'true');
+              }
             }
 
             // Build high-speed search index for 5ms lookups
@@ -1633,6 +1648,104 @@ export function getShareholderOwnership(sh, varasaList = null, vargavaneList = n
 
   return rawOwn || 'ಸ್ವಂತ (Self)';
 }
+
+export function getShareholderOwnershipBatch(records, varasaList = null, vargavaneList = null) {
+  if (!Array.isArray(records) || records.length === 0) return [];
+  const vTrans = varasaList || mockVarasaTransfers || [];
+  const vgTrans = vargavaneList || mockVargavaneTransfers || [];
+
+  if ((!vTrans || vTrans.length === 0) && (!vgTrans || vgTrans.length === 0)) {
+    return records.map(s => {
+      const rawOwn = String(s.ownership || s.relationship || '').trim();
+      let own = 'ಸ್ವಂತ (Self)';
+      if (rawOwn && (rawOwn.includes('ವಾರಸ') || rawOwn.includes('ವರ್ಗಾವಣೆ'))) {
+        own = rawOwn;
+      } else if (rawOwn && !rawOwn.toLowerCase().includes('self') && !rawOwn.includes('ಸ್ವಂತ') && rawOwn !== '—' && rawOwn !== '-') {
+        own = rawOwn;
+      }
+      return {
+        ...s,
+        ownership: own,
+        relationship: own,
+        member_type: getMemberTypeByCategory(s.schedule_cast, s.member_type)
+      };
+    });
+  }
+
+  const varasaShareMap = new Map();
+  const varasaIdMap = new Map();
+  const varasaNameMap = new Map();
+
+  for (let i = 0; i < vTrans.length; i++) {
+    const v = vTrans[i];
+    const rel = (v.heir_relationship || 'ಮಗ').trim();
+    const label = `ವಾರಸದಾರರು (${rel})`;
+    const sNo = String(v.share_no || v.existing_share_number || '').trim();
+    const sId = String(v.existing_shareholder_id || '').trim();
+    const hName = String(v.varasa_member || v.heir_name || '').trim().toLowerCase();
+    if (sNo) varasaShareMap.set(sNo, label);
+    if (sId) varasaIdMap.set(sId, label);
+    if (hName) varasaNameMap.set(hName, label);
+  }
+
+  const vargavaneShareMap = new Map();
+  const vargavaneNameMap = new Map();
+
+  for (let i = 0; i < vgTrans.length; i++) {
+    const vg = vgTrans[i];
+    const rel = (vg.transferee_relationship || 'ಖರೀದಿದಾರರು').trim();
+    const label = `ವರ್ಗಾವಣೆದಾರರು (${rel})`;
+    const sNo = String(vg.share_no || '').trim();
+    const tName = String(vg.transferee_name || '').trim().toLowerCase();
+    if (sNo) vargavaneShareMap.set(sNo, label);
+    if (tName) vargavaneNameMap.set(tName, label);
+  }
+
+  return records.map(sh => {
+    const rawOwn = String(sh.ownership || sh.relationship || '').trim();
+    if (rawOwn && (rawOwn.includes('ವಾರಸ') || rawOwn.includes('ವರ್ಗಾವಣೆ'))) {
+      return {
+        ...sh,
+        ownership: rawOwn,
+        relationship: rawOwn,
+        member_type: getMemberTypeByCategory(sh.schedule_cast, sh.member_type)
+      };
+    }
+    if (rawOwn && !rawOwn.toLowerCase().includes('self') && !rawOwn.includes('ಸ್ವಂತ') && rawOwn !== '—' && rawOwn !== '-') {
+      return {
+        ...sh,
+        ownership: rawOwn,
+        relationship: rawOwn,
+        member_type: getMemberTypeByCategory(sh.schedule_cast, sh.member_type)
+      };
+    }
+
+    const shNo = String(sh.share_no || sh.share_number || '').trim();
+    const shId = String(sh.shareholder_id || '').trim();
+    const shName = String(sh.shareholder_name || sh.name || '').trim().toLowerCase();
+
+    let own = rawOwn || 'ಸ್ವಂತ (Self)';
+    if (shNo && varasaShareMap.has(shNo)) {
+      own = varasaShareMap.get(shNo);
+    } else if (shId && varasaIdMap.has(shId)) {
+      own = varasaIdMap.get(shId);
+    } else if (shName && varasaNameMap.has(shName)) {
+      own = varasaNameMap.get(shName);
+    } else if (shNo && vargavaneShareMap.has(shNo)) {
+      own = vargavaneShareMap.get(shNo);
+    } else if (shName && vargavaneNameMap.has(shName)) {
+      own = vargavaneNameMap.get(shName);
+    }
+
+    return {
+      ...sh,
+      ownership: own,
+      relationship: own,
+      member_type: getMemberTypeByCategory(sh.schedule_cast, sh.member_type)
+    };
+  });
+}
+
 
 // Helper API execution with auto backend failover
 async function fetchApi(endpoint, options = {}) {
@@ -2030,6 +2143,9 @@ export const ApiService = {
 
   async getAllShareholdersRaw() {
     await ensureDBReady();
+    if (_cachedRawShareholders && _cachedRawShareholders.length >= 17000 && (Date.now() - _cachedRawShareholdersTime < 300000)) {
+      return _cachedRawShareholders;
+    }
     if (!mockShareholders || mockShareholders.length === 0) {
       console.warn('[SugarERP] mockShareholders is empty in getAllShareholdersRaw, attempting emergency reload...');
       const emergencyData = await fetchOfficialShareholdersFallback();
@@ -2041,28 +2157,17 @@ export const ApiService = {
         try {
           const cloudRes = await CloudDbService.getShareholders({ page: 1, limit: 324 });
           if (cloudRes && cloudRes.success && Array.isArray(cloudRes.data) && cloudRes.data.length > 0) {
-            return cloudRes.data.map(s => {
-              const own = getShareholderOwnership(s);
-              return {
-                ...s,
-                ownership: own,
-                relationship: own,
-                member_type: getMemberTypeByCategory(s.schedule_cast, s.member_type)
-              };
-            });
+            return getShareholderOwnershipBatch(cloudRes.data);
           }
         } catch (e) {}
       }
     }
-    return (mockShareholders || []).map(s => {
-      const own = getShareholderOwnership(s);
-      return {
-        ...s,
-        ownership: own,
-        relationship: own,
-        member_type: getMemberTypeByCategory(s.schedule_cast, s.member_type)
-      };
-    });
+    const result = getShareholderOwnershipBatch(mockShareholders || []);
+    if (result && result.length >= 17000) {
+      _cachedRawShareholders = result;
+      _cachedRawShareholdersTime = Date.now();
+    }
+    return result;
   },
 
   async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', amount = '', sortBy = '', sortOrder = 'asc' }) {
@@ -3370,7 +3475,7 @@ const newSh = {
         ).toLowerCase();
       }
       mockShareholders = cloudRecords;
-      _cachedFilterOptions = null;
+      invalidateShareholderCaches();
       await saveToIndexedDB(mockShareholders);
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('sugar_erp_db_reset_blank');
@@ -4492,7 +4597,7 @@ const newSh = {
     } else {
       mockShareholders[existingIndex] = { ...mockShareholders[existingIndex], ...masterRecord };
     }
-    _cachedFilterOptions = null;
+    invalidateShareholderCaches();
     upsertSingleRecordToIndexedDB(masterRecord).catch(() => {});
 
     // Save/Upsert directly in Supabase PostgreSQL public.shareholders
@@ -5478,7 +5583,7 @@ const newSh = {
 
     saveStoredData(STORAGE_KEY_CIRCLE_DIR, mockCircleDirectory);
     await saveCircleDirectoryToDB(mockCircleDirectory);
-    _cachedFilterOptions = null;
+    invalidateShareholderCaches();
 
     if (CloudDbService.isEnabled()) {
       try {
@@ -5551,7 +5656,7 @@ const newSh = {
 
     saveStoredData(STORAGE_KEY_CIRCLE_DIR, mockCircleDirectory);
     await saveCircleDirectoryToDB(mockCircleDirectory);
-    _cachedFilterOptions = null;
+    invalidateShareholderCaches();
 
     if (CloudDbService.isEnabled()) {
       try {
@@ -5606,7 +5711,7 @@ const newSh = {
 
     saveStoredData(STORAGE_KEY_CIRCLE_DIR, mockCircleDirectory);
     await saveCircleDirectoryToDB(mockCircleDirectory);
-    _cachedFilterOptions = null;
+    invalidateShareholderCaches();
 
     if (CloudDbService.isEnabled()) {
       try {
@@ -5638,7 +5743,7 @@ const newSh = {
 
     saveStoredData(STORAGE_KEY_CIRCLE_DIR, mockCircleDirectory);
     await saveCircleDirectoryToDB(mockCircleDirectory);
-    _cachedFilterOptions = null;
+    invalidateShareholderCaches();
 
     if (CloudDbService.isEnabled()) {
       try {
@@ -6936,7 +7041,7 @@ const newSh = {
 
     // Single fast save to IndexedDB for the entire batch
     await saveToIndexedDB(mockShareholders);
-    _cachedFilterOptions = null;
+    invalidateShareholderCaches();
 
     // Fast batch upload of modified records to Cloud DB in ONE single request
     if (CloudDbService.isEnabled() && allModified.length > 0) {
