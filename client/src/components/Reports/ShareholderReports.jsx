@@ -11,7 +11,6 @@ import {
   ChevronUp, ShieldCheck, PieChart, Sparkles, SlidersHorizontal, IndianRupee, Banknote
 } from 'lucide-react';
 import ShareholderProfile from '../Shareholders/ShareholderProfile';
-import RegisterListPrintModal from '../Common/RegisterListPrintModal';
 import { useCompanyLogo, useHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
 
 // Helper: Parse various date formats (DD/MM/YYYY, YYYY-MM-DD, Excel serials) into timestamp
@@ -169,7 +168,6 @@ export default function ShareholderReports() {
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
   const companyLogo = useCompanyLogo();
   const [logoError, setLogoError] = useState(false);
-  const [showPrintModal, setShowPrintModal] = useState(false);
   const [showColumnPicker, setShowColumnPicker] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState(() =>
     AVAILABLE_REPORT_COLUMNS.filter(c => c.defaultSelected).map(c => c.id)
@@ -474,7 +472,7 @@ export default function ShareholderReports() {
 
   // Detailed calculation of statutory totals across filteredShareholders
   const detailedTotals = useMemo(() => {
-    if (reportMode !== 'detailed' && !showPrintModal) {
+    if (reportMode !== 'detailed') {
       return { totalShares: kpis.totalShares, totalShareCapital: kpis.totalAmount, totalAdmissionFees: 0, totalCollection: kpis.totalAmount };
     }
     let sharesCount = 0;
@@ -511,7 +509,7 @@ export default function ShareholderReports() {
       totalAdmissionFees: admission,
       totalCollection: grandTotal
     };
-  }, [reportMode, showPrintModal, filteredShareholders, kpis]);
+  }, [reportMode, filteredShareholders, kpis]);
 
   // Value extractor for any column
   const getColValue = (s, colId, rowIdx) => {
@@ -1096,15 +1094,6 @@ export default function ShareholderReports() {
             <span>ಎಕ್ಸೆಲ್ ರಫ್ತು (Excel Export)</span>
           </button>
 
-          {/* 15-Col Statutory Register Print Modal */}
-          <button
-            onClick={() => setShowPrintModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition-all cursor-pointer"
-            title="Open Official Statutory Register Print Modal with Zoom & Word Export"
-          >
-            <Printer className="w-4 h-4 text-emerald-100" />
-            <span>15 ಕಾಲಂ ವಹಿ ಮುದ್ರಣ (Print Modal)</span>
-          </button>
 
           {/* Print Official Report */}
           <button
@@ -2417,22 +2406,6 @@ export default function ShareholderReports() {
         </div>
       </div>
 
-      {/* Statutory Register Print Modal (Matching attached image) */}
-      {showPrintModal && (
-        <RegisterListPrintModal
-          isOpen={showPrintModal}
-          onClose={() => setShowPrintModal(false)}
-          type="enrollment"
-          allRecords={filteredShareholders}
-          initialScope="filtered"
-          filterSummary={{
-            category: filters.category,
-            status: filters.status,
-            taluk: filters.taluk,
-            search: filters.search
-          }}
-        />
-      )}
 
       {/* Shareholder Profile Modal */}
       {activeProfileId && (
