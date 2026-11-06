@@ -15,6 +15,7 @@ import ShareholderForm from './ShareholderForm';
 import ErrorBoundary from '../Common/ErrorBoundary';
 import ResetConfirmModal from '../Common/ResetConfirmModal';
 import MergeSharesModal from './MergeSharesModal';
+import RegisterListPrintModal from '../Common/RegisterListPrintModal';
 
 export default function ShareholderList({ initialShowMerge = false }) {
   const { showToast, setActiveModule, user } = useAuth();
@@ -44,6 +45,61 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const [sortBy, setSortBy] = useState(''); // 'place', 'circle', 'address', 'name', 'share_no'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
   const [viewMode, setViewMode] = useState('ledger'); // 'ledger' (38 columns) or 'summary'
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [allPrintRecords, setAllPrintRecords] = useState([]);
+  const [loadingAllPrint, setLoadingAllPrint] = useState(false);
+
+  const handleOpenPrintModal = async () => {
+    setLoadingAllPrint(true);
+    try {
+      let rawRecords = await ApiService.getAllShareholdersRaw();
+      if (!Array.isArray(rawRecords) || rawRecords.length === 0) {
+        rawRecords = shareholders;
+      }
+      let filtered = rawRecords;
+      if (search) {
+        const q = search.trim().toLowerCase().normalize('NFC');
+        filtered = filtered.filter(s => {
+          const name = (s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
+          const shNo = String(s.share_no || s.share_number || '').toLowerCase();
+          const slNo = String(s.sl_no || s.id || '').toLowerCase();
+          const bNo = String(s.book_no || '').toLowerCase();
+          const mob = String(s.mobile_no || s.mobile || '');
+          const aadh = String(s.aadhaar_card_no || s.aadhaar_ref || '');
+          const plc = String(s.place || s.village_name || '').toLowerCase().normalize('NFC');
+          return name.includes(q) || shNo.includes(q) || slNo.includes(q) || bNo.includes(q) || mob.includes(q) || aadh.includes(q) || plc.includes(q);
+        });
+      }
+      if (selectedVillage) {
+        const vq = selectedVillage.trim().toLowerCase().normalize('NFC');
+        filtered = filtered.filter(s => (s.place || s.village_name || '').trim().toLowerCase().normalize('NFC') === vq);
+      }
+      if (selectedCircle) {
+        const cq = selectedCircle.trim().toLowerCase().normalize('NFC');
+        filtered = filtered.filter(s => (s.circle || s.circle_name || '').trim().toLowerCase().normalize('NFC') === cq);
+      }
+      if (selectedStatus) {
+        filtered = filtered.filter(s => (s.status || 'Active').toLowerCase() === selectedStatus.toLowerCase());
+      }
+      if (selectedBook) {
+        filtered = filtered.filter(s => String(s.book_no || '').trim().toLowerCase() === selectedBook.trim().toLowerCase());
+      }
+      if (selectedCast) {
+        filtered = filtered.filter(s => String(s.schedule_cast || '').trim().toLowerCase() === selectedCast.trim().toLowerCase());
+      }
+      if (selectedAmount) {
+        const amtVal = parseFloat(selectedAmount);
+        filtered = filtered.filter(s => (parseFloat(s.total_amount) || parseFloat(s.receipt_amount) || 0) === amtVal);
+      }
+      setAllPrintRecords(filtered);
+    } catch (e) {
+      console.warn('Error loading print records, using current page:', e);
+      setAllPrintRecords(shareholders);
+    } finally {
+      setLoadingAllPrint(false);
+      setPrintModalOpen(true);
+    }
+  };
 
   // Options
   const [villages, setVillages] = useState([]);
@@ -615,7 +671,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
       </div>
 
       {/* Header Bar */}
-      <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-4">
+      <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-4 no-print">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
@@ -692,18 +748,21 @@ export default function ShareholderList({ initialShowMerge = false }) {
             <span>ರಿಫ್ರೆಶ್ (Refresh)</span>
           </button>
 
-          {/* Print Button */}
+          {/* Professional Print Button */}
           <button
-            onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
+            onClick={handleOpenPrintModal}
+            disabled={loadingAllPrint}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md shadow-emerald-950 disabled:opacity-50"
+            title="ಅಧಿಕೃತ ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿ ಮುದ್ರಣ (Official Statutory Register Printout)"
           >
-            <Printer className="w-4 h-4 text-sky-400" /> Print
+            <Printer className="w-4 h-4 text-emerald-100" />
+            <span>{loadingAllPrint ? 'ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...' : 'ಶಾಸನಬದ್ಧ ಮುದ್ರಣ (Print)'}</span>
           </button>
         </div>
       </div>
 
       {/* Multi-Field Search, Statutory Filter & Alphabetical Sort Bar - Single Row */}
-      <div className="flex flex-nowrap items-center gap-2 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 overflow-x-auto shadow-sm">
+      <div className="flex flex-nowrap items-center gap-2 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 overflow-x-auto shadow-sm no-print">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -903,7 +962,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
             <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
               <thead className="bg-emerald-800 border-b-2 border-emerald-400 text-white font-bold text-[11.5px] sticky top-0 z-20 shadow-lg select-none">
                 <tr className="border-b border-emerald-700/80">
-                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-0 z-30 shadow-r border-r border-emerald-700/60 w-[130px] min-w-[130px]">Actions</th>
+                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-0 z-30 shadow-r border-r border-emerald-700/60 w-[130px] min-w-[130px] no-print">Actions</th>
                   <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-[130px] z-30 border-r-2 border-emerald-400/80 shadow-r w-[95px] min-w-[95px]">Book. No</th>
                   <th className="py-3.5 px-3 text-center border-r border-emerald-700/40">Sl. No</th>
                   <th
@@ -1014,7 +1073,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
                   return (
                   <tr key={sh.id || idx} className={`hover:bg-slate-900/80 transition-colors group ${isInactive ? 'bg-rose-950/10 text-slate-400 opacity-75' : ''}`}>
                     {/* Fixed Action Buttons Column */}
-                    <td className="py-2.5 px-3 bg-slate-950 group-hover:bg-slate-900 sticky left-0 z-10 shadow-r border-r border-slate-800 w-[130px] min-w-[130px]">
+                    <td className="py-2.5 px-3 bg-slate-950 group-hover:bg-slate-900 sticky left-0 z-10 shadow-r border-r border-slate-800 w-[130px] min-w-[130px] no-print">
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => {
@@ -1297,7 +1356,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
         )}
 
         {/* Server Side Pagination Bar */}
-        <div className="p-4 bg-slate-900/80 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-slate-400">
+        <div className="p-4 bg-slate-900/80 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-slate-400 no-print">
           <div>
             Showing <span className="font-semibold text-slate-200">{((pagination.page - 1) * pagination.limit) + 1}</span> to{' '}
             <span className="font-semibold text-slate-200">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of{' '}
@@ -1356,6 +1415,25 @@ export default function ShareholderList({ initialShowMerge = false }) {
           onEditRecord={(sh) => {
             setActiveProfileId(null);
             handleInitiateEdit(sh);
+          }}
+        />
+      )}
+
+      {/* Official Statutory Register List Print Modal */}
+      {printModalOpen && (
+        <RegisterListPrintModal
+          isOpen={printModalOpen}
+          onClose={() => setPrintModalOpen(false)}
+          type="shareholder"
+          allRecords={allPrintRecords.length > 0 ? allPrintRecords : shareholders}
+          filterSummary={{
+            search: search,
+            place: selectedVillage,
+            circle: selectedCircle,
+            category: selectedCast,
+            status: selectedStatus,
+            book: selectedBook,
+            amount: selectedAmount
           }}
         />
       )}

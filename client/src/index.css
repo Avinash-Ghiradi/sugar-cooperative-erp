@@ -82,6 +82,18 @@
     font-family: 'Anek Kannada', sans-serif !important;
   }
 
+  .no-print,
+  .no-print *,
+  header.no-print,
+  nav,
+  aside,
+  button:not(.allow-print),
+  input:not(.allow-print),
+  select:not(.allow-print) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
   @page {
     margin: 8mm;
   }
