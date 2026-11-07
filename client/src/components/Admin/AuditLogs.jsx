@@ -46,6 +46,9 @@ export default function AuditLogs() {
     if (filterModule === 'updates') {
       return (log.action && log.action.includes('UPDATE')) || (log.action && log.action.includes('REVISION'));
     }
+    if (filterModule === 'prints') {
+      return (log.module && log.module.includes('Print')) || (log.action && log.action.includes('PRINT'));
+    }
     return true;
   });
 
@@ -59,7 +62,7 @@ export default function AuditLogs() {
             <span>Immutable System Audit Logs (ಶಾಸನಬದ್ಧ ಲೆಕ್ಕಪರಿಶೋಧನಾ ದಾಖಲೆ)</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            ೨-ಹಂತದ ಷೇರು ವಿಲೀನ ಅನುಮೋದನೆಗಳು, ವಾರಸು ವರ್ಗಾವಣೆ, ನೇರ ವರ್ಗಾವಣೆ, ಹಾಗೂ ಶಾಸನಬದ್ಧ ಬದಲಾವಣೆಗಳ ಶಾಶ್ವತ ಇತಿಹಾಸ
+            ೨-ಹಂತದ ಷೇರು ವಿಲೀನ, ವಾರಸು, ವರ್ಗಾವಣೆ, ಹೊಸ ಸದಸ್ಯರು & ಮುದ್ರಣ ದಾಖಲೆಗಳ ೭-ದಿನಗಳ ಆಡಿಟ್ ಇತಿಹಾಸ (7-Day Auto Retention Policy)
           </p>
         </div>
 
@@ -144,6 +147,15 @@ export default function AuditLogs() {
             <FileText className="w-3.5 h-3.5 text-sky-400" />
             <span>ತಿದ್ದುಪಡಿಗಳು (Updates)</span>
           </button>
+          <button
+            onClick={() => setFilterModule('prints')}
+            className={`px-3 py-1.5 rounded-xl font-medium transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+              filterModule === 'prints' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-bold' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Printer className="w-3.5 h-3.5 text-indigo-400" />
+            <span>ಮುದ್ರಣ ದಾಖಲೆ (Prints)</span>
+          </button>
         </div>
       </div>
 
@@ -220,8 +232,17 @@ export default function AuditLogs() {
                           {log.action || log.type}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-mono font-bold text-amber-300 whitespace-nowrap">
-                        {log.record_id || (log.share_no ? `#${log.share_no}` : (log.target_id ? `#${log.target_id}` : '—'))}
+                      <td className="py-3 px-4 font-mono font-bold whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-amber-300">
+                            {log.record_id || (log.share_no ? `#${log.share_no}` : (log.target_id ? `#${log.target_id}` : '—'))}
+                          </span>
+                          {log.shares_count && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-sans font-semibold">
+                              {log.shares_count} ಷೇರು
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-slate-300 text-xs max-w-md">
                         <p className="line-clamp-2 leading-relaxed">

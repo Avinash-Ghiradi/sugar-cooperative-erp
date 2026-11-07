@@ -1613,7 +1613,33 @@ if (Array.isArray(mockEmployees) && mockEmployees.length > 0) {
     saveStoredData(STORAGE_KEY_EMP, mockEmployees);
   }
 }
-let mockAuditLogs = loadStoredData(STORAGE_KEY_LOGS, []);
+// 7-day retention & audit pruning policy (Auto delete after 1 week if taking storage)
+const AUDIT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (1 week)
+
+export function pruneExpiredAuditLogs(logsList) {
+  if (!Array.isArray(logsList)) return [];
+  const now = Date.now();
+  const currentYear = new Date().getFullYear();
+
+  return logsList.filter(log => {
+    if (!log || !log.timestamp) return false;
+    const t = new Date(log.timestamp).getTime();
+    if (isNaN(t)) return false;
+
+    // 1. Discard future year timestamps (such as 2035, 2034, 2033, etc.)
+    const logYear = new Date(t).getFullYear();
+    if (logYear > currentYear) return false;
+
+    // 2. Auto-delete logs older than 7 days (1 week) to save storage
+    if (now - t > AUDIT_RETENTION_MS) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+let mockAuditLogs = pruneExpiredAuditLogs(loadStoredData(STORAGE_KEY_LOGS, []));
 let mockMergeRequests = loadStoredData(STORAGE_KEY_MERGE_REQ, []);
 
 // Helper: Resolve Shareholder Ownership (ಸ್ವಾಮ್ಯತ್ವ / ಒಡೆತನ)
@@ -3168,7 +3194,8 @@ const newSh = {
         action: 'NEW_SHAREHOLDER_ENROLLED',
         record_id: `#${newSh.share_no}`,
         share_no: newSh.share_no,
-        description: `ಹೊಸ ಶೇರುದಾರ #${newSh.share_no} (${newSh.shareholder_name}) ಅವರ ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ. ಗ್ರಾಮ: ${newSh.place || '—'}, ಒಟ್ಟು ಮೊತ್ತ: ₹${Number(newSh.total_amount || 0).toLocaleString()}, ಷೇರುಗಳು: ${newSh.number_of_shares || 1}.`,
+        shares_count: newSh.number_of_shares || 1,
+        description: `ಹೊಸ ಶೇರುದಾರ ನೋಂದಣಿ: ಶೇರುದಾರ #${newSh.share_no} (${newSh.shareholder_name}) ಅವರ ಹೊಸ ಖಾತೆ ಸೃಷ್ಟಿಸಲಾಗಿದೆ. ಷೇರುಗಳು: ${newSh.number_of_shares || 1} ಷೇರುಗಳು, ಒಟ್ಟು ಮೊತ್ತ: ₹${Number(newSh.total_amount || 0).toLocaleString()}, ಗ್ರಾಮ: ${newSh.place || '—'}.`,
         details: newSh
       });
     } catch (e) {}
@@ -5118,7 +5145,8 @@ const newSh = {
         action: 'VARASA_TRANSFER_APPROVED',
         record_id: `#${targetShareNo || item.share_no}`,
         share_no: targetShareNo || item.share_no,
-        description: `ವಾರಸು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ: ಮೂಲ ಶೇರುದಾರರು: ${prevHolderName} ➔ ವಾರಸುದಾರರು: ${newHeirName} (${item.heir_relationship || 'ವಾರಸುದಾರರು'}). ರಶೀದಿ ನಂ: #${item.receipt_no || '—'}, ಶುಲ್ಕ: ₹${item.fees || 570}, ಠರಾವು ನಂ: ${item.tharava_no || '—'}`,
+        shares_count: parseInt(item.no_of_shares) || 1,
+        description: `ವಾರಸು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ: ಮೂಲ ಶೇರುದಾರರು: ${prevHolderName} ➔ ವಾರಸುದಾರರು: ${newHeirName} (${item.heir_relationship || 'ವಾರಸುದಾರರು'}). ಷೇರುಗಳು: ${parseInt(item.no_of_shares) || 1} ಷೇರುಗಳು. ರಶೀದಿ ನಂ: #${item.receipt_no || '—'}, ಶುಲ್ಕ: ₹${item.fees || 570}, ಠರಾವು ನಂ: ${item.tharava_no || '—'}`,
         details: item
       });
     } catch (e) {}
@@ -5305,7 +5333,8 @@ const newSh = {
         action: 'VARGAVANE_TRANSFER_APPROVED',
         record_id: `#${targetShareNo || item.share_no}`,
         share_no: targetShareNo || item.share_no,
-        description: `ನೇರ ಶೇರು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ: ವರ್ಗಾವಣೆದಾರರು: ${prevHolderName} ➔ ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು: ${newTransfereeName}. ರಶೀದಿ ನಂ: #${item.receipt_no || '—'}, ಶುಲ್ಕ: ₹${item.transfer_fee || 570}, ಠರಾವು ನಂ: ${item.tharava_no || '—'}`,
+        shares_count: parseInt(item.no_of_shares) || 1,
+        description: `ನೇರ ಶೇರು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ: ವರ್ಗಾವಣೆದಾರರು: ${prevHolderName} ➔ ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು: ${newTransfereeName}. ಷೇರುಗಳು: ${parseInt(item.no_of_shares) || 1} ಷೇರುಗಳು. ರಶೀದಿ ನಂ: #${item.receipt_no || '—'}, ಶುಲ್ಕ: ₹${item.transfer_fee || 570}, ಠರಾವು ನಂ: ${item.tharava_no || '—'}`,
         details: item
       });
     } catch (e) {}
@@ -6819,6 +6848,10 @@ const newSh = {
     const now = new Date();
     const dateFormatted = entry.dateFormatted || now.toLocaleDateString();
     const operatorName = entry.username || entry.performed_by || entry.operator || 'Admin';
+    const cleanSharesCount = entry.shares_count !== undefined && entry.shares_count !== null 
+      ? Number(entry.shares_count) 
+      : (entry.details?.no_of_shares ? Number(entry.details.no_of_shares) : (entry.details?.number_of_shares ? Number(entry.details.number_of_shares) : null));
+
     const auditEntry = {
       id: entry.id || `LOG-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       timestamp: entry.timestamp || now.toISOString(),
@@ -6831,19 +6864,17 @@ const newSh = {
       action: entry.action || entry.type || 'SYSTEM_ACTION',
       record_id: entry.record_id || (entry.share_no ? `#${entry.share_no}` : (entry.target_id ? `#${entry.target_id}` : '—')),
       share_no: entry.share_no || null,
+      shares_count: cleanSharesCount,
       target_id: entry.target_id || null,
+      document_type: entry.document_type || null,
       description: entry.description || '',
       details: entry.details || null
     };
 
-    const existingIndex = mockAuditLogs.findIndex(l => l.id === auditEntry.id);
-    if (existingIndex >= 0) {
-      mockAuditLogs[existingIndex] = auditEntry;
-    } else {
-      mockAuditLogs.unshift(auditEntry);
-    }
+    // Auto-prune logs older than 7 days and remove future year entries (2035, etc.)
+    mockAuditLogs = pruneExpiredAuditLogs([auditEntry, ...mockAuditLogs.filter(l => l.id !== auditEntry.id)]);
 
-    if (mockAuditLogs.length > 2000) mockAuditLogs.pop();
+    if (mockAuditLogs.length > 2500) mockAuditLogs.length = 2500;
     saveStoredData(STORAGE_KEY_LOGS, mockAuditLogs);
 
     if (CloudDbService.isEnabled()) {
@@ -6857,99 +6888,75 @@ const newSh = {
     return auditEntry;
   },
 
+  async logPrintAction({ documentType, recordId, shareNo, sharesCount = null, description = '', details = null, operator = null }) {
+    await ensureDBReady();
+    const now = new Date();
+    const op = operator || 'Admin';
+    const cleanRecord = recordId || (shareNo ? `#${shareNo}` : 'REPORT');
+    const cleanShares = sharesCount !== null && sharesCount !== undefined ? Number(sharesCount) : null;
+    const desc = description || `ಮುದ್ರಣ ದಾಖಲೆ: ${documentType || 'ಅಧಿಕೃತ ದಾಖಲೆ'} (${cleanRecord}) ಮುದ್ರಿಸಲಾಗಿದೆ.${cleanShares ? ` [${cleanShares} ಷೇರುಗಳು]` : ''}`;
+
+    return await this.addAuditLog({
+      id: `LOG-PRINT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: now.toISOString(),
+      dateFormatted: now.toLocaleDateString(),
+      username: op,
+      performed_by: op,
+      operator: op,
+      role: 'Admin',
+      module: 'Printouts (ಮುದ್ರಣ ದಾಖಲೆ)',
+      action: 'PRINT_DOCUMENT',
+      document_type: documentType,
+      record_id: cleanRecord,
+      share_no: shareNo || null,
+      shares_count: cleanShares,
+      description: desc,
+      details: {
+        documentType,
+        recordId: cleanRecord,
+        shareNo,
+        sharesCount: cleanShares,
+        printed_at: now.toISOString(),
+        ...details
+      }
+    });
+  },
+
   async getAuditLogs() {
     await ensureDBReady();
-    const allLogs = [...mockAuditLogs];
-
-    // Ensure all mockMergeRequests are present in audit logs
-    mockMergeRequests.forEach(m => {
-      const isApproved = (m.approval_status || '').includes('Approved');
-      const isRejected = (m.approval_status || '').includes('Rejected');
-      const action = isApproved 
-        ? 'MERGE_REQUEST_APPROVED_DOUBLE_CONFIRMED' 
-        : (isRejected ? 'MERGE_REQUEST_REJECTED' : 'MERGE_REQUEST_SUBMITTED');
-      const time = m.approved_at || m.step2_confirmed_at || m.rejected_at || m.request_date || new Date().toISOString();
-      const existing = allLogs.find(l => l.details?.request_id === m.request_id || l.id === `LOG-MERGE-${m.id || m.request_id}`);
-      if (!existing) {
-        allLogs.push({
-          id: `LOG-MERGE-${m.id || m.request_id}`,
-          timestamp: time,
-          username: m.approved_by || m.requested_by || 'Admin',
-          performed_by: m.approved_by || m.requested_by || 'Admin',
-          role: 'Admin',
-          module: 'Merge Shares (ಷೇರುಗಳ ವಿಲೀನ)',
-          action,
-          record_id: `#${m.combined_share_no_str || m.primary_share_no}`,
-          share_no: m.primary_share_no,
-          description: `ವಿಲೀನ ವಿನಂತಿ #${m.request_id || m.id}: ಷೇರುಗಳು #${m.combined_share_no_str} (ಒಟ್ಟು ${m.combined_shares} ಷೇರುಗಳು, ₹${Number(m.combined_total_amount || 4000).toLocaleString()}). ೨ ಬಾರಿ ಪರಿಶೀಲಿಸಿ (2-Step Verified) ${isApproved ? 'ಅನುಮೋದಿಸಲಾಗಿದೆ' : (isRejected ? 'ತಿರಸ್ಕರಿಸಲಾಗಿದೆ' : 'ಸಲ್ಲಿಸಲಾಗಿದೆ')}. ಉಳಿಯುವ ಮುಖ್ಯ ಖಾತೆ: #${m.primary_share_no}. ಷರಾ: "${m.approval_remarks || m.remarks || ''}"`,
-          details: m
-        });
-      }
-    });
-
-    // Ensure Varasa transfers are present
-    mockVarasaTransfers.forEach(v => {
-      const existing = allLogs.find(l => l.record_id === `#${v.share_no}` && l.action === 'VARASA_TRANSFER_APPROVED');
-      if (!existing && v.approval_status === 'Approved') {
-        allLogs.push({
-          id: `LOG-VAR-${v.transfer_id || v.id}`,
-          timestamp: v.approval_date || v.receipt_date || v.application_date || new Date().toISOString(),
-          username: v.approved_by || 'Admin',
-          performed_by: v.approved_by || 'Admin',
-          role: 'Admin',
-          module: 'Varasa Legal-Heir (ವಾರಸು)',
-          action: 'VARASA_TRANSFER_APPROVED',
-          record_id: `#${v.share_no}`,
-          share_no: v.share_no,
-          description: `ವಾರಸು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ: ಮೂಲ ಶೇರುದಾರರು: ${v.shareholder_name || v.existing_shareholder_name || '—'} ➔ ವಾರಸುದಾರರು: ${v.heir_name || v.varasa_member} (${v.heir_relationship || 'ವಾರಸುದಾರರು'}). ರಶೀದಿ ನಂ: #${v.receipt_no}, ಶುಲ್ಕ: ₹${v.fees || 570}, ಠರಾವು ನಂ: ${v.tharava_no}`,
-          details: v
-        });
-      }
-    });
-
-    // Ensure Vargavane transfers are present
-    mockVargavaneTransfers.forEach(v => {
-      const existing = allLogs.find(l => l.record_id === `#${v.share_no}` && l.action === 'VARGAVANE_TRANSFER_APPROVED');
-      if (!existing && v.approval_status === 'Approved') {
-        allLogs.push({
-          id: `LOG-VG-${v.transfer_id || v.id}`,
-          timestamp: v.approval_date || v.receipt_date || v.application_date || new Date().toISOString(),
-          username: v.approved_by || 'Admin',
-          performed_by: v.approved_by || 'Admin',
-          role: 'Admin',
-          module: 'Vargavane Transfer (ವರ್ಗಾವಣೆ)',
-          action: 'VARGAVANE_TRANSFER_APPROVED',
-          record_id: `#${v.share_no}`,
-          share_no: v.share_no,
-          description: `ನೇರ ಶೇರು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ: ವರ್ಗಾವಣೆದಾರರು: ${v.transferor_name || '—'} ➔ ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು: ${v.transferee_name}. ರಶೀದಿ ನಂ: #${v.receipt_no}, ಶುಲ್ಕ: ₹${v.transfer_fee || 570}, ಠರಾವು ನಂ: ${v.tharava_no}`,
-          details: v
-        });
-      }
-    });
+    let allLogs = [...mockAuditLogs];
 
     // Ensure shareholder edit revisions are present
     mockShareholders.forEach(s => {
       const revs = Array.isArray(s.history) ? s.history : (Array.isArray(s.change_history) ? s.change_history : []);
       revs.forEach(r => {
         const existing = allLogs.find(l => l.id === r.id);
-        if (!existing) {
-          allLogs.push({
-            id: r.id || `LOG-REV-${s.share_no}-${r.timestamp}`,
-            timestamp: r.timestamp || r.dateFormatted || new Date().toISOString(),
-            username: r.operator || 'Admin',
-            performed_by: r.operator || 'Admin',
-            role: 'Admin',
-            module: 'Shareholders (ಷೇರುದಾರರ ವಿವರಗಳು)',
-            action: 'SHAREHOLDER_UPDATE',
-            record_id: `#${s.share_no}`,
-            share_no: s.share_no,
-            description: `ಶೇರುದಾರ #${s.share_no} (${s.shareholder_name || s.name}) ದಾಖಲೆ ತಿದ್ದುಪಡಿ. ಷರಾ: "${r.notes || 'ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ'}"`,
-            details: r
-          });
+        if (!existing && r.timestamp) {
+          const rDate = new Date(r.timestamp);
+          if (!isNaN(rDate.getTime()) && rDate.getFullYear() <= new Date().getFullYear()) {
+            allLogs.push({
+              id: r.id || `LOG-REV-${s.share_no}-${r.timestamp}`,
+              timestamp: r.timestamp,
+              username: r.operator || 'Admin',
+              performed_by: r.operator || 'Admin',
+              role: 'Admin',
+              module: 'Shareholders (ಷೇರುದಾರರ ವಿವರಗಳು)',
+              action: 'SHAREHOLDER_UPDATE',
+              record_id: `#${s.share_no}`,
+              share_no: s.share_no,
+              shares_count: s.number_of_shares || 1,
+              description: `ಶೇರುದಾರ #${s.share_no} (${s.shareholder_name || s.name}) ದಾಖಲೆ ತಿದ್ದುಪಡಿ. ಷರಾ: "${r.notes || 'ಶಾಸನಬದ್ಧ ದಾಖಲೆ ತಿದ್ದುಪಡಿ'}"`,
+              details: r
+            });
+          }
         }
       });
     });
 
+    // Prune all logs: strictly retain last 7 days only, and purge ANY future year entry (e.g. 2035)
+    allLogs = pruneExpiredAuditLogs(allLogs);
+
+    // Sort descending by actual timestamp (latest first)
     allLogs.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
 
     return {
@@ -6957,10 +6964,6 @@ const newSh = {
       data: allLogs
     };
   },
-
-  // -------------------------------------------------------------
-  // MERGE SHARES & SHARE DETAILS FOR SHAREHOLDERS WITH MULTIPLE AMOUNTS
-  // -------------------------------------------------------------
 
   async getMultipleHoldingsSummary() {
     await ensureDBReady();

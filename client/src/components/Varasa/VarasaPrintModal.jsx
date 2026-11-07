@@ -1,5 +1,6 @@
 import { getCompanyLogo, useCompanyLogo, useHandshakeLogo } from '../../services/organizationService';
 import React, { useState, useEffect } from 'react';
+import { ApiService } from '../../services/api';
 import { createPortal } from 'react-dom';
 import { Printer, X, FileText, CheckCircle2, ChevronRight, Layers, UserCheck, Users } from 'lucide-react';
 
@@ -137,6 +138,15 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
 
   const handlePrint = () => {
     document.body.classList.add('varasa-printing');
+    try {
+      ApiService.logPrintAction({
+        documentType: 'ಶೇರು ವಾರಸಾ ಅರ್ಜಿ (Varasa Application)',
+        recordId: `#${transfer?.share_no}`,
+        shareNo: transfer?.share_no,
+        sharesCount: transfer?.no_of_shares || 1,
+        description: `ಶೇರು ವಾರಸಾ ಅರ್ಜಿ ಮುದ್ರಣ: ಶೇರು #${transfer?.share_no} (${transfer?.shareholder_name || ''} ➔ ${transfer?.heir_name || transfer?.varasa_member || ''}) ರ ${transfer?.no_of_shares || 1} ಷೇರುಗಳ ಅಧಿಕೃತ ವಾರಸಾ ಅರ್ಜಿ ಮುದ್ರಿಸಲಾಗಿದೆ.`
+      });
+    } catch (e) {}
     setTimeout(() => {
       window.print();
     }, 100);

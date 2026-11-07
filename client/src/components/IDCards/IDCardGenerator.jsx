@@ -174,11 +174,27 @@ export default function IDCardGenerator() {
       alert('ದಯವಿಟ್ಟು ಮುದ್ರಿಸಲು ಕನಿಷ್ಠ 1 ಶೇರುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Please select at least 1 shareholder to print)');
       return;
     }
+    try {
+      const ids = selectedCards.map(s => `#${s.share_no || s.share_number}`).join(', ');
+      ApiService.logPrintAction({
+        documentType: 'ಗುರುತಿನ ಚೀಟಿಗಳು (ID Cards Batch)',
+        recordId: `${selectedCards.length} ID Cards (${ids})`,
+        description: `ಗುರುತಿನ ಚೀಟಿ ಮುದ್ರಣ: ಒಟ್ಟು ${selectedCards.length} ಶೇರುದಾರರ ಗುರುತಿನ ಚೀಟಿಗಳನ್ನು ಮುದ್ರಿಸಲಾಗಿದೆ (${ids}).`
+      });
+    } catch (e) {}
     window.print();
   };
 
   const handlePrintSingle = (sh) => {
     setSelectedCards([sh]);
+    try {
+      ApiService.logPrintAction({
+        documentType: 'ಗುರುತಿನ ಚೀಟಿ (ID Card)',
+        recordId: `#${sh.share_no || sh.share_number}`,
+        shareNo: sh.share_no || sh.share_number,
+        description: `ಗುರುತಿನ ಚೀಟಿ ಮುದ್ರಣ: ಶೇರುದಾರ #${sh.share_no || sh.share_number} (${sh.shareholder_name || sh.name}) ಅವರ ಸದಸ್ಯತ್ವ ಗುರುತಿನ ಚೀಟಿ ಮುದ್ರಿಸಲಾಗಿದೆ.`
+      });
+    } catch (e) {}
     setTimeout(() => window.print(), 80);
   };
 

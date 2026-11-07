@@ -71,6 +71,14 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
     setPrintMode('id_card');
     document.body.classList.remove('shareholder-record-printing');
     document.body.classList.add('id-card-printing');
+    try {
+      ApiService.logPrintAction({
+        documentType: 'ಗುರುತಿನ ಚೀಟಿ (ID Card)',
+        recordId: `#${shareholder?.share_no || shareholder?.share_number || shareholderId}`,
+        shareNo: shareholder?.share_no || shareholder?.share_number,
+        description: `ಗುರುತಿನ ಚೀಟಿ ಮುದ್ರಣ: ಶೇರುದಾರ #${shareholder?.share_no || shareholder?.share_number} (${shareholder?.shareholder_name || shareholder?.name}) ಅವರ ಸದಸ್ಯತ್ವ ಗುರುತಿನ ಚೀಟಿ ಮುದ್ರಿಸಲಾಗಿದೆ.`
+      });
+    } catch (e) {}
     const cleanup = () => {
       setPrintMode(null);
       document.body.classList.remove('id-card-printing');
@@ -87,6 +95,15 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
     setPrintMode('record');
     document.body.classList.remove('id-card-printing');
     document.body.classList.add('shareholder-record-printing');
+    try {
+      ApiService.logPrintAction({
+        documentType: 'ಶಾಸನಬದ್ಧ ದಾಖಲೆ ಪತ್ರ (Statutory Record Slip)',
+        recordId: `#${shareholder?.share_no || shareholder?.share_number || shareholderId}`,
+        shareNo: shareholder?.share_no || shareholder?.share_number,
+        sharesCount: shareholder?.number_of_shares || 1,
+        description: `ಶಾಸನಬದ್ಧ ದಾಖಲೆ ಪತ್ರ ಮುದ್ರಣ: ಶೇರುದಾರ #${shareholder?.share_no || shareholder?.share_number} (${shareholder?.shareholder_name || shareholder?.name}) ಅವರ ಅಧಿಕೃತ ದಾಖಲೆ ಪತ್ರ ಮುದ್ರಿಸಲಾಗಿದೆ.`
+      });
+    } catch (e) {}
     const cleanup = () => {
       setPrintMode(null);
       document.body.classList.remove('shareholder-record-printing');

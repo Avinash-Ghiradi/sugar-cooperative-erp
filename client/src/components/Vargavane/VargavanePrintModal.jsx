@@ -1,5 +1,6 @@
 import { getCompanyLogo, useCompanyLogo, useHandshakeLogo } from '../../services/organizationService';
 import React, { useState, useEffect } from 'react';
+import { ApiService } from '../../services/api';
 import { createPortal } from 'react-dom';
 import { Printer, X, FileText, CheckCircle2, ChevronRight, Layers, UserCheck, ArrowRightLeft } from 'lucide-react';
 
@@ -118,6 +119,15 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
 
   const handlePrint = () => {
     document.body.classList.add('vargavane-printing');
+    try {
+      ApiService.logPrintAction({
+        documentType: 'ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ (Vargavane Application)',
+        recordId: `#${v?.share_no}`,
+        shareNo: v?.share_no,
+        sharesCount: v?.no_of_shares || 1,
+        description: `ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ ಮುದ್ರಣ: ಶೇರು #${v?.share_no} (${v?.transferor_name || ''} ➔ ${v?.transferee_name || ''}) ರ ${v?.no_of_shares || 1} ಷೇರುಗಳ ಅಧಿಕೃತ ವರ್ಗಾವಣೆ ಅರ್ಜಿ ಮುದ್ರಿಸಲಾಗಿದೆ.`
+      });
+    } catch (e) {}
     setTimeout(() => {
       window.print();
     }, 150);

@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { 
   Printer, X, Clock, Calendar, CheckCircle2, ShieldCheck, 
   FileText, ArrowRightLeft, UserCheck, GitMerge, AlertCircle, 
-  RefreshCw, KeyRound, Building2, User, Eye, Check, ChevronRight
+  RefreshCw, KeyRound, Building2, User, Eye, Check, ChevronRight,
+  Layers, HardDrive
 } from 'lucide-react';
 import { useCompanyLogo, useHandshakeLogo } from '../../services/organizationService';
 import { ApiService } from '../../services/api';
@@ -21,7 +22,7 @@ function formatDateDMY(dInput) {
   return `${day}/${month}/${year}`;
 }
 
-// Helper to format time as 12-hour AM/PM
+// Helper to format actual time as 12-hour AM/PM with seconds
 function formatTime12(dInput) {
   if (!dInput) return '—';
   const d = new Date(dInput);
@@ -96,6 +97,14 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
 
   // Filter logs according to scope and search term
   const filteredLogs = logs.filter(log => {
+    // Discard any log with future year (2035, etc.)
+    if (log.timestamp) {
+      const d = new Date(log.timestamp);
+      if (!isNaN(d.getTime()) && d.getFullYear() > new Date().getFullYear()) {
+        return false;
+      }
+    }
+
     // 1. Date filter if scope is 'selected'
     if (viewScope === 'selected') {
       const timeField = log.timestamp || log.dateFormatted || '';
@@ -120,22 +129,52 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
     return true;
   });
 
-  // Calculate statistics for the active filtered scope
+  // Calculate detailed statistics including exact shares count
+  const varasaLogs = filteredLogs.filter(l => (l.action && l.action.includes('VARASA')) || (l.module && l.module.includes('Varasa')));
+  const vargavaneLogs = filteredLogs.filter(l => (l.action && l.action.includes('VARGAVANE')) || (l.module && l.module.includes('Vargavane')));
+  const newShLogs = filteredLogs.filter(l => (l.action && (l.action.includes('NEW_SHAREHOLDER') || l.action.includes('ENROLL'))));
+  const mergeLogs = filteredLogs.filter(l => (l.action && l.action.includes('MERGE')) || (l.module && l.module.includes('Merge')));
+  const printLogs = filteredLogs.filter(l => (l.action && l.action.includes('PRINT')) || (l.module && l.module.includes('Print')));
+  const updateLogs = filteredLogs.filter(l => (l.action && (l.action.includes('UPDATE') || l.action.includes('REVISION'))));
+  const passwordLogs = filteredLogs.filter(l => (l.action && l.action.includes('PASSWORD')) || (l.module && l.module.includes('Password')));
+  const sugarLogs = filteredLogs.filter(l => (l.action && l.action.includes('SUGAR')) || (l.module && l.module.includes('Sugar')));
+
   const stats = {
     total: filteredLogs.length,
-    shareholderUpdates: filteredLogs.filter(l => (l.action && l.action.includes('SHAREHOLDER')) || (l.module && l.module.includes('Shareholder'))).length,
-    varasaTransfers: filteredLogs.filter(l => (l.action && l.action.includes('VARASA')) || (l.module && l.module.includes('Varasa'))).length,
-    vargavaneTransfers: filteredLogs.filter(l => (l.action && l.action.includes('VARGAVANE')) || (l.module && l.module.includes('Vargavane'))).length,
-    merges: filteredLogs.filter(l => (l.action && l.action.includes('MERGE')) || (l.module && l.module.includes('Merge'))).length,
-    passwords: filteredLogs.filter(l => (l.action && l.action.includes('PASSWORD')) || (l.module && l.module.includes('Password'))).length,
-    sugarAllotments: filteredLogs.filter(l => (l.action && l.action.includes('SUGAR')) || (l.module && l.module.includes('Sugar'))).length,
+    varasaCount: varasaLogs.length,
+    varasaShares: varasaLogs.reduce((sum, l) => sum + (Number(l.shares_count) || (l.details?.no_of_shares ? Number(l.details.no_of_shares) : 1)), 0),
+    
+    vargavaneCount: vargavaneLogs.length,
+    vargavaneShares: vargavaneLogs.reduce((sum, l) => sum + (Number(l.shares_count) || (l.details?.no_of_shares ? Number(l.details.no_of_shares) : 1)), 0),
+
+    newShCount: newShLogs.length,
+    newShShares: newShLogs.reduce((sum, l) => sum + (Number(l.shares_count) || (l.details?.number_of_shares ? Number(l.details.number_of_shares) : 1)), 0),
+
+    mergeCount: mergeLogs.length,
+    mergeShares: mergeLogs.reduce((sum, l) => sum + (Number(l.shares_count) || (l.details?.combined_shares ? Number(l.details.combined_shares) : 2)), 0),
+
+    printsCount: printLogs.length,
+    updatesCount: updateLogs.length,
+    passwordsCount: passwordLogs.length,
+    sugarCount: sugarLogs.length
   };
 
-  // Check how many logs exist strictly today
-  const todayOnlyCount = logs.filter(l => matchesCalendarDay(l.timestamp || l.dateFormatted, new Date())).length;
+  stats.totalShares = stats.varasaShares + stats.vargavaneShares + stats.newShShares + stats.mergeShares;
 
   const handlePrint = () => {
-    setPrintedTime(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }));
+    const curTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+    setPrintedTime(curTime);
+
+    // Track that daily summary print was taken
+    try {
+      ApiService.logPrintAction({
+        documentType: 'ದೈನಂದಿನ ಕಾರ್ಯ ನಿರ್ವಹಣಾ ಸಾರಾಂಶ (5:20 PM Daily Summary)',
+        recordId: `ದಿನಾಂಕ: ${formatDateDMY(targetDate)}`,
+        sharesCount: stats.totalShares,
+        description: `ದೈನಂದಿನ ಕಾರ್ಯ ನಿರ್ವಹಣಾ ಸಾರಾಂಶ ಮುದ್ರಣ: ದಿನಾಂಕ ${formatDateDMY(targetDate)} ರ ಅಧಿಕೃತ ಕಚೇರಿ ಆಡಿಟ್ ಸಾರಾಂಶ ವರದಿ ಮುದ್ರಿಸಲಾಗಿದೆ (ಒಟ್ಟು ಕ್ರಿಯೆಗಳು: ${stats.total}, ಒಟ್ಟು ಷೇರುಗಳು: ${stats.totalShares}).`
+      });
+    } catch (e) {}
+
     if (typeof document !== 'undefined') {
       document.body.classList.add('daily-summary-printing');
       window.print();
@@ -169,7 +208,7 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ • ದಿನನಿತ್ಯದ ಬದಲಾವಣೆಗಳ ಆಡಿಟ್ ಸಾರಾಂಶ
+                  ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ • ೭-ದಿನಗಳ ನೈಜ ಆಡಿಟ್ ಇತಿಹಾಸ & ಮುದ್ರಣ ದಾಖಲೆ
                 </p>
               </div>
             </div>
@@ -197,14 +236,14 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-amber-400 shrink-0" />
               <span>
-                <strong>5:20 PM ಕಚೇರಿ ಸಮಯ ಮುಕ್ತಾಯ:</strong> ಇಂದಿನ ಎಲ್ಲಾ ಬದಲಾವಣೆಗಳು & ವಹಿವಾಟುಗಳನ್ನು ಪರಿಶೀಲಿಸಿ ದೈನಂದಿನ ಕಚೇರಿ ದಾಖಲೆಗಾಗಿ ಅಧಿಕೃತ ಪ್ರಿಂಟ್ ತೆಗೆದುಕೊಳ್ಳಿ.
+                <strong>5:20 PM ಕಚೇರಿ ಸಮಯ ಮುಕ್ತಾಯ:</strong> ಇಂದಿನ ವಾರಸಾ, ವರ್ಗಾವಣೆ, ಹೊಸ ಸದಸ್ಯರು ಹಾಗೂ ತೆಗೆದುಕೊಂಡ ಮುದ್ರಣಗಳನ್ನು ಪರಿಶೀಲಿಸಿ ದೈನಂದಿನ ಕಚೇರಿ ದಾಖಲೆಗಾಗಿ ಅಧಿಕೃತ ಪ್ರಿಂಟ್ ತೆಗೆದುಕೊಳ್ಳಿ.
               </span>
             </div>
             <button
               onClick={handleDismissForToday}
               className="text-[11px] underline text-amber-300 hover:text-white shrink-0 cursor-pointer"
             >
-              ಇಂದಿಗೆ ಮುಕ್ತಾಯ (Dismiss for today)
+              ಇಂದಿಗೆ ಮುಕ್ತಾಯ (Dismiss)
             </button>
           </div>
 
@@ -244,7 +283,7 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  ಎಲ್ಲಾ ಇತ್ತೀಚಿನವು ({logs.length})
+                  ೭ ದಿನಗಳ ಲಾಗ್‌ಗಳು ({logs.length})
                 </button>
               </div>
 
@@ -261,7 +300,7 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
             <div className="w-full sm:w-64">
               <input
                 type="text"
-                placeholder="ಶೇರು ನಂ, ಕ್ರಿಯೆ, ಆಪರೇಟರ್ ಹುಡುಕಿ..."
+                placeholder="ಶೇರು ನಂ, ಕ್ರಿಯೆ, ಮುದ್ರಣ ವಿವರ ಹುಡುಕಿ..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
@@ -269,31 +308,37 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
             </div>
           </div>
 
-          {/* Metric Cards Grid */}
+          {/* Metric Cards Grid with Shares Count */}
           <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 bg-slate-950/20 border-b border-slate-800/80">
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-center">
               <span className="text-[10px] text-slate-400 block font-medium">ಒಟ್ಟು ಕ್ರಿಯೆಗಳು</span>
               <span className="text-lg font-black text-emerald-400">{stats.total}</span>
+              <span className="text-[9px] text-slate-500 block mt-0.5">({stats.totalShares} ಒಟ್ಟು ಷೇರುಗಳು)</span>
             </div>
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-center">
-              <span className="text-[10px] text-slate-400 block font-medium">ಶೇರು ತಿದ್ದುಪಡಿ</span>
-              <span className="text-lg font-black text-sky-400">{stats.shareholderUpdates}</span>
+              <span className="text-[10px] text-purple-300 block font-medium">ವಾರಸಾ ವರ್ಗಾವಣೆ</span>
+              <span className="text-lg font-black text-purple-400">{stats.varasaCount}</span>
+              <span className="text-[9px] text-purple-300 font-bold block mt-0.5">{stats.varasaShares} ಷೇರುಗಳು</span>
             </div>
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-center">
-              <span className="text-[10px] text-slate-400 block font-medium">ವಾರಸಾ ಮಂಜೂರಾತಿ</span>
-              <span className="text-lg font-black text-purple-400">{stats.varasaTransfers}</span>
+              <span className="text-[10px] text-cyan-300 block font-medium">ನೇರ ವರ್ಗಾವಣೆ</span>
+              <span className="text-lg font-black text-cyan-400">{stats.vargavaneCount}</span>
+              <span className="text-[9px] text-cyan-300 font-bold block mt-0.5">{stats.vargavaneShares} ಷೇರುಗಳು</span>
             </div>
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-center">
-              <span className="text-[10px] text-slate-400 block font-medium">ನೇರ ವರ್ಗಾವಣೆ</span>
-              <span className="text-lg font-black text-cyan-400">{stats.vargavaneTransfers}</span>
+              <span className="text-[10px] text-emerald-300 block font-medium">ಹೊಸ ಶೇರುದಾರರು</span>
+              <span className="text-lg font-black text-emerald-400">{stats.newShCount}</span>
+              <span className="text-[9px] text-emerald-300 font-bold block mt-0.5">{stats.newShShares} ಷೇರುಗಳು</span>
             </div>
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-center">
-              <span className="text-[10px] text-slate-400 block font-medium">ಷೇರು ವಿಲೀನ</span>
-              <span className="text-lg font-black text-amber-400">{stats.merges}</span>
+              <span className="text-[10px] text-indigo-300 block font-medium">ತೆಗೆದುಕೊಂಡ ಮುದ್ರಣ</span>
+              <span className="text-lg font-black text-indigo-400">{stats.printsCount}</span>
+              <span className="text-[9px] text-indigo-300 block mt-0.5">ಮುದ್ರಿತ ದಾಖಲೆಗಳು</span>
             </div>
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-center">
-              <span className="text-[10px] text-slate-400 block font-medium">ಪಾಸ್‌ವರ್ಡ್ & ಇತರ</span>
-              <span className="text-lg font-black text-rose-400">{stats.passwords + stats.sugarAllotments}</span>
+              <span className="text-[10px] text-sky-300 block font-medium">ತಿದ್ದುಪಡಿ / ವಿಲೀನ / ಇತರೆ</span>
+              <span className="text-lg font-black text-sky-400">{stats.updatesCount + stats.mergeCount + stats.passwordsCount}</span>
+              <span className="text-[9px] text-sky-300 block mt-0.5">{stats.mergeShares > 0 ? `${stats.mergeShares} ಷೇರು ವಿಲೀನ` : 'ದಾಖಲೆ ಪರಿಷ್ಕರಣೆ'}</span>
             </div>
           </div>
 
@@ -302,7 +347,7 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
             {loading ? (
               <div className="py-12 text-center text-slate-400 text-xs">
                 <RefreshCw className="w-6 h-6 animate-spin mx-auto text-emerald-400 mb-2" />
-                <span>ಇಂದಿನ ಆಡಿಟ್ ಲಾಗ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...</span>
+                <span>ಆಡಿಟ್ ಲಾಗ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...</span>
               </div>
             ) : filteredLogs.length === 0 ? (
               <div className="py-12 text-center bg-slate-950/40 rounded-2xl border border-dashed border-slate-800 p-6 space-y-3">
@@ -311,7 +356,7 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                   ಆಯ್ದ ದಿನಾಂಕದಲ್ಲಿ ({formatDateDMY(targetDate)}) ಯಾವುದೇ ನಮೂದುಗಳು ದಾಖಲಾಗಿಲ್ಲ.
                 </p>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  ಇಂದು ಯಾವುದೇ ಬದಲಾವಣೆಗಳು ಅಥವಾ ವಹಿವಾಟುಗಳು ದಾಖಲಾಗಿರದಿದ್ದರೆ, ಇತ್ತೀಚಿನ ಎಲ್ಲಾ ಆಡಿಟ್ ದಾಖಲೆಗಳನ್ನು ಪರಿಶೀಲಿಸಲು ಕೆಳಗಿನ ಬಟನ್ ಕ್ಲಿಕ್ ಮಾಡಿ.
+                  ೭ ದಿನಗಳ ಇತ್ತೀಚಿನ ಲಾಗ್‌ಗಳನ್ನು ಪರಿಶೀಲಿಸಲು ಕೆಳಗಿನ ಬಟನ್ ಕ್ಲಿಕ್ ಮಾಡಿ.
                 </p>
                 <button
                   onClick={() => setViewScope('all')}
@@ -326,12 +371,13 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                   <thead className="bg-slate-900 border-b border-slate-800 text-slate-400 uppercase font-semibold text-[10px]">
                     <tr>
                       <th className="py-3 px-3">ಕ್ರ.ಸಂ</th>
-                      <th className="py-3 px-3">ಸಮಯ</th>
+                      <th className="py-3 px-3">ನಿಜವಾದ ಸಮಯ</th>
                       <th className="py-3 px-3">ಬಳಕೆದಾರ (User)</th>
                       <th className="py-3 px-3">ವಿಭಾಗ (Module)</th>
                       <th className="py-3 px-3">ಕ್ರಿಯೆ (Action)</th>
                       <th className="py-3 px-3">ಶೇರು ನಂ</th>
-                      <th className="py-3 px-3">ಬದಲಾವಣೆ & ನೀಡಲಾದ ವಿವರಗಳು</th>
+                      <th className="py-3 px-3 text-center">ಷೇರುಗಳು</th>
+                      <th className="py-3 px-3">ಬದಲಾವಣೆ & ಮುದ್ರಣ ವಿವರಗಳು</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-slate-200">
@@ -339,6 +385,8 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                       const isMerge = (log.module && log.module.includes('Merge')) || (log.action && log.action.includes('MERGE'));
                       const isVarasa = (log.module && log.module.includes('Varasa')) || (log.action && log.action.includes('VARASA'));
                       const isVargavane = (log.module && log.module.includes('Vargavane')) || (log.action && log.action.includes('VARGAVANE'));
+                      const isNewSh = (log.action && (log.action.includes('NEW_SHAREHOLDER') || log.action.includes('ENROLL')));
+                      const isPrint = (log.action && log.action.includes('PRINT')) || (log.module && log.module.includes('Print'));
                       const isUpdate = (log.action && log.action.includes('UPDATE')) || (log.action && log.action.includes('REVISION'));
                       const isPwd = (log.action && log.action.includes('PASSWORD')) || (log.module && log.module.includes('Password'));
 
@@ -348,8 +396,8 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                             {idx + 1}
                           </td>
                           <td className="py-2.5 px-3 font-mono text-slate-300 whitespace-nowrap text-[11px]">
-                            {formatTime12(log.timestamp)}
-                            <span className="block text-[9px] text-slate-500">{formatDateDMY(log.timestamp)}</span>
+                            <div className="font-semibold text-slate-200">{formatTime12(log.timestamp)}</div>
+                            <span className="text-[9px] text-slate-500">{formatDateDMY(log.timestamp)}</span>
                           </td>
                           <td className="py-2.5 px-3 whitespace-nowrap">
                             <div className="font-bold text-slate-100 flex items-center gap-1.5">
@@ -361,9 +409,11 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                           </td>
                           <td className="py-2.5 px-3 whitespace-nowrap">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                              isPrint ? 'bg-indigo-950 text-indigo-300 border-indigo-800' :
                               isMerge ? 'bg-amber-950 text-amber-300 border-amber-800' :
                               isVarasa ? 'bg-purple-950 text-purple-300 border-purple-800' :
                               isVargavane ? 'bg-cyan-950 text-cyan-300 border-cyan-800' :
+                              isNewSh ? 'bg-emerald-950 text-emerald-300 border-emerald-800' :
                               isUpdate ? 'bg-sky-950 text-sky-300 border-sky-800' :
                               isPwd ? 'bg-rose-950 text-rose-300 border-rose-800' :
                               'bg-emerald-950 text-emerald-300 border-emerald-800'
@@ -373,9 +423,11 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                           </td>
                           <td className="py-2.5 px-3 font-mono font-bold whitespace-nowrap text-[11px]">
                             <span className={`${
+                              isPrint ? 'text-indigo-400' :
                               isMerge ? 'text-amber-400' :
                               isVarasa ? 'text-purple-400' :
                               isVargavane ? 'text-cyan-400' :
+                              isNewSh ? 'text-emerald-400' :
                               isUpdate ? 'text-sky-400' :
                               isPwd ? 'text-rose-400' :
                               'text-emerald-400'
@@ -385,6 +437,15 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                           </td>
                           <td className="py-2.5 px-3 font-mono font-bold text-amber-300 whitespace-nowrap">
                             {log.record_id || (log.share_no ? `#${log.share_no}` : (log.target_id ? `#${log.target_id}` : '—'))}
+                          </td>
+                          <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                            {log.shares_count ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                                {log.shares_count} ಷೇರು
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 text-[10px]">—</span>
+                            )}
                           </td>
                           <td className="py-2.5 px-3 text-slate-300 text-xs max-w-md">
                             <p className="line-clamp-2 leading-relaxed">
@@ -400,19 +461,21 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
             )}
           </div>
 
-          {/* Modal Footer */}
+          {/* Modal Footer with 7-Day Auto Retention Notice */}
           <div className="p-4 bg-slate-950/90 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-slate-400 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>ಇಂದಿನ ದಿನಾಂಕದ ಶಾಸನಬದ್ಧ ಆಡಿಟ್ ವರದಿ ತಯಾರಾಗಿದೆ. A4 ಹಾಳೆಯಲ್ಲಿ ಮುದ್ರಿಸಿ ಕಚೇರಿ ಕಡತಕ್ಕೆ ಸೇರಿಸಿ.</span>
+            <div className="text-[11px] text-slate-400 flex items-center gap-2">
+              <HardDrive className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                <strong>೭-ದಿನಗಳ ಸ್ವಯಂ ಉಳಿಸುವಿಕೆ ನೀತಿ:</strong> ಮುದ್ರಣ ತೆಗೆದುಕೊಳ್ಳುವವರೆಗೆ ಮತ್ತು 1 ವಾರದವರೆಗೆ ಎಲ್ಲಾ ಲಾಗ್‌ಗಳನ್ನು ಸುರಕ್ಷಿತವಾಗಿಡಲಾಗುತ್ತದೆ, ನಂತರ ಸಂಗ್ರಹ ಸ್ಥಳದ ಮಿತಿಗಾಗಿ ಹಳೆಯ ಲಾಗ್‌ಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ತೆರವುಗೊಳಿಸಲಾಗುತ್ತದೆ.
+              </span>
             </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-center">
+            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
               <button
                 onClick={handleDismissForToday}
                 className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
               >
-                ಇಂದಿಗೆ ಮುಕ್ತಾಯ (Dismiss for today)
+                ಇಂದಿಗೆ ಮುಕ್ತಾಯ (Dismiss)
               </button>
               <button
                 onClick={onClose}
@@ -425,7 +488,7 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                 className="flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/50 cursor-pointer transition-all active:scale-95"
               >
                 <Printer className="w-4 h-4" />
-                <span>ದಿನದ ಸಾರಾಂಶ ಮುದ್ರಿಸಿ (Print Daily Summary)</span>
+                <span>ದಿನದ ಸಾರಾಂಶ ಮುದ್ರಿಸಿ (Print Summary)</span>
               </button>
             </div>
           </div>
@@ -524,10 +587,10 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
               {/* Title Banner */}
               <div style={{ backgroundColor: '#f3f4f6', border: '1.5px solid #000', padding: '6px 10px', textAlign: 'center', marginBottom: '10px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#000' }}>
-                  ದೈನಂದಿನ ಕಾರ್ಯ ನಿರ್ವಹಣೆ & ಬದಲಾವಣೆಗಳ ಅಧಿಕೃತ ಸಾರಾಂಶ ವರದಿ
+                  ದೈನಂದಿನ ಕಾರ್ಯ ನಿರ್ವಹಣೆ, ಷೇರು ವರ್ಗಾವಣೆ & ಮುದ್ರಣಗಳ ಅಧಿಕೃತ ಸಾರಾಂಶ ವರದಿ
                 </div>
                 <div style={{ fontSize: '10px', fontWeight: '600', color: '#444' }}>
-                  DAILY STATUTORY AUDIT & WORK SUMMARY REPORT (5:20 PM DAY-END)
+                  DAILY STATUTORY AUDIT, TRANSFERS & PRINT SUMMARY (5:20 PM DAY-END)
                 </div>
               </div>
 
@@ -537,61 +600,68 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                   <strong style={{ color: '#000' }}>ವರದಿಯ ದಿನಾಂಕ:</strong> {formatDateDMY(targetDate)}
                 </div>
                 <div>
-                  <strong style={{ color: '#000' }}>ಮುದ್ರಿಸಿದ ಸಮಯ:</strong> {printedTime || '5:20 PM'}
+                  <strong style={{ color: '#000' }}>ನಿಜವಾದ ಸಮಯ:</strong> {printedTime || '5:20:00 PM'}
                 </div>
                 <div>
                   <strong style={{ color: '#000' }}>ಆಪರೇಟರ್:</strong> {user?.name || 'Avinash Ghiradimath (Admin)'}
                 </div>
                 <div>
-                  <strong style={{ color: '#000' }}>ಒಟ್ಟು ನಮೂದುಗಳು:</strong> {filteredLogs.length}
+                  <strong style={{ color: '#000' }}>ಒಟ್ಟು ನಮೂದುಗಳು:</strong> {filteredLogs.length} ({stats.totalShares} ಷೇರುಗಳು)
                 </div>
               </div>
 
-              {/* Summary Metrics Box */}
+              {/* Summary Metrics Box with exact Shares & Prints */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', textAlign: 'center', marginBottom: '12px' }}>
                 <div style={{ border: '1px solid #000', padding: '4px 2px', background: '#fff' }}>
                   <div style={{ fontSize: '8.5px', color: '#444' }}>ಒಟ್ಟು ಕ್ರಿಯೆಗಳು</div>
                   <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.total}</div>
-                </div>
-                <div style={{ border: '1px solid #000', padding: '4px 2px', background: '#fff' }}>
-                  <div style={{ fontSize: '8.5px', color: '#444' }}>ಶೇರು ತಿದ್ದುಪಡಿ</div>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.shareholderUpdates}</div>
+                  <div style={{ fontSize: '7.5px', color: '#666' }}>({stats.totalShares} ಷೇರುಗಳು)</div>
                 </div>
                 <div style={{ border: '1px solid #000', padding: '4px 2px', background: '#fff' }}>
                   <div style={{ fontSize: '8.5px', color: '#444' }}>ವಾರಸಾ ವರ್ಗಾವಣೆ</div>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.varasaTransfers}</div>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.varasaCount}</div>
+                  <div style={{ fontSize: '7.5px', color: '#059669', fontWeight: 'bold' }}>({stats.varasaShares} ಷೇರುಗಳು)</div>
                 </div>
                 <div style={{ border: '1px solid #000', padding: '4px 2px', background: '#fff' }}>
                   <div style={{ fontSize: '8.5px', color: '#444' }}>ನೇರ ವರ್ಗಾವಣೆ</div>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.vargavaneTransfers}</div>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.vargavaneCount}</div>
+                  <div style={{ fontSize: '7.5px', color: '#0284c7', fontWeight: 'bold' }}>({stats.vargavaneShares} ಷೇರುಗಳು)</div>
                 </div>
                 <div style={{ border: '1px solid #000', padding: '4px 2px', background: '#fff' }}>
-                  <div style={{ fontSize: '8.5px', color: '#444' }}>ಷೇರು ವಿಲೀನ</div>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.merges}</div>
+                  <div style={{ fontSize: '8.5px', color: '#444' }}>ಹೊಸ ಶೇರುದಾರರು</div>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.newShCount}</div>
+                  <div style={{ fontSize: '7.5px', color: '#059669', fontWeight: 'bold' }}>({stats.newShShares} ಷೇರುಗಳು)</div>
                 </div>
                 <div style={{ border: '1px solid #000', padding: '4px 2px', background: '#fff' }}>
-                  <div style={{ fontSize: '8.5px', color: '#444' }}>ಪಾಸ್‌ವರ್ಡ್/ಇತರೆ</div>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.passwords + stats.sugarAllotments}</div>
+                  <div style={{ fontSize: '8.5px', color: '#444' }}>ತೆಗೆದುಕೊಂಡ ಮುದ್ರಣ</div>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.printsCount}</div>
+                  <div style={{ fontSize: '7.5px', color: '#4f46e5' }}>ದಾಖಲೆ ಮುದ್ರಣಗಳು</div>
+                </div>
+                <div style={{ border: '1px solid #000', padding: '4px 2px', background: '#fff' }}>
+                  <div style={{ fontSize: '8.5px', color: '#444' }}>ತಿದ್ದುಪಡಿ / ವಿಲೀನ</div>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{stats.updatesCount + stats.mergeCount}</div>
+                  <div style={{ fontSize: '7.5px', color: '#666' }}>ದಾಖಲೆ ಬದಲಾವಣೆ</div>
                 </div>
               </div>
 
-              {/* Detailed Activity Table */}
+              {/* Detailed Activity Table with Shares column */}
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px', border: '1.5px solid #000', marginBottom: '16px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#e5e7eb', borderBottom: '1.5px solid #000', color: '#000', textAlign: 'left' }}>
-                    <th style={{ border: '1px solid #000', padding: '4px', width: '30px', textAlign: 'center' }}>ಕ್ರ.ಸಂ</th>
-                    <th style={{ border: '1px solid #000', padding: '4px', width: '60px' }}>ಸಮಯ</th>
-                    <th style={{ border: '1px solid #000', padding: '4px', width: '90px' }}>ಬಳಕೆದಾರ (User)</th>
-                    <th style={{ border: '1px solid #000', padding: '4px', width: '90px' }}>ವಿಭಾಗ (Module)</th>
-                    <th style={{ border: '1px solid #000', padding: '4px', width: '110px' }}>ಕ್ರಿಯೆ (Action)</th>
-                    <th style={{ border: '1px solid #000', padding: '4px', width: '50px', textAlign: 'center' }}>ಶೇರು ನಂ</th>
-                    <th style={{ border: '1px solid #000', padding: '4px' }}>ಕೈಗೊಂಡ ಬದಲಾವಣೆ ಮತ್ತು ವಿವರಗಳು (Audit Details)</th>
+                    <th style={{ border: '1px solid #000', padding: '4px', width: '25px', textAlign: 'center' }}>ಕ್ರ.ಸಂ</th>
+                    <th style={{ border: '1px solid #000', padding: '4px', width: '75px' }}>ನಿಜವಾದ ಸಮಯ</th>
+                    <th style={{ border: '1px solid #000', padding: '4px', width: '85px' }}>ಬಳಕೆದಾರ (User)</th>
+                    <th style={{ border: '1px solid #000', padding: '4px', width: '85px' }}>ವಿಭಾಗ (Module)</th>
+                    <th style={{ border: '1px solid #000', padding: '4px', width: '105px' }}>ಕ್ರಿಯೆ (Action)</th>
+                    <th style={{ border: '1px solid #000', padding: '4px', width: '45px', textAlign: 'center' }}>ಶೇರು ನಂ</th>
+                    <th style={{ border: '1px solid #000', padding: '4px', width: '45px', textAlign: 'center' }}>ಷೇರುಗಳು</th>
+                    <th style={{ border: '1px solid #000', padding: '4px' }}>ಕೈಗೊಂಡ ಬದಲಾವಣೆ ಮತ್ತು ಮುದ್ರಣ ವಿವರಗಳು (Audit Details)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={7} style={{ border: '1px solid #000', padding: '16px', textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+                      <td colSpan={8} style={{ border: '1px solid #000', padding: '16px', textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
                         ಈ ದಿನಾಂಕದಲ್ಲಿ ಯಾವುದೇ ಬದಲಾವಣೆಗಳು ಅಥವಾ ವಹಿವಾಟುಗಳು ದಾಖಲಾಗಿಲ್ಲ (No transactions or changes recorded on this date).
                       </td>
                     </tr>
@@ -601,7 +671,7 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                         <td style={{ border: '1px solid #999', padding: '3.5px', textAlign: 'center', fontWeight: 'bold' }}>
                           {idx + 1}
                         </td>
-                        <td style={{ border: '1px solid #999', padding: '3.5px', whiteSpace: 'nowrap' }}>
+                        <td style={{ border: '1px solid #999', padding: '3.5px', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
                           {formatTime12(log.timestamp)}
                         </td>
                         <td style={{ border: '1px solid #999', padding: '3.5px', fontWeight: 'bold' }}>
@@ -616,6 +686,9 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
                         <td style={{ border: '1px solid #999', padding: '3.5px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
                           {log.record_id || (log.share_no ? `#${log.share_no}` : '—')}
                         </td>
+                        <td style={{ border: '1px solid #999', padding: '3.5px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
+                          {log.shares_count ? `${log.shares_count}` : '—'}
+                        </td>
                         <td style={{ border: '1px solid #999', padding: '3.5px', lineHeight: '1.25' }}>
                           {log.description || (typeof log.details === 'string' ? log.details : (log.details?.remarks || JSON.stringify(log.details || '')))}
                         </td>
@@ -626,8 +699,8 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
               </table>
             </div>
 
-            {/* Statutory Signatures Footer */}
-            <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+            {/* Statutory Signatures Footer with 7-Day Retention Notice */}
+            <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', textAlign: 'center', fontSize: '9.5px', color: '#000' }}>
                 <div style={{ borderTop: '1px solid #000', paddingTop: '6px' }}>
                   <strong>ತಯಾರಿಸಿದ ಕಂಪ್ಯೂಟರ್ ಆಪರೇಟರ್</strong>
@@ -648,7 +721,7 @@ export default function DailyWorkSummaryModal({ isOpen, onClose, isAutoTriggered
               </div>
 
               <div style={{ borderTop: '1px dashed #999', marginTop: '12px', paddingTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#666' }}>
-                <span>ಗಣಕೀಕೃತ ಶಾಸನಬದ್ಧ ದಿನನಿತ್ಯದ ಕಚೇರಿ ಮುಕ್ತಾಯ ಆಡಿಟ್ ವರದಿ (5:20 PM Day-End Statutory Report)</span>
+                <span>ಗಣಕೀಕೃತ ಶಾಸನಬದ್ಧ ದಿನನಿತ್ಯದ ಕಚೇರಿ ಮುಕ್ತಾಯ ಆಡಿಟ್ ವರದಿ • ೭ ದಿನಗಳ ಸ್ವಯಂ ಸಂಗ್ರಹ ನೀತಿ (7-Day Auto Retention)</span>
                 <span>ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204</span>
               </div>
             </div>

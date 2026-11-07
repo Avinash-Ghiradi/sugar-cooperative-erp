@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ApiService } from '../../services/api';
 import { createPortal } from 'react-dom';
 import { Printer, X, Download, FileText, CheckCircle2, ChevronDown, CheckSquare, Sparkles } from 'lucide-react';
 import { useCompanyLogo, useHandshakeLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
@@ -130,6 +131,13 @@ export default function ShareholderReportPrintModal({
   // Trigger professional print with portal
   const handlePrint = () => {
     document.body.classList.add('shareholder-report-printing');
+    try {
+      ApiService.logPrintAction({
+        documentType: `ವರದಿ ಮುದ್ರಣ (${reportTitle || 'Report'})`,
+        recordId: `${totalRows} ಸದಸ್ಯರು`,
+        description: `ಶೇರುದಾರ ವರದಿ ಮುದ್ರಣ: "${reportTitle || 'ವರದಿ'}" ವರದಿಯನ್ನು ಮುದ್ರಿಸಲಾಗಿದೆ (ಒಟ್ಟು ${totalRows} ಸದಸ್ಯರ ದಾಖಲೆಗಳು).`
+      });
+    } catch (e) {}
     const existingStyle = document.getElementById('report-page-orientation-style');
     if (existingStyle) existingStyle.remove();
 
