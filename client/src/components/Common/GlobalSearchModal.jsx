@@ -70,7 +70,48 @@ export default function GlobalSearchModal({ isOpen, onClose, onSelectShareholder
           page: 1
         });
         if (res && res.success) {
-          setResults(res.data || []);
+          let list = res.data || [];
+          const cleanQ = query.trim().toLowerCase();
+          const isNum = /^\d+$/.test(cleanQ);
+
+          if (isNum && list.length > 0) {
+            list = [...list].sort((a, b) => {
+              const aSh = String(a.share_no || a.share_number || '').trim().replace(/^[#\s]+/, '').toLowerCase();
+              const bSh = String(b.share_no || b.share_number || '').trim().replace(/^[#\s]+/, '').toLowerCase();
+              const aAll = Array.isArray(a.all_share_numbers) ? a.all_share_numbers.map(s => String(s).trim().toLowerCase()) : [];
+              const bAll = Array.isArray(b.all_share_numbers) ? b.all_share_numbers.map(s => String(s).trim().toLowerCase()) : [];
+
+              // Priority 1: Exact Share Number Match ALWAYS FIRST!
+              const aExact = aSh === cleanQ || aAll.includes(cleanQ);
+              const bExact = bSh === cleanQ || bAll.includes(cleanQ);
+              if (aExact && !bExact) return -1;
+              if (!aExact && bExact) return 1;
+
+              // Priority 2: Exact Sl No Match
+              const aSl = String(a.sl_no || a.id || '').trim().toLowerCase();
+              const bSl = String(b.sl_no || b.id || '').trim().toLowerCase();
+              const aExactSl = aSl === cleanQ;
+              const bExactSl = bSl === cleanQ;
+              if (aExactSl && !bExactSl) return -1;
+              if (!aExactSl && bExactSl) return 1;
+
+              // Priority 3: Share Number starts with query (Prefix match e.g. 7950...)
+              const aPrefix = aSh.startsWith(cleanQ);
+              const bPrefix = bSh.startsWith(cleanQ);
+              if (aPrefix && !bPrefix) return -1;
+              if (!aPrefix && bPrefix) return 1;
+
+              // Priority 4: Share Number contains query
+              const aContains = aSh.includes(cleanQ);
+              const bContains = bSh.includes(cleanQ);
+              if (aContains && !bContains) return -1;
+              if (!aContains && bContains) return 1;
+
+              return (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0);
+            });
+          }
+
+          setResults(list);
           setSelectedIndex(0);
         }
       } catch (err) {

@@ -176,7 +176,7 @@ export const CloudDbService = {
 
       // When searching a number on page 1 without explicit custom sorting:
       // Run parallel queries: exact & prefix share_no matches FIRST, then contained matches!
-      if (cleanSearch && isNum && cleanSearch.length <= 6 && page === 1 && !sortBy) {
+      if (cleanSearch && isNum && cleanSearch.length <= 6 && page === 1 && (!sortBy || sortBy === 'share_no')) {
         const filterStr = filterParams.length > 0 ? `&${filterParams.join('&')}` : '';
 
         // 1. Exact matches on share_no, sl_no, or receipt_no (Guarantees exact match is retrieved!)
@@ -221,7 +221,7 @@ export const CloudDbService = {
         // Standard single query (for page > 1, text search, or custom sort)
         let queryOrderCol = orderCol;
         let queryDir = dir;
-        if (!sortBy && cleanSearch && isNum) {
+        if ((!sortBy || sortBy === 'share_no') && cleanSearch && isNum) {
           queryOrderCol = 'id';
           queryDir = 'asc';
         }
@@ -258,16 +258,17 @@ export const CloudDbService = {
 
       // Relevance Ranking (when default sort and search query provided)
       // User requirement: "prefer the entered number first, after shows which contains that number"
-      if (cleanSearch && Array.isArray(data) && !sortBy) {
+      if (cleanSearch && Array.isArray(data) && (!sortBy || (sortBy === 'share_no' && sortOrder === 'asc'))) {
         const qLower = cleanSearch.toLowerCase();
         const getRank = (item) => {
-          const sh = String(item.share_no || '').trim().toLowerCase();
-          const sl = String(item.sl_no || '').trim().toLowerCase();
+          const sh = String(item.share_no || item.share_number || '').trim().replace(/^[#\s]+/, '').toLowerCase();
+          const sl = String(item.sl_no || item.id || '').trim().toLowerCase();
           const rec = String(item.receipt_no || '').trim().toLowerCase();
+          const allShares = Array.isArray(item.all_share_numbers) ? item.all_share_numbers.map(s => String(s).trim().toLowerCase()) : [];
 
           if (isNum) {
-            // Rank 1: Exact Share Number match FIRST
-            if (sh === qLower) return 1;
+            // Rank 1: Exact Share Number match FIRST (Absolute Top Priority!)
+            if (sh === qLower || allShares.includes(qLower)) return 1;
             // Rank 2: Exact Serial Number match SECOND
             if (sl === qLower) return 2;
             // Rank 3: Exact Receipt Number match THIRD

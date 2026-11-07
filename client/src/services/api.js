@@ -2310,59 +2310,28 @@ export const ApiService = {
       }
     }
 
-    if (sortBy === 'share_no' || !sortBy) {
-      // Default: Increasing order by share_no / id from Share No. 1 to ...
-      const dir = sortOrder === 'desc' ? -1 : 1;
-      filtered = [...filtered].sort((a, b) => {
-        const numA = parseInt(String(a.share_no || a.share_number || a.id || '').replace(/\D/g, '')) || 0;
-        const numB = parseInt(String(b.share_no || b.share_number || b.id || '').replace(/\D/g, '')) || 0;
-        return dir * (numA - numB);
-      });
-    } else if (sortBy) {
-      const dir = sortOrder === 'desc' ? -1 : 1;
-      filtered = [...filtered].sort((a, b) => {
-        if (sortBy === 'place' || sortBy === 'village') {
-          const valA = (a.place || a.village_name || '').trim();
-          const valB = (b.place || b.village_name || '').trim();
-          return dir * valA.localeCompare(valB, 'kn');
-        }
-        if (sortBy === 'circle') {
-          const valA = (a.circle || a.circle_name || '').trim();
-          const valB = (b.circle || b.circle_name || '').trim();
-          return dir * valA.localeCompare(valB, 'kn');
-        }
-        if (sortBy === 'address') {
-          const valA = (a.address || '').trim();
-          const valB = (b.address || '').trim();
-          return dir * valA.localeCompare(valB, 'kn');
-        }
-        if (sortBy === 'name') {
-          const valA = (a.shareholder_name || a.name || '').trim();
-          const valB = (b.shareholder_name || b.name || '').trim();
-          return dir * valA.localeCompare(valB, 'kn');
-        }
-        return 0;
-      });
-    } else if (search) {
+    if (search && (!sortBy || (sortBy === 'share_no' && sortOrder === 'asc'))) {
+      // Search Relevance Ranking: Exact Share Number ALWAYS #1 FIRST!
       const qLower = search.trim().toLowerCase();
       const isNum = /^\d+$/.test(qLower);
       const getRank = (item) => {
-        const sh = String(item.share_no || item.share_number || '').trim().toLowerCase();
+        const sh = String(item.share_no || item.share_number || '').trim().replace(/^[#\s]+/, '').toLowerCase();
         const sl = String(item.sl_no || item.id || '').trim().toLowerCase();
         const rec = String(item.receipt_no || '').trim().toLowerCase();
+        const allShares = Array.isArray(item.all_share_numbers) ? item.all_share_numbers.map(s => String(s).trim().toLowerCase()) : [];
 
         if (isNum) {
           // Rank 1: Exact Share Number match FIRST
-          if (sh === qLower) return 1;
+          if (sh === qLower || allShares.includes(qLower)) return 1;
           // Rank 2: Exact Serial Number match SECOND
           if (sl === qLower) return 2;
           // Rank 3: Exact Receipt Number match THIRD
           if (rec === qLower) return 3;
-          // Rank 4: Share Number starts with query (Prefix match e.g. 1180, 1181)
+          // Rank 4: Share Number starts with query
           if (sh.startsWith(qLower)) return 4;
           // Rank 5: Receipt Number starts with query
           if (rec.startsWith(qLower)) return 5;
-          // Rank 6: Share Number contains query (e.g. 2118, 5118)
+          // Rank 6: Share Number contains query
           if (sh.includes(qLower)) return 6;
           // Rank 7: Receipt Number contains query
           if (rec.includes(qLower)) return 7;
@@ -2393,6 +2362,39 @@ export const ApiService = {
           }
         }
         return (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0);
+      });
+    } else if (sortBy && sortBy !== 'share_no') {
+      const dir = sortOrder === 'desc' ? -1 : 1;
+      filtered = [...filtered].sort((a, b) => {
+        if (sortBy === 'place' || sortBy === 'village') {
+          const valA = (a.place || a.village_name || '').trim();
+          const valB = (b.place || b.village_name || '').trim();
+          return dir * valA.localeCompare(valB, 'kn');
+        }
+        if (sortBy === 'circle') {
+          const valA = (a.circle || a.circle_name || '').trim();
+          const valB = (b.circle || b.circle_name || '').trim();
+          return dir * valA.localeCompare(valB, 'kn');
+        }
+        if (sortBy === 'address') {
+          const valA = (a.address || '').trim();
+          const valB = (b.address || '').trim();
+          return dir * valA.localeCompare(valB, 'kn');
+        }
+        if (sortBy === 'name') {
+          const valA = (a.shareholder_name || a.name || '').trim();
+          const valB = (b.shareholder_name || b.name || '').trim();
+          return dir * valA.localeCompare(valB, 'kn');
+        }
+        return 0;
+      });
+    } else {
+      // Default: Increasing order by share_no / id from Share No. 1 to ...
+      const dir = sortOrder === 'desc' ? -1 : 1;
+      filtered = [...filtered].sort((a, b) => {
+        const numA = parseInt(String(a.share_no || a.share_number || a.id || '').replace(/\D/g, '')) || 0;
+        const numB = parseInt(String(b.share_no || b.share_number || b.id || '').replace(/\D/g, '')) || 0;
+        return dir * (numA - numB);
       });
     }
 
@@ -4030,12 +4032,13 @@ const newSh = {
 
     // 3. Multi-tier Relevance Ranking: EXACT MATCH FIRST PREFERENCE!
     const getRank = (item) => {
-      const sh = String(item.share_no || item.share_number || '').trim().toLowerCase();
+      const sh = String(item.share_no || item.share_number || '').trim().replace(/^[#\s]+/, '').toLowerCase();
       const sl = String(item.sl_no || item.id || '').trim().toLowerCase();
       const rec = String(item.receipt_no || '').trim().toLowerCase();
+      const allShares = Array.isArray(item.all_share_numbers) ? item.all_share_numbers.map(s => String(s).trim().toLowerCase()) : [];
 
       if (isNum) {
-        if (sh === qLower) return 1; // EXACT SHARE NUMBER FIRST!
+        if (sh === qLower || allShares.includes(qLower)) return 1; // EXACT SHARE NUMBER FIRST!
         if (sl === qLower) return 2; // EXACT SL NO SECOND!
         if (rec === qLower) return 3; // EXACT RECEIPT NO THIRD!
         if (sh.startsWith(qLower)) return 4; // Starts with query (prefix e.g. 4540, 4541)
@@ -7303,9 +7306,10 @@ const newSh = {
 
     // Multi-tier Relevance Ranking: Exact match first!
     const getRank = (item) => {
-      const sh = String(item.share_no || '').trim().toLowerCase();
+      const sh = String(item.share_no || item.share_number || '').trim().replace(/^[#\s]+/, '').toLowerCase();
+      const allShares = Array.isArray(item.all_share_numbers) ? item.all_share_numbers.map(s => String(s).trim().toLowerCase()) : [];
       if (isNum) {
-        if (sh === qLower) return 1;
+        if (sh === qLower || allShares.includes(qLower)) return 1;
         if (sh.startsWith(qLower)) return 2;
         if (sh.includes(qLower)) return 3;
         return 4;
