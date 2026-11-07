@@ -627,7 +627,55 @@ html.light thead,
 html.light th {
   background-color: #f1f5f9 !important;
   color: #0f172a !important;
-  border-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Ensure ALL headers, titles, text nodes, and icons across the entire ERP are clearly visible in Light Mode */
+html.light thead th,
+html.light thead th > div,
+html.light thead th span:not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="bg-"]),
+html.light thead th p,
+html.light thead th strong,
+html.light thead th b,
+html.light thead [class*="text-white"]:not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]),
+html.light thead [class*="text-slate-100"],
+html.light thead [class*="text-slate-200"],
+html.light thead [class*="text-slate-300"],
+html.light thead [class*="text-slate-400"],
+html.light thead [class*="text-blue-100"],
+html.light thead [class*="text-blue-200"],
+html.light thead [class*="text-emerald-100"],
+html.light thead [class*="text-emerald-200"],
+html.light thead [class*="text-emerald-300"] {
+  color: #0f172a !important;
+}
+
+/* Header sort/filter button & icon colors in Light Mode */
+html.light thead th button:not([class*="bg-"]):not([class*="text-amber"]) {
+  color: #475569 !important;
+}
+
+html.light thead th button:not([class*="bg-"]):hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light thead th svg:not([class*="fill-amber"]):not([class*="text-amber"]):not([class*="fill-emerald"]) {
+  color: #475569 !important;
+}
+
+html.light thead th [class*="text-amber-300"],
+html.light thead th [class*="text-amber-400"] {
+  color: #d97706 !important;
+}
+
+html.light thead th [class*="border-[#083b5f]"],
+html.light thead [class*="border-[#083b5f]"] {
+  border-color: #cbd5e1 !important;
+}
+
+html.light thead th:hover {
+  background-color: #e2e8f0 !important;
 }
 
 html.light tbody tr {

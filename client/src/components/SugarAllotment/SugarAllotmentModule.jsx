@@ -1178,22 +1178,22 @@ export default function SugarAllotmentModule() {
     return (
       <th
         onClick={() => handleColumnSort(colKey)}
-        className={`py-3 px-3 border-r border-[#083b5f] relative select-none cursor-pointer hover:bg-[#0c5180] transition-colors ${extraClass}`}
+        className={`py-3 px-3 border-r border-slate-300 dark:border-[#083b5f] relative select-none cursor-pointer hover:bg-slate-200 dark:hover:bg-[#0c5180] transition-colors ${extraClass}`}
         title={`${label}: ಸಾರ್ಟ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ`}
       >
         <div className={`flex items-center gap-1.5 ${align === 'center' ? 'justify-center' : 'justify-between'}`}>
           {/* Header Title & Sort Indicator */}
-          <div className="flex items-center gap-1 font-bold text-white text-[11px] select-none">
-            <span>{label}</span>
+          <div className="flex items-center gap-1 font-bold text-slate-800 dark:text-white text-[11px] select-none">
+            <span className="font-bold text-slate-800 dark:text-white">{label}</span>
             <span className="text-[12px] inline-flex items-center">
               {isSorted ? (
                 sortDirection === 'asc' ? (
-                  <span className="text-amber-300 font-black text-sm">▲</span>
+                  <span className="text-amber-600 dark:text-amber-300 font-black text-sm">▲</span>
                 ) : (
-                  <span className="text-amber-300 font-black text-sm">▼</span>
+                  <span className="text-amber-600 dark:text-amber-300 font-black text-sm">▼</span>
                 )
               ) : (
-                <span className="text-blue-200/60 font-medium">▴▾</span>
+                <span className="text-slate-500 dark:text-blue-200/60 font-medium">▴▾</span>
               )}
             </span>
           </div>
@@ -1206,11 +1206,11 @@ export default function SugarAllotmentModule() {
               setActiveColumnMenu(prev => prev === colKey ? null : colKey);
             }}
             className={`p-1 rounded transition-colors cursor-pointer ${
-              isFiltered ? 'text-amber-300 bg-[#073250] ring-1 ring-amber-400' : 'text-blue-200/70 hover:text-white hover:bg-[#08426b]'
+              isFiltered ? 'text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-[#073250] ring-1 ring-amber-500 dark:ring-amber-400' : 'text-slate-500 dark:text-blue-200/70 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#08426b]'
             }`}
             title={`${label}: ಫಿಲ್ಟರ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ`}
           >
-            <Filter className={`w-3.5 h-3.5 ${isFiltered ? 'fill-amber-300' : ''}`} />
+            <Filter className={`w-3.5 h-3.5 ${isFiltered ? 'fill-amber-600 dark:fill-amber-300' : ''}`} />
           </button>
         </div>
 
@@ -1849,9 +1849,9 @@ export default function SugarAllotmentModule() {
           <div className="overflow-x-auto max-h-[70vh]">
             <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
               {/* Blue Header matching Image 3 with fully functional Sorting & AutoFilter Popovers */}
-              <thead className="bg-[#0a4b78] text-white font-bold text-[11px] sticky top-0 z-20 select-none shadow">
-                <tr className="border-b border-[#083b5f]">
-                  <th className="py-3 px-3 text-center border-r border-[#083b5f] w-12">ಕ್ರ.ಸಂ.</th>
+              <thead className="bg-slate-100 dark:bg-[#0a4b78] text-slate-800 dark:text-white font-bold text-[11px] sticky top-0 z-20 select-none shadow">
+                <tr className="border-b border-slate-300 dark:border-[#083b5f]">
+                  <th className="py-3 px-3 text-center border-r border-slate-300 dark:border-[#083b5f] w-12 text-slate-800 dark:text-white">ಕ್ರ.ಸಂ.</th>
                   
                   {/* ಶೇರ್ ಸಂಖ್ಯೆ ▴▾ */}
                   {renderSortableHeader('share_no', 'ಶೇರ್ ಸಂಖ್ಯೆ', 'text', 'left', 'min-w-[130px]')}
@@ -1874,15 +1874,15 @@ export default function SugarAllotmentModule() {
                   {/* ಸದಸ್ಯರ ಪ್ರಕಾರ ▴▾ */}
                   {renderSortableHeader('member_type', 'ಸದಸ್ಯರ ಪ್ರಕಾರ', 'member_type', 'left', 'min-w-[150px]')}
 
-                  <th className="py-3 px-3 border-r border-[#083b5f] min-w-[110px]">ಮೊಬೈಲ್ ನಂಬರ</th>
-                  <th className="py-3 px-3.5 text-center border-r border-[#083b5f] w-16">ಸಹಿ</th>
-                  <th className="py-3 px-3.5 border-r border-[#083b5f] min-w-[100px]">ಶೇರಾ</th>
-                  <th className="py-3 px-3.5 text-center w-20">ರಶೀದಿ</th>
+                  <th className="py-3 px-3 border-r border-slate-300 dark:border-[#083b5f] min-w-[110px] text-slate-800 dark:text-white">ಮೊಬೈಲ್ ನಂಬರ</th>
+                  <th className="py-3 px-3.5 text-center border-r border-slate-300 dark:border-[#083b5f] w-16 text-slate-800 dark:text-white">ಸಹಿ</th>
+                  <th className="py-3 px-3.5 border-r border-slate-300 dark:border-[#083b5f] min-w-[100px] text-slate-800 dark:text-white">ಶೇರಾ</th>
+                  <th className="py-3 px-3.5 text-center w-20 text-slate-800 dark:text-white">ರಶೀದಿ</th>
                 </tr>
 
                 {/* Inline Column Filter Row */}
                 {showColumnFilterRow && (
-                  <tr className="bg-[#073656] text-white border-b border-[#083b5f]">
+                  <tr className="bg-slate-100 dark:bg-[#073656] text-slate-800 dark:text-white border-b border-slate-300 dark:border-[#083b5f]">
                     <td className="p-1.5 text-center border-r border-[#083b5f]">
                       {hasActiveColumnFilters && (
                         <button
@@ -1902,7 +1902,7 @@ export default function SugarAllotmentModule() {
                         placeholder="ಶೇರ್ ಸಂಖ್ಯೆ..."
                         value={columnFilters.share_no}
                         onChange={(e) => setColumnFilters(prev => ({ ...prev, share_no: e.target.value }))}
-                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1.5 py-1 text-[11px] text-white outline-none"
+                        className="w-full bg-white dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 focus:border-amber-500 rounded px-1.5 py-1 text-[11px] text-slate-900 dark:text-white outline-none"
                       />
                     </td>
                     {/* ಹೆಸರು filter */}
@@ -1912,7 +1912,7 @@ export default function SugarAllotmentModule() {
                         placeholder="ಹೆಸರು..."
                         value={columnFilters.name}
                         onChange={(e) => setColumnFilters(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1.5 py-1 text-[11px] text-white outline-none"
+                        className="w-full bg-white dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 focus:border-amber-500 rounded px-1.5 py-1 text-[11px] text-slate-900 dark:text-white outline-none"
                       />
                     </td>
                     {/* ಉಪನಾಮ filter */}
@@ -1922,7 +1922,7 @@ export default function SugarAllotmentModule() {
                         placeholder="ಉಪನಾಮ..."
                         value={columnFilters.surname}
                         onChange={(e) => setColumnFilters(prev => ({ ...prev, surname: e.target.value }))}
-                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1.5 py-1 text-[11px] text-white outline-none"
+                        className="w-full bg-white dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 focus:border-amber-500 rounded px-1.5 py-1 text-[11px] text-slate-900 dark:text-white outline-none"
                       />
                     </td>
                     {/* ವಿಳಾಸ filter */}
@@ -1932,7 +1932,7 @@ export default function SugarAllotmentModule() {
                         placeholder="ವಿಳಾಸ..."
                         value={columnFilters.address}
                         onChange={(e) => setColumnFilters(prev => ({ ...prev, address: e.target.value }))}
-                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1.5 py-1 text-[11px] text-white outline-none"
+                        className="w-full bg-white dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 focus:border-amber-500 rounded px-1.5 py-1 text-[11px] text-slate-900 dark:text-white outline-none"
                       />
                     </td>
                     {/* ವರ್ಗ filter */}
@@ -1940,7 +1940,7 @@ export default function SugarAllotmentModule() {
                       <select
                         value={columnFilters.category}
                         onChange={(e) => setColumnFilters(prev => ({ ...prev, category: e.target.value }))}
-                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1 py-1 text-[11px] text-white outline-none cursor-pointer"
+                        className="w-full bg-white dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 focus:border-amber-500 rounded px-1 py-1 text-[11px] text-slate-900 dark:text-white outline-none cursor-pointer"
                       >
                         <option value="">ಎಲ್ಲಾ ವರ್ಗ</option>
                         {distinctCategories.map((c, i) => (
@@ -1953,7 +1953,7 @@ export default function SugarAllotmentModule() {
                       <select
                         value={columnFilters.share_qty}
                         onChange={(e) => setColumnFilters(prev => ({ ...prev, share_qty: e.target.value }))}
-                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1 py-1 text-[11px] text-white outline-none cursor-pointer"
+                        className="w-full bg-white dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 focus:border-amber-500 rounded px-1 py-1 text-[11px] text-slate-900 dark:text-white outline-none cursor-pointer"
                       >
                         <option value="">ಎಲ್ಲಾ</option>
                         {distinctShareQtys.map((q, i) => (
@@ -1966,7 +1966,7 @@ export default function SugarAllotmentModule() {
                       <select
                         value={columnFilters.member_type}
                         onChange={(e) => setColumnFilters(prev => ({ ...prev, member_type: e.target.value }))}
-                        className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-400 rounded px-1 py-1 text-[11px] text-white outline-none cursor-pointer"
+                        className="w-full bg-white dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 focus:border-amber-500 rounded px-1 py-1 text-[11px] text-slate-900 dark:text-white outline-none cursor-pointer"
                       >
                         <option value="">ಎಲ್ಲಾ ಪ್ರಕಾರ</option>
                         {distinctMemberTypes.map((mt, i) => (
@@ -1974,7 +1974,7 @@ export default function SugarAllotmentModule() {
                         ))}
                       </select>
                     </td>
-                    <td colSpan={4} className="p-1 bg-[#073656] text-[10px] text-slate-300 italic px-2">
+                    <td colSpan={4} className="p-1 bg-slate-100 dark:bg-[#073656] text-[10px] text-slate-600 dark:text-slate-300 italic px-2">
                       ಕಾಲಮ್ ಫಿಲ್ಟರ್ ಅನ್ವಯಿಸಲಾಗಿದೆ
                     </td>
                   </tr>
