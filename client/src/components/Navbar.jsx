@@ -5,6 +5,8 @@ import { useLanguage } from '../context/LanguageContext';
 import LanguageSwitchButton from './Common/LanguageSwitchButton';
 import ThemeToggle from './Common/ThemeToggle';
 import ChangePasswordModal from './Auth/ChangePasswordModal';
+import GlobalSearchModal from './Common/GlobalSearchModal';
+import ShareholderProfile from './Shareholders/ShareholderProfile';
 import {
   Menu, Search, Bell, ShieldCheck, User, LogOut, KeyRound,
   ChevronDown, Briefcase, Building2, CheckCircle2, Download
@@ -16,7 +18,23 @@ export default function Navbar({ onMenuToggle }) {
   const { t, formatName, isEnglish } = useLanguage();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [selectedShareholderId, setSelectedShareholderId] = useState(null);
   const dropdownRef = useRef(null);
+
+  // Global Ctrl+K / Cmd+K listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchModalOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -78,14 +96,17 @@ export default function Navbar({ onMenuToggle }) {
               <span className="hidden sm:inline">{t('install_app')}</span>
             </button>
           )}
-          {/* Quick Search */}
+          {/* Quick Global Search (Ctrl+K / Spotlight) */}
           <button
-            onClick={() => setActiveModule('shareholders')}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-400 hover:border-emerald-500/50 transition-all w-60 cursor-pointer"
+            onClick={() => setSearchModalOpen(true)}
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 rounded-xl text-xs text-slate-300 transition-all w-60 cursor-pointer shadow-sm group"
+            title={isEnglish ? "Quick Global Search (Ctrl+K)" : "ಶೇರುದಾರ ತ್ವರಿತ ಹುಡುಕಾಟ (Ctrl+K)"}
           >
-            <Search className="w-3.5 h-3.5 text-slate-400" />
-            <span className="truncate">{t('quick_search')}</span>
-            <kbd className="ml-auto text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-mono">⌘K</kbd>
+            <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-400 transition-colors" />
+            <span className="truncate text-slate-400 group-hover:text-slate-200">{t('quick_search')}</span>
+            <kbd className="ml-auto text-[10px] bg-slate-800 border border-slate-700/80 px-1.5 py-0.5 rounded text-slate-400 font-mono group-hover:text-emerald-300">
+              {isMac ? '⌘K' : 'Ctrl+K'}
+            </kbd>
           </button>
 
           {/* User Profile Dropdown */}
@@ -216,6 +237,23 @@ export default function Navbar({ onMenuToggle }) {
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
       />
+
+      {/* Global Spotlight Search Modal */}
+      <GlobalSearchModal
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        onSelectShareholder={(sh) => {
+          setSelectedShareholderId(sh.id || sh.shareholder_id);
+        }}
+      />
+
+      {/* Shareholder Profile Modal when opened from Global Search */}
+      {selectedShareholderId && (
+        <ShareholderProfile
+          shareholderId={selectedShareholderId}
+          onClose={() => setSelectedShareholderId(null)}
+        />
+      )}
     </>
   );
 }
