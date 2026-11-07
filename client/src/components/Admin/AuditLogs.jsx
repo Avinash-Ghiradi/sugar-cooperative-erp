@@ -1,13 +1,15 @@
 import LoadingAnimation from '../Common/LoadingAnimation';
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../../services/api';
-import { History, Search, ShieldCheck, RefreshCw, Filter, GitMerge, FileText, ArrowRightLeft, UserCheck } from 'lucide-react';
+import { History, Search, ShieldCheck, RefreshCw, Filter, GitMerge, FileText, ArrowRightLeft, UserCheck, Printer } from 'lucide-react';
+import DailyWorkSummaryModal from './DailyWorkSummaryModal';
 
 export default function AuditLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterModule, setFilterModule] = useState('all'); // 'all', 'merge', 'varasa', 'vargavane', 'updates'
+  const [filterModule, setFilterModule] = useState('all');
+  const [showDailySummary, setShowDailySummary] = useState(false); // 'all', 'merge', 'varasa', 'vargavane', 'updates'
 
   useEffect(() => {
     loadAuditLogs();
@@ -62,6 +64,14 @@ export default function AuditLogs() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowDailySummary(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/40 cursor-pointer transition-all active:scale-95"
+            title="5:20 PM ದೈನಂದಿನ ಕಾರ್ಯ ನಿರ್ವಹಣಾ ಸಾರಾಂಶ ಮುದ್ರಣ"
+          >
+            <Printer className="w-3.5 h-3.5 text-emerald-100" />
+            <span>ಇಂದಿನ ಸಾರಾಂಶ ಮುದ್ರಣ (5:20 PM)</span>
+          </button>
           <button
             onClick={loadAuditLogs}
             disabled={loading}
@@ -226,6 +236,11 @@ export default function AuditLogs() {
           </table>
         </div>
       </div>
+      {/* Daily Work Summary Modal */}
+      <DailyWorkSummaryModal
+        isOpen={showDailySummary}
+        onClose={() => setShowDailySummary(false)}
+      />
     </div>
   );
 }

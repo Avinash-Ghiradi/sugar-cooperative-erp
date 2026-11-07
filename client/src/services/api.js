@@ -3157,6 +3157,22 @@ const newSh = {
       }).catch(err => console.warn('Cloud DB add error:', err));
     }
 
+    try {
+      await this.addAuditLog({
+        id: `LOG-SH-NEW-${newSh.share_no}-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        username: data.operator || 'Admin',
+        performed_by: data.operator || 'Admin',
+        role: 'Admin',
+        module: 'Shareholders (ಷೇರುದಾರರ ವಿವರಗಳು)',
+        action: 'NEW_SHAREHOLDER_ENROLLED',
+        record_id: `#${newSh.share_no}`,
+        share_no: newSh.share_no,
+        description: `ಹೊಸ ಶೇರುದಾರ #${newSh.share_no} (${newSh.shareholder_name}) ಅವರ ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ. ಗ್ರಾಮ: ${newSh.place || '—'}, ಒಟ್ಟು ಮೊತ್ತ: ₹${Number(newSh.total_amount || 0).toLocaleString()}, ಷೇರುಗಳು: ${newSh.number_of_shares || 1}.`,
+        details: newSh
+      });
+    } catch (e) {}
+
     return { success: true, shareholder_id: newSh.shareholder_id };
   },
 
@@ -3380,9 +3396,7 @@ const newSh = {
           share_no: updated.share_no
         }
       };
-      mockAuditLogs.unshift(auditEntry);
-      if (mockAuditLogs.length > 500) mockAuditLogs.pop();
-      saveStoredData(STORAGE_KEY_LOGS, mockAuditLogs);
+      await this.addAuditLog(auditEntry);
     } catch (e) {}
 
     updated._searchIndex = (
@@ -3653,6 +3667,23 @@ const newSh = {
     if (CloudDbService.isEnabled()) {
       CloudDbService.saveCollectionItem('sugar_allotments', newSa.allotment_id, newSa).catch(() => {});
     }
+
+    try {
+      await this.addAuditLog({
+        id: `LOG-SUGAR-${newSa.allotment_id}`,
+        timestamp: new Date().toISOString(),
+        username: data.issued_by || 'Sugar Operator',
+        performed_by: data.issued_by || 'Sugar Operator',
+        role: 'Sugar Operator',
+        module: 'Sugar Allotment (ಸಕ್ಕರೆ ಹಂಚಿಕೆ)',
+        action: 'SUGAR_ALLOTMENT_ISSUED',
+        record_id: `#${newSa.share_number || newSa.share_no}`,
+        share_no: newSa.share_number || newSa.share_no,
+        description: `ಸಕ್ಕರೆ ಹಂಚಿಕೆ: ಶೇರುದಾರ #${newSa.share_number || newSa.share_no} (${newSa.shareholder_name}) ಅವರಿಗೆ ${newSa.issued_quantity_kg || newSa.sugar_quantity_kg} ಕೆ.ಜಿ. ಸಕ್ಕರೆ ವಿತರಿಸಲಾಗಿದೆ. ರಶೀದಿ ನಂ: #${newSa.receipt_no || '—'}`,
+        details: newSa
+      });
+    } catch (e) {}
+
     return { success: true, allotment_id: newSa.allotment_id };
   },
 
@@ -5075,6 +5106,22 @@ const newSh = {
     item.approved_by = adminUser;
     item.approved_at = new Date().toISOString();
     saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+
+    try {
+      await this.addAuditLog({
+        id: `LOG-VAR-${item.transfer_id || item.id}-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        username: adminUser || 'Admin',
+        performed_by: adminUser || 'Admin',
+        role: 'Admin',
+        module: 'Varasa Legal-Heir (ವಾರಸು)',
+        action: 'VARASA_TRANSFER_APPROVED',
+        record_id: `#${targetShareNo || item.share_no}`,
+        share_no: targetShareNo || item.share_no,
+        description: `ವಾರಸು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ: ಮೂಲ ಶೇರುದಾರರು: ${prevHolderName} ➔ ವಾರಸುದಾರರು: ${newHeirName} (${item.heir_relationship || 'ವಾರಸುದಾರರು'}). ರಶೀದಿ ನಂ: #${item.receipt_no || '—'}, ಶುಲ್ಕ: ₹${item.fees || 570}, ಠರಾವು ನಂ: ${item.tharava_no || '—'}`,
+        details: item
+      });
+    } catch (e) {}
     if (CloudDbService.isEnabled()) {
       try {
         await CloudDbService.saveCollectionItem('varasa', item.transfer_id, item);
@@ -5246,6 +5293,22 @@ const newSh = {
     item.approved_by = adminUser;
     item.approved_at = new Date().toISOString();
     saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+
+    try {
+      await this.addAuditLog({
+        id: `LOG-VG-${item.transfer_id || item.id}-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        username: adminUser || 'Admin',
+        performed_by: adminUser || 'Admin',
+        role: 'Admin',
+        module: 'Vargavane Transfer (ವರ್ಗಾವಣೆ)',
+        action: 'VARGAVANE_TRANSFER_APPROVED',
+        record_id: `#${targetShareNo || item.share_no}`,
+        share_no: targetShareNo || item.share_no,
+        description: `ನೇರ ಶೇರು ವರ್ಗಾವಣೆ ಮಂಜೂರಾತಿ: ವರ್ಗಾವಣೆದಾರರು: ${prevHolderName} ➔ ವರ್ಗಾವಣೆ ಮಾಡಿಕೊಳ್ಳುವವರು: ${newTransfereeName}. ರಶೀದಿ ನಂ: #${item.receipt_no || '—'}, ಶುಲ್ಕ: ₹${item.transfer_fee || 570}, ಠರಾವು ನಂ: ${item.tharava_no || '—'}`,
+        details: item
+      });
+    } catch (e) {}
     if (CloudDbService.isEnabled()) {
       try {
         await CloudDbService.saveCollectionItem('vargavane', item.transfer_id, item);
@@ -6748,6 +6811,50 @@ const newSh = {
       }
     }
     return { circle_name: 'ಇತರೆ (Other)', taluk: '', district: '', pincode: '' };
+  },
+
+  async addAuditLog(entry) {
+    await ensureDBReady();
+    if (!entry) return null;
+    const now = new Date();
+    const dateFormatted = entry.dateFormatted || now.toLocaleDateString();
+    const operatorName = entry.username || entry.performed_by || entry.operator || 'Admin';
+    const auditEntry = {
+      id: entry.id || `LOG-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: entry.timestamp || now.toISOString(),
+      dateFormatted,
+      username: operatorName,
+      performed_by: operatorName,
+      operator: operatorName,
+      role: entry.role || 'Admin',
+      module: entry.module || 'System',
+      action: entry.action || entry.type || 'SYSTEM_ACTION',
+      record_id: entry.record_id || (entry.share_no ? `#${entry.share_no}` : (entry.target_id ? `#${entry.target_id}` : '—')),
+      share_no: entry.share_no || null,
+      target_id: entry.target_id || null,
+      description: entry.description || '',
+      details: entry.details || null
+    };
+
+    const existingIndex = mockAuditLogs.findIndex(l => l.id === auditEntry.id);
+    if (existingIndex >= 0) {
+      mockAuditLogs[existingIndex] = auditEntry;
+    } else {
+      mockAuditLogs.unshift(auditEntry);
+    }
+
+    if (mockAuditLogs.length > 2000) mockAuditLogs.pop();
+    saveStoredData(STORAGE_KEY_LOGS, mockAuditLogs);
+
+    if (CloudDbService.isEnabled()) {
+      try {
+        await CloudDbService.saveCollectionItem('audit_logs', auditEntry.id, auditEntry);
+      } catch (err) {
+        console.warn('Cloud DB addAuditLog sync warning:', err);
+      }
+    }
+
+    return auditEntry;
   },
 
   async getAuditLogs() {

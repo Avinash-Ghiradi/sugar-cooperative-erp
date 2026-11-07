@@ -22,6 +22,7 @@ import EmployeeManagement from './components/Employees/EmployeeManagement';
 import UserManagement from './components/Admin/UserManagement';
 import PasswordManager from './components/Admin/PasswordManager';
 import AuditLogs from './components/Admin/AuditLogs';
+import DailyWorkSummaryModal from './components/Admin/DailyWorkSummaryModal';
 import DataImportExport from './components/Admin/DataImportExport';
 import BackupManager from './components/Admin/BackupManager';
 import SettingsModule from './components/Settings/SettingsModule';
@@ -36,6 +37,8 @@ import { useCompanyLogo, DEFAULT_LOGO_PATH } from './services/organizationServic
 function AppContent() {
   const { user, login, activeModule, toastMessage, hasPermission } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showDailySummary, setShowDailySummary] = useState(false);
+  const [isAutoSummary, setIsAutoSummary] = useState(false);
 
   useEffect(() => {
     // Only perform background cloud workflow sync and focus listeners when user is authenticated
@@ -65,6 +68,41 @@ function AppContent() {
     return () => {
       window.removeEventListener('focus', handleSyncOnActive);
       document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [user]);
+
+  // 5:20 PM Daily Work Summary automatic check & event listener
+  useEffect(() => {
+    if (!user || user.role === 'Shareholder') return;
+
+    const handleOpenSummary = () => {
+      setIsAutoSummary(false);
+      setShowDailySummary(true);
+    };
+    window.addEventListener('open-daily-work-summary', handleOpenSummary);
+
+    // 5:20 PM (17:20) day-end check
+    const check520PMPopup = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      // Past 5:20 PM (17:20)
+      const isPast520PM = hours > 17 || (hours === 17 && minutes >= 20);
+      const todayKey = now.toISOString().slice(0, 10);
+      const dismissed = localStorage.getItem(`daily_summary_dismissed_${todayKey}`);
+
+      if (isPast520PM && dismissed !== 'true') {
+        setIsAutoSummary(true);
+        setShowDailySummary(true);
+      }
+    };
+
+    check520PMPopup();
+    const interval = setInterval(check520PMPopup, 30000); // Check every 30s
+
+    return () => {
+      window.removeEventListener('open-daily-work-summary', handleOpenSummary);
+      clearInterval(interval);
     };
   }, [user]);
 
@@ -164,6 +202,15 @@ function AppContent() {
           <ErrorBoundary>{renderActiveModule()}</ErrorBoundary>
         </main>
       </div>
+
+      {/* 5:20 PM Daily Statutory Work Summary Pop-up */}
+      {user && user.role !== 'Shareholder' && (
+        <DailyWorkSummaryModal
+          isOpen={showDailySummary}
+          onClose={() => setShowDailySummary(false)}
+          isAutoTriggered={isAutoSummary}
+        />
+      )}
     </div>
   );
 }

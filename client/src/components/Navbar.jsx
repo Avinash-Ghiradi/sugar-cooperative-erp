@@ -9,7 +9,7 @@ import GlobalSearchModal from './Common/GlobalSearchModal';
 import ShareholderProfile from './Shareholders/ShareholderProfile';
 import {
   Menu, Search, Bell, ShieldCheck, User, LogOut, KeyRound,
-  ChevronDown, Briefcase, Building2, CheckCircle2, Download
+  ChevronDown, Briefcase, Building2, CheckCircle2, Download, Printer
 } from 'lucide-react';
 
 export default function Navbar({ onMenuToggle }) {
@@ -84,6 +84,22 @@ export default function Navbar({ onMenuToggle }) {
           <LanguageSwitchButton />
           {/* Light / Dark Mode Theme Switcher */}
           <ThemeToggle />
+
+          {/* 5:20 PM Daily Work Summary Quick Print Button */}
+          {user?.role !== 'Shareholder' && (
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('open-daily-work-summary'));
+                }
+              }}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all shadow-sm cursor-pointer"
+              title="5:20 PM ದೈನಂದಿನ ಕಾರ್ಯ ನಿರ್ವಹಣಾ ಸಾರಾಂಶ ಮುದ್ರಣ (Daily Work Summary)"
+            >
+              <Printer className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">5:20 PM ಸಾರಾಂಶ</span>
+            </button>
+          )}
 
           {/* Chrome App Install Button */}
           {!isInstalled && (
@@ -189,6 +205,20 @@ export default function Navbar({ onMenuToggle }) {
 
                 {/* Dropdown Action Items */}
                 <div className="p-1 space-y-0.5 text-xs">
+                  {user?.role !== 'Shareholder' && (
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new CustomEvent('open-daily-work-summary'));
+                        }
+                      }}
+                      className="w-full px-3 py-2 text-left text-emerald-300 hover:text-emerald-200 hover:bg-emerald-950/40 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer font-semibold"
+                    >
+                      <Printer className="w-4 h-4 text-emerald-400" />
+                      <span>ಇಂದಿನ ಸಾರಾಂಶ ಮುದ್ರಣ (5:20 PM)</span>
+                    </button>
+                  )}
                   {user?.role === 'Admin' && (
                     <button
                       onClick={() => {
