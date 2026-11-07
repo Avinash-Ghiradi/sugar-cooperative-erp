@@ -3964,22 +3964,110 @@ const newSh = {
 
   async searchShareholderForVarasa(query) {
     await ensureDBReady();
-    if (!query || query.trim().length < 1) return [];
+    if (!query || !String(query).trim()) return [];
+    const cleanQ = String(query).replace(/^#/, '').trim();
+    const qLower = cleanQ.toLowerCase().normalize('NFC');
+    const isNum = /^\d+$/.test(cleanQ);
+
+    let candidates = [];
+
+    // 1. If Cloud Database is enabled, query Supabase Cloud Database (searches all 17,078 records)
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudRes = await CloudDbService.getShareholders({
+          page: 1,
+          limit: 25,
+          search: cleanQ
+        });
+        if (cloudRes && cloudRes.success && Array.isArray(cloudRes.data)) {
+          candidates = cloudRes.data;
+        }
+      } catch (err) {
+        console.warn('Cloud DB search for Varasa failed, falling back to local DB:', err.message);
+      }
+    }
+
+    // 2. Also search local mockShareholders
     reconcileApprovedTransfersIntoMaster(mockShareholders);
-    const q = query.trim().toLowerCase().normalize('NFC');
-    return mockShareholders.filter(s => {
+    const localMatches = mockShareholders.filter(s => {
       if (isShareholderInactive(s)) return false;
-      const sNo = String(s.share_no || s.share_number || '').toLowerCase();
+      const sNo = String(s.share_no || s.share_number || '').trim().toLowerCase();
       const allNos = (Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
         ? s.all_share_numbers
         : [s.share_no, s.share_number]
       ).map(n => String(n || '').trim().toLowerCase()).filter(Boolean);
       const sName = (s.shareholder_name || s.name || '').toLowerCase().normalize('NFC');
-      const sId = (s.shareholder_id || '').toLowerCase();
+      const sSl = String(s.sl_no || s.id || '').trim().toLowerCase();
+      const sRec = String(s.receipt_no || '').trim().toLowerCase();
       const sMob = String(s.mobile_no || s.mobile || '');
-      const matchShareNo = allNos.some(num => num === q || num.startsWith(q));
-      return matchShareNo || sName.includes(q) || sId === q || sMob.includes(q);
-    }).slice(0, 8);
+      const sAadh = String(s.aadhaar_card_no || s.aadhaar || '');
+
+      return (
+        allNos.some(n => n === qLower || n.startsWith(qLower) || n.includes(qLower)) ||
+        sSl === qLower ||
+        sRec === qLower ||
+        sName.includes(qLower) ||
+        sMob.includes(qLower) ||
+        sAadh.includes(qLower)
+      );
+    });
+
+    // Merge and deduplicate by id / share_no
+    const seen = new Set();
+    const merged = [];
+    for (const item of [...candidates, ...localMatches]) {
+      if (!item) continue;
+      if (isShareholderInactive(item)) continue;
+      const key = String(item.id || item.share_no || item.share_number);
+      if (!seen.has(key)) {
+        seen.add(key);
+        merged.push(item);
+      }
+    }
+
+    // 3. Multi-tier Relevance Ranking: EXACT MATCH FIRST PREFERENCE!
+    const getRank = (item) => {
+      const sh = String(item.share_no || item.share_number || '').trim().toLowerCase();
+      const sl = String(item.sl_no || item.id || '').trim().toLowerCase();
+      const rec = String(item.receipt_no || '').trim().toLowerCase();
+
+      if (isNum) {
+        if (sh === qLower) return 1; // EXACT SHARE NUMBER FIRST!
+        if (sl === qLower) return 2; // EXACT SL NO SECOND!
+        if (rec === qLower) return 3; // EXACT RECEIPT NO THIRD!
+        if (sh.startsWith(qLower)) return 4; // Starts with query (prefix e.g. 4540, 4541)
+        if (rec.startsWith(qLower)) return 5;
+        if (sh.includes(qLower)) return 6; // Contains query
+        if (rec.includes(qLower)) return 7;
+        const nm = String(item.shareholder_name || item.name || '').toLowerCase();
+        if (nm.startsWith(qLower)) return 8;
+        return 9; // Mobile, Aadhaar, other fields
+      } else {
+        const nm = String(item.shareholder_name || item.name || '').toLowerCase();
+        if (nm === qLower) return 1;
+        if (nm.startsWith(qLower)) return 2;
+        if (nm.includes(qLower)) return 3;
+        return 4;
+      }
+    };
+
+    merged.sort((a, b) => {
+      const rankA = getRank(a);
+      const rankB = getRank(b);
+      if (rankA !== rankB) return rankA - rankB;
+
+      if (isNum) {
+        if (rankA === 1) return (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0);
+        if (rankA === 4 || rankA === 6) {
+          const numA = parseInt(a.share_no || a.share_number, 10) || 0;
+          const numB = parseInt(b.share_no || b.share_number, 10) || 0;
+          if (numA !== numB) return numA - numB;
+        }
+      }
+      return (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0);
+    });
+
+    return merged.slice(0, 15);
   },
 
   async getVargavaneTransfers({ search = '', status = '', taluk = '' } = {}) {
@@ -7130,24 +7218,58 @@ const newSh = {
     reconcileApprovedTransfersIntoMaster(mockShareholders);
     reconcileApprovedMergesIntoMaster(mockShareholders);
     if (!query || !String(query).trim()) return { success: true, data: [] };
-    const q = String(query).replace(/^#/, '').trim().toLowerCase().normalize('NFC');
-    const results = [];
+    const cleanQ = String(query).replace(/^#/, '').trim();
+    const qLower = cleanQ.toLowerCase().normalize('NFC');
+    const isNum = /^\d+$/.test(cleanQ);
+
+    let candidates = [];
+    if (CloudDbService.isEnabled()) {
+      try {
+        const cloudRes = await CloudDbService.getShareholders({
+          page: 1,
+          limit: 30,
+          search: cleanQ
+        });
+        if (cloudRes && cloudRes.success && Array.isArray(cloudRes.data)) {
+          candidates = cloudRes.data;
+        }
+      } catch (err) {
+        console.warn('Cloud DB search for merge failed:', err.message);
+      }
+    }
+
+    const localMatches = [];
     for (let i = 0; i < mockShareholders.length; i++) {
       const s = mockShareholders[i];
       const sNo = String(s.share_no || s.share_number || '').trim();
       const sName = (s.shareholder_name || s.name || '').trim().toLowerCase().normalize('NFC');
       const sPlace = (s.place || s.village_name || '').trim().toLowerCase().normalize('NFC');
-      
       const allNos = Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
         ? s.all_share_numbers.map(n => String(n).trim()) 
         : sNo.split(',').map(n => n.trim()).filter(Boolean);
 
-      const matchShareNo = allNos.some(num => num.toLowerCase() === q || num.toLowerCase().startsWith(q));
-      const matchName = sName.includes(q);
-      const matchPlace = sPlace.includes(q);
+      const matchShareNo = allNos.some(num => num.toLowerCase() === qLower || num.toLowerCase().startsWith(qLower) || num.toLowerCase().includes(qLower));
+      const matchName = sName.includes(qLower);
+      const matchPlace = sPlace.includes(qLower);
 
       if (matchShareNo || matchName || matchPlace) {
-        results.push({
+        localMatches.push(s);
+      }
+    }
+
+    const seen = new Set();
+    const merged = [];
+    for (const s of [...candidates, ...localMatches]) {
+      if (!s) continue;
+      const key = String(s.id || s.share_no || s.share_number);
+      if (!seen.has(key)) {
+        seen.add(key);
+        const sNo = String(s.share_no || s.share_number || '').trim();
+        const allNos = Array.isArray(s.all_share_numbers) && s.all_share_numbers.length > 0
+          ? s.all_share_numbers.map(n => String(n).trim()) 
+          : sNo.split(',').map(n => n.trim()).filter(Boolean);
+
+        merged.push({
           id: s.id,
           share_no: s.share_no || s.share_number,
           all_share_numbers: allNos,
@@ -7173,10 +7295,39 @@ const newSh = {
           is_merged_secondary: !!s.is_merged_secondary,
           merged_into_share_no: s.merged_into_share_no || ''
         });
-        if (results.length >= 30) break;
       }
     }
-    return { success: true, data: results };
+
+    // Multi-tier Relevance Ranking: Exact match first!
+    const getRank = (item) => {
+      const sh = String(item.share_no || '').trim().toLowerCase();
+      if (isNum) {
+        if (sh === qLower) return 1;
+        if (sh.startsWith(qLower)) return 2;
+        if (sh.includes(qLower)) return 3;
+        return 4;
+      } else {
+        const nm = String(item.shareholder_name || '').toLowerCase();
+        if (nm === qLower) return 1;
+        if (nm.startsWith(qLower)) return 2;
+        if (nm.includes(qLower)) return 3;
+        return 4;
+      }
+    };
+
+    merged.sort((a, b) => {
+      const rankA = getRank(a);
+      const rankB = getRank(b);
+      if (rankA !== rankB) return rankA - rankB;
+      if (isNum && (rankA === 2 || rankA === 3)) {
+        const numA = parseInt(a.share_no, 10) || 0;
+        const numB = parseInt(b.share_no, 10) || 0;
+        if (numA !== numB) return numA - numB;
+      }
+      return (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0);
+    });
+
+    return { success: true, data: merged.slice(0, 20) };
   },
 
   async mergeSharesByShareNumbers({ 

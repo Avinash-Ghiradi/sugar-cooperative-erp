@@ -123,7 +123,7 @@ export default function VargavaneTransferModal({
   // Auto-search 17,076 Shareholders
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (searchShareholderQuery && searchShareholderQuery.trim().length >= 2) {
+      if (searchShareholderQuery && searchShareholderQuery.trim().length >= 1) {
         setIsSearching(true);
         const results = await ApiService.searchShareholderForVarasa(searchShareholderQuery);
         setShareholderSearchResults(results);
