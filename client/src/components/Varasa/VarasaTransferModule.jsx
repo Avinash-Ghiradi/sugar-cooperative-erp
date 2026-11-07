@@ -895,7 +895,7 @@ export default function VarasaTransferModule() {
 
                         <button
                           type="button"
-                          onClick={() => setPrintSlipTransfer(v)}
+                          onClick={() => setPrintSlipTransfer({ ...v, sl_no: v.sl_no || (idx + 1) })}
                           className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
                           title="ಶೇರು ವಾರಸಾ ದಾಖಲಾತಿ ಕಡತ ಮುದ್ರಣ (Varasa 12-Page Complete Bundle Print)"
                         >

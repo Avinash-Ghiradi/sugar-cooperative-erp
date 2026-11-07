@@ -82,6 +82,9 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
   if (!isOpen || !vargavaneData) return null;
 
   const v = vargavaneData;
+  const slNo = v.sl_no !== undefined && v.sl_no !== null && String(v.sl_no).trim() !== ''
+    ? v.sl_no
+    : (v.id || (v.transfer_id ? v.transfer_id.replace(/\D/g, '') : '') || 1);
 
   // Transferor Details (ಮೂಲ ಶೇರುದಾರರು)
   const transferorName = v.transferor_name || v.shareholder_name || '';
@@ -173,7 +176,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
         {/* Title */}
         <div className="text-center my-2">
           <h2 className="text-base font-black underline tracking-wide inline-block">
-            ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ – 1
+            ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ – {slNo}
           </h2>
         </div>
 
@@ -254,7 +257,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
         {/* Top Header Row with Transfer Badge */}
         <div className="flex justify-between items-center mb-1">
           <div className="bg-yellow-400 border border-green-700 px-3 py-0.5 text-xs font-bold text-black shadow-sm">
-            Transfer- 01
+            Transfer- {String(slNo).padStart(2, "0")}
           </div>
           <div className="text-xs font-bold">
             ದಿನಾಂಕ: {receiptDate || applicationDate}
@@ -1743,7 +1746,7 @@ export default function VargavanePrintModal({ isOpen, onClose, vargavaneData, is
                 activeTab === 'p1' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              ಪುಟ 1: ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ – 1
+              ಪುಟ 1: ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ – {slNo}
             </button>
             <button
               type="button"

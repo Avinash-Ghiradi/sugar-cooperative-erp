@@ -85,6 +85,9 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
 
   // Resolve values
   const v = varasaData;
+  const slNo = v.sl_no !== undefined && v.sl_no !== null && String(v.sl_no).trim() !== ''
+    ? v.sl_no
+    : (v.id || (v.transfer_id ? v.transfer_id.replace(/\D/g, '') : '') || 1);
   const heirNameRaw = (v.varasa_member || v.heir_name || '').trim();
   const heirName = heirNameRaw.startsWith('ಶ್ರೀ') || heirNameRaw.startsWith('ಶ್ರೀಮತಿ')
     ? heirNameRaw
@@ -190,7 +193,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
         {renderHeaderBox()}
 
         <h2 className="text-center text-[18px] font-bold underline mb-3 text-black">
-          ಶೇರು ವಾರಸಾ ಅರ್ಜಿ – 1
+          ಶೇರು ವಾರಸಾ ಅರ್ಜಿ – {slNo}
         </h2>
 
         {/* Addressee & Contact */}
@@ -1496,7 +1499,7 @@ export default function VarasaPrintModal({ isOpen, onClose, varasaData, isNewSub
                 activeTab === 'p1' ? 'border-purple-500 text-purple-300 font-bold bg-slate-900 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              ಪುಟ 1: ವಾರಸಾ ಅರ್ಜಿ
+              ಪುಟ 1: ವಾರಸಾ ಅರ್ಜಿ – {slNo}
             </button>
             <button
               type="button"
