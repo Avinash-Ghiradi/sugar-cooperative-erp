@@ -45,7 +45,8 @@ export default function MobileFilterDrawer({
     selectedCircle,
     selectedAmount,
     selectedStatus,
-    sortBy
+    (sortBy && sortBy !== 'share_no' ? sortBy : null),
+    (sortBy === 'share_no' && sortOrder === 'desc' ? 'desc' : null)
   ].filter(Boolean).length;
 
   return (
@@ -202,12 +203,11 @@ export default function MobileFilterDrawer({
                 onChange={(e) => setSortBy(e.target.value)}
                 className="flex-1 bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs text-slate-200 outline-none"
               >
-                <option value="">{t ? t('sh_sort_default') : 'ಕ್ರಮಬದ್ಧ ವಿಂಗಡಣೆ (Default)'}</option>
+                <option value="share_no">{t ? t('sh_sort_share_no') : 'ಶೇರು ಸಂಖ್ಯೆ'} (1 ➔ ... {isEnglish ? 'Asc' : 'ಏರಿಕೆ'})</option>
                 <option value="place">{t ? t('sh_sort_place') : 'ಸ್ಥಳ / ಗ್ರಾಮ (ಅ-ಹ)'}</option>
                 <option value="circle">{t ? t('sh_sort_circle') : 'ವಲಯ (ಅ-ಹ)'}</option>
                 <option value="address">{t ? t('sh_sort_address') : 'ವಿಳಾಸ (ಅ-ಹ)'}</option>
                 <option value="name">{t ? t('sh_sort_name') : 'ಹೆಸರು (ಅ-ಹ)'}</option>
-                <option value="share_no">{t ? t('sh_sort_share_no') : 'ಶೇರು ಸಂಖ್ಯೆ'}</option>
               </select>
               {sortBy && (
                 <button

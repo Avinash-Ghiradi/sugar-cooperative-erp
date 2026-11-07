@@ -59,7 +59,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const [selectedBook, setSelectedBook] = useState('');
   const [selectedCast, setSelectedCast] = useState('');
   const [selectedAmount, setSelectedAmount] = useState('');
-  const [sortBy, setSortBy] = useState(''); // 'place', 'circle', 'address', 'name', 'share_no'
+  const [sortBy, setSortBy] = useState('share_no'); // Default: Share No. 1 to ... (increasing order)
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
   const [viewMode, setViewMode] = useState('ledger'); // 'ledger' (38 columns) or 'summary'
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
@@ -82,7 +82,8 @@ export default function ShareholderList({ initialShowMerge = false }) {
     selectedCircle,
     selectedAmount,
     selectedStatus,
-    sortBy
+    (sortBy && sortBy !== 'share_no' ? sortBy : null),
+    (sortBy === 'share_no' && sortOrder === 'desc' ? 'desc' : null)
   ].filter(Boolean).length;
 
   const handleResetFilters = () => {
@@ -94,7 +95,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
     setSelectedCircle('');
     setSelectedAmount('');
     setSelectedStatus('');
-    setSortBy('');
+    setSortBy('share_no');
     setSortOrder('asc');
   };
   const [printModalOpen, setPrintModalOpen] = useState(false);
@@ -230,7 +231,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
       if (sortOrder === 'asc') {
         setSortOrder('desc');
       } else {
-        setSortBy('');
+        setSortBy('share_no');
         setSortOrder('asc');
       }
     } else {
@@ -938,10 +939,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
                 <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => setSelectedStatus('')} />
               </span>
             )}
-            {sortBy && (
+            {((sortBy && sortBy !== 'share_no') || (sortBy === 'share_no' && sortOrder === 'desc')) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-emerald-300 border border-slate-700 text-[11px] shrink-0">
-                ↕️ {sortBy}
-                <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => setSortBy('')} />
+                ↕️ {sortBy === 'share_no' ? (isEnglish ? 'Share No (Desc)' : 'ಶೇರು ಸಂಖ್ಯೆ (ಇಳಿಕೆ)') : sortBy}
+                <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => { setSortBy('share_no'); setSortOrder('asc'); }} />
               </span>
             )}
             <button
@@ -1049,12 +1050,11 @@ export default function ShareholderList({ initialShowMerge = false }) {
             className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all cursor-pointer"
             title="Sort alphabetically"
           >
-            <option value="">{t('sh_sort_default')}</option>
+            <option value="share_no">{t('sh_sort_share_no')} (1 ➔ ... {isEnglish ? 'Asc' : 'ಏರಿಕೆ'})</option>
             <option value="place">{t('sh_sort_place')}</option>
             <option value="circle">{t('sh_sort_circle')}</option>
             <option value="address">{t('sh_sort_address')}</option>
             <option value="name">{t('sh_sort_name')}</option>
-            <option value="share_no">{t('sh_sort_share_no')}</option>
           </select>
           {sortBy && (
             <button
@@ -1095,21 +1095,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
         </select>
 
         {/* Clear Filters (when any active) */}
-        {(Boolean(searchInput || selectedBook || selectedCast || selectedVillage || selectedCircle || selectedAmount || selectedStatus || sortBy)) && (
+        {(Boolean(searchInput || selectedBook || selectedCast || selectedVillage || selectedCircle || selectedAmount || selectedStatus || (sortBy && sortBy !== 'share_no') || (sortBy === 'share_no' && sortOrder === 'desc'))) && (
           <button
             type="button"
-            onClick={() => {
-              setSearchInput('');
-              setSearch('');
-              setSelectedBook('');
-              setSelectedCast('');
-              setSelectedVillage('');
-              setSelectedCircle('');
-              setSelectedAmount('');
-              setSelectedStatus('');
-              setSortBy('');
-              setSortOrder('asc');
-            }}
+            onClick={handleResetFilters}
             className="flex items-center gap-1 px-2.5 py-2 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white rounded-xl text-xs font-semibold border border-rose-800 transition-all shrink-0 cursor-pointer"
             title="Clear all active filters"
           >

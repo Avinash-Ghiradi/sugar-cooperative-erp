@@ -125,7 +125,7 @@ export const CloudDbService = {
   },
 
     // 5. Query Shareholders with pagination & filters
-  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', amount = '', sortBy = '', sortOrder = 'asc' }) {
+  async getShareholders({ page = 1, limit = 20, search = '', village_id = '', circle_id = '', status = '', book_no = '', schedule_cast = '', amount = '', sortBy = 'share_no', sortOrder = 'asc' }) {
     if (!this.isEnabled()) return null;
 
     try {
@@ -143,13 +143,10 @@ export const CloudDbService = {
       if (circle_id) filterParams.push(`circle=ilike.*${encodeURIComponent(circle_id)}*`);
       if (amount) filterParams.push(`total_amount=eq.${encodeURIComponent(amount)}`);
 
-      // Determine SQL Order
+      // Determine SQL Order: Default to Share No. 1 to ... in increasing order (id.asc)
       let orderCol = 'id';
-      let dir = 'desc';
-      if (!sortBy) {
-        orderCol = 'id';
-        dir = 'desc';
-      } else if (sortBy === 'share_no') {
+      let dir = 'asc';
+      if (!sortBy || sortBy === 'share_no') {
         orderCol = 'id';
         dir = sortOrder === 'desc' ? 'desc' : 'asc';
       } else if (sortBy === 'name' || sortBy === 'shareholder_name') {
