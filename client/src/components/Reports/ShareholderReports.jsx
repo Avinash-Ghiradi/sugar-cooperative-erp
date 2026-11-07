@@ -12,6 +12,7 @@ import {
   ChevronUp, ShieldCheck, PieChart, Sparkles, SlidersHorizontal, IndianRupee, Banknote
 } from 'lucide-react';
 import ShareholderProfile from '../Shareholders/ShareholderProfile';
+import ShareholderReportPrintModal from './ShareholderReportPrintModal';
 import { useCompanyLogo, useHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
 
 // Helper: Parse various date formats (DD/MM/YYYY, YYYY-MM-DD, Excel serials) into timestamp
@@ -154,6 +155,7 @@ export default function ShareholderReports() {
   // Active Report Breakdown Tab:
   // 'placewise' | 'categorywise' | 'circlewise' | 'shareswise' | 'detailed'
   const [reportMode, setReportMode] = useState('placewise');
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   // Filter States
   const [filters, setFilters] = useState({
@@ -1167,11 +1169,12 @@ export default function ShareholderReports() {
 
           {/* Print Official Report */}
           <button
-            onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white rounded-xl text-xs font-semibold border border-slate-800 transition-all cursor-pointer"
+            type="button"
+            onClick={() => setShowPrintModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-950 cursor-pointer"
             title="Print Official Cooperative Society Audit Report"
           >
-            <Printer className="w-4 h-4 text-sky-400" />
+            <Printer className="w-4 h-4 text-white" />
             <span>{t('rep_print_btn')}</span>
           </button>
 
@@ -1594,7 +1597,7 @@ export default function ShareholderReports() {
       </div>
 
       {/* 5. OFFICIAL PRINTABLE REPORT CONTAINER */}
-      <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6 printable-area">
+      <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6">
         {/* Printable Official Header */}
         <div className="border-b-2 border-slate-700/80 pb-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -2476,6 +2479,23 @@ export default function ShareholderReports() {
         </div>
       </div>
 
+
+      {/* Official Professional Report Print Modal */}
+      <ShareholderReportPrintModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        reportMode={reportMode}
+        kpis={kpis}
+        filters={filters}
+        filteredShareholders={filteredShareholders}
+        placewiseData={placewiseData}
+        categorywiseData={categorywiseData}
+        circlewiseData={circlewiseData}
+        shareswiseData={shareswiseData}
+        amountwiseData={amountwiseData}
+        selectedColumns={selectedColumns}
+        getColValue={getColValue}
+      />
 
       {/* Shareholder Profile Modal */}
       {activeProfileId && (

@@ -117,7 +117,8 @@
   .office-note-print-portal,
   .varasa-print-portal,
   .enrollment-list-print-portal,
-  .register-list-print-portal {
+  .register-list-print-portal,
+  .shareholder-report-print-portal {
     display: none !important;
     visibility: hidden !important;
   }
@@ -153,6 +154,26 @@
     display: block !important;
     visibility: visible !important;
   }
+  body.shareholder-report-printing .shareholder-report-print-portal {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  body.shareholder-report-printing .shareholder-report-print-portal table {
+    border-collapse: collapse !important;
+  }
+  body.shareholder-report-printing .shareholder-report-print-portal thead {
+    display: table-header-group !important;
+  }
+  body.shareholder-report-printing .shareholder-report-print-portal tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
 
   html,
   body,
@@ -177,7 +198,8 @@
   body.office-note-printing > #root,
   body.varasa-printing > #root,
   body.enrollment-list-printing > #root,
-  body.register-list-printing > #root {
+  body.register-list-printing > #root,
+  body.shareholder-report-printing > #root {
     display: none !important;
     visibility: hidden !important;
   }
