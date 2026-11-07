@@ -1,7 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const ThemeContext = createContext(null);
 const THEME_STORAGE_KEY = 'sugar_erp_theme_mode';
+
+const defaultFallbackTheme = {
+  theme: 'dark',
+  setTheme: () => {},
+  toggleTheme: () => {},
+  isDark: true,
+  isLight: false
+};
+
+const ThemeContext = createContext(defaultFallbackTheme);
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
@@ -9,15 +18,17 @@ export function ThemeProvider({ children }) {
       const saved = localStorage.getItem(THEME_STORAGE_KEY);
       if (saved === 'light' || saved === 'dark') return saved;
     } catch (e) {}
-    return 'dark'; // Default to dark mode (current look)
+    return 'dark'; // Default to dark mode
   });
 
   const applyTheme = (t) => {
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(t);
-    root.setAttribute('data-theme', t);
-    root.style.colorScheme = t;
+    try {
+      const root = document.documentElement;
+      root.classList.remove('light', 'dark');
+      root.classList.add(t);
+      root.setAttribute('data-theme', t);
+      root.style.colorScheme = t;
+    } catch (e) {}
   };
 
   useEffect(() => {
@@ -50,8 +61,5 @@ export function ThemeProvider({ children }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  return context || defaultFallbackTheme;
 }

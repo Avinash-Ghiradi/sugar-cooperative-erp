@@ -170,12 +170,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <PwaProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </PwaProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <PwaProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </PwaProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
