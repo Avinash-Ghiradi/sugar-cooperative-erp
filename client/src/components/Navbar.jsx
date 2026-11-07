@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { usePwa } from '../context/PwaContext';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageSwitchButton from './Common/LanguageSwitchButton';
 import ChangePasswordModal from './Auth/ChangePasswordModal';
 import {
   Menu, Search, Bell, ShieldCheck, User, LogOut, KeyRound,
@@ -10,6 +12,7 @@ import {
 export default function Navbar({ onMenuToggle }) {
   const { user, logout, setActiveModule } = useAuth();
   const { installApp, isInstalled } = usePwa();
+  const { t, formatName, isEnglish } = useLanguage();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const dropdownRef = useRef(null);
@@ -48,25 +51,28 @@ export default function Navbar({ onMenuToggle }) {
           </button>
 
           <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
-            <span className="font-semibold text-slate-200">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ - 586204</span>
+            <span className="font-semibold text-slate-200">{t('factory_name')}</span>
             <span>•</span>
             <span className="text-emerald-400 font-medium flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" /> Statutory Ledger Online
+              <ShieldCheck className="w-3.5 h-3.5" /> {t('statutory_ledger_online')}
             </span>
           </div>
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Global Kannada / English Language Switcher */}
+          <LanguageSwitchButton />
+
           {/* Chrome App Install Button */}
           {!isInstalled && (
             <button
               onClick={installApp}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all shadow-sm cursor-pointer"
-              title="ಕ್ರೋಮ್ ಡೆಸ್ಕ್‌ಟಾಪ್ ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ (Install Chrome App)"
+              title={isEnglish ? "Install Chrome App" : "ಕ್ರೋಮ್ ಡೆಸ್ಕ್‌ಟಾಪ್ ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ"}
             >
               <Download className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್</span>
+              <span className="hidden sm:inline">{t('install_app')}</span>
             </button>
           )}
           {/* Quick Search */}
@@ -75,7 +81,7 @@ export default function Navbar({ onMenuToggle }) {
             className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-400 hover:border-emerald-500/50 transition-all w-60 cursor-pointer"
           >
             <Search className="w-3.5 h-3.5 text-slate-400" />
-            <span className="truncate">ಶೇರುದಾರರ ಹುಡುಕಾಟ (⌘K)...</span>
+            <span className="truncate">{t('quick_search')}</span>
             <kbd className="ml-auto text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-mono">⌘K</kbd>
           </button>
 
@@ -94,7 +100,7 @@ export default function Navbar({ onMenuToggle }) {
               </div>
               <div className="hidden sm:block text-left">
                 <div className="text-xs font-bold text-slate-200 leading-tight flex items-center gap-1">
-                  <span className="truncate max-w-[130px]">{user?.name}</span>
+                  <span className="truncate max-w-[130px]">{formatName(user?.name, user?.name_english)}</span>
                   <ChevronDown className="w-3 h-3 text-slate-400" />
                 </div>
                 <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
@@ -168,7 +174,7 @@ export default function Navbar({ onMenuToggle }) {
                       className="w-full px-3 py-2 text-left text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer font-semibold"
                     >
                       <KeyRound className="w-4 h-4 text-amber-400" />
-                      <span>ಪಾಸ್‌ವರ್ಡ್ ನಿರ್ವಾಹಕ (Password Manager)</span>
+                      <span>{t('menu_password_manager')}</span>
                     </button>
                   )}
 
@@ -180,7 +186,7 @@ export default function Navbar({ onMenuToggle }) {
                     className="w-full px-3 py-2 text-left text-slate-200 hover:text-white hover:bg-slate-800 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
                     <KeyRound className="w-4 h-4 text-emerald-400" />
-                    <span>ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾಯಿಸಿ (Change Password)</span>
+                    <span>{t('change_password')}</span>
                   </button>
 
                   <div className="my-1 border-t border-slate-800/60" />
@@ -193,7 +199,7 @@ export default function Navbar({ onMenuToggle }) {
                     className="w-full px-3 py-2 text-left text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer font-semibold"
                   >
                     <LogOut className="w-4 h-4 text-rose-400" />
-                    <span>ಲಾಗ್‌ಔಟ್ (Sign Out / Logout)</span>
+                    <span>{t('logout')}</span>
                   </button>
                 </div>
               </div>

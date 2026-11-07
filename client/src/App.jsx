@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PwaProvider } from './context/PwaContext';
 import { syncAllCloudWorkflows, checkAndApplyCloudReset } from './services/api';
@@ -168,10 +169,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <PwaProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </PwaProvider>
+    <LanguageProvider>
+      <PwaProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </PwaProvider>
+    </LanguageProvider>
   );
 }

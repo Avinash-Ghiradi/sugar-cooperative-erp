@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { ApiService, DEFAULT_STATUTORY_BOOKS_98, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isShareholderInactive, getShareholderSharesCount } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
   Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle,
@@ -19,6 +20,20 @@ import RegisterListPrintModal from '../Common/RegisterListPrintModal';
 
 export default function ShareholderList({ initialShowMerge = false }) {
   const { showToast, setActiveModule, user } = useAuth();
+  const {
+    t,
+    isEnglish,
+    formatName,
+    formatPlace,
+    formatCircle,
+    formatAddress,
+    formatTaluk,
+    formatDistrict,
+    formatCategory,
+    formatOwnership,
+    formatMemberType,
+    formatStatus
+  } = useLanguage();
   const [shareholders, setShareholders] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(true);
@@ -678,17 +693,17 @@ export default function ShareholderList({ initialShowMerge = false }) {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-emerald-400" /> Shareholder Statutory Ledger (ಷೇರುದಾರರ ನಮೂನೆ ವಹಿ)
+              <BookOpen className="w-5 h-5 text-emerald-400" /> {t('sh_title')}
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">
-              38 Columns Official Format
+              {t('sh_38_cols_badge')}
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800/80 text-emerald-300 border border-slate-700 font-mono">
-              Total: {pagination.total.toLocaleString()} Members • {villages.length} Places • {circles.length} Circles • {castList.length} Categories • {bookList.length} Books
+              {t('sh_total_prefix')} {pagination.total.toLocaleString()} {t('sh_members')} • {villages.length} {t('sh_places')} • {circles.length} {t('sh_circles')} • {castList.length} {t('sh_categories')} • {bookList.length} {t('sh_books')}
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1 max-w-4xl">
-            Shareholders Statutory Registry with Book No, Share No, Aadhaar, Receipt, Place, Taluk, Circle, Tharava & Nominee Details
+            {t('sh_subtitle')}
           </p>
         </div>
 
@@ -702,7 +717,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
                 viewMode === 'ledger' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              Full Ledger (38 Cols)
+              {t('sh_full_ledger_btn')}
             </button>
             <button
               onClick={() => setViewMode('summary')}
@@ -710,12 +725,9 @@ export default function ShareholderList({ initialShowMerge = false }) {
                 viewMode === 'summary' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              Summary View
+              {t('sh_summary_view_btn')}
             </button>
           </div>
-
-
-
 
           {/* Direct Link to Detailed Reports */}
           <button
@@ -724,7 +736,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
             title="Open Placewise, Categorywise, Circlewise & Shareswise Reports with Multi-Filters"
           >
             <BarChart3 className="w-4 h-4 text-emerald-400" />
-            <span>ವಿವರ ವರದಿಗಳು (Reports)</span>
+            <span>{t('sh_reports_btn')}</span>
           </button>
 
           {/* Export Full 38-Column Ledger to Excel (.xls) */}
@@ -734,7 +746,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
             title="Export complete 38-column statutory ledger to Excel (.xls) with 100% Kannada Unicode"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-            <span>ಎಕ್ಸೆಲ್ ರಫ್ತು (Export .xls)</span>
+            <span>{t('sh_export_excel_btn')}</span>
           </button>
 
           {/* Refresh Button */}
@@ -745,10 +757,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
             }}
             disabled={loading}
             className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm disabled:opacity-50"
-            title="ಡೇಟಾಬೇಸ್‌ನಿಂದ ತಾಜಾ ಮಾಹಿತಿ ಪಡೆಯಿರಿ (Refresh from Cloud Database)"
+            title="Refresh database records"
           >
             <RefreshCw className={`w-4 h-4 text-emerald-400 ${loading ? 'animate-spin' : ''}`} />
-            <span>ರಿಫ್ರೆಶ್ (Refresh)</span>
+            <span>{t('sh_refresh_btn')}</span>
           </button>
 
           {/* Professional Print Button */}
@@ -756,10 +768,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
             onClick={handleOpenPrintModal}
             disabled={loadingAllPrint}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md shadow-emerald-950 disabled:opacity-50"
-            title="ಅಧಿಕೃತ ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿ ಮುದ್ರಣ (Official Statutory Register Printout)"
+            title="Official Statutory Register Printout"
           >
             <Printer className="w-4 h-4 text-emerald-100" />
-            <span>{loadingAllPrint ? 'ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...' : 'ಶಾಸನಬದ್ಧ ಮುದ್ರಣ (Print)'}</span>
+            <span>{loadingAllPrint ? (isEnglish ? 'Preparing...' : 'ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...') : t('sh_print_btn')}</span>
           </button>
         </div>
       </div>
@@ -771,7 +783,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search Name (ಕನ್ನಡ / English), Share No, Book No, Mobile, Aadhaar..."
+            placeholder={t('sh_search_placeholder')}
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             onKeyDown={(e) => {
@@ -804,7 +816,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
           onChange={(e) => setSelectedBook(e.target.value)}
           className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 cursor-pointer"
         >
-          <option value="">All Books ({bookList.length})</option>
+          <option value="">{t('sh_all_books')} ({bookList.length})</option>
           {bookList.map(b => (
             <option key={b} value={b}>{b}</option>
           ))}
@@ -816,9 +828,9 @@ export default function ShareholderList({ initialShowMerge = false }) {
           onChange={(e) => setSelectedCast(e.target.value)}
           className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 cursor-pointer"
         >
-          <option value="">All Categories ({castList.length})</option>
+          <option value="">{t('sh_all_categories')} ({castList.length})</option>
           {castList.map(c => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>{formatCategory(c)}</option>
           ))}
         </select>
 
@@ -828,10 +840,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
           onChange={(e) => setSelectedVillage(e.target.value)}
           className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 max-w-[160px] cursor-pointer"
         >
-          <option value="">All Places ({villages.length})</option>
+          <option value="">{t('sh_all_places')} ({villages.length})</option>
           {villages.map(v => (
             <option key={v.village_id || v.name} value={v.name}>
-              {v.name}
+              {formatPlace(v.name)}
             </option>
           ))}
         </select>
@@ -842,10 +854,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
           onChange={(e) => setSelectedCircle(e.target.value)}
           className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 max-w-[150px] cursor-pointer"
         >
-          <option value="">All Circles ({circles.length})</option>
+          <option value="">{t('sh_all_circles')} ({circles.length})</option>
           {circles.map(c => (
             <option key={c.circle_id || c.name} value={c.name}>
-              {c.name} ({c.shareholder_count || 0})
+              {formatCircle(c.name)} ({c.shareholder_count || 0})
             </option>
           ))}
         </select>
@@ -856,21 +868,21 @@ export default function ShareholderList({ initialShowMerge = false }) {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
             className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all cursor-pointer"
-            title="Sort alphabetically (ಅಕಾರಾದಿ ಕ್ರಮ)"
+            title="Sort alphabetically"
           >
-            <option value="">ಕ್ರಮಬದ್ಧ ವಿಂಗಡಣೆ (Default)</option>
-            <option value="place">ಸ್ಥಳ / ಗ್ರಾಮ (Place: ಅ-ಹ / A-Z)</option>
-            <option value="circle">ವಲಯ / ಸರ್ಕಲ್ (Circle: ಅ-ಹ / A-Z)</option>
-            <option value="address">ವಿಳಾಸ (Address: ಅ-ಹ / A-Z)</option>
-            <option value="name">ಹೆಸರು (Name: ಅ-ಹ / A-Z)</option>
-            <option value="share_no">ಷೇರು ಸಂಖ್ಯೆ (Share No)</option>
+            <option value="">{t('sh_sort_default')}</option>
+            <option value="place">{t('sh_sort_place')}</option>
+            <option value="circle">{t('sh_sort_circle')}</option>
+            <option value="address">{t('sh_sort_address')}</option>
+            <option value="name">{t('sh_sort_name')}</option>
+            <option value="share_no">{t('sh_sort_share_no')}</option>
           </select>
           {sortBy && (
             <button
               type="button"
               onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
               className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-emerald-400 text-xs transition-colors shrink-0 cursor-pointer"
-              title={sortOrder === 'asc' ? 'Ascending (ಆರೋಹಣ ಕ್ರಮ: ಅ-ಹ)' : 'Descending (ಅವರೋಹಣ ಕ್ರಮ: ಹ-ಅ)'}
+              title={sortOrder === 'asc' ? 'Ascending (A-Z)' : 'Descending (Z-A)'}
             >
               {sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
             </button>
@@ -882,12 +894,12 @@ export default function ShareholderList({ initialShowMerge = false }) {
           value={selectedAmount}
           onChange={(e) => setSelectedAmount(e.target.value)}
           className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all font-medium shrink-0 max-w-[170px] cursor-pointer"
-          title="Filter by Cash Amount from Total Amount column (ಒಟ್ಟು ಮೊತ್ತ)"
+          title="Filter by Cash Amount from Total Amount column"
         >
-          <option value="">All Cash Amounts ({amountList.length})</option>
+          <option value="">{t('sh_all_amounts')} ({amountList.length})</option>
           {amountList.map(a => (
             <option key={a.amount} value={a.amount}>
-              ₹ {a.amount.toLocaleString('en-IN')} ({a.count} ಸದಸ್ಯರು)
+              ₹ {a.amount.toLocaleString('en-IN')} ({a.count} {t('sh_members')})
             </option>
           ))}
         </select>
@@ -898,9 +910,9 @@ export default function ShareholderList({ initialShowMerge = false }) {
           onChange={(e) => setSelectedStatus(e.target.value)}
           className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-2.5 py-2 text-xs text-slate-200 outline-none transition-all shrink-0 cursor-pointer"
         >
-          <option value="">All Statuses</option>
-          <option value="Active">Active (ಸಕ್ರಿಯ)</option>
-          <option value="Inactive">Inactive</option>
+          <option value="">{t('sh_all_statuses')}</option>
+          <option value="Active">{t('sh_status_active')}</option>
+          <option value="Inactive">{t('sh_status_inactive')}</option>
         </select>
 
         {/* Clear Filters (when any active) */}
@@ -965,16 +977,16 @@ export default function ShareholderList({ initialShowMerge = false }) {
             <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
               <thead className="bg-emerald-800 border-b-2 border-emerald-400 text-white font-bold text-[11.5px] sticky top-0 z-20 shadow-lg select-none">
                 <tr className="border-b border-emerald-700/80">
-                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-0 z-30 shadow-r border-r border-emerald-700/60 w-[130px] min-w-[130px] no-print">Actions</th>
-                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-[130px] z-30 border-r-2 border-emerald-400/80 shadow-r w-[95px] min-w-[95px]">Book. No</th>
-                  <th className="py-3.5 px-3 text-center border-r border-emerald-700/40">Sl. No</th>
+                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-0 z-30 shadow-r border-r border-emerald-700/60 w-[130px] min-w-[130px] no-print">{t('col_actions')}</th>
+                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-[130px] z-30 border-r-2 border-emerald-400/80 shadow-r w-[95px] min-w-[95px]">{t('col_book_no')}</th>
+                  <th className="py-3.5 px-3 text-center border-r border-emerald-700/40">{t('col_sl_no')}</th>
                   <th
                     className="py-3.5 px-3 font-mono text-amber-300 cursor-pointer select-none hover:text-white transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('share_no')}
                     title="Click to sort by Share No"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Share No</span>
+                      <span>{t('col_share_no')}</span>
                       {sortBy === 'share_no' ? (
                         sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-300" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-300" />
                       ) : (
@@ -985,10 +997,10 @@ export default function ShareholderList({ initialShowMerge = false }) {
                   <th
                     className="py-3.5 px-4 font-bold text-white min-w-[200px] cursor-pointer select-none hover:text-amber-200 transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('name')}
-                    title="Click to sort alphabetically by Shareholder Name (ಅಕಾರಾದಿ ಕ್ರಮ)"
+                    title="Click to sort alphabetically by Shareholder Name"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Share Holder Name (ಷೇರುದಾರರ ಹೆಸರು)</span>
+                      <span>{t('col_name')}</span>
                       {sortBy === 'name' ? (
                         sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-300" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-300" />
                       ) : (
@@ -996,24 +1008,24 @@ export default function ShareholderList({ initialShowMerge = false }) {
                       )}
                     </div>
                   </th>
-                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Gender</th>
-                  <th className="py-3.5 px-3 font-mono border-r border-emerald-700/40">Aadhaar Card No</th>
-                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Reg. Date</th>
-                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Receipt No</th>
-                  <th className="py-3.5 px-3 text-right border-r border-emerald-700/40">Receipt Amount</th>
-                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Date</th>
-                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Reciept</th>
-                  <th className="py-3.5 px-3 text-right border-r border-emerald-700/40">Amount</th>
-                  <th className="py-3.5 px-3 text-right font-bold text-amber-300 border-r border-emerald-700/40">Total Amount</th>
-                  <th className="py-3.5 px-2 text-center font-bold text-emerald-200 border-r border-emerald-700/40">No. of Shares</th>
-                  <th className="py-3.5 px-3 text-center border-r border-emerald-700/40">Schedule Cast / ವರ್ಗ</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">{t('col_gender')}</th>
+                  <th className="py-3.5 px-3 font-mono border-r border-emerald-700/40">{t('col_aadhaar')}</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">{t('col_reg_date')}</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">{t('col_receipt_no')}</th>
+                  <th className="py-3.5 px-3 text-right border-r border-emerald-700/40">{t('col_receipt_amt')}</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">{t('col_date_2nd')}</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">{t('col_receipt_2nd')}</th>
+                  <th className="py-3.5 px-3 text-right border-r border-emerald-700/40">{t('col_amount_2nd')}</th>
+                  <th className="py-3.5 px-3 text-right font-bold text-amber-300 border-r border-emerald-700/40">{t('col_total_amount')}</th>
+                  <th className="py-3.5 px-2 text-center font-bold text-emerald-200 border-r border-emerald-700/40">{t('col_shares_count')}</th>
+                  <th className="py-3.5 px-3 text-center border-r border-emerald-700/40">{t('col_category')}</th>
                   <th
                     className="py-3.5 px-4 min-w-[180px] cursor-pointer select-none hover:text-amber-200 transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('address')}
-                    title="Click to sort alphabetically by Address (ವಿಳಾಸ: ಅ-ಹ)"
+                    title="Click to sort alphabetically by Address"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Address (ವಿಳಾಸ)</span>
+                      <span>{t('col_address')}</span>
                       {sortBy === 'address' ? (
                         sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-300" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-300" />
                       ) : (
@@ -1021,15 +1033,15 @@ export default function ShareholderList({ initialShowMerge = false }) {
                       )}
                     </div>
                   </th>
-                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Nagara</th>
-                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Road</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">{t('col_nagara')}</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">{t('col_road')}</th>
                   <th
                     className="py-3.5 px-3 font-bold text-white cursor-pointer select-none hover:text-amber-200 transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('place')}
-                    title="Click to sort alphabetically by Place (ಸ್ಥಳ: ಅ-ಹ)"
+                    title="Click to sort alphabetically by Place"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Place (ಸ್ಥಳ/ಗ್ರಾಮ)</span>
+                      <span>{t('col_place')}</span>
                       {sortBy === 'place' ? (
                         sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-300" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-300" />
                       ) : (
@@ -1037,16 +1049,16 @@ export default function ShareholderList({ initialShowMerge = false }) {
                       )}
                     </div>
                   </th>
-                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Taluk</th>
-                  <th className="py-3.5 px-3 border-r border-emerald-700/40">District</th>
-                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Pin Code</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">{t('col_taluk')}</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">{t('col_district')}</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">{t('col_pincode')}</th>
                   <th
                     className="py-3.5 px-3 cursor-pointer select-none hover:text-amber-200 transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('circle')}
-                    title="Click to sort alphabetically by Circle (ವಲಯ: ಅ-ಹ)"
+                    title="Click to sort alphabetically by Circle"
                   >
                     <div className="flex items-center gap-1">
-                      <span>Circle</span>
+                      <span>{t('col_circle')}</span>
                       {sortBy === 'circle' ? (
                         sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-300" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-300" />
                       ) : (
@@ -1054,20 +1066,20 @@ export default function ShareholderList({ initialShowMerge = false }) {
                       )}
                     </div>
                   </th>
-                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Member Type</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">{t('col_member_type')}</th>
                   <th className="py-3.5 px-3 font-extrabold text-amber-300 bg-emerald-950/80 border-r-2 border-l-2 border-emerald-400 shadow-inner">
-                    Ownership (ಸ್ವಾಮ್ಯತ್ವ)
+                    {t('col_ownership')}
                   </th>
-                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Tharava Date</th>
-                  <th className="py-3.5 px-3 border-r border-emerald-700/40">Tharava No</th>
-                  <th className="py-3.5 px-3 font-mono text-emerald-200 border-r border-emerald-700/40">Mobile No</th>
-                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Photo Upd.</th>
-                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Sign Upd.</th>
-                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">Thumb Upd.</th>
-                  <th className="py-3.5 px-4 min-w-[160px] border-r border-emerald-700/40">Nominee Name</th>
-                  <th className="py-3.5 px-3 font-mono border-r border-emerald-700/40">Nominee Aadhaar</th>
-                  <th className="py-3.5 px-3 font-mono border-r border-emerald-700/40">Nominee Mobile</th>
-                  <th className="py-3.5 px-4 min-w-[180px]">Nominee Address</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">{t('col_tharava_date')}</th>
+                  <th className="py-3.5 px-3 border-r border-emerald-700/40">{t('col_tharava_no')}</th>
+                  <th className="py-3.5 px-3 font-mono text-emerald-200 border-r border-emerald-700/40">{t('col_mobile')}</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">{t('col_photo')}</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">{t('col_signature')}</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40">{t('col_thumb')}</th>
+                  <th className="py-3.5 px-4 min-w-[160px] border-r border-emerald-700/40">{t('col_nominee_name')}</th>
+                  <th className="py-3.5 px-3 font-mono border-r border-emerald-700/40">{t('col_nominee_aadhaar')}</th>
+                  <th className="py-3.5 px-3 font-mono border-r border-emerald-700/40">{t('col_nominee_mobile')}</th>
+                  <th className="py-3.5 px-4 min-w-[180px]">{t('col_nominee_address')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-200">
@@ -1168,12 +1180,12 @@ export default function ShareholderList({ initialShowMerge = false }) {
                         {isInactive ? (
                           <span className="px-1.5 py-0.5 rounded-md bg-rose-950/90 text-rose-300 border border-rose-700/60 text-[9px] font-sans font-bold flex items-center gap-1 shrink-0" title={`ಈ ಖಾತೆಯು ಮುಖ್ಯ ಶೇರು #${sh.merged_into_share_no || ''} ಗೆ ವಿಲೀನಗೊಂಡು ಕಾಯಂ ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ`}>
                             <XCircle className="w-2.5 h-2.5 text-rose-400" />
-                            <span>ನಿಷ್ಕ್ರಿಯ</span>
+                            <span>{t('sh_inactive_badge')}</span>
                           </span>
                         ) : (sh.is_merged || (sh.all_share_numbers && sh.all_share_numbers.length > 1) || String(sh.share_no).includes(',')) ? (
                           <span className="px-1.5 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-700/60 text-[9px] font-sans font-bold flex items-center gap-1 shrink-0" title="ಬಹು-ಶೇರುಗಳು ಮತ್ತು ಮೊತ್ತಗಳು ವಿಲೀನಗೊಂಡಿವೆ">
                             <GitMerge className="w-2.5 h-2.5 text-amber-400" />
-                            <span>ವಿಲೀನ</span>
+                            <span>{t('sh_merged_badge')}</span>
                           </span>
                         ) : null}
                       </div>
@@ -1189,7 +1201,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
                             {(sh.shareholder_name || sh.name || 'S').charAt(0)}
                           </div>
                         )}
-                        <span className="truncate">{sh.shareholder_name || sh.name}</span>
+                        <span className="truncate">{formatName(sh.shareholder_name || sh.name)}</span>
                       </div>
                     </td>
 
@@ -1242,7 +1254,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
                         <div className="flex flex-col items-end">
                           <span className="text-slate-500 line-through text-xs font-mono">₹ 0</span>
                           <span className="text-[10px] text-rose-400 font-sans font-medium whitespace-nowrap">
-                            ವರ್ಗಾವಣೆ ➔ #{sh.merged_into_share_no || 'ಮುಖ್ಯ'}
+                            {isEnglish ? `Transfer ➔ #${sh.merged_into_share_no || 'Primary'}` : `ವರ್ಗಾವಣೆ ➔ #${sh.merged_into_share_no || 'ಮುಖ್ಯ'}`}
                           </span>
                         </div>
                       ) : (
@@ -1273,39 +1285,39 @@ export default function ShareholderList({ initialShowMerge = false }) {
                     {/* 15. Schedule Cast / ವರ್ಗ */}
                     <td className="py-2.5 px-3 text-center">
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 border border-slate-700 text-slate-200">
-                        {sh.schedule_cast || 'ಅ - ವರ್ಗ'}
+                        {formatCategory(sh.schedule_cast)}
                       </span>
                     </td>
 
                     {/* 16. Address */}
-                    <td className="py-2.5 px-4 text-slate-300 max-w-[220px] truncate" title={sh.address}>{sh.address || '—'}</td>
+                    <td className="py-2.5 px-4 text-slate-300 max-w-[220px] truncate" title={formatAddress(sh.address)}>{formatAddress(sh.address)}</td>
 
                     {/* 17. Nagara */}
-                    <td className="py-2.5 px-3 text-slate-400">{sh.nagara || '—'}</td>
+                    <td className="py-2.5 px-3 text-slate-400">{sh.nagara ? formatAddress(sh.nagara) : '—'}</td>
 
                     {/* 18. Road */}
-                    <td className="py-2.5 px-3 text-slate-400">{sh.road || '—'}</td>
+                    <td className="py-2.5 px-3 text-slate-400">{sh.road ? formatAddress(sh.road) : '—'}</td>
 
                     {/* 19. Place (Village) */}
-                    <td className="py-2.5 px-3 font-bold text-emerald-300">{sh.place || sh.village_name}</td>
+                    <td className="py-2.5 px-3 font-bold text-emerald-300">{formatPlace(sh.place || sh.village_name)}</td>
 
                     {/* 20. Taluk */}
-                    <td className="py-2.5 px-3 font-semibold text-slate-200">{sh.taluk || 'ಇಂಡಿ'}</td>
+                    <td className="py-2.5 px-3 font-semibold text-slate-200">{formatTaluk(sh.taluk)}</td>
 
                     {/* 21. District */}
-                    <td className="py-2.5 px-3 text-slate-300">{sh.district || 'ವಿಜಯಪುರ'}</td>
+                    <td className="py-2.5 px-3 text-slate-300">{formatDistrict(sh.district)}</td>
 
                     {/* 22. Pin Code */}
                     <td className="py-2.5 px-3 font-mono text-slate-400">{sh.pin_code || '—'}</td>
 
                     {/* 23. Circle */}
-                    <td className="py-2.5 px-3 text-slate-300">{sh.circle || sh.circle_name}</td>
+                    <td className="py-2.5 px-3 text-slate-300">{formatCircle(sh.circle || sh.circle_name)}</td>
 
                     {/* 24. Member Type */}
-                    <td className="py-2.5 px-3 text-slate-300">{getMemberTypeByCategory(sh.schedule_cast, sh.member_type)}</td>
+                    <td className="py-2.5 px-3 text-slate-300">{formatMemberType(getMemberTypeByCategory(sh.schedule_cast, sh.member_type), sh.schedule_cast)}</td>
 
                     {/* 25. Ownership */}
-                    <td className="py-2.5 px-3 font-medium text-emerald-400">{getShareholderOwnership(sh)}</td>
+                    <td className="py-2.5 px-3 font-medium text-emerald-400">{formatOwnership(getShareholderOwnership(sh))}</td>
 
                     {/* 26. Tharava Date */}
                     <td className="py-2.5 px-3 text-slate-400">{sh.tharava_date || '—'}</td>
@@ -1340,7 +1352,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
                     </td>
 
                     {/* 35. Nominee Name */}
-                    <td className="py-2.5 px-4 font-medium text-slate-200">{sh.nominee_name || '—'}</td>
+                    <td className="py-2.5 px-4 font-medium text-slate-200">{formatName(sh.nominee_name)}</td>
 
                     {/* 36. Nominee Aadhaar */}
                     <td className="py-2.5 px-3 font-mono text-slate-400">{sh.nominee_aadhaar_no || '—'}</td>
@@ -1349,7 +1361,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
                     <td className="py-2.5 px-3 font-mono text-slate-400">{sh.nominee_mobile_no || '—'}</td>
 
                     {/* 38. Nominee Address */}
-                    <td className="py-2.5 px-4 text-slate-400 max-w-[200px] truncate" title={sh.nominee_address}>{sh.nominee_address || '—'}</td>
+                    <td className="py-2.5 px-4 text-slate-400 max-w-[200px] truncate" title={formatAddress(sh.nominee_address)}>{formatAddress(sh.nominee_address)}</td>
                   </tr>
                   );
                 })}
@@ -1361,44 +1373,45 @@ export default function ShareholderList({ initialShowMerge = false }) {
         {/* Server Side Pagination Bar */}
         <div className="p-4 bg-slate-900/80 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-slate-400 no-print">
           <div>
-            Showing <span className="font-semibold text-slate-200">{((pagination.page - 1) * pagination.limit) + 1}</span> to{' '}
-            <span className="font-semibold text-slate-200">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of{' '}
-            <span className="font-bold text-emerald-400">{pagination.total.toLocaleString()}</span> statutory cooperative shareholders
+            {isEnglish ? 'Showing ' : 'ದಾಖಲೆಗಳು: '}
+            <span className="font-semibold text-slate-200">{((pagination.page - 1) * pagination.limit) + 1}</span> {isEnglish ? 'to ' : 'ರಿಂದ '}
+            <span className="font-semibold text-slate-200">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> {isEnglish ? 'of ' : 'ವರೆಗೆ (ಒಟ್ಟು '}
+            <span className="font-bold text-emerald-400">{pagination.total.toLocaleString()}</span> {isEnglish ? 'statutory shareholders' : 'ಶಾಸನಬದ್ಧ ಸದಸ್ಯರು)'}
           </div>
 
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => handlePageChange(1)}
               disabled={pagination.page === 1}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors"
-              title="ಮೊದಲ ಪುಟ (First Page - Book 1, Sl No 1)"
+              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer"
+              title={isEnglish ? 'First Page' : 'ಮೊದಲ ಪುಟ'}
             >
               <ChevronsLeft className="w-4 h-4" />
             </button>
             <button
               onClick={() => handlePageChange(pagination.page - 1)}
               disabled={pagination.page === 1}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors"
-              title="ಹಿಂದಿನ ಪುಟ (Previous Page)"
+              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer"
+              title={isEnglish ? 'Previous Page' : 'ಹಿಂದಿನ ಪುಟ'}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 font-medium">
-              Page {pagination.page} of {pagination.totalPages}
+              {isEnglish ? `Page ${pagination.page} of ${pagination.totalPages}` : `ಪುಟ ${pagination.page} / ${pagination.totalPages}`}
             </span>
             <button
               onClick={() => handlePageChange(pagination.page + 1)}
               disabled={pagination.page === pagination.totalPages}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors"
-              title="ಮುಂದಿನ ಪುಟ (Next Page)"
+              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer"
+              title={isEnglish ? 'Next Page' : 'ಮುಂದಿನ ಪುಟ'}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => handlePageChange(pagination.totalPages)}
               disabled={pagination.page === pagination.totalPages}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors"
-              title="ಕೊನೆಯ ಪುಟ (Last Page - ಇತ್ತೀಚಿನ ಶೇರುಗಳು)"
+              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer"
+              title={isEnglish ? 'Last Page' : 'ಕೊನೆಯ ಪುಟ'}
             >
               <ChevronsRight className="w-4 h-4" />
             </button>

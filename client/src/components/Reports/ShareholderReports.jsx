@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { ApiService, getMemberTypeByCategory, getShareholderOwnership, getShareholderSharesCount } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   Users, BarChart3, Filter, Search, Printer, Download, FileSpreadsheet,
   Building2, MapPin, Layers, Coins, Calendar, FileText, CheckCircle2, CheckSquare, Square,
@@ -133,6 +134,20 @@ function formatReportDate(dateVal) {
 
 export default function ShareholderReports() {
   const { showToast } = useAuth();
+  const {
+    t,
+    isEnglish,
+    formatName,
+    formatPlace,
+    formatCircle,
+    formatAddress,
+    formatTaluk,
+    formatDistrict,
+    formatCategory,
+    formatOwnership,
+    formatMemberType,
+    formatStatus
+  } = useLanguage();
   const [allShareholders, setAllShareholders] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -541,31 +556,28 @@ export default function ShareholderReports() {
     switch (colId) {
       case 'sl_no': return rowIdx;
       case 'date': return formatReportDate(s.date || s.reg_date || s.registration_date || s.tharava_date);
-      case 'shareholder_name': return s.shareholder_name || s.name || s.full_name || '—';
-      case 'place': return s.place || s.village_name || '—';
-      case 'taluk': return s.taluk || (s.circle ? 'ಇಂಡಿ' : 'ಚಡಚಣ') || '—';
+      case 'shareholder_name': return formatName(s.shareholder_name || s.name || s.full_name);
+      case 'place': return formatPlace(s.place || s.village_name);
+      case 'taluk': return formatTaluk(s.taluk || (s.circle ? 'ಇಂಡಿ' : 'ಚಡಚಣ'));
       case 'share_amount': return sAmt.toLocaleString('en-IN');
       case 'admission_fee': return adm.toLocaleString('en-IN');
       case 'total_amount': return totAmt.toLocaleString('en-IN');
       case 'receipt_no': return s.receipt_no || s.reciept || '—';
       case 'number_of_shares': return shares;
-      case 'category': return s.schedule_cast || s.category || 'ಅ ವರ್ಗ';
+      case 'category': return formatCategory(s.schedule_cast || s.category);
       case 'tharava_date': return formatReportDate(s.tharava_date);
       case 'tharava_no': return s.tharava_no || '—';
       case 'share_no': return s.share_no || s.share_number || '—';
-      case 'status': {
-        const st = String(s.status || 'Active');
-        return st.toLowerCase() === 'active' || st === 'ಸಕ್ರಿಯ' ? 'ಸಕ್ರಿಯ' : 'ಅರ್ಜಿ';
-      }
-      case 'district': return s.district || 'ವಿಜಯಪುರ';
-      case 'circle': return s.circle || s.circle_name || '—';
+      case 'status': return formatStatus(s.status || 'Active');
+      case 'district': return formatDistrict(s.district || 'ವಿಜಯಪುರ');
+      case 'circle': return formatCircle(s.circle || s.circle_name);
       case 'book_no': return s.book_no || '—';
       case 'aadhaar_card_no': return s.aadhaar_card_no || s.aadhaar_ref || '—';
       case 'mobile_no': return s.mobile_no || s.mobile || '—';
-      case 'ownership': return s.ownership || s.relationship || 'ಸ್ವಂತ (Self)';
-      case 'member_type': return s.member_type || 'ವೈಯಕ್ತಿಕ (Individual)';
-      case 'nominee_name': return s.nominee_name || '—';
-      case 'address': return s.address || s.nagara || '—';
+      case 'ownership': return formatOwnership(s.ownership || s.relationship);
+      case 'member_type': return formatMemberType(s.member_type, s.schedule_cast || s.category);
+      case 'nominee_name': return formatName(s.nominee_name);
+      case 'address': return formatAddress(s.address || s.nagara);
       case 'pin_code': return s.pin_code || '—';
       default: return s[colId] || '—';
     }
@@ -1063,14 +1075,14 @@ export default function ShareholderReports() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-black text-slate-100 tracking-tight">
-                ಶೇರುದಾರರ ವಿವರ ವರದಿಗಳು (Shareholders Reports)
+                {t('rep_title')}
               </h1>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
-                ಅಧಿಕೃತ ಲೆಕ್ಕಪರಿಶೋಧನಾ ವರದಿ
+                {isEnglish ? 'Statutory Audit Report' : 'ಅಧಿಕೃತ ಲೆಕ್ಕಪರಿಶೋಧನಾ ವರದಿ'}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1 max-w-4xl">
-              ಗ್ರಾಮವಾರು, ವರ್ಗವಾರು, ವಲಯವಾರು, ಶೇರುವಾರು, ಮಾಲೀಕತ್ವವಾರು, ದಿನಾಂಕವಾರು ಹಾಗೂ ಠರಾವುವಾರು ವರದಿಗಳು
+              {t('rep_subtitle')}
             </p>
           </div>
         </div>
@@ -1087,7 +1099,7 @@ export default function ShareholderReports() {
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
-            <span>ಫಿಲ್ಟರ್‌ಗಳು (Filters)</span>
+            <span>{isEnglish ? 'Filters' : 'ಫಿಲ್ಟರ್‌ಗಳು (Filters)'}</span>
             {activeFiltersCount > 0 && (
               <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-600 text-white font-bold">
                 {activeFiltersCount}
@@ -1102,7 +1114,7 @@ export default function ShareholderReports() {
             title="Export full reports to Excel spreadsheet (.xlsx)"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span>ಎಕ್ಸೆಲ್ ರಫ್ತು (Excel Export)</span>
+            <span>{t('rep_export_excel')}</span>
           </button>
 
 
@@ -1113,7 +1125,7 @@ export default function ShareholderReports() {
             title="Print Official Cooperative Society Audit Report"
           >
             <Printer className="w-4 h-4 text-sky-400" />
-            <span>ವರದಿ ಮುದ್ರಿಸಿ (Print Report)</span>
+            <span>{t('rep_print_btn')}</span>
           </button>
 
           {/* Refresh Data */}
@@ -1132,37 +1144,37 @@ export default function ShareholderReports() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 no-print">
         <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 shadow-md">
           <div className="flex items-center justify-between text-slate-400 text-[11px]">
-            <span>ಸದಸ್ಯರ ಸಂಖ್ಯೆ (Members)</span>
+            <span>{isEnglish ? 'Members' : 'ಸದಸ್ಯರ ಸಂಖ್ಯೆ (Members)'}</span>
             <Users className="w-3.5 h-3.5 text-emerald-400" />
           </div>
           <div className="mt-1 text-lg font-black text-slate-100">
             {kpis.totalCount.toLocaleString('en-IN')}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            ಒಟ್ಟು {kpis.overallCount.toLocaleString('en-IN')} ಪೈಕಿ ({kpis.pctOfOverall}%)
+            {isEnglish ? `Total of ${kpis.overallCount.toLocaleString('en-IN')} (${kpis.pctOfOverall}%)` : `ಒಟ್ಟು ${kpis.overallCount.toLocaleString('en-IN')} ಪೈಕಿ (${kpis.pctOfOverall}%)`}
           </div>
         </div>
 
         <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 shadow-md">
           <div className="flex items-center justify-between text-slate-400 text-[11px]">
-            <span>ಒಟ್ಟು ಶೇರುಗಳು (Total Shares)</span>
+            <span>{isEnglish ? 'Total Shares' : 'ಒಟ್ಟು ಶೇರುಗಳು (Total Shares)'}</span>
             <Coins className="w-3.5 h-3.5 text-emerald-400" />
           </div>
           <div className="mt-1 text-lg font-black text-emerald-400">
             {kpis.totalShares.toLocaleString('en-IN')}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            ಸರಾಸರಿ: {(kpis.totalCount > 0 ? kpis.totalShares / kpis.totalCount : 0).toFixed(2)} / ಸದಸ್ಯ
+            {isEnglish ? `Avg: ${(kpis.totalCount > 0 ? kpis.totalShares / kpis.totalCount : 0).toFixed(2)} / member` : `ಸರಾಸರಿ: ${(kpis.totalCount > 0 ? kpis.totalShares / kpis.totalCount : 0).toFixed(2)} / ಸದಸ್ಯ`}
           </div>
         </div>
 
         <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 shadow-md">
           <div className="flex items-center justify-between text-slate-400 text-[11px]">
-            <span>ಶೇರು ಬಂಡವಾಳ (Capital Value)</span>
+            <span>{isEnglish ? 'Capital Value' : 'ಶೇರು ಬಂಡವಾಳ (Capital Value)'}</span>
             <Coins className="w-3.5 h-3.5 text-amber-400" />
           </div>
           <div className="mt-1 text-lg font-black text-amber-400">
-            ₹ {(kpis.totalAmount / 100000).toFixed(2)} ಲಕ್ಷ
+            ₹ {(kpis.totalAmount / 100000).toFixed(2)} {isEnglish ? 'Lakh' : 'ಲಕ್ಷ'}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
             ₹ {kpis.totalAmount.toLocaleString('en-IN')}
@@ -1171,40 +1183,40 @@ export default function ShareholderReports() {
 
         <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 shadow-md">
           <div className="flex items-center justify-between text-slate-400 text-[11px]">
-            <span>ಗ್ರಾಮಗಳು (Villages/Places)</span>
+            <span>{isEnglish ? 'Villages / Places' : 'ಗ್ರಾಮಗಳು (Villages/Places)'}</span>
             <Building2 className="w-3.5 h-3.5 text-sky-400" />
           </div>
           <div className="mt-1 text-lg font-black text-sky-300">
             {kpis.distinctPlaces}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            ಸ್ಥಳವಾರು ವ್ಯಾಪ್ತಿ
+            {isEnglish ? 'Place coverage' : 'ಸ್ಥಳವಾರು ವ್ಯಾಪ್ತಿ'}
           </div>
         </div>
 
         <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 shadow-md">
           <div className="flex items-center justify-between text-slate-400 text-[11px]">
-            <span>ವಲಯಗಳು (Circles)</span>
+            <span>{isEnglish ? 'Circles' : 'ವಲಯಗಳು (Circles)'}</span>
             <MapPin className="w-3.5 h-3.5 text-purple-400" />
           </div>
           <div className="mt-1 text-lg font-black text-purple-300">
             {kpis.distinctCircles}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            ಕಾರ್ಯವ್ಯಾಪ್ತಿ ವಲಯಗಳು
+            {isEnglish ? 'Operational zones' : 'ಕಾರ್ಯವ್ಯಾಪ್ತಿ ವಲಯಗಳು'}
           </div>
         </div>
 
         <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 shadow-md">
           <div className="flex items-center justify-between text-slate-400 text-[11px]">
-            <span>ವಾರಸುದಾರರು / ವರ್ಗಾವಣೆ</span>
+            <span>{isEnglish ? 'Varasa / Transfer' : 'ವಾರಸುದಾರರು / ವರ್ಗಾವಣೆ'}</span>
             <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
           </div>
           <div className="mt-1 text-lg font-black text-cyan-300">
             {kpis.varasaCount + kpis.vargavaneCount}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            ವಾರಸ: {kpis.varasaCount} | ವರ್ಗ: {kpis.vargavaneCount}
+            {isEnglish ? `Varasa: ${kpis.varasaCount} | Trans: ${kpis.vargavaneCount}` : `ವಾರಸ: ${kpis.varasaCount} | ವರ್ಗ: ${kpis.vargavaneCount}`}
           </div>
         </div>
       </div>
@@ -1255,7 +1267,7 @@ export default function ShareholderReports() {
             {/* 2. Placewise (ಗ್ರಾಮ / ಸ್ಥಳ) */}
             <div className="space-y-1">
               <label className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-                <span>ಸ್ಥಳ / ಗ್ರಾಮ (Place / Village):</span>
+                <span>{isEnglish ? 'Place / Village:' : 'ಸ್ಥಳ / ಗ್ರಾಮ (Place / Village):'}</span>
                 {filters.place && (
                   <button onClick={() => setFilters(prev => ({ ...prev, place: '' }))} className="text-slate-500 hover:text-slate-300 text-[10px]">Clear</button>
                 )}
@@ -1265,9 +1277,9 @@ export default function ShareholderReports() {
                 onChange={(e) => setFilters(prev => ({ ...prev, place: e.target.value }))}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500"
               >
-                <option value="">ಎಲ್ಲಾ ಸ್ಥಳಗಳು / ಗ್ರಾಮಗಳು (All Places)</option>
+                <option value="">{isEnglish ? 'All Places / Villages' : 'ಎಲ್ಲಾ ಸ್ಥಳಗಳು / ಗ್ರಾಮಗಳು (All Places)'}</option>
                 {masterOptions.places.map(p => (
-                  <option key={p} value={p}>{p}</option>
+                  <option key={p} value={p}>{formatPlace(p)}</option>
                 ))}
               </select>
             </div>
@@ -1275,7 +1287,7 @@ export default function ShareholderReports() {
             {/* 3. Circlewise (ವಲಯ) */}
             <div className="space-y-1">
               <label className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-                <span>ವಲಯ (Circle / Zone):</span>
+                <span>{isEnglish ? 'Circle / Zone:' : 'ವಲಯ (Circle / Zone):'}</span>
                 {filters.circle && (
                   <button onClick={() => setFilters(prev => ({ ...prev, circle: '' }))} className="text-slate-500 hover:text-slate-300 text-[10px]">Clear</button>
                 )}
@@ -1285,9 +1297,9 @@ export default function ShareholderReports() {
                 onChange={(e) => setFilters(prev => ({ ...prev, circle: e.target.value }))}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500"
               >
-                <option value="">ಎಲ್ಲಾ ವಲಯಗಳು (All Circles)</option>
+                <option value="">{isEnglish ? 'All Circles' : 'ಎಲ್ಲಾ ವಲಯಗಳು (All Circles)'}</option>
                 {masterOptions.circles.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>{formatCircle(c)}</option>
                 ))}
               </select>
             </div>
@@ -1295,7 +1307,7 @@ export default function ShareholderReports() {
             {/* 4. Categorywise (ವರ್ಗ / Class) */}
             <div className="space-y-1">
               <label className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-                <span>ವರ್ಗ / ವರ್ಗಾವಣೆ (Category / Class):</span>
+                <span>{isEnglish ? 'Category / Class:' : 'ವರ್ಗ / ವರ್ಗಾವಣೆ (Category / Class):'}</span>
                 {filters.category && (
                   <button onClick={() => setFilters(prev => ({ ...prev, category: '' }))} className="text-slate-500 hover:text-slate-300 text-[10px]">Clear</button>
                 )}
@@ -1305,9 +1317,9 @@ export default function ShareholderReports() {
                 onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500"
               >
-                <option value="">ಎಲ್ಲಾ ವರ್ಗಗಳು (All Categories)</option>
+                <option value="">{isEnglish ? 'All Categories' : 'ಎಲ್ಲಾ ವರ್ಗಗಳು (All Categories)'}</option>
                 {masterOptions.categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>{formatCategory(cat)}</option>
                 ))}
               </select>
             </div>
@@ -1452,7 +1464,7 @@ export default function ShareholderReports() {
           }`}
         >
           <Building2 className="w-4 h-4" />
-          <span>1. ಸ್ಥಳವಾರು ವರದಿ (Place-wise)</span>
+          <span>{t('rep_tab_placewise')}</span>
           <span className="px-1.5 py-0.2 rounded-md bg-black/30 text-[10px]">
             {placewiseData.length}
           </span>
@@ -1467,7 +1479,7 @@ export default function ShareholderReports() {
           }`}
         >
           <Layers className="w-4 h-4" />
-          <span>2. ವರ್ಗವಾರು ವರದಿ (Category-wise)</span>
+          <span>{t('rep_tab_categorywise')}</span>
           <span className="px-1.5 py-0.2 rounded-md bg-black/30 text-[10px]">
             {categorywiseData.length}
           </span>
@@ -1482,7 +1494,7 @@ export default function ShareholderReports() {
           }`}
         >
           <MapPin className="w-4 h-4" />
-          <span>3. ವಲಯವಾರು ವರದಿ (Circle-wise)</span>
+          <span>{t('rep_tab_circlewise')}</span>
           <span className="px-1.5 py-0.2 rounded-md bg-black/30 text-[10px]">
             {circlewiseData.length}
           </span>
@@ -1497,7 +1509,7 @@ export default function ShareholderReports() {
           }`}
         >
           <Coins className="w-4 h-4" />
-          <span>4. ಶೇರುವಾರು ವರದಿ (Shares-wise)</span>
+          <span>{t('rep_tab_shareswise')}</span>
           <span className="px-1.5 py-0.2 rounded-md bg-black/30 text-[10px]">
             {shareswiseData.length}
           </span>
@@ -1512,7 +1524,7 @@ export default function ShareholderReports() {
           }`}
         >
           <IndianRupee className="w-4 h-4" />
-          <span>5. ನಗದು ಮೊತ್ತವಾರು ವರದಿ (Cash Amount-wise)</span>
+          <span>{t('rep_tab_amountwise')}</span>
           <span className="px-1.5 py-0.2 rounded-md bg-black/30 text-[10px]">
             {amountwiseData.length}
           </span>
@@ -1527,7 +1539,7 @@ export default function ShareholderReports() {
           }`}
         >
           <FileText className="w-4 h-4" />
-          <span>6. ಶೇರುದಾರರ ನೋಂದಣಿ ವಹಿ (15 ಕಾಲಂ ರಿಜಿಸ್ಟರ್)</span>
+          <span>{t('rep_tab_register')}</span>
           <span className="px-1.5 py-0.2 rounded-md bg-black/30 text-[10px]">
             {kpis.totalCount}
           </span>
@@ -1658,9 +1670,9 @@ export default function ShareholderReports() {
                       {placewiseData.map((row, idx) => (
                         <tr key={row.place} className="hover:bg-slate-900/60 transition-colors">
                           <td className="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
-                          <td className="py-2.5 px-3 font-bold text-slate-100 print:text-black">{row.place}</td>
-                          <td className="py-2.5 px-3 text-slate-300 print:text-gray-800">{row.circle}</td>
-                          <td className="py-2.5 px-3 text-slate-400">{row.taluk}</td>
+                          <td className="py-2.5 px-3 font-bold text-slate-100 print:text-black">{formatPlace(row.place)}</td>
+                          <td className="py-2.5 px-3 text-slate-300 print:text-gray-800">{formatCircle(row.circle)}</td>
+                          <td className="py-2.5 px-3 text-slate-400">{formatTaluk(row.taluk)}</td>
                           <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400 print:text-black">
                             {row.count.toLocaleString('en-IN')}
                           </td>
@@ -1678,7 +1690,7 @@ export default function ShareholderReports() {
                               className="px-2.5 py-1 bg-slate-900 hover:bg-emerald-950 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-800 rounded-lg text-[10px] font-semibold transition-all cursor-pointer"
                               title="ಸದಸ್ಯರ ವಿವರ ಪಟ್ಟಿ ವೀಕ್ಷಿಸಿ"
                             >
-                              ಸದಸ್ಯರು ({row.count})
+                              {isEnglish ? `Members (${row.count})` : `ಸದಸ್ಯರು (${row.count})`}
                             </button>
                           </td>
                         </tr>
@@ -1729,11 +1741,11 @@ export default function ShareholderReports() {
                           <td className="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
                           <td className="py-2.5 px-3 font-bold text-slate-100 print:text-black text-sm">
                             <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-emerald-300 font-bold">
-                              {row.category}
+                              {formatCategory(row.category)}
                             </span>
                           </td>
                           <td className="py-2.5 px-3 font-semibold text-slate-300 print:text-gray-800">
-                            {row.memberType}
+                            {formatMemberType(row.memberType, row.category)}
                           </td>
                           <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400 print:text-black text-sm">
                             {row.count.toLocaleString('en-IN')}
@@ -1750,7 +1762,7 @@ export default function ShareholderReports() {
                               onClick={() => handleDrillDown('category', row.category)}
                               className="px-2.5 py-1 bg-slate-900 hover:bg-emerald-950 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-800 rounded-lg text-[10px] font-semibold transition-all cursor-pointer"
                             >
-                              ಸದಸ್ಯರು ({row.count})
+                              {isEnglish ? `Members (${row.count})` : `ಸದಸ್ಯರು (${row.count})`}
                             </button>
                           </td>
                         </tr>
@@ -1801,11 +1813,11 @@ export default function ShareholderReports() {
                           <td className="py-2.5 px-3 font-bold text-slate-100 print:text-black text-sm">
                             <span className="flex items-center gap-1.5 text-purple-300">
                               <MapPin className="w-3.5 h-3.5 text-purple-400" />
-                              {row.circle}
+                              {formatCircle(row.circle)}
                             </span>
                           </td>
                           <td className="py-2.5 px-3 text-center font-mono font-bold text-sky-400">
-                            {row.placesCount} ಗ್ರಾಮಗಳು
+                            {row.placesCount} {isEnglish ? 'Villages' : 'ಗ್ರಾಮಗಳು'}
                           </td>
                           <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400 print:text-black text-sm">
                             {row.count.toLocaleString('en-IN')}
@@ -1822,7 +1834,7 @@ export default function ShareholderReports() {
                               onClick={() => handleDrillDown('circle', row.circle)}
                               className="px-2.5 py-1 bg-slate-900 hover:bg-emerald-950 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-800 rounded-lg text-[10px] font-semibold transition-all cursor-pointer"
                             >
-                              ಸದಸ್ಯರು ({row.count})
+                              {isEnglish ? `Members (${row.count})` : `ಸದಸ್ಯರು (${row.count})`}
                             </button>
                           </td>
                         </tr>
@@ -2256,10 +2268,10 @@ export default function ShareholderReports() {
                                 col.align === 'left' ? 'text-left' : col.align === 'right' ? 'text-right' : 'text-center'
                               }`}
                             >
-                              {col.labelKn}
+                              {isEnglish ? (col.labelEn || col.labelKn) : col.labelKn}
                             </th>
                           ))}
-                          <th className="border border-black p-1.5 text-center w-12 no-print">ವಿವರ</th>
+                          <th className="border border-black p-1.5 text-center w-12 no-print">{isEnglish ? 'View' : 'ವಿವರ'}</th>
                         </tr>
                       </thead>
                       <tbody>

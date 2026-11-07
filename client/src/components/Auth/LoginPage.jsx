@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { usePwa } from '../../context/PwaContext';
+import { useLanguage } from '../../context/LanguageContext';
+import LanguageSwitchButton from '../Common/LanguageSwitchButton';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import {
   LogIn, Lock, User, Eye, EyeOff, ShieldCheck, AlertTriangle, Download
@@ -10,6 +12,7 @@ import {
 export default function LoginPage() {
   const { login } = useAuth();
   const { installApp, isInstalled } = usePwa();
+  const { t, isEnglish } = useLanguage();
   const companyLogo = useCompanyLogo();
 
   const [identifier, setIdentifier] = useState('');
@@ -53,6 +56,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Language Switch Button at Top Right */}
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSwitchButton />
+      </div>
+
       {/* Decorative background glow (hardware accelerated) */}
       <div className="absolute top-1/4 -left-32 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none transform-gpu will-change-transform" />
       <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-teal-600/10 rounded-full blur-3xl pointer-events-none transform-gpu will-change-transform" />
@@ -80,14 +88,14 @@ export default function LoginPage() {
           </div>
           <div>
             <h1 className="text-lg font-black text-slate-100 tracking-tight leading-snug">
-              ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.
+              {t('login_title')}
             </h1>
             <p className="text-xs text-emerald-400 font-semibold mt-0.5">
-              ಮರಗೂರ - 586204, ತಾ: ಇಂಡಿ/ಚಡಚಣ, ಜಿ: ವಿಜಯಪುರ
+              {t('login_subtitle')}
             </p>
             <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-slate-900/90 border border-emerald-500/30 rounded-full text-[11px] text-slate-300">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>ಅಧಿಕೃತ ಸಿಬ್ಬಂದಿ ಲಾಗಿನ್ ಪೋರ್ಟಲ್ • Staff ERP Login</span>
+              <span>{t('login_badge')}</span>
             </div>
           </div>
         </div>
@@ -105,8 +113,8 @@ export default function LoginPage() {
             {/* Staff ID / Mobile */}
             <div>
               <label className="block text-slate-300 mb-1.5 font-semibold flex items-center justify-between">
-                <span>ಸಿಬ್ಬಂದಿ ಐಡಿ / ಮೊಬೈಲ್ (Staff ID / Mobile) *</span>
-                <span className="text-[10px] text-slate-500 font-mono">ಉದಾ: EMP-001</span>
+                <span>{t('login_staff_id_label')}</span>
+                <span className="text-[10px] text-slate-500 font-mono">{isEnglish ? 'Ex: EMP-001' : 'ಉದಾ: EMP-001'}</span>
               </label>
               <div className="relative">
                 <input
@@ -121,7 +129,7 @@ export default function LoginPage() {
                   autoCorrect="off"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="ಸಿಬ್ಬಂದಿ ಐಡಿ (EMP-001) ಅಥವಾ ಷೇರುದಾರರ ಮೊಬೈಲ್ ನಂ..."
+                  placeholder={t('login_staff_id_placeholder')}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors pl-10"
                 />
                 <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -131,8 +139,8 @@ export default function LoginPage() {
             {/* Password */}
             <div>
               <label className="block text-slate-300 mb-1.5 font-semibold flex items-center justify-between">
-                <span>ಪಾಸ್‌ವರ್ಡ್ (Password) *</span>
-                <span className="text-[10px] text-amber-400 font-mono font-bold">ಡೀಫಾಲ್ಟ್: Shares123</span>
+                <span>{t('login_password_label')}</span>
+                <span className="text-[10px] text-amber-400 font-mono font-bold">{isEnglish ? 'Default: Shares123' : 'ಡೀಫಾಲ್ಟ್: Shares123'}</span>
               </label>
               <div className="relative">
                 <input
@@ -146,7 +154,7 @@ export default function LoginPage() {
                   autoCorrect="off"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="ನಿಮ್ಮ ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ"
+                  placeholder={t('login_password_placeholder')}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors pl-10 pr-10"
                 />
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -170,12 +178,12 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...</span>
+                    <span>{t('login_verifying')}</span>
                   </>
                 ) : (
                   <>
                     <LogIn className="w-4 h-4" />
-                    <span>ಲಾಗಿನ್ ಆಗಿ (Sign In to ERP)</span>
+                    <span>{t('login_btn')}</span>
                   </>
                 )}
               </button>
@@ -190,7 +198,7 @@ export default function LoginPage() {
                   className="w-full py-2.5 px-3 bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
                 >
                   <Download className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>ಡೆಸ್ಕ್‌ಟಾಪ್ ಕ್ರೋಮ್ ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ (Install App)</span>
+                  <span>{t('login_install_app')}</span>
                 </button>
               </div>
             )}

@@ -6,6 +6,7 @@ import { downloadEnrollmentDocx } from '../../services/enrollmentDocxService';
 import { downloadVarasaDocx } from '../../services/varasaDocxService';
 import { downloadVargavaneDocx } from '../../services/vargavaneDocxService';
 import { getShareholderSharesCount } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Classic Cooperative Handshake SVG Icon fallback
 function CooperativeHandshakeIcon({ className = "w-20 h-12" }) {
@@ -79,6 +80,15 @@ export default function RegisterListPrintModal({
   const [logoError, setLogoError] = useState(false);
   const companyLogo = useCompanyLogo();
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
+  const {
+    isEnglish,
+    formatName,
+    formatPlace,
+    formatCircle,
+    formatTaluk,
+    formatCategory,
+    formatOwnership
+  } = useLanguage();
 
   const handleDownloadDocx = async () => {
     try {
@@ -555,29 +565,29 @@ export default function RegisterListPrintModal({
     <table className="w-full border-collapse border border-black text-black text-[10.5px]">
       <thead>
         <tr className="bg-slate-200 border-b-2 border-black font-bold text-center">
-          <th className="border border-black p-1 w-8">ಕ್ರ.ಸಂ.</th>
-          <th className="border border-black p-1 w-14">ಪುಸ್ತಕ ನಂ.</th>
-          <th className="border border-black p-1 w-16">ಶೇರು ನಂ.</th>
-          <th className="border border-black p-1 text-left min-w-[130px]">ಶೇರುದಾರರ ಹೆಸರು (Shareholder Name)</th>
-          <th className="border border-black p-1">ಸ್ಥಳ (Place)</th>
-          <th className="border border-black p-1">ತಾಲೂಕು</th>
-          <th className="border border-black p-1">ವಲಯ</th>
-          <th className="border border-black p-1 w-12 text-center">ವರ್ಗ</th>
-          <th className="border border-black p-1 w-12 text-center">ಶೇರು</th>
-          <th className="border border-black p-1 w-16 text-right">ಶೇರು ಮೊತ್ತ</th>
-          <th className="border border-black p-1 w-14 text-right">ಶುಲ್ಕ</th>
-          <th className="border border-black p-1 w-16 text-right font-bold">ಒಟ್ಟು ಮೊತ್ತ</th>
-          <th className="border border-black p-1 w-14 text-center">ರಶೀದಿ ನಂ</th>
-          <th className="border border-black p-1 w-16 text-center">ನೋಂದಣಿ ದಿನಾಂಕ</th>
-          <th className="border border-black p-1 w-14 text-center">ಠರಾವು ನಂ</th>
-          <th className="border border-black p-1 w-16 text-center">ಮಾಲೀಕತ್ವ</th>
+          <th className="border border-black p-1 w-8">{isEnglish ? 'Sl No' : 'ಕ್ರ.ಸಂ.'}</th>
+          <th className="border border-black p-1 w-14">{isEnglish ? 'Book No' : 'ಪುಸ್ತಕ ನಂ.'}</th>
+          <th className="border border-black p-1 w-16">{isEnglish ? 'Share No' : 'ಶೇರು ನಂ.'}</th>
+          <th className="border border-black p-1 text-left min-w-[130px]">{isEnglish ? 'Shareholder Name' : 'ಶೇರುದಾರರ ಹೆಸರು (Shareholder Name)'}</th>
+          <th className="border border-black p-1">{isEnglish ? 'Place / Village' : 'ಸ್ಥಳ (Place)'}</th>
+          <th className="border border-black p-1">{isEnglish ? 'Taluk' : 'ತಾಲೂಕು'}</th>
+          <th className="border border-black p-1">{isEnglish ? 'Circle' : 'ವಲಯ'}</th>
+          <th className="border border-black p-1 w-12 text-center">{isEnglish ? 'Category' : 'ವರ್ಗ'}</th>
+          <th className="border border-black p-1 w-12 text-center">{isEnglish ? 'Shares' : 'ಶೇರು'}</th>
+          <th className="border border-black p-1 w-16 text-right">{isEnglish ? 'Share Amt' : 'ಶೇರು ಮೊತ್ತ'}</th>
+          <th className="border border-black p-1 w-14 text-right">{isEnglish ? 'Fee' : 'ಶುಲ್ಕ'}</th>
+          <th className="border border-black p-1 w-16 text-right font-bold">{isEnglish ? 'Total Amount' : 'ಒಟ್ಟು ಮೊತ್ತ'}</th>
+          <th className="border border-black p-1 w-14 text-center">{isEnglish ? 'Receipt No' : 'ರಶೀದಿ ನಂ'}</th>
+          <th className="border border-black p-1 w-16 text-center">{isEnglish ? 'Reg. Date' : 'ನೋಂದಣಿ ದಿನಾಂಕ'}</th>
+          <th className="border border-black p-1 w-14 text-center">{isEnglish ? 'Tharava No' : 'ಠರಾವು ನಂ'}</th>
+          <th className="border border-black p-1 w-16 text-center">{isEnglish ? 'Ownership' : 'ಮಾಲೀಕತ್ವ'}</th>
         </tr>
       </thead>
       <tbody>
         {recordsToPrint.length === 0 ? (
           <tr>
             <td colSpan="16" className="border border-black p-8 text-center text-slate-500 font-bold">
-              ಯಾವುದೇ ಶೇರುದಾರರ ದಾಖಲೆಗಳು ಲಭ್ಯವಿಲ್ಲ
+              {isEnglish ? 'No shareholder records found' : 'ಯಾವುದೇ ಶೇರುದಾರರ ದಾಖಲೆಗಳು ಲಭ್ಯವಿಲ್ಲ'}
             </td>
           </tr>
         ) : (
@@ -602,11 +612,11 @@ export default function RegisterListPrintModal({
                 <td className="border border-black p-1 text-center font-mono">{item.sl_no || (idx + 1)}</td>
                 <td className="border border-black p-1 text-center font-mono font-semibold">{item.book_no || '—'}</td>
                 <td className="border border-black p-1 text-center font-mono font-bold text-black">{item.share_no || item.share_number || '—'}</td>
-                <td className="border border-black p-1 px-1.5 font-bold text-left">{item.shareholder_name || item.name || '—'}</td>
-                <td className="border border-black p-1 text-center">{item.place || item.village_name || '—'}</td>
-                <td className="border border-black p-1 text-center">{item.taluk || '—'}</td>
-                <td className="border border-black p-1 text-center">{item.circle || item.circle_name || '—'}</td>
-                <td className="border border-black p-1 text-center font-semibold">{item.schedule_cast || item.category || 'ಅ - ವರ್ಗ'}</td>
+                <td className="border border-black p-1 px-1.5 font-bold text-left">{formatName(item.shareholder_name || item.name)}</td>
+                <td className="border border-black p-1 text-center">{formatPlace(item.place || item.village_name)}</td>
+                <td className="border border-black p-1 text-center">{formatTaluk(item.taluk)}</td>
+                <td className="border border-black p-1 text-center">{formatCircle(item.circle || item.circle_name)}</td>
+                <td className="border border-black p-1 text-center font-semibold">{formatCategory(item.schedule_cast || item.category)}</td>
                 <td className="border border-black p-1 text-center font-mono font-bold">{shares}</td>
                 <td className="border border-black p-1 text-right font-mono">{sAmt.toLocaleString()}</td>
                 <td className="border border-black p-1 text-right font-mono">{adm > 0 ? adm.toLocaleString() : '—'}</td>
@@ -614,7 +624,7 @@ export default function RegisterListPrintModal({
                 <td className="border border-black p-1 text-center font-mono">{item.receipt_no || '—'}</td>
                 <td className="border border-black p-1 text-center font-mono">{formatDocDate(item.date || item.reg_date || item.registration_date)}</td>
                 <td className="border border-black p-1 text-center font-mono">{item.tharava_no || '—'}</td>
-                <td className="border border-black p-1 text-center text-[9.5px] font-semibold">{own}</td>
+                <td className="border border-black p-1 text-center text-[9.5px] font-semibold">{formatOwnership(own)}</td>
               </tr>
             );
           })
