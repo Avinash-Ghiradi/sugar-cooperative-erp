@@ -225,7 +225,7 @@ export default function ShareholderPortal() {
                 </div>
 
                 {/* Full Name */}
-                <h2 className="text-base sm:text-2xl font-bold text-white tracking-tight truncate">
+                <h2 className="text-base sm:text-2xl font-bold text-slate-100 tracking-tight truncate">
                   {sh.shareholder_name || sh.name}
                 </h2>
 
@@ -462,7 +462,7 @@ export default function ShareholderPortal() {
                 <div className="space-y-1.5 text-xs divide-y divide-slate-800/50">
                   <div className="flex justify-between items-center py-1">
                     <span className="text-slate-400">ಆಧಾರ್ ಕಾರ್ಡ್ ನಂ:</span>
-                    <span className="text-white font-mono text-right">{sh.aadhaar_card_no || sh.aadhaar_no || '—'}</span>
+                    <span className="text-slate-100 font-mono text-right">{sh.aadhaar_card_no || sh.aadhaar_no || '—'}</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="text-slate-400">ಪಾನ್ ಕಾರ್ಡ್ ನಂ:</span>
@@ -655,7 +655,7 @@ export default function ShareholderPortal() {
 
             {/* Instructions Alert Card */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-xs space-y-2">
-              <div className="font-bold text-white flex items-center gap-2">
+              <div className="font-bold text-slate-100 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400" /> ಸಕ್ಕರೆ ಪಡೆಯಲು ಸೂಚನೆಗಳು (Collection Guidelines)
               </div>
               <ul className="space-y-1 text-slate-300 text-[11px] leading-relaxed">
@@ -739,7 +739,7 @@ export default function ShareholderPortal() {
                 <div className="font-mono text-sm font-bold text-emerald-400">
                   ||| ಷೇರು ನಂ: #{sh.share_no || sh.share_number} |||
                 </div>
-                <h4 className="text-base sm:text-lg font-bold text-white">{sh.shareholder_name || sh.name}</h4>
+                <h4 className="text-base sm:text-lg font-bold text-slate-100">{sh.shareholder_name || sh.name}</h4>
                 <p className="text-xs text-slate-400">{sh.place || sh.village || '—'}, {sh.circle || '—'}</p>
               </div>
 

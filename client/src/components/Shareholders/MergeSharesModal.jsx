@@ -1350,7 +1350,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                       </div>
                       <div>
                         <span className="text-[10px] text-slate-400 block">ಉಳಿಯುವ ಮುಖ್ಯ ಖಾತೆ</span>
-                        <span className="font-semibold text-white truncate block">{approvalModal.request.primary_record?.name || 'ಮುಖ್ಯ ಖಾತೆ'}</span>
+                        <span className="font-semibold text-slate-100 truncate block">{approvalModal.request.primary_record?.name || 'ಮುಖ್ಯ ಖಾತೆ'}</span>
                       </div>
                     </div>
                   </div>
@@ -1774,7 +1774,7 @@ export default function MergeSharesModal({ isOpen, onClose, onMergeSuccess, init
                   <XCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm">ವಿಲೀನ ವಿನಂತಿ ತಿರಸ್ಕಾರ (Reject Merge Request)</h3>
+                  <h3 className="font-bold text-slate-100 text-sm">ವಿಲೀನ ವಿನಂತಿ ತಿರಸ್ಕಾರ (Reject Merge Request)</h3>
                   <p className="text-xs text-slate-400">ವಿನಂತಿ #{rejectModal.request.request_id || rejectModal.request.id}</p>
                 </div>
               </div>

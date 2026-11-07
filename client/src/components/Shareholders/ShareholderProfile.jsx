@@ -174,7 +174,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
             </span>
           </div>
         )}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border-b border-slate-800 space-y-3">
+        <div className="p-4 sm:p-5 bg-slate-900 border-b border-slate-800 space-y-3">
           {/* Top Line: All Shareholder Information in ONE single line + Close (X) button */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-0.5">
@@ -361,13 +361,13 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
           {activeTab === 'ledger' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
               {/* Quick Official Record Print Bar */}
-              <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-700/60 p-3.5 rounded-2xl shadow-md">
+              <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 bg-emerald-950/40 border border-emerald-700/60 p-3.5 rounded-2xl shadow-md">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-emerald-900/80 border border-emerald-600/80 flex items-center justify-center text-emerald-400 shrink-0">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-emerald-200">
+                    <h4 className="text-xs font-bold text-emerald-300">
                       ಅಧಿಕೃತ ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿ ದಾಖಲೆ ಪತ್ರ (Official Statutory Record Slip)
                     </h4>
                     <p className="text-[11px] text-slate-400">
@@ -486,7 +486,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
 
               {/* Merged Share Certificates & Multiple Amounts Section */}
               {(sh.is_merged || (sh.merged_holdings && sh.merged_holdings.length > 0) || hasSecondInstallment(sh)) && (
-                <div className="md:col-span-2 bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-amber-950/20 border border-amber-500/30 rounded-2xl p-4 space-y-3">
+                <div className="md:col-span-2 bg-slate-900/60 border border-amber-500/30 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                     <h3 className="font-semibold text-slate-100 text-sm flex items-center gap-2">
                       <GitMerge className="w-4 h-4 text-amber-400" />
