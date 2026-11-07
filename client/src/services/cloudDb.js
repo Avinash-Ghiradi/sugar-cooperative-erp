@@ -180,30 +180,30 @@ export const CloudDbService = {
       // When searching a number on page 1 without explicit custom sorting:
       // Run parallel queries: exact & prefix share_no matches FIRST, then contained matches!
       if (cleanSearch && isNum && cleanSearch.length <= 6 && page === 1 && !sortBy) {
-        const prefixParams = [
-          `or=(share_no.eq.${q},share_no.ilike.${q}*)`,
-          ...filterParams,
-          `order=${orderCol}.${dir}`,
-          `limit=${limit}`
-        ];
-        const allParams = [
-          `or=(share_no.eq.${q},share_no.ilike.${q}*,share_no.ilike.*${q}*,receipt_no.eq.${q},shareholder_name.ilike.*${q}*)`,
-          ...filterParams,
-          `order=${orderCol}.${dir}`,
-          `limit=${limit}`
-        ];
+        const filterStr = filterParams.length > 0 ? `&${filterParams.join('&')}` : '';
 
-        const [prefixRes, allRes] = await Promise.all([
-          fetch(`${cleanUrl}/rest/v1/shareholders?${prefixParams.join('&')}`, { headers: authHeaders }),
-          fetch(`${cleanUrl}/rest/v1/shareholders?${allParams.join('&')}`, {
+        // 1. Exact matches on share_no, sl_no, or receipt_no (Guarantees exact match is retrieved!)
+        const exactUrl = `${cleanUrl}/rest/v1/shareholders?or=(share_no.eq.${q},sl_no.eq.${q},receipt_no.eq.${q})${filterStr}&order=id.asc&limit=15`;
+        // 2. Prefix matches on share_no or receipt_no (in ascending numerical order)
+        const prefixUrl = `${cleanUrl}/rest/v1/shareholders?or=(share_no.ilike.${q}*,receipt_no.ilike.${q}*)${filterStr}&order=id.asc&limit=60`;
+        // 3. All matching records for total count and contains fallback
+        const allUrl = `${cleanUrl}/rest/v1/shareholders?or=(share_no.eq.${q},share_no.ilike.${q}*,share_no.ilike.*${q}*,receipt_no.eq.${q},receipt_no.ilike.*${q}*,shareholder_name.ilike.*${q}*,mobile_no.ilike.*${q}*)${filterStr}&order=id.asc&limit=${limit}`;
+
+        const [exactRes, prefixRes, allRes] = await Promise.all([
+          fetch(exactUrl, { headers: authHeaders }),
+          fetch(prefixUrl, { headers: authHeaders }),
+          fetch(allUrl, {
             headers: { ...authHeaders, 'Range': `0-${limit - 1}`, 'Prefer': 'count=exact' }
           })
         ]);
 
+        const rawExact = exactRes.ok ? await exactRes.json() : [];
         const rawPrefix = prefixRes.ok ? await prefixRes.json() : [];
         const rawAll = allRes.ok ? await allRes.json() : [];
-        const prefixData = rawPrefix.map(r => this.fixShiftedShareholder(r));
-        const allData = rawAll.map(r => this.fixShiftedShareholder(r));
+
+        const exactData = (rawExact || []).map(r => this.fixShiftedShareholder(r));
+        const prefixData = (rawPrefix || []).map(r => this.fixShiftedShareholder(r));
+        const allData = (rawAll || []).map(r => this.fixShiftedShareholder(r));
 
         const contentRange = allRes.headers.get('content-range');
         total = allData.length;
@@ -211,15 +211,28 @@ export const CloudDbService = {
           total = parseInt(contentRange.split('/')[1], 10) || total;
         }
 
-        const prefixIds = new Set(prefixData.map(r => r.id));
-        const remaining = allData.filter(r => !prefixIds.has(r.id));
-        data = [...prefixData, ...remaining].slice(0, limit);
+        const seen = new Set();
+        const merged = [];
+        for (const item of [...exactData, ...prefixData, ...allData]) {
+          if (item && item.id && !seen.has(item.id)) {
+            seen.add(item.id);
+            merged.push(item);
+          }
+        }
+        data = merged;
       } else {
         // Standard single query (for page > 1, text search, or custom sort)
-        let queryParams = [`order=${orderCol}.${dir}`];
+        let queryOrderCol = orderCol;
+        let queryDir = dir;
+        if (!sortBy && cleanSearch && isNum) {
+          queryOrderCol = 'id';
+          queryDir = 'asc';
+        }
+
+        let queryParams = [`order=${queryOrderCol}.${queryDir}`];
         if (cleanSearch) {
           if (isNum && cleanSearch.length <= 6) {
-            queryParams.push(`or=(share_no.eq.${q},share_no.ilike.${q}*,share_no.ilike.*${q}*,receipt_no.eq.${q},shareholder_name.ilike.*${q}*)`);
+            queryParams.push(`or=(share_no.eq.${q},share_no.ilike.${q}*,share_no.ilike.*${q}*,receipt_no.eq.${q},receipt_no.ilike.*${q}*,shareholder_name.ilike.*${q}*,mobile_no.ilike.*${q}*)`);
           } else {
             queryParams.push(`or=(shareholder_name.ilike.*${q}*,share_no.ilike.*${q}*,mobile_no.ilike.*${q}*,place.ilike.*${q}*,aadhaar_card_no.ilike.*${q}*)`);
           }
@@ -247,63 +260,59 @@ export const CloudDbService = {
       }
 
       // Relevance Ranking (when default sort and search query provided)
+      // User requirement: "prefer the entered number first, after shows which contains that number"
       if (cleanSearch && Array.isArray(data) && !sortBy) {
         const qLower = cleanSearch.toLowerCase();
-        data.sort((a, b) => {
-          const aSh = String(a.share_no || '').trim().toLowerCase();
-          const bSh = String(b.share_no || '').trim().toLowerCase();
+        const getRank = (item) => {
+          const sh = String(item.share_no || '').trim().toLowerCase();
+          const sl = String(item.sl_no || '').trim().toLowerCase();
+          const rec = String(item.receipt_no || '').trim().toLowerCase();
 
           if (isNum) {
-            // 1. Exact share_no match FIRST
-            const aExact = aSh === qLower;
-            const bExact = bSh === qLower;
-            if (aExact && !bExact) return -1;
-            if (!aExact && bExact) return 1;
-
-            // 2. Starts with share_no (prefix match)
-            const aStarts = aSh.startsWith(qLower);
-            const bStarts = bSh.startsWith(qLower);
-            if (aStarts && !bStarts) return -1;
-            if (!aStarts && bStarts) return 1;
-            if (aStarts && bStarts) {
-              return (parseInt(aSh, 10) || 0) - (parseInt(bSh, 10) || 0);
-            }
-
-            // 3. Contains share_no
-            const aContains = aSh.includes(qLower);
-            const bContains = bSh.includes(qLower);
-            if (aContains && !bContains) return -1;
-            if (!aContains && bContains) return 1;
-
-            // 4. Exact receipt_no match
-            const aRec = String(a.receipt_no || '').trim().toLowerCase();
-            const bRec = String(b.receipt_no || '').trim().toLowerCase();
-            const aRecExact = aRec === qLower;
-            const bRecExact = bRec === qLower;
-            if (aRecExact && !bRecExact) return -1;
-            if (!aRecExact && bRecExact) return 1;
-
-            // 5. Contains receipt_no
-            const aRecContains = aRec.includes(qLower);
-            const bRecContains = bRec.includes(qLower);
-            if (aRecContains && !bRecContains) return -1;
-            if (!aRecContains && bRecContains) return 1;
+            // Rank 1: Exact Share Number match FIRST
+            if (sh === qLower) return 1;
+            // Rank 2: Exact Serial Number match SECOND
+            if (sl === qLower) return 2;
+            // Rank 3: Exact Receipt Number match THIRD
+            if (rec === qLower) return 3;
+            // Rank 4: Share Number starts with query (Prefix match e.g. 1180, 1181)
+            if (sh.startsWith(qLower)) return 4;
+            // Rank 5: Receipt Number starts with query
+            if (rec.startsWith(qLower)) return 5;
+            // Rank 6: Share Number contains query (e.g. 2118, 5118)
+            if (sh.includes(qLower)) return 6;
+            // Rank 7: Receipt Number contains query
+            if (rec.includes(qLower)) return 7;
+            // Rank 8: Shareholder name starts with query
+            const nm = String(item.shareholder_name || '').toLowerCase();
+            if (nm.startsWith(qLower)) return 8;
+            return 9;
           } else {
-            // Text ranking (name exact -> startsWith -> contains)
-            const aName = String(a.shareholder_name || '').toLowerCase();
-            const bName = String(b.shareholder_name || '').toLowerCase();
-            const aExact = aName === qLower;
-            const bExact = bName === qLower;
-            if (aExact && !bExact) return -1;
-            if (!aExact && bExact) return 1;
-
-            const aStarts = aName.startsWith(qLower);
-            const bStarts = bName.startsWith(qLower);
-            if (aStarts && !bStarts) return -1;
-            if (!aStarts && bStarts) return 1;
+            const nm = String(item.shareholder_name || '').toLowerCase();
+            if (nm === qLower) return 1;
+            if (nm.startsWith(qLower)) return 2;
+            if (nm.includes(qLower)) return 3;
+            return 4;
           }
-          return 0;
+        };
+
+        data.sort((a, b) => {
+          const rankA = getRank(a);
+          const rankB = getRank(b);
+          if (rankA !== rankB) return rankA - rankB;
+
+          if (isNum) {
+            if (rankA === 1) return (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0);
+            if (rankA === 4 || rankA === 6) {
+              const numA = parseInt(a.share_no, 10) || 0;
+              const numB = parseInt(b.share_no, 10) || 0;
+              if (numA !== numB) return numA - numB;
+            }
+          }
+          return (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0);
         });
+
+        data = data.slice(0, limit);
       }
 
       return {

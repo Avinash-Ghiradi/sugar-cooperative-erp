@@ -455,6 +455,53 @@ export default function ShareholderReports() {
       }
     }
 
+    // Relevance Ranking if search filter is applied
+    // User requirement: "prefer the entered number first, after shows which contains that number"
+    if (filters.search) {
+      const qLower = filters.search.trim().toLowerCase();
+      const isNum = /^\d+$/.test(qLower);
+      const getRank = (item) => {
+        const sh = String(item.share_no || item.share_number || '').trim().toLowerCase();
+        const sl = String(item.sl_no || item.id || '').trim().toLowerCase();
+        const rec = String(item.receipt_no || '').trim().toLowerCase();
+
+        if (isNum) {
+          if (sh === qLower) return 1; // Exact Share No
+          if (sl === qLower) return 2; // Exact Sl No
+          if (rec === qLower) return 3; // Exact Receipt No
+          if (sh.startsWith(qLower)) return 4; // Starts with
+          if (rec.startsWith(qLower)) return 5;
+          if (sh.includes(qLower)) return 6; // Contains
+          if (rec.includes(qLower)) return 7;
+          const nm = String(item.shareholder_name || item.name || '').toLowerCase();
+          if (nm.startsWith(qLower)) return 8;
+          return 9;
+        } else {
+          const nm = String(item.shareholder_name || item.name || '').toLowerCase();
+          if (nm === qLower) return 1;
+          if (nm.startsWith(qLower)) return 2;
+          if (nm.includes(qLower)) return 3;
+          return 4;
+        }
+      };
+
+      list = [...list].sort((a, b) => {
+        const rankA = getRank(a);
+        const rankB = getRank(b);
+        if (rankA !== rankB) return rankA - rankB;
+
+        if (isNum) {
+          if (rankA === 1) return (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0);
+          if (rankA === 4 || rankA === 6) {
+            const numA = parseInt(a.share_no || a.share_number, 10) || 0;
+            const numB = parseInt(b.share_no || b.share_number, 10) || 0;
+            if (numA !== numB) return numA - numB;
+          }
+        }
+        return (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0);
+      });
+    }
+
     return list;
   }, [allShareholders, filters]);
 
