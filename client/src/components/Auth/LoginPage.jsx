@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePwa } from '../../context/PwaContext';
 import { useLanguage } from '../../context/LanguageContext';
 import LanguageSwitchButton from '../Common/LanguageSwitchButton';
+import ThemeToggle from '../Common/ThemeToggle';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import {
   LogIn, Lock, User, Eye, EyeOff, ShieldCheck, AlertTriangle, Download

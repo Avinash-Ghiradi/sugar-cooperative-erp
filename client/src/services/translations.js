@@ -14,6 +14,9 @@ export const translations = {
     change_password: 'ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾಯಿಸಿ',
     logout: 'ಲಾಗ್ ಔಟ್',
     switch_language: 'ಭಾಷೆ ಬದಲಾಯಿಸಿ',
+    theme_light: 'ಬೆಳಕು (Light Mode)',
+    theme_dark: 'ಕತ್ತಲು (Dark Mode)',
+    theme_toggle: 'ಥೀಮ್ ಬದಲಾಯಿಸಿ',
 
     // Sidebar Menu
     menu_dashboard: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
@@ -172,6 +175,9 @@ export const translations = {
     change_password: 'Change Password',
     logout: 'Sign Out',
     switch_language: 'Switch Language',
+    theme_light: 'Light Mode',
+    theme_dark: 'Dark Mode',
+    theme_toggle: 'Toggle Theme',
 
     // Sidebar Menu
     menu_dashboard: 'Dashboard',

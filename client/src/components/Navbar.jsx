@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { usePwa } from '../context/PwaContext';
 import { useLanguage } from '../context/LanguageContext';
 import LanguageSwitchButton from './Common/LanguageSwitchButton';
+import ThemeToggle from './Common/ThemeToggle';
 import ChangePasswordModal from './Auth/ChangePasswordModal';
 import {
   Menu, Search, Bell, ShieldCheck, User, LogOut, KeyRound,
@@ -63,6 +64,8 @@ export default function Navbar({ onMenuToggle }) {
         <div className="flex items-center gap-2.5 sm:gap-3">
           {/* Global Kannada / English Language Switcher */}
           <LanguageSwitchButton />
+          {/* Light / Dark Mode Theme Switcher */}
+          <ThemeToggle />
 
           {/* Chrome App Install Button */}
           {!isInstalled && (
