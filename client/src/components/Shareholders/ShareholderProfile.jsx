@@ -157,8 +157,8 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-center justify-center p-4 sm:p-6 overflow-y-auto no-print">
-      <div className="bg-slate-950 border border-slate-800 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+      <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur flex items-center justify-center p-2 sm:p-6 overflow-y-auto no-print">
+      <div className="bg-slate-950 border border-slate-800 w-full max-w-4xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[92vh]">
         
         {/* Profile Header */}
         {isShareholderInactive(sh) && (
@@ -174,10 +174,10 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
             </span>
           </div>
         )}
-        <div className="p-4 sm:p-5 bg-slate-900 border-b border-slate-800 space-y-3">
-          {/* Top Line: All Shareholder Information in ONE single line + Close (X) button */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-0.5">
+        <div className="p-3 sm:p-5 bg-slate-900 border-b border-slate-800 space-y-2.5 sm:space-y-3">
+          {/* Top Line: Responsive Shareholder Information + Close (X) button */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2 py-0.5">
               {/* Avatar Photo / Initial */}
               <div className="w-10 h-10 rounded-xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-extrabold text-lg shadow-md overflow-hidden shrink-0">
                 {sh.photo_url ? (
@@ -334,7 +334,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex overflow-x-auto border-b border-slate-800 bg-slate-900/50 px-4">
+        <div className="flex overflow-x-auto border-b border-slate-800 bg-slate-900/50 px-2 sm:px-4 no-scrollbar touch-pan-x">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -356,7 +356,7 @@ export default function ShareholderProfile({ shareholderId, onClose, initialTab 
         </div>
 
         {/* Tab Content Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+        <div className="p-3 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-6">
           {/* Tab 1: Statutory Ledger */}
           {activeTab === 'ledger' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">

@@ -8,7 +8,7 @@ import {
   KeyRound,
   LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
   Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert,
-  Settings, LogOut, Upload, ArrowRightLeft, UserPlus, ChevronDown, ChevronRight, GitMerge
+  Settings, LogOut, Upload, ArrowRightLeft, UserPlus, ChevronDown, ChevronRight, GitMerge, X
 } from 'lucide-react';
 
 const MENU_ITEMS = [
@@ -95,9 +95,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   };
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-950 border-r border-slate-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col no-print`}>
-      {/* Header / Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-slate-800 bg-slate-900/50">
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-30 lg:hidden no-print"
+          aria-hidden="true"
+        />
+      )}
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-950 border-r border-slate-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col no-print`}>
+        {/* Header / Logo */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 bg-slate-900/50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 flex items-center justify-center text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 overflow-hidden shrink-0">
             <img
@@ -126,6 +135,14 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             </p>
           </div>
         </div>
+        {/* Mobile Close Button */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="lg:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+          title={isEnglish ? 'Close menu' : 'ಮೆನು ಮುಚ್ಚಿ'}
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Role Pill */}
@@ -334,5 +351,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </div>
       </div>
     </aside>
+    </>
   );
 }

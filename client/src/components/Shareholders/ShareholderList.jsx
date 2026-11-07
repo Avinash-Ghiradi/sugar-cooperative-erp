@@ -9,7 +9,7 @@ import {
   Users, Search, Filter, Plus, FileSpreadsheet, Printer, ChevronLeft, ChevronRight,
   Eye, Edit, Contact, CheckCircle2, XCircle, RefreshCw, BookOpen, Layers, Check, Download, Upload, Trash2, AlertTriangle,
   History, GitMerge, ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Sparkles,
-  Lock, ShieldCheck, EyeOff, KeyRound, ChevronsLeft, ChevronsRight, X
+  Lock, ShieldCheck, EyeOff, KeyRound, ChevronsLeft, ChevronsRight, X, Smartphone, Table as TableIcon, SlidersHorizontal, RotateCcw
 } from 'lucide-react';
 import ShareholderProfile from './ShareholderProfile';
 import ShareholderForm from './ShareholderForm';
@@ -17,6 +17,8 @@ import ErrorBoundary from '../Common/ErrorBoundary';
 import ResetConfirmModal from '../Common/ResetConfirmModal';
 import MergeSharesModal from './MergeSharesModal';
 import RegisterListPrintModal from '../Common/RegisterListPrintModal';
+import MobileShareholderCard from './MobileShareholderCard';
+import MobileFilterDrawer from './MobileFilterDrawer';
 
 export default function ShareholderList({ initialShowMerge = false }) {
   const { showToast, setActiveModule, user } = useAuth();
@@ -60,6 +62,41 @@ export default function ShareholderList({ initialShowMerge = false }) {
   const [sortBy, setSortBy] = useState(''); // 'place', 'circle', 'address', 'name', 'share_no'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
   const [viewMode, setViewMode] = useState('ledger'); // 'ledger' (38 columns) or 'summary'
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  const [viewType, setViewType] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 768) ? 'cards' : 'table');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const activeFiltersCount = [
+    selectedBook,
+    selectedCast,
+    selectedVillage,
+    selectedCircle,
+    selectedAmount,
+    selectedStatus,
+    sortBy
+  ].filter(Boolean).length;
+
+  const handleResetFilters = () => {
+    setSearchInput('');
+    setSearch('');
+    setSelectedBook('');
+    setSelectedCast('');
+    setSelectedVillage('');
+    setSelectedCircle('');
+    setSelectedAmount('');
+    setSelectedStatus('');
+    setSortBy('');
+    setSortOrder('asc');
+  };
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [allPrintRecords, setAllPrintRecords] = useState([]);
   const [loadingAllPrint, setLoadingAllPrint] = useState(false);
@@ -709,8 +746,34 @@ export default function ShareholderList({ initialShowMerge = false }) {
 
         {/* Action Buttons below header in a single row */}
         <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-800/80">
-          {/* View Mode Toggle */}
+          {/* View Type Switcher (Cards vs Table) */}
           <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+            <button
+              type="button"
+              onClick={() => setViewType('cards')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                viewType === 'cards' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+              title={isEnglish ? "Mobile Cards View" : "ಮೊಬೈಲ್ ಕಾರ್ಡ್ ನೋಟ"}
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>{isEnglish ? 'Cards' : 'ಕಾರ್ಡ್ ನೋಟ'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewType('table')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                viewType === 'table' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+              title={isEnglish ? "Statutory Table View" : "ಶಾಸನಬದ್ಧ ಕೋಷ್ಟಕ ನೋಟ"}
+            >
+              <TableIcon className="w-3.5 h-3.5" />
+              <span>{isEnglish ? 'Table' : 'ಕೋಷ್ಟಕ'}</span>
+            </button>
+          </div>
+
+          {/* View Mode Toggle (Ledger vs Summary) */}
+          <div className="hidden sm:flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
             <button
               onClick={() => setViewMode('ledger')}
               className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
@@ -776,8 +839,124 @@ export default function ShareholderList({ initialShowMerge = false }) {
         </div>
       </div>
 
-      {/* Multi-Field Search, Statutory Filter & Alphabetical Sort Bar - Single Row */}
-      <div className="flex flex-nowrap items-center gap-2 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 overflow-x-auto shadow-sm no-print">
+      {/* Mobile-Optimized Search, Filter Trigger & Active Chips (Visible on Mobile) */}
+      <div className="flex md:hidden flex-col gap-2 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 shadow-sm no-print">
+        <div className="flex items-center gap-2">
+          {/* Mobile Search */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder={t('sh_search_placeholder')}
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-200 outline-none transition-all placeholder:text-slate-500"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                  setSearchInput('');
+                  setSearch('');
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-0.5 rounded-full"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Mobile Filter Button */}
+          <button
+            type="button"
+            onClick={() => setMobileFiltersOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 ${
+              activeFiltersCount > 0
+                ? 'bg-emerald-950 text-emerald-300 border-emerald-600 shadow-sm'
+                : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
+            }`}
+            title="Open Statutory Filters Drawer"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{isEnglish ? 'Filters' : 'ಫಿಲ್ಟರ್'}</span>
+            {activeFiltersCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-emerald-500 text-slate-950 font-black text-[10px] flex items-center justify-center">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+
+          {/* Quick Cards / Table toggle on mobile */}
+          <button
+            type="button"
+            onClick={() => setViewType(prev => prev === 'cards' ? 'table' : 'cards')}
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 hover:text-white shrink-0 cursor-pointer"
+            title={viewType === 'cards' ? "Switch to Table View" : "Switch to Cards View"}
+          >
+            {viewType === 'cards' ? <TableIcon className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {/* Active Filter Chips Ribbon on Mobile */}
+        {activeFiltersCount > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs">
+            {selectedVillage && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-[11px] shrink-0">
+                📍 {formatPlace(selectedVillage)}
+                <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => setSelectedVillage('')} />
+              </span>
+            )}
+            {selectedCast && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-[11px] shrink-0">
+                👥 {formatCategory(selectedCast)}
+                <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => setSelectedCast('')} />
+              </span>
+            )}
+            {selectedBook && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-950/80 text-sky-300 border border-sky-800 text-[11px] shrink-0">
+                📖 {selectedBook}
+                <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => setSelectedBook('')} />
+              </span>
+            )}
+            {selectedCircle && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800 text-[11px] shrink-0">
+                🏛️ {formatCircle(selectedCircle)}
+                <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => setSelectedCircle('')} />
+              </span>
+            )}
+            {selectedAmount && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800 text-[11px] shrink-0">
+                💰 ₹{selectedAmount}
+                <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => setSelectedAmount('')} />
+              </span>
+            )}
+            {selectedStatus && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-200 border border-slate-700 text-[11px] shrink-0">
+                🟢 {selectedStatus}
+                <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => setSelectedStatus('')} />
+              </span>
+            )}
+            {sortBy && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-emerald-300 border border-slate-700 text-[11px] shrink-0">
+                ↕️ {sortBy}
+                <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => setSortBy('')} />
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="text-rose-400 hover:text-rose-300 text-[11px] font-semibold underline shrink-0 px-1"
+            >
+              {isEnglish ? 'Clear All' : 'ಎಲ್ಲ ತೆರವು'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Multi-Field Search, Statutory Filter & Alphabetical Sort Bar - Single Row */}
+      <div className="hidden md:flex flex-nowrap items-center gap-2 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 overflow-x-auto shadow-sm no-print">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -972,14 +1151,47 @@ export default function ShareholderList({ initialShowMerge = false }) {
               </button>
             </div>
           </div>
+        ) : viewType === 'cards' ? (
+          <div className="p-3 sm:p-4 space-y-3">
+            {shareholders.map((sh, idx) => (
+              <MobileShareholderCard
+                key={sh.id || idx}
+                sh={sh}
+                idx={idx}
+                isInactive={isShareholderInactive(sh)}
+                formatCategory={formatCategory}
+                formatPlace={formatPlace}
+                formatCircle={formatCircle}
+                formatAddress={formatAddress}
+                formatTaluk={formatTaluk}
+                formatDistrict={formatDistrict}
+                getShareholderSharesCount={getShareholderSharesCount}
+                onViewProfile={(member) => {
+                  setActiveProfileId(member.shareholder_id || member.id);
+                  setActiveProfileTab('ledger');
+                }}
+                onViewHistory={(member) => {
+                  setActiveProfileId(member.shareholder_id || member.id);
+                  setActiveProfileTab('history');
+                }}
+                onInitiateEdit={handleInitiateEdit}
+                onViewIdCard={(member) => {
+                  setActiveProfileId(member.shareholder_id || member.id);
+                  setActiveProfileTab('id_card');
+                }}
+                isEnglish={isEnglish}
+                t={t}
+              />
+            ))}
+          </div>
         ) : (
           <TableScrollerContainer label="38 ಕಾಲಂಗಳ ಷೇರು ನಮೂನೆ ವಹಿ (Scroll Ledger):" maxHeight="max-h-[72vh]">
             <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
               <thead className="bg-emerald-800 border-b-2 border-emerald-400 text-white font-bold text-[11.5px] sticky top-0 z-20 shadow-lg select-none">
                 <tr className="border-b border-emerald-700/80">
-                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-0 z-30 shadow-r border-r border-emerald-700/60 w-[130px] min-w-[130px] no-print">{t('col_actions')}</th>
-                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-[130px] z-30 border-r-2 border-emerald-400/80 shadow-r w-[95px] min-w-[95px]">{t('col_book_no')}</th>
-                  <th className="py-3.5 px-3 text-center border-r border-emerald-700/40">{t('col_sl_no')}</th>
+                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold sticky left-0 z-30 shadow-r border-r border-emerald-700/60 w-[110px] min-w-[110px] md:w-[130px] md:min-w-[130px] no-print">{t('col_actions')}</th>
+                  <th className="py-3.5 px-3 bg-emerald-800 text-emerald-100 font-bold md:sticky md:left-[130px] z-20 md:z-30 border-r-2 border-emerald-400/80 shadow-r w-[95px] min-w-[95px]">{t('col_book_no')}</th>
+                  <th className="py-3.5 px-2 text-center border-r border-emerald-700/40 min-w-[60px]">{t('col_sl_no')}</th>
                   <th
                     className="py-3.5 px-3 font-mono text-amber-300 cursor-pointer select-none hover:text-white transition-colors border-r border-emerald-700/40"
                     onClick={() => handleSort('share_no')}
@@ -1088,7 +1300,7 @@ export default function ShareholderList({ initialShowMerge = false }) {
                   return (
                   <tr key={sh.id || idx} className={`hover:bg-slate-900/80 transition-colors group ${isInactive ? 'bg-rose-950/10 text-slate-400 opacity-75' : ''}`}>
                     {/* Fixed Action Buttons Column */}
-                    <td className="py-2.5 px-3 bg-slate-950 group-hover:bg-slate-900 sticky left-0 z-10 shadow-r border-r border-slate-800 w-[130px] min-w-[130px] no-print">
+                    <td className="py-2.5 px-3 bg-slate-950 group-hover:bg-slate-900 sticky left-0 z-10 shadow-r border-r border-slate-800 w-[110px] min-w-[110px] md:w-[130px] md:min-w-[130px] no-print">
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => {
@@ -1151,12 +1363,12 @@ export default function ShareholderList({ initialShowMerge = false }) {
                     </td>
 
                     {/* 1. Book. No (Sticky) */}
-                    <td className="py-2.5 px-3 bg-slate-950 group-hover:bg-slate-900 sticky left-[130px] z-10 font-bold text-sky-400 border-r border-slate-800 w-[95px] min-w-[95px]">
+                    <td className="py-2.5 px-3 bg-slate-950 group-hover:bg-slate-900 md:sticky md:left-[130px] z-10 font-bold text-sky-400 border-r border-slate-800 w-[95px] min-w-[95px]">
                       {sh.book_no || 'B.No: 1'}
                     </td>
 
                     {/* 2. Sl. No */}
-                    <td className="py-2.5 px-3 text-center text-slate-400 font-mono">{sh.sl_no || idx + 1}</td>
+                    <td className="py-2.5 px-2 text-center text-slate-400 font-mono min-w-[60px]">{sh.sl_no || idx + 1}</td>
 
                     {/* 3. Share No */}
                     <td className="py-2.5 px-3 font-mono font-bold text-emerald-400">
@@ -1371,19 +1583,19 @@ export default function ShareholderList({ initialShowMerge = false }) {
         )}
 
         {/* Server Side Pagination Bar */}
-        <div className="p-4 bg-slate-900/80 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-slate-400 no-print">
-          <div>
+        <div className="p-3 sm:p-4 bg-slate-900/80 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400 no-print">
+          <div className="text-center sm:text-left">
             {isEnglish ? 'Showing ' : 'ದಾಖಲೆಗಳು: '}
             <span className="font-semibold text-slate-200">{((pagination.page - 1) * pagination.limit) + 1}</span> {isEnglish ? 'to ' : 'ರಿಂದ '}
             <span className="font-semibold text-slate-200">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> {isEnglish ? 'of ' : 'ವರೆಗೆ (ಒಟ್ಟು '}
-            <span className="font-bold text-emerald-400">{pagination.total.toLocaleString()}</span> {isEnglish ? 'statutory shareholders' : 'ಶಾಸನಬದ್ಧ ಸದಸ್ಯರು)'}
+            <span className="font-bold text-emerald-400">{pagination.total.toLocaleString()}</span> {isEnglish ? 'statutory shareholders)' : 'ಶಾಸನಬದ್ಧ ಸದಸ್ಯರು)'}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
             <button
               onClick={() => handlePageChange(1)}
               disabled={pagination.page === 1}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-2 sm:p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer"
               title={isEnglish ? 'First Page' : 'ಮೊದಲ ಪುಟ'}
             >
               <ChevronsLeft className="w-4 h-4" />
@@ -1391,26 +1603,28 @@ export default function ShareholderList({ initialShowMerge = false }) {
             <button
               onClick={() => handlePageChange(pagination.page - 1)}
               disabled={pagination.page === 1}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer"
+              className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
               title={isEnglish ? 'Previous Page' : 'ಹಿಂದಿನ ಪುಟ'}
             >
               <ChevronLeft className="w-4 h-4" />
+              <span className="hidden xs:inline">{isEnglish ? 'Prev' : 'ಹಿಂದಿನ'}</span>
             </button>
-            <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 font-medium">
-              {isEnglish ? `Page ${pagination.page} of ${pagination.totalPages}` : `ಪುಟ ${pagination.page} / ${pagination.totalPages}`}
+            <span className="px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 font-semibold text-center min-w-[90px]">
+              {isEnglish ? `Page ${pagination.page} / ${pagination.totalPages}` : `ಪುಟ ${pagination.page} / ${pagination.totalPages}`}
             </span>
             <button
               onClick={() => handlePageChange(pagination.page + 1)}
               disabled={pagination.page === pagination.totalPages}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer"
+              className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
               title={isEnglish ? 'Next Page' : 'ಮುಂದಿನ ಪುಟ'}
             >
+              <span className="hidden xs:inline">{isEnglish ? 'Next' : 'ಮುಂದಿನ'}</span>
               <ChevronRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => handlePageChange(pagination.totalPages)}
               disabled={pagination.page === pagination.totalPages}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-2 sm:p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors cursor-pointer"
               title={isEnglish ? 'Last Page' : 'ಕೊನೆಯ ಪುಟ'}
             >
               <ChevronsRight className="w-4 h-4" />
@@ -1453,6 +1667,39 @@ export default function ShareholderList({ initialShowMerge = false }) {
           }}
         />
       )}
+
+      {/* Mobile Filter Bottom Drawer / Sheet */}
+      <MobileFilterDrawer
+        isOpen={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        selectedBook={selectedBook}
+        setSelectedBook={setSelectedBook}
+        bookList={bookList}
+        selectedCast={selectedCast}
+        setSelectedCast={setSelectedCast}
+        castList={castList}
+        selectedVillage={selectedVillage}
+        setSelectedVillage={setSelectedVillage}
+        villages={villages}
+        selectedCircle={selectedCircle}
+        setSelectedCircle={setSelectedCircle}
+        circles={circles}
+        selectedAmount={selectedAmount}
+        setSelectedAmount={setSelectedAmount}
+        amountList={amountList}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        onResetFilters={handleResetFilters}
+        formatCategory={formatCategory}
+        formatPlace={formatPlace}
+        formatCircle={formatCircle}
+        isEnglish={isEnglish}
+        t={t}
+      />
 
       {/* Security PIN Modal before opening Edit Statutory Record */}
       {pinModalOpen && targetEditShareholder && (

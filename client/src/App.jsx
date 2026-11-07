@@ -160,7 +160,7 @@ function AppContent() {
       {/* Main Layout Area */}
       <div className="flex-1 flex flex-col lg:pl-64 min-w-0 print:pl-0 print:p-0 print:m-0 print:bg-white">
         <Navbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6 print:p-0 print:m-0 print:max-w-none print:w-full print:bg-white">
+        <main className="flex-1 p-2 sm:p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-4 sm:space-y-6 print:p-0 print:m-0 print:max-w-none print:w-full print:bg-white">
           <ErrorBoundary>{renderActiveModule()}</ErrorBoundary>
         </main>
       </div>
