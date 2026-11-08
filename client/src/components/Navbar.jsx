@@ -9,7 +9,7 @@ import GlobalSearchModal from './Common/GlobalSearchModal';
 import ShareholderProfile from './Shareholders/ShareholderProfile';
 import {
   Menu, Search, Bell, ShieldCheck, User, LogOut, KeyRound,
-  ChevronDown, Briefcase, Building2, CheckCircle2, Download, Printer
+  ChevronDown, Briefcase, Building2, CheckCircle2, Download, Printer, Megaphone
 } from 'lucide-react';
 
 export default function Navbar({ onMenuToggle }) {
@@ -85,6 +85,19 @@ export default function Navbar({ onMenuToggle }) {
           {/* Light / Dark Mode Theme Switcher */}
           <ThemeToggle />
 
+          
+          {/* Quick Notice Board / Announcement Button */}
+          {user?.role !== 'Shareholder' && (
+            <button
+              onClick={() => setActiveModule('notices')}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 to-emerald-500/15 hover:from-amber-500/25 hover:to-emerald-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all shadow-sm cursor-pointer"
+              title={isEnglish ? "Notice Board & Greetings" : "ಸೂಚನಾ ಫಲಕ & ಶುಭಾಶಯಗಳು"}
+            >
+              <Megaphone className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">{isEnglish ? "Notices" : "ಸೂಚನೆಗಳು"}</span>
+            </button>
+          )}
+  
           {/* 5:20 PM Daily Work Summary Quick Print Button */}
           {user?.role !== 'Shareholder' && (
             <button

@@ -5,9 +5,10 @@ import { usePwa } from '../../context/PwaContext';
 import { useLanguage } from '../../context/LanguageContext';
 import LanguageSwitchButton from '../Common/LanguageSwitchButton';
 import ThemeToggle from '../Common/ThemeToggle';
+import PreLoginNoticeModal from './PreLoginNoticeModal';
 import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import {
-  LogIn, Lock, User, Eye, EyeOff, ShieldCheck, AlertTriangle, Download
+  LogIn, Lock, User, Eye, EyeOff, ShieldCheck, AlertTriangle, Download, Megaphone, Sparkles
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -21,6 +22,17 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Pre-login Notice / Announcement / Greeting Modal state (auto-opens unless dismissed today)
+  const [showNoticeModal, setShowNoticeModal] = useState(() => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const dismissed = localStorage.getItem(`sugar_erp_notice_dismissed_${today}`);
+      return dismissed !== 'true';
+    } catch (e) {
+      return true;
+    }
+  });
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -54,11 +66,10 @@ export default function LoginPage() {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Language Switch Button at Top Right */}
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
         <LanguageSwitchButton />
       </div>
 
@@ -67,6 +78,19 @@ export default function LoginPage() {
       <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-teal-600/10 rounded-full blur-3xl pointer-events-none transform-gpu will-change-transform" />
 
       <div className="w-full max-w-md space-y-6 relative z-10 animate-fadeIn">
+        {/* Notice & Festival Wishes Re-open Pill */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowNoticeModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-teal-500/20 hover:from-amber-500/30 hover:to-teal-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all shadow-lg shadow-emerald-950/40 cursor-pointer group animate-pulse"
+            title="ಇಂದಿನ ಸೂಚನೆಗಳು, ಪ್ರಕಟಣೆಗಳು ಹಾಗೂ ಹಬ್ಬದ ಶುಭಾಶಯಗಳನ್ನು ವೀಕ್ಷಿಸಿ"
+          >
+            <Megaphone className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform shrink-0" />
+            <span>📢 {isEnglish ? 'View Notices & Greetings' : 'ಇಂದಿನ ಸೂಚನೆಗಳು & ಶುಭಾಶಯಗಳು'}</span>
+          </button>
+        </div>
+
         {/* Factory Header */}
         <div className="text-center space-y-3">
           <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 mx-auto p-1.5 flex items-center justify-center text-slate-950 font-black text-sm shadow-2xl shadow-emerald-500/20 overflow-hidden">
@@ -212,6 +236,12 @@ export default function LoginPage() {
           <div className="text-[10px]">Cloud Multi-Device ERP • Superfast Statutory Ledger</div>
         </div>
       </div>
+
+      {/* Pre-login Notice / Announcement / Greeting Modal */}
+      <PreLoginNoticeModal
+        isOpen={showNoticeModal}
+        onClose={() => setShowNoticeModal(false)}
+      />
     </div>
   );
 }

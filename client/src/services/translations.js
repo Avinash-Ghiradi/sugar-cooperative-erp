@@ -38,6 +38,7 @@ export const translations = {
     menu_audit_logs: 'ಆಡಿಟ್ ಲಾಗ್‌ಗಳು',
     menu_import_export: 'ಡೇಟಾ ಆಮದು/ರಫ್ತು',
     menu_backup: 'ಕ್ಲೌಡ್ ಬ್ಯಾಕಪ್',
+    menu_notices: 'ಸೂಚನಾ ಫಲಕ & ಪ್ರಕಟಣೆಗಳು',
     menu_settings: 'ಕಾರ್ಖಾನೆ ಸೆಟ್ಟಿಂಗ್ಸ್',
 
     // Shareholders Page
@@ -199,6 +200,7 @@ export const translations = {
     menu_audit_logs: 'Audit Logs',
     menu_import_export: 'Import & Export',
     menu_backup: 'Cloud Backup',
+    menu_notices: 'Notice Board & Wishes',
     menu_settings: 'Cooperative Settings',
 
     // Shareholders Page

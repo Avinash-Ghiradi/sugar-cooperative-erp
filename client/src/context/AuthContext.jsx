@@ -7,7 +7,7 @@ export const ROLE_PERMISSIONS = {
     'dashboard', 'shareholders', 'enrollment', 'transactions', 'attendance',
     'sugar_allotment', 'varasa', 'vargavane', 'merge_shares', 'villages',
     'circles', 'reports', 'id_cards', 'employees', 'users', 'password_manager', 'audit_logs',
-    'settings', 'import_export', 'backup'
+    'notices', 'settings', 'import_export', 'backup'
   ],
   Cashier: [
     'dashboard', 'shareholders', 'enrollment', 'transactions', 'reports', 'merge_shares'
@@ -15,7 +15,7 @@ export const ROLE_PERMISSIONS = {
   'Computer Operator': [
     'dashboard', 'shareholders', 'enrollment', 'attendance', 'sugar_allotment',
     'varasa', 'vargavane', 'merge_shares', 'reports', 'id_cards', 'villages',
-    'circles', 'import_export'
+    'circles', 'notices', 'import_export'
   ],
   'Attendance Operator': [
     'dashboard', 'attendance', 'reports'

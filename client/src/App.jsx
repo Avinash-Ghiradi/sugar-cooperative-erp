@@ -22,6 +22,7 @@ import EmployeeManagement from './components/Employees/EmployeeManagement';
 import UserManagement from './components/Admin/UserManagement';
 import PasswordManager from './components/Admin/PasswordManager';
 import AuditLogs from './components/Admin/AuditLogs';
+import NoticeManager from './components/Admin/NoticeManager';
 import DailyWorkSummaryModal from './components/Admin/DailyWorkSummaryModal';
 import DataImportExport from './components/Admin/DataImportExport';
 import BackupManager from './components/Admin/BackupManager';
@@ -176,6 +177,7 @@ function AppContent() {
       case 'audit_logs': return <AuditLogs />;
       case 'import_export': return <SettingsModule initialTab="upload" />;
       case 'backup': return <BackupManager />;
+      case 'notices': return <NoticeManager />;
       case 'settings': return <SettingsModule />;
       default: return <Dashboard />;
     }

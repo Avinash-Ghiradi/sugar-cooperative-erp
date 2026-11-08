@@ -7,7 +7,7 @@ import {
   Download,
   KeyRound,
   LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
-  Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert,
+  Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert, Megaphone,
   Settings, LogOut, Upload, ArrowRightLeft, UserPlus, ChevronDown, ChevronRight, GitMerge, X
 } from 'lucide-react';
 
@@ -25,6 +25,7 @@ const MENU_ITEMS = [
   { id: 'users', label: 'Users & RBAC', icon: UserCog },
   { id: 'password_manager', label: 'Password Manager', icon: KeyRound },
   { id: 'audit_logs', label: 'Audit Logs', icon: History },
+  { id: 'notices', label: 'Notice Board', icon: Megaphone },
   { id: 'settings', label: 'Cooperative Settings', icon: Settings },
 ];
 
@@ -68,6 +69,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       case 'users': return isEnglish ? 'Users & RBAC' : 'ಬಳಕೆದಾರರು & ಪಾತ್ರಗಳು';
       case 'password_manager': return isEnglish ? 'Password Manager' : 'ಪಾಸ್‌ವರ್ಡ್ ನಿರ್ವಹಣೆ';
       case 'audit_logs': return isEnglish ? 'Audit Logs' : 'ಆಡಿಟ್ ಲಾಗ್‌ಗಳು';
+      case 'notices': return isEnglish ? 'Notice Board & Wishes' : 'ಸೂಚನಾ ಫಲಕ & ಪ್ರಕಟಣೆಗಳು';
       case 'settings': return isEnglish ? 'Cooperative Settings' : 'ಕಾರ್ಖಾನೆ ಸೆಟ್ಟಿಂಗ್ಸ್';
       default: return id;
     }
