@@ -70,8 +70,8 @@ export default function AttendanceModule() {
   const [secretCodeError, setSecretCodeError] = useState('');
   const [showSecretCodeChars, setShowSecretCodeChars] = useState(false);
 
-  // Minimum required AGMs to be election eligible (Default: 3 of 5 AGMs as per Section 20(2) KCS Act)
-  const [minAgmsRequired, setMinAgmsRequired] = useState(3);
+  // Minimum required AGMs to be election eligible (Default: 2 of 5 AGMs as per Section 20(2) KCS Act)
+  const [minAgmsRequired, setMinAgmsRequired] = useState(2);
   const [electionFilterStatus, setElectionFilterStatus] = useState('All'); // 'All', 'Eligible', 'Ineligible'
 
   // Current AGM Date
@@ -867,7 +867,7 @@ export default function AttendanceModule() {
       const rows = [
         ['ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204'],
         ['ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 1 ರಿಂದ 5) ಆಧಾರಿತ ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ಪಟ್ಟಿ (Election Voter Eligibility Register)'],
-        [`ಅರ್ಹತಾ ನಿಯಮ: ಕನಿಷ್ಠ ${minAgmsRequired} ಮಹಾಸಭೆಗಳಿಗೆ ಹಾಜರಾತಿ | ಒಟ್ಟು ಸದಸ್ಯರು: ${totalCoopMembers.toLocaleString()} | ಚುನಾವಣೆಗೆ ಅರ್ಹರು: ${eligibleVotersCount.toLocaleString()} | ಅರ್ಹತಾ ಪ್ರಮಾಣ: ${voterEligibilityRate}%`],
+        [`ಅರ್ಹತಾ ನಿಯಮ: ಕಲಂ 20(2) ನಿಯಮಾನುಸಾರ ಕಳೆದ 5 ರಲ್ಲಿ ಕನಿಷ್ಠ ${minAgmsRequired} ಮಹಾಸಭೆಗಳಿಗೆ ಹಾಜರಾತಿ | ಒಟ್ಟು ಸದಸ್ಯರು: ${totalCoopMembers.toLocaleString()} | ಚುನಾವಣೆಗೆ ಅರ್ಹರು: ${eligibleVotersCount.toLocaleString()} | ಅರ್ಹತಾ ಪ್ರಮಾಣ: ${voterEligibilityRate}%`],
         [],
         [
           'ಕ್ರಮ ಸಂಖ್ಯೆ',
@@ -1022,7 +1022,7 @@ export default function AttendanceModule() {
     <div>ಒಟ್ಟು ಸದಸ್ಯರು: <strong>${totalCoopMembers.toLocaleString()}</strong></div>
     <div>ಚುನಾವಣೆಗೆ ಅರ್ಹರು: <strong style="color: #047857;">${eligibleVotersCount.toLocaleString()}</strong></div>
     <div>ಅನರ್ಹರು: <strong style="color: #dc2626;">${ineligibleVotersCount.toLocaleString()}</strong></div>
-    <div>ಅರ್ಹತಾ ನಿಯಮ: <strong>ಕನಿಷ್ಠ ${minAgmsRequired} AGMs</strong></div>
+    <div>ಅರ್ಹತಾ ನಿಯಮ: <strong>ಕಲಂ 20(2) ಪ್ರಕಾರ ಕನಿಷ್ಠ ${minAgmsRequired} AGMs</strong></div>
   </div>
   <table>
     <thead>
@@ -1641,7 +1641,7 @@ export default function AttendanceModule() {
                     </span>
                   </h3>
                   <p className="text-xs text-slate-300 mt-0.5">
-                    ಕಳೆದ 5 ವರ್ಷಗಳ ವಾರ್ಷಿಕ ಮಹಾಸಭೆಗಳ (AGM 1 ರಿಂದ 5) ಹಾಜರಾತಿಯ ಆಧಾರದ ಮೇಲೆ ಸಿದ್ಧಪಡಿಸಲಾದ ಅಧಿಕೃತ ಚುನಾವಣಾ ಅರ್ಹತಾ ಪಟ್ಟಿ
+                    ಕರ್ನಾಟಕ ಸಹಕಾರ ಸಂಘಗಳ ಕಾಯ್ದೆ ಕಲಂ 20(2) ನಿಯಮಾನುಸಾರ, ಕಳೆದ 5 ಮಹಾಸಭೆಗಳಲ್ಲಿ ಕನಿಷ್ಠ {minAgmsRequired} ಸಭೆಗಳಿಗೆ ಹಾಜರಾದ ಶೇರುದಾರರಿಗೆ ಮತದಾನದ ಅರ್ಹತೆ
                   </p>
                 </div>
               </div>
@@ -1655,8 +1655,8 @@ export default function AttendanceModule() {
                   className="bg-transparent text-amber-300 font-bold outline-none cursor-pointer"
                 >
                   <option value={1} className="bg-slate-900 text-slate-100">ಕನಿಷ್ಠ 1 ಮಹಾಸಭೆ (1 of 5 AGMs)</option>
-                  <option value={2} className="bg-slate-900 text-slate-100">ಕನಿಷ್ಠ 2 ಮಹಾಸಭೆಗಳು (2 of 5 AGMs)</option>
-                  <option value={3} className="bg-slate-900 text-slate-100">ಕನಿಷ್ಠ 3 ಮಹಾಸಭೆಗಳು (3 of 5 AGMs - Statutory)</option>
+                  <option value={2} className="bg-slate-900 text-slate-100">ಕನಿಷ್ಠ 2 ಮಹಾಸಭೆಗಳು (2 of 5 AGMs - ಕಲಂ 20(2) ನಿಯಮ)</option>
+                  <option value={3} className="bg-slate-900 text-slate-100">ಕನಿಷ್ಠ 3 ಮಹಾಸಭೆಗಳು (3 of 5 AGMs)</option>
                   <option value={4} className="bg-slate-900 text-slate-100">ಕನಿಷ್ಠ 4 ಮಹಾಸಭೆಗಳು (4 of 5 AGMs)</option>
                   <option value={5} className="bg-slate-900 text-slate-100">ಎಲ್ಲಾ 5 ಮಹಾಸಭೆಗಳು (All 5 AGMs)</option>
                 </select>
