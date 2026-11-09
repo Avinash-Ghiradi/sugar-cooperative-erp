@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: add factory name, sub-details, full address support, and refined sticker design"');
+    run('git commit -m "feat: auto-save AGM attendance to cloud DB, role-based staff tracking, and multi-device real-time sync"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -46,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: factory name, full address & refined book sticker design (${Date.now()})`;
+  const commitMsg = `Deploy: auto-save AGM attendance to cloud DB & multi-device sync (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);
