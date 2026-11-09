@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: add pre-login notice & greeting panel with dynamic time wish, and notice/announcement/image manager in admin panel"');
+    run('git commit -m "feat: add book stickers printing feature (2x5 A4 sheet) by selecting filters in Sugar Allotment"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -29,7 +29,6 @@ try {
   }
 
   console.log(`=== Step 3: Create git worktree for gh-pages at ${wtPath} ===`);
-  // Prune any dangling worktrees first
   try {
     run('git worktree prune');
   } catch (e) {}
@@ -37,7 +36,6 @@ try {
   run(`git worktree add "${wtPath}" gh-pages`);
 
   console.log('=== Step 4: Copy dist files to gh-pages worktree ===');
-  // Copy dist contents into worktree
   fs.cpSync(distDir, wtPath, { recursive: true });
 
   // Ensure .nojekyll
@@ -48,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: pre-login notice & greeting panel, admin notice manager (${Date.now()})`;
+  const commitMsg = `Deploy: book stickers printing in Sugar Allotment (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);

@@ -6,9 +6,10 @@ import { getCompanyLogo, getHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_
 import { useAuth } from '../../context/AuthContext';
 import officialCircleData from '../../services/officialCircleData.json';
 import ShareholderForm from '../Shareholders/ShareholderForm';
+import BookStickerModal from './BookStickerModal';
 import ErrorBoundary from '../Common/ErrorBoundary';
 import {
-  PackageCheck, Search, Printer, X, Save, Settings, ChevronDown, ChevronUp,
+  PackageCheck, Search, Printer, Tag, X, Save, Settings, ChevronDown, ChevronUp,
   MapPin, Sparkles, Filter, Check, ShieldCheck, History, Edit, FileText,
   CheckCircle2, AlertTriangle, Eye, RotateCcw, XCircle, RefreshCw
 } from 'lucide-react';
@@ -143,7 +144,8 @@ export default function SugarAllotmentModule() {
   // Modals
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [activeReceiptModal, setActiveReceiptModal] = useState(null); // single shareholder
-  const [showBatchReceiptModal, setShowBatchReceiptModal] = useState(false); // all shareholders
+  const [showBatchReceiptModal, setShowBatchReceiptModal] = useState(false);
+  const [showBookStickerModal, setShowBookStickerModal] = useState(false); // all shareholders
   const [editShareholderModal, setEditShareholderModal] = useState(null); // click on share no
   const [pinInput, setPinInput] = useState('');
   const [pinVerified, setPinVerified] = useState(false);
