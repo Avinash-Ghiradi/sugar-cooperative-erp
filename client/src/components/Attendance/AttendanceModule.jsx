@@ -118,11 +118,10 @@ export default function AttendanceModule() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetScopeChoice, setResetScopeChoice] = useState('all'); // 'all', 'filtered', 'selected'
   const [showBulkPresentModal, setShowBulkPresentModal] = useState(false);
-  const [bulkPresentScope, setBulkPresentScope] = useState('filtered'); // 'filtered', 'range', 'village', 'category', 'all'
-  const [bulkRangeFrom, setBulkRangeFrom] = useState(1);
-  const [bulkRangeTo, setBulkRangeTo] = useState(100);
-  const [bulkSelectedVillage, setBulkSelectedVillage] = useState('');
-  const [bulkSelectedCategory, setBulkSelectedCategory] = useState('ಅ - ವರ್ಗ');
+  const [bulkTargetStatus, setBulkTargetStatus] = useState('Present'); // 'Present' or 'Absent'
+  const [bulkShareNumbersInput, setBulkShareNumbersInput] = useState('');
+  const [bulkSelectedIds, setBulkSelectedIds] = useState(new Set());
+  const [bulkSearchText, setBulkSearchText] = useState('');
 
   // Live Camera Scanner States
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -784,15 +783,86 @@ export default function AttendanceModule() {
     showToast(`ಷೇರು #${entityId} ಸ್ಥಿತಿ '${nextStatus}' ಎಂದು ಬದಲಾಯಿಸಲಾಗಿದೆ`, 'info');
   };
 
-  // Unique Villages for Bulk Selection
-  const uniqueVillages = useMemo(() => {
-    const set = new Set();
-    masterShareholders.forEach(s => {
-      const v = String(s.department || s.village_name || '').trim();
-      if (v) set.add(v);
+  // Parse multiple share numbers from raw text (supports commas, spaces, newlines, and ranges like 1-50)
+  const parseShareNumbers = useCallback((text) => {
+    if (!text) return [];
+    const parts = String(text).split(/[\s,;\n\t]+/);
+    const resultSet = new Set();
+    parts.forEach(part => {
+      part = part.trim();
+      if (!part) return;
+      if (part.includes('-')) {
+        const sub = part.split('-');
+        if (sub.length === 2) {
+          const start = parseInt(sub[0], 10);
+          const end = parseInt(sub[1], 10);
+          if (!isNaN(start) && !isNaN(end) && start <= end && end - start <= 2000) {
+            for (let i = start; i <= end; i++) {
+              resultSet.add(String(i));
+            }
+            return;
+          }
+        }
+      }
+      const num = parseInt(part, 10);
+      if (!isNaN(num)) {
+        resultSet.add(String(num));
+      } else {
+        resultSet.add(part);
+      }
     });
-    return Array.from(set).sort();
-  }, [masterShareholders]);
+    return Array.from(resultSet);
+  }, []);
+
+  const parsedBulkIds = useMemo(() => {
+    return parseShareNumbers(bulkShareNumbersInput);
+  }, [bulkShareNumbersInput, parseShareNumbers]);
+
+  const matchedShareholders = useMemo(() => {
+    if (parsedBulkIds.length === 0 && bulkSelectedIds.size === 0) return [];
+    const idSet = new Set([...parsedBulkIds, ...Array.from(bulkSelectedIds)].map(String));
+    return attendanceList.filter(item => idSet.has(String(item.entity_id).trim()));
+  }, [parsedBulkIds, bulkSelectedIds, attendanceList]);
+
+  const bulkSearchResults = useMemo(() => {
+    const q = bulkSearchText.trim().toLowerCase();
+    if (!q) return [];
+    return attendanceList
+      .filter(item => {
+        const idStr = String(item.entity_id || '').toLowerCase();
+        const nameStr = String(item.name || '').toLowerCase();
+        const villageStr = String(item.department || '').toLowerCase();
+        return idStr.includes(q) || nameStr.includes(q) || villageStr.includes(q);
+      })
+      .slice(0, 8);
+  }, [bulkSearchText, attendanceList]);
+
+  const handleAddBulkShareholder = (shareNo) => {
+    const sId = String(shareNo).trim();
+    if (!sId) return;
+    setBulkSelectedIds(prev => new Set([...prev, sId]));
+    setBulkSearchText('');
+  };
+
+  const handleRemoveBulkShareholder = (shareNo) => {
+    const sId = String(shareNo).trim();
+    setBulkSelectedIds(prev => {
+      const next = new Set(prev);
+      next.delete(sId);
+      return next;
+    });
+    if (bulkShareNumbersInput) {
+      const tokens = bulkShareNumbersInput.split(/([\s,;\n\t]+)/);
+      const filtered = tokens.filter(t => t.trim() !== sId).join('');
+      setBulkShareNumbersInput(filtered.replace(/,\s*,/g, ', ').replace(/^\s*,\s*|\s*,\s*$/g, '').trim());
+    }
+  };
+
+  const handleClearAllBulkShareholders = () => {
+    setBulkShareNumbersInput('');
+    setBulkSelectedIds(new Set());
+    setBulkSearchText('');
+  };
 
   // Handle Reset Attendance for Active AGM
   const handleResetAgmAttendance = async (scope = 'all') => {
@@ -899,10 +969,10 @@ export default function AttendanceModule() {
     showToast(`✅ ${DEFAULT_AGM_CONFIGS[currentAgmKey]?.name || currentAgmKey}: ${targetIds.length} ಶೇರುದಾರರ ಹಾಜರಾತಿ ಮರುಹೊಂದಿಸಲಾಗಿದೆ (Reset to Absent)!`, 'success');
   };
 
-  // Handle Bulk Mark Present for Active AGM
-  const handleBulkMarkPresent = async (scope, extraParams = {}) => {
+  // Handle Apply Status (Present / Absent) by Multiple Share Numbers
+  const handleApplyStatusByShareNumbers = async () => {
     if (!canRecordAttendance) {
-      showToast('⚠️ ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ ದಾಖಲಿಸಲು ಸಿಬ್ಬಂದಿ ಲಾಗಿನ್ ಅಗತ್ಯವಿದೆ', 'error');
+      showToast('⚠️ ಸ್ಥಿತಿ ಬದಲಾಯಿಸಲು ಸಿಬ್ಬಂದಿ ಲಾಗಿನ್ ಅಗತ್ಯವಿದೆ', 'error');
       return;
     }
     if (isCurrentAgmFrozen) {
@@ -912,144 +982,207 @@ export default function AttendanceModule() {
       return;
     }
 
-    const currentAgmKey = activeAgmTab;
-    const currentTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-    const staffLabel = `${user?.name || 'Staff'} (${user?.role || 'Staff'})`;
-
-    let targetItems = [];
-
-    if (scope === 'selected' && selectedShareholderIds.size > 0) {
-      targetItems = attendanceList.filter(s => selectedShareholderIds.has(String(s.entity_id).trim()));
-    } else if (scope === 'filtered') {
-      targetItems = filteredList;
-    } else if (scope === 'range') {
-      const from = Number(extraParams.fromShareNo) || 1;
-      const to = Number(extraParams.toShareNo) || 100;
-      targetItems = attendanceList.filter(s => {
-        const num = Number(s.entity_id);
-        return num >= from && num <= to;
-      });
-    } else if (scope === 'village') {
-      const v = String(extraParams.village || '').trim().toLowerCase();
-      targetItems = attendanceList.filter(s => String(s.department || s.village_name || '').trim().toLowerCase() === v);
-    } else if (scope === 'category') {
-      const c = String(extraParams.category || '').trim();
-      targetItems = attendanceList.filter(s => String(s.category || '').trim() === c);
-    } else if (scope === 'all') {
-      targetItems = attendanceList;
-    }
-
-    if (targetItems.length === 0) {
-      showToast('ಹಾಜರು ಮಾಡಲು ಯಾವುದೇ ಶೇರುದಾರರು ಕಂಡುಬಂದಿಲ್ಲ', 'error');
+    if (matchedShareholders.length === 0) {
+      showToast('ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಶೇರು ಸಂಖ್ಯೆಗಳನ್ನು ನಮೂದಿಸಿ / ಆಯ್ಕೆಮಾಡಿ', 'error');
       return;
     }
 
-    const targetSet = new Set(targetItems.map(i => String(i.entity_id).trim()));
+    const currentAgmKey = activeAgmTab;
+    const currentTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const staffLabel = `${user?.name || 'Staff'} (${user?.role || 'Staff'})`;
+    const targetSet = new Set(matchedShareholders.map(s => String(s.entity_id).trim()));
+    const targetStatus = bulkTargetStatus; // 'Present' or 'Absent'
 
-    // Build payload array
-    const newScans = [];
-    const updatedList = attendanceList.map(item => {
-      const id = String(item.entity_id).trim();
-      if (targetSet.has(id)) {
-        const payload = {
-          agmId: currentAgmKey,
-          date: selectedDate,
-          type: 'Shareholder',
-          entity_id: id,
-          name: item.name,
-          department: item.department,
-          category: item.category || 'ಅ - ವರ್ಗ',
-          status: 'Present',
-          time: item.time || currentTime,
-          scanned_by: item.scanned_by || staffLabel,
-          counter: item.counter || selectedCounter
-        };
-        newScans.push(payload);
-        return {
-          ...item,
-          status: 'Present',
-          time: item.time || currentTime,
-          scanned_by: item.scanned_by || staffLabel,
-          counter: item.counter || selectedCounter
-        };
-      }
-      return item;
-    });
-
-    // Update state
-    setAttendanceList(updatedList);
-    setAllAgmScansMap(prev => {
-      const nextMap = new Map(prev);
-      newScans.forEach(s => {
-        nextMap.set(`${currentAgmKey}_${s.entity_id}`, s);
-      });
-      return nextMap;
-    });
-
-    // Save compact scans to localStorage to avoid QuotaExceededError
-    try {
-      localStorage.setItem(`sugar_agm_reset_${currentAgmKey}`, 'false');
-      const localKey = `sugar_agm_scans_${currentAgmKey}`;
-      const existingStr = localStorage.getItem(localKey);
-      let list = [];
-      if (existingStr) {
-        try {
-          const parsed = JSON.parse(existingStr);
-          if (Array.isArray(parsed)) list = parsed.filter(s => !targetSet.has(String(s.entity_id).trim()));
-        } catch (e) {}
-      }
-      // Save compact representation
-      const compactScans = newScans.map(s => ({
-        agmId: s.agmId,
-        date: s.date,
-        entity_id: s.entity_id,
-        status: 'Present',
-        time: s.time,
-        scanned_by: s.scanned_by,
-        counter: s.counter
-      }));
-      list.push(...compactScans);
-      // Keep only most recent 3000 in localStorage to prevent memory quota limits
-      const toSave = list.slice(-3000);
-      localStorage.setItem(localKey, JSON.stringify(toSave));
-    } catch (e) {
-      console.warn('Local storage save failed:', e);
-    }
-
-    // Save to Cloud DB in safe chunked batches
-    if (CloudDbService.isEnabled()) {
-      (async () => {
-        try {
-          if (typeof CloudDbService.saveCollectionBulk === 'function') {
-            for (let i = 0; i < newScans.length; i += 100) {
-              const chunk = newScans.slice(i, i + 100);
-              await CloudDbService.saveCollectionBulk('agm_attendance_scans', chunk, 'entity_id');
-            }
-          } else {
-            for (let i = 0; i < newScans.length; i += 10) {
-              const chunk = newScans.slice(i, i + 10);
-              await Promise.all(chunk.map(s => CloudDbService.saveCollectionItem('agm_attendance_scans', `${currentAgmKey}_${s.entity_id}`, s).catch(() => {})));
-            }
-          }
-        } catch (e) {
-          console.warn('Cloud DB bulk save note:', e);
+    if (targetStatus === 'Present') {
+      const newScans = [];
+      const updatedList = attendanceList.map(item => {
+        const id = String(item.entity_id).trim();
+        if (targetSet.has(id)) {
+          const payload = {
+            agmId: currentAgmKey,
+            date: selectedDate,
+            type: 'Shareholder',
+            entity_id: id,
+            name: item.name,
+            department: item.department,
+            category: item.category || 'ಅ - ವರ್ಗ',
+            status: 'Present',
+            time: item.time || currentTime,
+            scanned_by: item.scanned_by || staffLabel,
+            counter: item.counter || selectedCounter
+          };
+          newScans.push(payload);
+          return {
+            ...item,
+            status: 'Present',
+            time: item.time || currentTime,
+            scanned_by: item.scanned_by || staffLabel,
+            counter: item.counter || selectedCounter
+          };
         }
-      })();
+        return item;
+      });
+
+      setAttendanceList(updatedList);
+      setAllAgmScansMap(prev => {
+        const nextMap = new Map(prev);
+        newScans.forEach(s => {
+          nextMap.set(`${currentAgmKey}_${s.entity_id}`, s);
+        });
+        return nextMap;
+      });
+
+      // Local storage
+      try {
+        localStorage.setItem(`sugar_agm_reset_${currentAgmKey}`, 'false');
+        const localKey = `sugar_agm_scans_${currentAgmKey}`;
+        const existingStr = localStorage.getItem(localKey);
+        let list = [];
+        if (existingStr) {
+          try {
+            const parsed = JSON.parse(existingStr);
+            if (Array.isArray(parsed)) list = parsed.filter(s => !targetSet.has(String(s.entity_id).trim()));
+          } catch (e) {}
+        }
+        list.push(...newScans.map(s => ({
+          agmId: s.agmId,
+          date: s.date,
+          entity_id: s.entity_id,
+          status: 'Present',
+          time: s.time,
+          scanned_by: s.scanned_by,
+          counter: s.counter
+        })));
+        localStorage.setItem(localKey, JSON.stringify(list.slice(-3000)));
+      } catch (e) {}
+
+      // Cloud DB
+      if (CloudDbService.isEnabled()) {
+        (async () => {
+          try {
+            if (typeof CloudDbService.saveCollectionBulk === 'function') {
+              for (let i = 0; i < newScans.length; i += 100) {
+                await CloudDbService.saveCollectionBulk('agm_attendance_scans', newScans.slice(i, i + 100), 'entity_id');
+              }
+            } else {
+              for (let i = 0; i < newScans.length; i += 10) {
+                await Promise.all(newScans.slice(i, i + 10).map(s => CloudDbService.saveCollectionItem('agm_attendance_scans', `${currentAgmKey}_${s.entity_id}`, s).catch(() => {})));
+              }
+            }
+          } catch (e) {}
+        })();
+      }
+    } else {
+      // Set to Absent
+      const updatedList = attendanceList.map(item => {
+        const id = String(item.entity_id).trim();
+        if (targetSet.has(id)) {
+          return {
+            ...item,
+            status: 'Absent',
+            time: null,
+            scanned_by: null,
+            scanned_by_role: null,
+            counter: null
+          };
+        }
+        return item;
+      });
+
+      setAttendanceList(updatedList);
+      setAllAgmScansMap(prev => {
+        const nextMap = new Map(prev);
+        targetSet.forEach(id => {
+          nextMap.delete(`${currentAgmKey}_${id}`);
+        });
+        return nextMap;
+      });
+
+      // Local storage
+      try {
+        const localKey = `sugar_agm_scans_${currentAgmKey}`;
+        const existingStr = localStorage.getItem(localKey);
+        if (existingStr) {
+          let list = JSON.parse(existingStr);
+          if (Array.isArray(list)) {
+            list = list.filter(s => !targetSet.has(String(s.entity_id).trim()));
+            localStorage.setItem(localKey, JSON.stringify(list));
+          }
+        }
+      } catch (e) {}
+
+      // Cloud DB
+      if (CloudDbService.isEnabled()) {
+        (async () => {
+          const ids = Array.from(targetSet);
+          for (let i = 0; i < ids.length; i += 10) {
+            await Promise.all(ids.slice(i, i + 10).map(id => CloudDbService.deleteCollectionItem('agm_attendance_scans', `${currentAgmKey}_${id}`).catch(() => {})));
+          }
+        })();
+      }
     }
 
     // Broadcast
     if (typeof BroadcastChannel !== 'undefined') {
       try {
         const channel = new BroadcastChannel('sugar_erp_attendance_channel');
-        channel.postMessage({ type: 'BULK_ATTENDANCE_SCANS', agmId: currentAgmKey, count: newScans.length });
+        channel.postMessage({ type: 'BULK_ATTENDANCE_SCANS', agmId: currentAgmKey, count: matchedShareholders.length });
         channel.close();
       } catch (e) {}
     }
 
-    setSelectedShareholderIds(new Set());
+    setBulkShareNumbersInput('');
+    setBulkSelectedIds(new Set());
     setShowBulkPresentModal(false);
     playSuccessBeep();
-    showToast(`✅ ${DEFAULT_AGM_CONFIGS[currentAgmKey]?.name || currentAgmKey}: ${newScans.length} ಶೇರುದಾರರಿಗೆ ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ (Bulk Present) ದಾಖಲಿಸಲಾಗಿದೆ!`, 'success');
+    showToast(`✅ ${DEFAULT_AGM_CONFIGS[currentAgmKey]?.name || currentAgmKey}: ${matchedShareholders.length} ಶೇರುದಾರರ ಸ್ಥಿತಿ '${targetStatus === 'Present' ? 'ಹಾಜರು (Present)' : 'ಗೈರುಹಾಜರು (Absent)'}' ಎಂದು ಬದಲಾಯಿಸಲಾಗಿದೆ!`, 'success');
+  };
+
+  // Quick forwarder for floating bar selection
+  const handleBulkMarkPresent = async (scope) => {
+    if (scope === 'selected' && selectedShareholderIds.size > 0) {
+      setBulkTargetStatus('Present');
+      const targetItems = attendanceList.filter(s => selectedShareholderIds.has(String(s.entity_id).trim()));
+      if (targetItems.length === 0) return;
+      const currentAgmKey = activeAgmTab;
+      const currentTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const staffLabel = `${user?.name || 'Staff'} (${user?.role || 'Staff'})`;
+      const targetSet = new Set(targetItems.map(i => String(i.entity_id).trim()));
+
+      const newScans = [];
+      const updatedList = attendanceList.map(item => {
+        const id = String(item.entity_id).trim();
+        if (targetSet.has(id)) {
+          const payload = {
+            agmId: currentAgmKey,
+            date: selectedDate,
+            type: 'Shareholder',
+            entity_id: id,
+            name: item.name,
+            department: item.department,
+            category: item.category || 'ಅ - ವರ್ಗ',
+            status: 'Present',
+            time: item.time || currentTime,
+            scanned_by: item.scanned_by || staffLabel,
+            counter: item.counter || selectedCounter
+          };
+          newScans.push(payload);
+          return { ...item, status: 'Present', time: item.time || currentTime, scanned_by: item.scanned_by || staffLabel, counter: item.counter || selectedCounter };
+        }
+        return item;
+      });
+
+      setAttendanceList(updatedList);
+      setAllAgmScansMap(prev => {
+        const nextMap = new Map(prev);
+        newScans.forEach(s => nextMap.set(`${currentAgmKey}_${s.entity_id}`, s));
+        return nextMap;
+      });
+
+      setSelectedShareholderIds(new Set());
+      playSuccessBeep();
+      showToast(`✅ ${newScans.length} ಶೇರುದಾರರಿಗೆ ಹಾಜರಾತಿ ದಾಖಲಿಸಲಾಗಿದೆ!`, 'success');
+    }
   };
 
   // ELECTION ELIGIBILITY REPORT CALCULATION ACROSS ALL 5 AGMS (Lightweight, instant, zero memory leaks)
@@ -1734,7 +1867,7 @@ export default function AttendanceModule() {
         {/* Actions for Active AGM: Bulk Present, Reset, Freeze/Unlock */}
         {activeAgmTab !== 'ELECTION_ELIGIBLE' && (
           <div className="flex flex-wrap items-center gap-2">
-            {/* Bulk Present Button */}
+            {/* Bulk Status by Share Numbers Button */}
             <button
               onClick={() => {
                 if (isCurrentAgmFrozen) {
@@ -1745,10 +1878,10 @@ export default function AttendanceModule() {
                 }
               }}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
-              title="ಶೇರುದಾರರ ಗುಂಪಿಗೆ ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ ನಮೂದಿಸಿ (Bulk Mark Present)"
+              title="ಶೇರು ಸಂಖ್ಯೆಗಳ ಮೂಲಕ ಸ್ಥಿತಿ (ಹಾಜರು / ಗೈರುಹಾಜರು) ಬದಲಾಯಿಸಿ"
             >
               <Users className="w-3.5 h-3.5" />
-              <span>ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ (Bulk Present)</span>
+              <span>👥 ಶೇರು ನಂ ಮೂಲಕ ಸ್ಥಿತಿ ಬದಲಾವಣೆ</span>
             </button>
 
             {/* Reset Attendance Button */}
@@ -2024,18 +2157,30 @@ export default function AttendanceModule() {
         </div>
       )}
 
-      {/* BULK SHAREHOLDERS STATUS PRESENT MODAL */}
+      {/* BULK SHAREHOLDERS STATUS CHANGE MODAL (BY MULTIPLE SHARE NUMBERS) */}
       {showBulkPresentModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-slate-900 border-2 border-emerald-500/80 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4 animate-scaleUp">
+          <div className="bg-slate-900 border-2 border-emerald-500/80 rounded-2xl p-6 max-w-xl w-full shadow-2xl space-y-4 animate-scaleUp max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  bulkTargetStatus === 'Present'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                }`}>
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-emerald-300">
-                    ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ ದಾಖಲಿಸಿ (Bulk Mark Present)
+                  <h3 className="text-base font-black text-slate-100 flex items-center gap-2">
+                    <span>ಶೇರು ಸಂಖ್ಯೆಗಳ ಮೂಲಕ ಸ್ಥಿತಿ ಬದಲಾವಣೆ</span>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                      bulkTargetStatus === 'Present'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                    }`}>
+                      {bulkTargetStatus === 'Present' ? '🟢 ಹಾಜರು (Present)' : '🔴 ಗೈರುಹಾಜರು (Absent)'}
+                    </span>
                   </h3>
                   <p className="text-xs text-slate-400">
                     {DEFAULT_AGM_CONFIGS[activeAgmTab]?.name} ({DEFAULT_AGM_CONFIGS[activeAgmTab]?.year})
@@ -2043,201 +2188,221 @@ export default function AttendanceModule() {
                 </div>
               </div>
               <button
-                onClick={() => setShowBulkPresentModal(false)}
-                className="text-slate-400 hover:text-white p-1"
+                type="button"
+                onClick={() => {
+                  setShowBulkPresentModal(false);
+                  setBulkSearchText('');
+                }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-xl text-xs text-emerald-200 flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <span>
-                ಆಯ್ಕೆ ಮಾಡಿದ ಶೇರುದಾರರಿಗೆ ಪ್ರಸ್ತುತ ಸಮಯ, ಕೌಂಟರ್ ({selectedCounter}) ಮತ್ತು ಸಿಬ್ಬಂದಿ ಸಹಿಯೊಂದಿಗೆ <strong>"ಹಾಜರು (Present)"</strong> ಎಂದು ದಾಖಲಿಸಲಾಗುತ್ತದೆ.
-              </span>
+            {/* Target Status Choice (Present or Absent) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                ಗುರಿ ಸ್ಥಿತಿ ಆಯ್ಕೆಮಾಡಿ (Target Status):
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setBulkTargetStatus('Present')}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+                    bulkTargetStatus === 'Present'
+                      ? 'bg-emerald-950/70 border-emerald-500 text-white shadow-lg ring-1 ring-emerald-500'
+                      : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    bulkTargetStatus === 'Present' ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs">🟢 ಹಾಜರು (Mark Present)</div>
+                    <div className="text-[10px] text-slate-400">ಕೌಂಟರ್ ({selectedCounter}) & ಸಿಬ್ಬಂದಿಯೊಂದಿಗೆ ದಾಖಲಾಗುತ್ತದೆ</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBulkTargetStatus('Absent')}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+                    bulkTargetStatus === 'Absent'
+                      ? 'bg-rose-950/70 border-rose-500 text-white shadow-lg ring-1 ring-rose-500'
+                      : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    bulkTargetStatus === 'Absent' ? 'bg-rose-500 text-white' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    <RotateCcw className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs">🔴 ಗೈರುಹಾಜರು (Mark Absent)</div>
+                    <div className="text-[10px] text-slate-400">ಹಾಜರಾತಿ ರದ್ದುಪಡಿಸಿ ಗೈರುಹಾಜರು ಮಾಡುತ್ತದೆ</div>
+                  </div>
+                </button>
+              </div>
             </div>
 
-            {/* Scope Modes */}
-            <div className="space-y-2.5 text-xs">
-              <label className="block font-bold text-slate-300">
-                ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ ವಿಧಾನ ಆಯ್ಕೆಮಾಡಿ (Select Mode):
-              </label>
+            {/* Multiple Share Numbers Input Box */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-300">
+                  ಶೇರು ಸಂಖ್ಯೆಗಳನ್ನು ನಮೂದಿಸಿ (Enter Multiple Share Numbers):
+                </label>
+                <span className="text-[10px] text-slate-400">
+                  ಕಾಮಾ (,), ಸ್ಪೇಸ್, ಅಥವಾ ಶ್ರೇಣಿ (1-50) ಬೆಂಬಲಿತವಾಗಿದೆ
+                </span>
+              </div>
+              <textarea
+                value={bulkShareNumbersInput}
+                onChange={(e) => setBulkShareNumbersInput(e.target.value)}
+                placeholder="ಉದಾಹರಣೆಗೆ: 1, 2, 5, 881, 9541, 10-25"
+                rows={3}
+                className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl p-3 text-xs text-white font-mono placeholder:text-slate-500 outline-none resize-none transition"
+              />
+            </div>
 
-              {/* Mode 1: Filtered */}
-              <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                bulkPresentScope === 'filtered'
-                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
-                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
-              }`}>
+            {/* Quick Search & Add Picker */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                <span>ತ್ವರಿತ ಶೋಧನೆ & ಸೇರ್ಪಡೆ (Quick Search & Add):</span>
+                <span className="text-[10px] text-slate-400">ಹೆಸರು / ಶೇರು ಸಂಖ್ಯೆ ಟೈಪ್ ಮಾಡಿ</span>
+              </label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
-                  type="radio"
-                  name="bulkScope"
-                  value="filtered"
-                  checked={bulkPresentScope === 'filtered'}
-                  onChange={() => setBulkPresentScope('filtered')}
-                  className="mt-1 text-emerald-500"
+                  type="text"
+                  value={bulkSearchText}
+                  onChange={(e) => setBulkSearchText(e.target.value)}
+                  placeholder="ಶೇರುದಾರರ ಹೆಸರು, ಶೇರು ಸಂಖ್ಯೆ ಅಥವಾ ಊರು..."
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 outline-none"
                 />
-                <div className="flex-1">
-                  <div className="font-bold flex items-center justify-between">
-                    <span>ಪ್ರಸ್ತುತ ಫಿಲ್ಟರ್ ಆದ ಶೇರುದಾರರು</span>
-                    <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-[10px] font-mono">{filteredList.length} ಸದಸ್ಯರು</span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">
-                    ಸರ್ಚ್ ಅಥವಾ ಫಿಲ್ಟರ್‌ನಲ್ಲಿ ಪ್ರಸ್ತುತ ಕಾಣುತ್ತಿರುವ ಎಲ್ಲಾ ಶೇರುದಾರರಿಗೆ ಹಾಜರಾತಿ ನೀಡುತ್ತದೆ
-                  </div>
+              </div>
+
+              {/* Suggestions dropdown */}
+              {bulkSearchResults.length > 0 && (
+                <div className="bg-slate-950 border border-slate-700 rounded-xl p-1.5 space-y-1 max-h-36 overflow-y-auto">
+                  {bulkSearchResults.map((s) => {
+                    const idStr = String(s.entity_id).trim();
+                    const isAdded = matchedShareholders.some(m => String(m.entity_id).trim() === idStr);
+                    return (
+                      <div
+                        key={s.entity_id}
+                        onClick={() => handleAddBulkShareholder(idStr)}
+                        className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs cursor-pointer transition ${
+                          isAdded
+                            ? 'bg-emerald-950/60 text-emerald-200 border border-emerald-800/40'
+                            : 'hover:bg-slate-800 text-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold font-mono text-emerald-400">#{s.entity_id}</span>
+                          <span>{s.name}</span>
+                          <span className="text-[10px] text-slate-400">({s.department || 'ಊರು ಇಲ್ಲ'})</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                            s.status === 'Present' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            {s.status === 'Present' ? 'ಹಾಜರು' : 'ಗೈರು'}
+                          </span>
+                          <span className="text-[11px] font-bold text-emerald-400">
+                            {isAdded ? '✓ ಸೇರಿದೆ' : '+ ಸೇರಿಸಿ'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </label>
+              )}
+            </div>
 
-              {/* Mode 2: Range */}
-              <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                bulkPresentScope === 'range'
-                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
-                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
-              }`}>
-                <input
-                  type="radio"
-                  name="bulkScope"
-                  value="range"
-                  checked={bulkPresentScope === 'range'}
-                  onChange={() => setBulkPresentScope('range')}
-                  className="mt-1 text-emerald-500"
-                />
-                <div className="flex-1 space-y-2">
-                  <div className="font-bold">ಷೇರು ಸಂಖ್ಯೆಗಳ ಶ್ರೇಣಿ (Share Number Range)</div>
-                  {bulkPresentScope === 'range' && (
-                    <div className="flex items-center gap-2 pt-1">
-                      <span className="text-slate-400 text-xs">ನಂ:</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={bulkRangeFrom}
-                        onChange={(e) => setBulkRangeFrom(Number(e.target.value))}
-                        className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
-                        placeholder="From"
-                      />
-                      <span className="text-slate-400 text-xs">ರಿಂದ</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={bulkRangeTo}
-                        onChange={(e) => setBulkRangeTo(Number(e.target.value))}
-                        className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
-                        placeholder="To"
-                      />
-                      <span className="text-slate-400 text-xs">ವರೆಗೆ</span>
+            {/* Matched Shareholders Live Preview */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                  <span>ಗುರುತಿಸಲಾದ ಶೇರುದಾರರು (Matched):</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold font-mono ${
+                    matchedShareholders.length > 0 ? 'bg-emerald-500 text-black' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {matchedShareholders.length} ಸದಸ್ಯರು
+                  </span>
+                </span>
+                {matchedShareholders.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllBulkShareholders}
+                    className="text-[11px] text-rose-400 hover:text-rose-300 cursor-pointer underline"
+                  >
+                    ಎಲ್ಲವನ್ನೂ ತೆರವುಗೊಳಿಸಿ (Clear All)
+                  </button>
+                )}
+              </div>
+
+              {matchedShareholders.length > 0 ? (
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 max-h-36 overflow-y-auto flex flex-wrap gap-1.5">
+                  {matchedShareholders.map((s) => (
+                    <div
+                      key={s.entity_id}
+                      className="bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 text-xs text-slate-200 flex items-center gap-1.5 group hover:border-slate-500"
+                    >
+                      <span className="font-bold text-emerald-400 font-mono">#{s.entity_id}</span>
+                      <span className="max-w-[120px] truncate">{s.name}</span>
+                      <span className={`text-[9px] px-1 rounded ${
+                        s.status === 'Present' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
+                      }`}>
+                        {s.status === 'Present' ? 'ಹಾಜರು' : 'ಗೈರು'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBulkShareholder(s.entity_id)}
+                        className="text-slate-500 hover:text-rose-400 transition"
+                        title="ತೆಗೆದುಹಾಕಿ"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </label>
-
-              {/* Mode 3: Village */}
-              <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                bulkPresentScope === 'village'
-                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
-                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
-              }`}>
-                <input
-                  type="radio"
-                  name="bulkScope"
-                  value="village"
-                  checked={bulkPresentScope === 'village'}
-                  onChange={() => setBulkPresentScope('village')}
-                  className="mt-1 text-emerald-500"
-                />
-                <div className="flex-1 space-y-2">
-                  <div className="font-bold">ಗ್ರಾಮ / ಸ್ಥಳದ ಪ್ರಕಾರ (By Village / Place)</div>
-                  {bulkPresentScope === 'village' && (
-                    <select
-                      value={bulkSelectedVillage}
-                      onChange={(e) => setBulkSelectedVillage(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none cursor-pointer"
-                    >
-                      <option value="">-- ಗ್ರಾಮ ಆಯ್ಕೆಮಾಡಿ (Select Village) --</option>
-                      {uniqueVillages.map((v, i) => (
-                        <option key={i} value={v}>{v}</option>
-                      ))}
-                    </select>
-                  )}
+              ) : (
+                <div className="p-3 bg-slate-950 border border-dashed border-slate-800 rounded-xl text-center text-xs text-slate-500">
+                  ಯಾವುದೇ ಶೇರುದಾರರು ಆಯ್ಕೆಯಾಗಿಲ್ಲ. ಮೇಲಿನ ಪೆಟ್ಟಿಗೆಯಲ್ಲಿ ಶೇರು ಸಂಖ್ಯೆಗಳನ್ನು ನಮೂದಿಸಿ ಅಥವಾ ಸರ್ಚ್ ಮಾಡಿ ಸೇರಿಸಿ.
                 </div>
-              </label>
-
-              {/* Mode 4: Category */}
-              <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                bulkPresentScope === 'category'
-                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
-                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
-              }`}>
-                <input
-                  type="radio"
-                  name="bulkScope"
-                  value="category"
-                  checked={bulkPresentScope === 'category'}
-                  onChange={() => setBulkPresentScope('category')}
-                  className="mt-1 text-emerald-500"
-                />
-                <div className="flex-1 space-y-2">
-                  <div className="font-bold">ವರ್ಗವಾರು (By Category)</div>
-                  {bulkPresentScope === 'category' && (
-                    <select
-                      value={bulkSelectedCategory}
-                      onChange={(e) => setBulkSelectedCategory(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none cursor-pointer"
-                    >
-                      <option value="ಅ - ವರ್ಗ">ಅ - ವರ್ಗ (A - Category)</option>
-                      <option value="ಬ - ವರ್ಗ">ಬ - ವರ್ಗ (B - Category)</option>
-                      <option value="ಕ - ವರ್ಗ">ಕ - ವರ್ಗ (C - Category)</option>
-                      <option value="ಡ - ವರ್ಗ">ಡ - ವರ್ಗ (D - Category)</option>
-                    </select>
-                  )}
-                </div>
-              </label>
-
-              {/* Mode 5: All */}
-              <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                bulkPresentScope === 'all'
-                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
-                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
-              }`}>
-                <input
-                  type="radio"
-                  name="bulkScope"
-                  value="all"
-                  checked={bulkPresentScope === 'all'}
-                  onChange={() => setBulkPresentScope('all')}
-                  className="mt-1 text-emerald-500"
-                />
-                <div className="flex-1">
-                  <div className="font-bold flex items-center justify-between">
-                    <span>ಸಂಪೂರ್ಣ ಶೇರುದಾರರು (Mark ALL Members Present)</span>
-                    <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-[10px] font-mono">{attendanceList.length} ಸದಸ್ಯರು</span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">
-                    ಸಂಸ್ಥೆಯ ಎಲ್ಲಾ ಸದಸ್ಯರಿಗೂ ಒಟ್ಟಿಗೆ ಹಾಜರಾತಿ ನೀಡುತ್ತದೆ
-                  </div>
-                </div>
-              </label>
+              )}
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2">
+            {/* Modal Footer Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
               <button
                 type="button"
-                onClick={() => setShowBulkPresentModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+                onClick={() => {
+                  setShowBulkPresentModal(false);
+                  setBulkSearchText('');
+                }}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer transition"
               >
-                ರದ್ದುಮಾಡಿ
+                ರದ್ದುಮಾಡಿ (Cancel)
               </button>
               <button
                 type="button"
-                onClick={() => handleBulkMarkPresent(bulkPresentScope, {
-                  fromShareNo: bulkRangeFrom,
-                  toShareNo: bulkRangeTo,
-                  village: bulkSelectedVillage,
-                  category: bulkSelectedCategory
-                })}
-                className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-black transition-all shadow-lg cursor-pointer flex items-center gap-1.5"
+                disabled={matchedShareholders.length === 0}
+                onClick={handleApplyStatusByShareNumbers}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all shadow-lg cursor-pointer flex items-center gap-2 ${
+                  matchedShareholders.length === 0
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                    : bulkTargetStatus === 'Present'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white'
+                      : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white'
+                }`}
               >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>ಖಚಿತಪಡಿಸಿ ಹಾಜರು ಮಾಡಿ (Confirm Bulk Present)</span>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>
+                  ✓ {matchedShareholders.length} ಶೇರುದಾರರ ಸ್ಥಿತಿ '{bulkTargetStatus === 'Present' ? 'ಹಾಜರು' : 'ಗೈರುಹಾಜರು'}' ಎಂದು ಬದಲಾಯಿಸಿ
+                </span>
               </button>
             </div>
           </div>
