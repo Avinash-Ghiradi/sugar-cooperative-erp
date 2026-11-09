@@ -5,7 +5,7 @@ import { getCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationSe
 import officialCircleData from '../../services/officialCircleData.json';
 import {
   Printer, X, Tag, Settings, ChevronLeft, ChevronRight, Eye, Check, Sliders,
-  QrCode, Sparkles, RefreshCw, Layers
+  QrCode, Sparkles, RefreshCw, Layers, Building2, MapPin
 } from 'lucide-react';
 
 // Format Pincode with space: "586118" -> "586 118"
@@ -37,6 +37,19 @@ export function cleanPlace(p) {
 
 // Intelligent Address and Taluk Resolver matching official records
 export function resolveShareholderAddress(s, defaultTaluk = '', defaultDistrict = 'ವಿಜಯಪುರ', defaultPincode = '') {
+  if (!s) {
+    return {
+      place: '—',
+      fullAddress: '',
+      taluk: defaultTaluk || 'ಸಿಂದಗಿ',
+      district: defaultDistrict || 'ವಿಜಯಪುರ',
+      pincode: defaultPincode || '586 118',
+      mobile: '',
+      category: '',
+      sharesCount: 1
+    };
+  }
+
   const rawPlace = (s.place || s.village_name || '').trim();
   const cPlace = cleanPlace(rawPlace) || rawPlace;
 
@@ -70,11 +83,29 @@ export function resolveShareholderAddress(s, defaultTaluk = '', defaultDistrict 
     else pin = defaultPincode || '586118';
   }
 
+  // Detailed address support (house no, lane, street, nagara, or specific address)
+  const rawAddr = (s.address || s.full_address || s.residential_address || '').trim();
+  const road = (s.road || s.street || s.nagara || '').trim();
+  let fullAddress = '';
+  if (rawAddr && rawAddr.toLowerCase() !== rawPlace.toLowerCase() && rawAddr.toLowerCase() !== cPlace.toLowerCase()) {
+    fullAddress = rawAddr;
+  } else if (road && road.toLowerCase() !== rawPlace.toLowerCase() && road.toLowerCase() !== cPlace.toLowerCase()) {
+    fullAddress = road;
+  }
+
+  const mobile = (s.mobile_no || s.mobile || s.mobile_number || '').trim();
+  const category = (s.schedule_cast || s.category || '').trim();
+  const sharesCount = s.number_of_shares || s.share_qty || 1;
+
   return {
     place: rawPlace || cPlace || '—',
+    fullAddress: fullAddress,
     taluk: taluk || defaultTaluk || 'ಸಿಂದಗಿ',
     district: district || defaultDistrict || 'ವಿಜಯಪುರ',
-    pincode: formatPincode(pin)
+    pincode: formatPincode(pin),
+    mobile: mobile,
+    category: category,
+    sharesCount: sharesCount
   };
 }
 
@@ -97,7 +128,7 @@ export async function generateShareholderQRDataUrl(shareNo, payloadType = 'url')
     ? cleanNo
     : `https://avinash-ghiradi.github.io/sugar-cooperative-erp/?attn=${encodeURIComponent(cleanNo)}`;
 
-  const cacheKey = `${payloadType}_${cleanNo}_v3`;
+  const cacheKey = `${payloadType}_${cleanNo}_v4`;
   if (qrCache.has(cacheKey)) {
     return qrCache.get(cacheKey);
   }
@@ -120,6 +151,9 @@ export async function generateShareholderQRDataUrl(shareNo, payloadType = 'url')
   }
 }
 
+const DEFAULT_FACTORY_NAME = 'ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ';
+const DEFAULT_FACTORY_SUB = 'ತಾ|| ಇಂಡಿ / ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ - 586204';
+
 export default function BookStickerModal({
   isOpen,
   onClose,
@@ -130,6 +164,9 @@ export default function BookStickerModal({
   const [currentPage, setCurrentPage] = useState(1);
   const [startPosition, setStartPosition] = useState(1); // 1 to 10
   const [showLogo, setShowLogo] = useState(true);
+  const [showFactoryName, setShowFactoryName] = useState(true);
+  const [factoryName, setFactoryName] = useState(DEFAULT_FACTORY_NAME);
+  const [factorySub, setFactorySub] = useState(DEFAULT_FACTORY_SUB);
   const [showQrCode, setShowQrCode] = useState(true); // Mandatory QR for General Board Meeting
   const [qrPayloadType, setQrPayloadType] = useState('url'); // 'url' (Scans to Attendance) or 'plain' (Raw Share No)
   const [srNoMode, setSrNoMode] = useState('sequential'); // 'sequential', 'original', 'blank'
@@ -220,9 +257,13 @@ export default function BookStickerModal({
         shareNo,
         name: formatNameWithPrefix(name, namePrefix),
         place: addr.place,
+        fullAddress: addr.fullAddress,
         taluk: addr.taluk,
         district: addr.district,
         pincode: addr.pincode,
+        mobile: addr.mobile,
+        category: addr.category,
+        sharesCount: addr.sharesCount,
         qrDataUrl
       };
     });
@@ -254,7 +295,7 @@ export default function BookStickerModal({
 
   if (!isOpen) return null;
 
-  // Print execution method matching 9.8cm x 5.6cm, 0.5cm margin, larger QR code, and Google Anek Kannada font
+  // Print execution method matching 9.8cm x 5.6cm, 0.5cm margin, larger QR code, factory name, and Google Anek Kannada font
   const handlePrint = (printSinglePage = false) => {
     try {
       const companyLogoUrl = getCompanyLogo() || DEFAULT_LOGO_PATH;
@@ -263,10 +304,11 @@ export default function BookStickerModal({
       ApiService.logPrintAction({
         documentType: 'BOOK_STICKERS_PRINT',
         recordId: `STICKERS-AGM-${totalStickers}`,
-        description: `ಸಾಮಾನ್ಯ ಸಭೆ (AGM) ಸ್ಕ್ಯಾನಿಂಗ್ ಕ್ಯೂಆರ್ ಕೋಡ್ & ಅನೆಕ್ ಕನ್ನಡ ಫಾಂಟ್ ಸಹಿತ ${totalStickers} ಶೇರುದಾರರ ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳ ಮುದ್ರಣ (ಅಳತೆ: 9.8cm × 5.6cm, ಮಾರ್ಜಿನ್: 0.5cm)`,
+        description: `ಕಾರ್ಖಾನೆ ಹೆಸರು, AGM ಕ್ಯೂಆರ್ ಕೋಡ್ & ಅನೆಕ್ ಕನ್ನಡ ಫಾಂಟ್ ಸಹಿತ ${totalStickers} ಶೇರುದಾರರ ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳ ಮುದ್ರಣ (ಅಳತೆ: 9.8cm × 5.6cm, ಮಾರ್ಜಿನ್: 0.5cm)`,
         details: {
           count: totalStickers,
           pages: totalPages,
+          factoryName: showFactoryName ? factoryName : 'Hidden',
           hasQrCode: showQrCode,
           font: 'Anek Kannada',
           dimensions: '9.8cm x 5.6cm',
@@ -282,7 +324,7 @@ export default function BookStickerModal({
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Book Stickers (Anek Kannada & AGM QR) - ${totalStickers} Shareholders</title>
+  <title>Book Stickers (${factoryName} - ${totalStickers} Shareholders)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anek+Kannada:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -300,7 +342,7 @@ export default function BookStickerModal({
       print-color-adjust: exact !important;
     }
     body {
-      font-family: 'Anek Kannada', 'Noto Sans Kannada', 'Segoe UI', Arial, sans-serif;
+      font-family: 'Anek Kannada', 'Noto Sans Kannada', sans-serif;
       margin: 0;
       padding: 0;
       background: #ffffff;
@@ -332,8 +374,8 @@ export default function BookStickerModal({
       max-width: ${STICKER_WIDTH};
       max-height: ${STICKER_HEIGHT};
       border: 1.2px solid #000000;
-      border-radius: 9px;
-      padding: 5px 9px 5px 9px;
+      border-radius: 8px;
+      padding: 4px 8px 4px 8px;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -346,59 +388,91 @@ export default function BookStickerModal({
       border: 1px dashed #d1d5db;
       background: transparent;
     }
-    .sticker-top-row {
+    /* Header Section with Factory Name, Logo, and Numbers */
+    .sticker-header {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
+      gap: 5px;
       width: 100%;
-      height: 32px;
+      min-height: 27px;
     }
     .sticker-logo-box {
-      width: 44px;
-      height: 32px;
+      width: 32px;
+      height: 26px;
       display: flex;
       align-items: center;
       justify-content: flex-start;
+      flex-shrink: 0;
     }
     .sticker-logo {
-      max-width: 44px;
-      max-height: 32px;
+      max-width: 32px;
+      max-height: 26px;
       object-fit: contain;
+    }
+    .sticker-factory-info {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+      line-height: 1.15;
+    }
+    .sticker-factory-name {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #000000;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: -0.2px;
+    }
+    .sticker-factory-sub {
+      font-size: 8px;
+      font-weight: 600;
+      color: #334155;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .sticker-numbers {
       text-align: right;
-      font-family: 'Anek Kannada', sans-serif;
+      flex-shrink: 0;
+      line-height: 1.15;
     }
     .sticker-srno {
-      font-size: 11px;
-      font-weight: 600;
-      line-height: 1.15;
+      font-size: 9.5px;
+      font-weight: 700;
       color: #000000;
     }
     .sticker-shareno {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 800;
-      line-height: 1.25;
       color: #000000;
     }
+    .sticker-header-divider {
+      width: 100%;
+      height: 1px;
+      background-color: #000000;
+      margin: 2px 0 3px 0;
+    }
+    /* Main Content Area */
     .sticker-main-content {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 6px;
-      margin-top: 1px;
       flex: 1;
+      min-height: 0;
     }
     .sticker-details {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 1.5px;
       min-width: 0;
-      font-family: 'Anek Kannada', sans-serif;
+      text-align: left;
     }
     .sticker-name {
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 800;
       color: #000000;
       line-height: 1.25;
@@ -406,8 +480,17 @@ export default function BookStickerModal({
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .sticker-full-addr {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .sticker-post {
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 600;
       color: #000000;
       line-height: 1.25;
@@ -416,24 +499,36 @@ export default function BookStickerModal({
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 12px;
-      font-weight: 600;
-      color: #000000;
-      line-height: 1.25;
-    }
-    .sticker-pin {
       font-size: 11.5px;
       font-weight: 600;
       color: #000000;
       line-height: 1.25;
     }
+    .sticker-pin-mobile {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      color: #000000;
+      line-height: 1.25;
+    }
+    .sticker-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #334155;
+      margin-top: 1px;
+    }
     /* BIGGER QR CODE BOX & OPTICAL CONTRAST */
     .sticker-qr-box {
       width: 100px;
-      height: 112px;
+      height: 114px;
       border: 1.2px solid #000000;
-      border-radius: 7px;
-      padding: 3px;
+      border-radius: 6px;
+      padding: 2.5px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -450,7 +545,7 @@ export default function BookStickerModal({
       text-transform: uppercase;
       line-height: 1;
       text-align: center;
-      letter-spacing: 0.2px;
+      letter-spacing: 0.3px;
     }
     .sticker-qr-img {
       width: 88px;
@@ -496,25 +591,37 @@ export default function BookStickerModal({
 
               html += `
               <div class="sticker-card">
-                <div class="sticker-top-row">
+                <div class="sticker-header">
                   <div class="sticker-logo-box">
                     ${showLogo ? `<img src="${companyLogoUrl}" class="sticker-logo" alt="Logo" onerror="this.style.display='none'" />` : ''}
+                  </div>
+                  <div class="sticker-factory-info">
+                    ${showFactoryName ? `
+                      <div class="sticker-factory-name">${factoryName}</div>
+                      <div class="sticker-factory-sub">${factorySub}</div>
+                    ` : ''}
                   </div>
                   <div class="sticker-numbers">
                     <div class="sticker-srno">${srNoText}</div>
                     <div class="sticker-shareno">Share No.: ${item.shareNo}</div>
                   </div>
                 </div>
+                <div class="sticker-header-divider"></div>
 
                 <div class="sticker-main-content">
                   <div class="sticker-details">
                     <div class="sticker-name">${item.name}</div>
+                    ${item.fullAddress ? `<div class="sticker-full-addr">ವಿಳಾಸ: ${item.fullAddress}</div>` : ''}
                     <div class="sticker-post">ಪೋಸ್ಟ್: ${item.place}</div>
                     <div class="sticker-taluk-dist">
                       <span>ತಾಲೂಕ್: ${item.taluk}</span>
-                      <span style="margin-right: 4px;">ಜಿಲ್ಲಾ: ${item.district}</span>
+                      <span style="margin-right: 2px;">ಜಿಲ್ಲಾ: ${item.district}</span>
                     </div>
-                    <div class="sticker-pin">ಪಿನ್-ಕೋಡ್: ${item.pincode}</div>
+                    <div class="sticker-pin-mobile">
+                      <span>ಪಿನ್-ಕೋಡ್: ${item.pincode}</span>
+                      ${item.mobile ? `<span style="font-family: monospace;">ಮೊ: ${item.mobile}</span>` : ''}
+                    </div>
+                    ${item.category ? `<div class="sticker-badge-row"><span>ವರ್ಗ: ${item.category}</span> • <span>ಶೇರು: ${item.sharesCount}</span></div>` : ''}
                   </div>
 
                   ${showQrCode && qrUrl ? `
@@ -541,13 +648,19 @@ export default function BookStickerModal({
         printWindow.document.write(html);
         printWindow.document.close();
         printWindow.focus();
-        setTimeout(() => {
-          try {
-            printWindow.print();
-          } catch (e) {
-            console.error('printWindow.print error:', e);
-          }
-        }, 500);
+
+        // Ensure Google Font Anek Kannada is fully ready before triggering print dialog
+        if (printWindow.document.fonts && printWindow.document.fonts.ready) {
+          printWindow.document.fonts.ready.then(() => {
+            setTimeout(() => {
+              try { printWindow.print(); } catch (e) { console.error('print error:', e); }
+            }, 300);
+          });
+        } else {
+          setTimeout(() => {
+            try { printWindow.print(); } catch (e) { console.error('print error:', e); }
+          }, 800);
+        }
       } else {
         alert('ಪಾಪ್-ಅಪ್ ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ (Pop-up blocked). ದಯವಿಟ್ಟು ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಪಾಪ್-ಅಪ್ ಅನುಮತಿಸಿ.');
       }
@@ -560,34 +673,32 @@ export default function BookStickerModal({
   const companyLogoUrl = getCompanyLogo() || DEFAULT_LOGO_PATH;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/85 backdrop-blur-md animate-fadeIn overflow-y-auto">
-      <div
-        className="relative w-full max-w-5xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[96vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Top Header Bar */}
-        <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950 flex items-center justify-between gap-3 shrink-0">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
+      style={{ fontFamily: "'Anek Kannada', 'Noto Sans Kannada', sans-serif" }}
+    >
+      <div className="relative w-full max-w-6xl h-[95vh] max-h-[960px] bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
+
+        {/* Modal Top Header Bar */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-950/90 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 text-white shadow-lg">
               <Tag className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base sm:text-lg font-black text-slate-100 flex items-center gap-2">
-                  <span>ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳು ಮುದ್ರಣ (Book Stickers)</span>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                    Anek Kannada Font
-                  </span>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-black text-white tracking-wide">
+                  ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳು (Book Stickers Printing)
                 </h2>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300">
-                  ಅಳತೆ: 9.8cm × 5.6cm • ಮಾರ್ಜಿನ್: 0.5cm
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  9.8cm × 5.6cm • 0.5cm ಮಾರ್ಜಿನ್
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
-                  {totalStickers} ಶೇರುದಾರರು ({totalPages} A4 ಹಾಳೆಗಳು)
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Anek Kannada
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">
-                {filterDescription || 'ದೊಡ್ಡ ಗಾತ್ರದ ಸಾಮಾನ್ಯ ಸಭೆ (AGM) QR ಕೋಡ್ ಮತ್ತು ಗೂಗಲ್ ಅನೆಕ್ ಕನ್ನಡ ಫಾಂಟ್ ಸಹಿತ ಪಾಸ್‌ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳು'}
+              <p className="text-xs text-slate-400 mt-0.5">
+                ಕಾರ್ಖಾನೆ ಹೆಸರು, ಪೂರ್ಣ ವಿಳಾಸ & ಸಾಮಾನ್ಯ ಸಭೆ (AGM) ಹಾಜರಾತಿ QR ಕೋಡ್ ಸಹಿತ ಸ್ವಯಂ-ಅಂಟಿಕೊಳ್ಳುವ ಸ್ಟಿಕ್ಕರ್‌ಗಳು
               </p>
             </div>
           </div>
@@ -595,20 +706,20 @@ export default function BookStickerModal({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowSettingsDrawer(!showSettingsDrawer)}
-              className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`p-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 showSettingsDrawer
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                  ? 'bg-amber-600 text-white border-amber-500'
+                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
               }`}
-              title="ಸ್ಟಿಕ್ಕರ್ ಸೆಟ್ಟಿಂಗ್ಸ್, ಕ್ಯೂಆರ್ ಕೋಡ್ & ವಿಳಾಸ ಬದಲಾವಣೆ"
+              title="ಸ್ಟಿಕ್ಕರ್ ಮತ್ತು ವಿಳಾಸ ಸೆಟ್ಟಿಂಗ್ಸ್"
             >
-              <Sliders className="w-4 h-4" />
+              <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">ಸೆಟ್ಟಿಂಗ್ಸ್</span>
             </button>
 
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 cursor-pointer transition-colors"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
               title="ಮುಚ್ಚಿ (Close)"
             >
               <X className="w-5 h-5" />
@@ -616,10 +727,41 @@ export default function BookStickerModal({
           </div>
         </div>
 
-        {/* Collapsible Settings Drawer */}
+        {/* Settings Drawer (Collapsible) */}
         {showSettingsDrawer && (
-          <div className="p-4 bg-slate-950/95 border-b border-slate-800 text-xs space-y-3 shrink-0 animate-fadeIn font-sans">
-            {/* Top Row: Address Defaults */}
+          <div className="p-4 bg-slate-950 border-b border-slate-800 text-xs space-y-3.5 shrink-0 animate-fadeIn">
+            {/* Row 1: Factory Name & Subtitle */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1 flex items-center gap-1">
+                  <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                  <span>ಕಾರ್ಖಾನೆ ಹೆಸರು (Factory Name on Sticker)</span>
+                </label>
+                <input
+                  type="text"
+                  value={factoryName}
+                  onChange={(e) => setFactoryName(e.target.value)}
+                  placeholder="ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200 outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>ಉಪ ವಿಳಾಸ / ತಾಲೂಕು (Factory Sub-address)</span>
+                </label>
+                <input
+                  type="text"
+                  value={factorySub}
+                  onChange={(e) => setFactorySub(e.target.value)}
+                  placeholder="ತಾ|| ಇಂಡಿ / ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ - 586204"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200 outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            {/* Row 2: Location and Prefix Controls */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-slate-400 font-semibold mb-1">
@@ -636,7 +778,7 @@ export default function BookStickerModal({
 
               <div>
                 <label className="block text-slate-400 font-semibold mb-1">
-                  ಡೀಫಾಲ್ಟ್ ಜಿಲ್ಲೆ (District)
+                  ಜಿಲ್ಲೆ (District)
                 </label>
                 <input
                   type="text"
@@ -649,7 +791,7 @@ export default function BookStickerModal({
 
               <div>
                 <label className="block text-slate-400 font-semibold mb-1">
-                  ಡೀಫಾಲ್ಟ್ ಪಿನ್ ಕೋಡ್ (PIN Code)
+                  ಡೀಫಾಲ್ಟ್ ಪಿನ್-ಕೋಡ್ (Pincode)
                 </label>
                 <input
                   type="text"
@@ -674,7 +816,7 @@ export default function BookStickerModal({
               </div>
             </div>
 
-            {/* Bottom Row: Controls & Toggles */}
+            {/* Row 3: Controls & Toggles */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
               <div>
                 <label className="block text-slate-400 font-semibold mb-1">
@@ -710,6 +852,18 @@ export default function BookStickerModal({
                 <label className="flex items-center gap-2 text-slate-300 font-semibold cursor-pointer">
                   <input
                     type="checkbox"
+                    checked={showFactoryName}
+                    onChange={(e) => setShowFactoryName(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700"
+                  />
+                  <span>ಕಾರ್ಖಾನೆ ಹೆಸರು</span>
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2 pt-4">
+                <label className="flex items-center gap-2 text-slate-300 font-semibold cursor-pointer">
+                  <input
+                    type="checkbox"
                     checked={showQrCode}
                     onChange={(e) => setShowQrCode(e.target.checked)}
                     className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700"
@@ -720,24 +874,12 @@ export default function BookStickerModal({
                   </span>
                 </label>
               </div>
-
-              <div className="flex items-center gap-2 pt-4">
-                <label className="flex items-center gap-2 text-slate-300 font-semibold cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showLogo}
-                    onChange={(e) => setShowLogo(e.target.checked)}
-                    className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700"
-                  />
-                  <span>ಕಾರ್ಖಾನೆ ಲೋಗೋ</span>
-                </label>
-              </div>
             </div>
 
             {/* Statutory Dimension Pill */}
             <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
               <span className="text-emerald-400 font-medium">
-                ✓ ಫಾಂಟ್: Google Anek Kannada • ಅಳತೆ: 9.8cm × 5.6cm • ಮಾರ್ಜಿನ್: 0.5cm (ದೊಡ್ಡ ಗಾತ್ರದ AGM QR ಕೋಡ್ ಸಕ್ರಿಯವಾಗಿದೆ)
+                ✓ ಕಾರ್ಖಾನೆ ಹೆಸರು ಸೇರ್ಪಡೆ • Google Anek Kannada • ಅಳತೆ: 9.8cm × 5.6cm • ಮಾರ್ಜಿನ್: 0.5cm • ಪೂರ್ಣ ವಿಳಾಸ ಬೆಂಬಲ
               </span>
               {qrLoading && (
                 <span className="text-amber-400 flex items-center gap-1.5 font-mono">
@@ -749,8 +891,8 @@ export default function BookStickerModal({
           </div>
         )}
 
-        {/* Pagination & Controls Bar */}
-        <div className="px-4 py-2.5 bg-slate-950/60 border-b border-slate-800/80 flex items-center justify-between gap-3 shrink-0 flex-wrap">
+        {/* Modal Sub-Header: Pagination & Status */}
+        <div className="px-5 py-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -789,7 +931,7 @@ export default function BookStickerModal({
                   return (
                     <div
                       key={`blank-${idx}`}
-                      className="h-36 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs font-mono"
+                      className="h-38 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs font-mono"
                     >
                       [ಖಾಲಿ ಸ್ಥಾನ {slot.slotNo}]
                     </div>
@@ -811,47 +953,74 @@ export default function BookStickerModal({
                 return (
                   <div
                     key={item.id}
-                    className="h-36 rounded-xl border border-black p-2.5 sm:p-3 bg-white flex flex-col justify-between shadow-xs transition-transform hover:scale-101"
+                    className="min-h-38 rounded-xl border border-black p-2.5 sm:p-3 bg-white flex flex-col justify-between shadow-xs transition-transform hover:scale-101"
                     style={{ fontFamily: "'Anek Kannada', sans-serif" }}
                   >
-                    {/* Top Row: Logo on Left, Sr.No & Share No on Right */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="w-10 h-8 flex items-center justify-start shrink-0">
+                    {/* Top Header: Logo on Left, Factory Name in Center, Sr.No & Share No on Right */}
+                    <div className="flex items-center justify-between gap-2 pb-1 border-b border-black">
+                      <div className="w-8 h-7 flex items-center justify-start shrink-0">
                         {showLogo && (
                           <img
                             src={companyLogoUrl}
                             alt="Logo"
-                            className="max-h-8 max-w-10 object-contain"
+                            className="max-h-7 max-w-8 object-contain"
                             onError={(e) => { e.target.style.display = 'none'; }}
                           />
                         )}
                       </div>
-                      <div className="text-right">
-                        <div className="text-[11px] font-semibold text-black leading-tight">
+
+                      <div className="flex-1 min-w-0 text-left leading-tight">
+                        {showFactoryName && (
+                          <>
+                            <div className="text-[11px] font-extrabold text-black truncate tracking-tight">
+                              {factoryName}
+                            </div>
+                            <div className="text-[8.5px] font-semibold text-slate-700 truncate">
+                              {factorySub}
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <div className="text-[10px] font-bold text-black leading-tight">
                           {srNoDisplay}
                         </div>
-                        <div className="text-[14px] font-extrabold text-black leading-tight">
+                        <div className="text-[13px] font-black text-black leading-tight">
                           Share No.: {item.shareNo}
                         </div>
                       </div>
                     </div>
 
                     {/* Middle Details + Larger Right-side QR Code */}
-                    <div className="flex items-center justify-between gap-2 mt-0.5">
-                      <div className="space-y-0.5 flex-1 min-w-0 pr-1">
-                        <div className="text-xs sm:text-[13.5px] font-extrabold text-black leading-snug truncate">
+                    <div className="flex items-center justify-between gap-2 mt-1 flex-1">
+                      <div className="space-y-0.5 flex-1 min-w-0 pr-1 text-left">
+                        <div className="text-xs sm:text-[13px] font-extrabold text-black leading-snug truncate">
                           {item.name}
                         </div>
-                        <div className="text-[12px] sm:text-[12.5px] font-semibold text-black leading-tight">
+                        {item.fullAddress && (
+                          <div className="text-[11px] font-semibold text-slate-800 leading-tight truncate">
+                            ವಿಳಾಸ: {item.fullAddress}
+                          </div>
+                        )}
+                        <div className="text-[12px] font-semibold text-black leading-tight">
                           ಪೋಸ್ಟ್: {item.place}
                         </div>
-                        <div className="flex items-center justify-between text-[11.5px] sm:text-[12px] font-semibold text-black leading-tight">
+                        <div className="flex items-center justify-between text-[11.5px] font-semibold text-black leading-tight">
                           <span>ತಾಲೂಕ್: {item.taluk}</span>
                           <span className="mr-1">ಜಿಲ್ಲಾ: {item.district}</span>
                         </div>
-                        <div className="text-[11.5px] font-semibold text-black leading-tight">
-                          ಪಿನ್-ಕೋಡ್: {item.pincode}
+                        <div className="flex items-center justify-between text-[11px] font-semibold text-black leading-tight">
+                          <span>ಪಿನ್-ಕೋಡ್: {item.pincode}</span>
+                          {item.mobile && (
+                            <span className="font-mono text-[10.5px]">ಮೊ: {item.mobile}</span>
+                          )}
                         </div>
+                        {item.category && (
+                          <div className="text-[9.5px] font-bold text-slate-700">
+                            ವರ್ಗ: {item.category} • ಶೇರು: {item.sharesCount}
+                          </div>
+                        )}
                       </div>
 
                       {/* BIGGER Shareholder General Board Meeting QR Code */}
@@ -884,40 +1053,30 @@ export default function BookStickerModal({
         <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="text-xs text-slate-400 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>A4 ಅಳತೆಯ ಸ್ವಯಂ-ಅಂಟಿಕೊಳ್ಳುವ ಸ್ಟಿಕ್ಕರ್ ಶೀಟ್ (ಅಗಲ 9.8cm × ಎತ್ತರ 5.6cm, ಮಾರ್ಜಿನ್ 0.5cm, Anek Kannada ಫಾಂಟ್).</span>
+            <span>ಕಾರ್ಖಾನೆ ಹೆಸರು ಸಹಿತ A4 ಸ್ಟಿಕ್ಕರ್ ಶೀಟ್ (ಅಗಲ 9.8cm × ಎತ್ತರ 5.6cm, ಮಾರ್ಜಿನ್ 0.5cm, Anek Kannada ಫಾಂಟ್).</span>
           </div>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
             <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all cursor-pointer"
+              onClick={() => handlePrint(true)}
+              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+              title="ಕೇವಲ ಪ್ರಸ್ತುತ ಪುಟವನ್ನು ಮಾತ್ರ ಮುದ್ರಿಸಿ"
             >
-              ರದ್ದು (Close)
+              <Printer className="w-4 h-4 text-amber-400" />
+              <span>ಪ್ರಸ್ತುತ ಪುಟ ಮುದ್ರಿಸಿ ({currentPage})</span>
             </button>
 
-            {totalPages > 1 && (
-              <button
-                type="button"
-                onClick={() => handlePrint(true)}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
-                title="ಕೇವಲ ಪ್ರಸ್ತುತ ಪುಟವನ್ನು ಮಾತ್ರ ಮುದ್ರಿಸಿ"
-              >
-                <Printer className="w-3.5 h-3.5 text-amber-400" />
-                <span>ಪುಟ {currentPage} ಮಾತ್ರ ಮುದ್ರಿಸಿ</span>
-              </button>
-            )}
-
             <button
-              type="button"
               onClick={() => handlePrint(false)}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 via-amber-500 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-slate-950 font-black text-xs transition-all flex items-center gap-2 cursor-pointer shadow-xl shadow-amber-950/50"
+              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black rounded-xl text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+              title="ಎಲ್ಲಾ ಶೇರುದಾರರ ಸ್ಟಿಕ್ಕರ್‌ಗಳನ್ನು ಮುದ್ರಿಸಿ"
             >
-              <Printer className="w-4 h-4 text-slate-950" />
-              <span>ಎಲ್ಲಾ {totalStickers} ಸ್ಟಿಕ್ಕರ್‌ಗಳನ್ನು ಮುದ್ರಿಸಿ (Print All)</span>
+              <Printer className="w-4 h-4" />
+              <span>ಎಲ್ಲಾ ಸ್ಟಿಕ್ಕರ್‌ಗಳು ಮುದ್ರಿಸಿ ({totalStickers} ಶೇರುದಾರರು)</span>
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );
