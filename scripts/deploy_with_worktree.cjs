@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: default minimum 2 of 5 AGMs for election eligibility under Section 20(2)"');
+    run('git commit -m "feat: hide secret code in UI, add AGM attendance reset and bulk present options"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -46,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: default min 2 of 5 AGMs Section 20(2) election eligibility (${Date.now()})`;
+  const commitMsg = `Deploy: hide secret code in UI, add AGM attendance reset & bulk present (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);

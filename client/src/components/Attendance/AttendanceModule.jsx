@@ -11,7 +11,8 @@ import {
   QrCode, UserCheck, Users, FileSpreadsheet, Sparkles, Filter, Check, ArrowRight,
   Camera, AlertTriangle, X, Image as ImageIcon, Video, VideoOff, ShieldCheck,
   Smartphone, Monitor, Download, Printer, ChevronLeft, ChevronRight, CheckCheck,
-  Radio, Lock, Unlock, Vote, Award, FileText, KeyRound, Eye, EyeOff
+  Radio, Lock, Unlock, Vote, Award, FileText, KeyRound, Eye, EyeOff, RotateCcw,
+  CheckSquare, Square, ListChecks, Layers
 } from 'lucide-react';
 
 const SECRET_UNLOCK_CODE = '12071990';
@@ -105,6 +106,17 @@ export default function AttendanceModule() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
   const scanInputRef = useRef(null);
+
+  // Multi-select & Bulk / Reset States
+  const [selectedShareholderIds, setSelectedShareholderIds] = useState(new Set());
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetScopeChoice, setResetScopeChoice] = useState('all'); // 'all', 'filtered', 'selected'
+  const [showBulkPresentModal, setShowBulkPresentModal] = useState(false);
+  const [bulkPresentScope, setBulkPresentScope] = useState('filtered'); // 'filtered', 'range', 'village', 'category', 'all'
+  const [bulkRangeFrom, setBulkRangeFrom] = useState(1);
+  const [bulkRangeTo, setBulkRangeTo] = useState(100);
+  const [bulkSelectedVillage, setBulkSelectedVillage] = useState('');
+  const [bulkSelectedCategory, setBulkSelectedCategory] = useState('ಅ - ವರ್ಗ');
 
   // Live Camera Scanner States
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -286,14 +298,22 @@ export default function AttendanceModule() {
       // D. Build Combined Map: `${agmId}_${entityId}` -> scan
       const scanMap = new Map();
 
-      // Seed realistic historical attendance for past AGMs (1, 2, 3, 4) if empty so election eligibility is immediately rich & realistic
+      // Seed realistic historical attendance for past AGMs (1, 2, 3, 4) if empty and not reset
+      const isResetAgm = (agm) => {
+        try {
+          return localStorage.getItem(`sugar_agm_reset_${agm}`) === 'true';
+        } catch (e) {
+          return false;
+        }
+      };
+
       const hasPastScans = [...localScans, ...cloudScans].some(s => ['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4'].includes(s?.agmId || s?.agm));
       if (!hasPastScans && masterMembers.length > 0) {
         // Deterministic realistic seeding: majority of shareholders attended 3 or 4 AGMs
         masterMembers.forEach((m, idx) => {
           const idNum = Number(m.entity_id) || (idx + 1);
           // AGM-1 (2022)
-          if (idNum % 5 !== 0) {
+          if (!isResetAgm('AGM-1') && idNum % 5 !== 0) {
             scanMap.set(`AGM-1_${m.entity_id}`, {
               agmId: 'AGM-1',
               date: DEFAULT_AGM_CONFIGS['AGM-1'].date,
@@ -308,7 +328,7 @@ export default function AttendanceModule() {
             });
           }
           // AGM-2 (2023)
-          if (idNum % 4 !== 0) {
+          if (!isResetAgm('AGM-2') && idNum % 4 !== 0) {
             scanMap.set(`AGM-2_${m.entity_id}`, {
               agmId: 'AGM-2',
               date: DEFAULT_AGM_CONFIGS['AGM-2'].date,
@@ -323,7 +343,7 @@ export default function AttendanceModule() {
             });
           }
           // AGM-3 (2024)
-          if (idNum % 6 !== 0) {
+          if (!isResetAgm('AGM-3') && idNum % 6 !== 0) {
             scanMap.set(`AGM-3_${m.entity_id}`, {
               agmId: 'AGM-3',
               date: DEFAULT_AGM_CONFIGS['AGM-3'].date,
@@ -338,7 +358,7 @@ export default function AttendanceModule() {
             });
           }
           // AGM-4 (2025)
-          if (idNum % 3 !== 0) {
+          if (!isResetAgm('AGM-4') && idNum % 3 !== 0) {
             scanMap.set(`AGM-4_${m.entity_id}`, {
               agmId: 'AGM-4',
               date: DEFAULT_AGM_CONFIGS['AGM-4'].date,
@@ -809,6 +829,249 @@ export default function AttendanceModule() {
     }
 
     showToast(`ಷೇರು #${entityId} ಸ್ಥಿತಿ '${nextStatus}' ಎಂದು ಬದಲಾಯಿಸಲಾಗಿದೆ`, 'info');
+  };
+
+  // Unique Villages for Bulk Selection
+  const uniqueVillages = useMemo(() => {
+    const set = new Set();
+    masterShareholders.forEach(s => {
+      const v = String(s.department || s.village_name || '').trim();
+      if (v) set.add(v);
+    });
+    return Array.from(set).sort();
+  }, [masterShareholders]);
+
+  // Handle Reset Attendance for Active AGM
+  const handleResetAgmAttendance = async (scope = 'all') => {
+    if (!canRecordAttendance) {
+      showToast('⚠️ ಹಾಜರಾತಿ ಮರುಹೊಂದಿಸಲು ಸಿಬ್ಬಂದಿ ಲಾಗಿನ್ ಅಗತ್ಯವಿದೆ', 'error');
+      return;
+    }
+    if (isCurrentAgmFrozen) {
+      playWarningBeep();
+      showToast(`🔒 ಈ ಮಹಾಸಭೆ (${activeAgmTab}) ಫ್ರೀಜ್ ಆಗಿದೆ. ತಿದ್ದುಪಡಿ ಮಾಡಲು ರಹಸ್ಯ ಕೋಡ್ ಅಗತ್ಯವಿದೆ.`, 'error');
+      handleRequestUnlock(activeAgmTab);
+      return;
+    }
+
+    const currentAgmKey = activeAgmTab;
+    let targetIds = [];
+
+    if (scope === 'selected' && selectedShareholderIds.size > 0) {
+      targetIds = Array.from(selectedShareholderIds);
+    } else if (scope === 'filtered') {
+      targetIds = filteredList.map(s => String(s.entity_id).trim());
+    } else {
+      targetIds = attendanceList.map(s => String(s.entity_id).trim());
+    }
+
+    if (targetIds.length === 0) {
+      showToast('ಮರುಹೊಂದಿಸಲು ಯಾವುದೇ ಶೇರುದಾರರು ಕಂಡುಬಂದಿಲ್ಲ', 'error');
+      return;
+    }
+
+    const targetSet = new Set(targetIds.map(String));
+
+    // Update attendanceList locally
+    setAttendanceList(prev => prev.map(item => {
+      if (targetSet.has(String(item.entity_id).trim())) {
+        return {
+          ...item,
+          status: 'Absent',
+          time: null,
+          scanned_by: null,
+          scanned_by_role: null,
+          counter: null
+        };
+      }
+      return item;
+    }));
+
+    // Update allAgmScansMap
+    setAllAgmScansMap(prev => {
+      const nextMap = new Map(prev);
+      targetIds.forEach(id => {
+        nextMap.delete(`${currentAgmKey}_${id}`);
+      });
+      return nextMap;
+    });
+
+    // Mark reset in localStorage
+    try {
+      localStorage.setItem(`sugar_agm_reset_${currentAgmKey}`, 'true');
+      const localKey = `sugar_agm_scans_${currentAgmKey}`;
+      const existingStr = localStorage.getItem(localKey);
+      if (existingStr) {
+        let scans = JSON.parse(existingStr);
+        if (Array.isArray(scans)) {
+          scans = scans.filter(s => !targetSet.has(String(s.entity_id).trim()));
+          localStorage.setItem(localKey, JSON.stringify(scans));
+        } else if (typeof scans === 'object') {
+          targetIds.forEach(id => delete scans[id]);
+          localStorage.setItem(localKey, JSON.stringify(scans));
+        }
+      }
+    } catch (e) {
+      console.warn('Local storage update failed:', e);
+    }
+
+    // Update Cloud DB
+    if (CloudDbService.isEnabled()) {
+      targetIds.forEach(async (id) => {
+        try {
+          await CloudDbService.deleteCollectionItem('agm_attendance_scans', `${currentAgmKey}_${id}`);
+        } catch (e) {}
+      });
+    }
+
+    // Broadcast change
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        const channel = new BroadcastChannel('sugar_erp_attendance_channel');
+        channel.postMessage({ type: 'RESET_ATTENDANCE_SCANS', agmId: currentAgmKey, count: targetIds.length });
+        channel.close();
+      } catch (e) {}
+    }
+
+    setSelectedShareholderIds(new Set());
+    setShowResetModal(false);
+    playWarningBeep();
+    showToast(`✅ ${DEFAULT_AGM_CONFIGS[currentAgmKey]?.name || currentAgmKey}: ${targetIds.length} ಶೇರುದಾರರ ಹಾಜರಾತಿ ಮರುಹೊಂದಿಸಲಾಗಿದೆ (Reset to Absent)!`, 'success');
+  };
+
+  // Handle Bulk Mark Present for Active AGM
+  const handleBulkMarkPresent = async (scope, extraParams = {}) => {
+    if (!canRecordAttendance) {
+      showToast('⚠️ ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ ದಾಖಲಿಸಲು ಸಿಬ್ಬಂದಿ ಲಾಗಿನ್ ಅಗತ್ಯವಿದೆ', 'error');
+      return;
+    }
+    if (isCurrentAgmFrozen) {
+      playWarningBeep();
+      showToast(`🔒 ಈ ಮಹಾಸಭೆ (${activeAgmTab}) ಫ್ರೀಜ್ ಆಗಿದೆ. ತಿದ್ದುಪಡಿ ಮಾಡಲು ರಹಸ್ಯ ಕೋಡ್ ಅಗತ್ಯವಿದೆ.`, 'error');
+      handleRequestUnlock(activeAgmTab);
+      return;
+    }
+
+    const currentAgmKey = activeAgmTab;
+    const currentTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const staffLabel = `${user?.name || 'Staff'} (${user?.role || 'Staff'})`;
+
+    let targetItems = [];
+
+    if (scope === 'selected' && selectedShareholderIds.size > 0) {
+      targetItems = attendanceList.filter(s => selectedShareholderIds.has(String(s.entity_id).trim()));
+    } else if (scope === 'filtered') {
+      targetItems = filteredList;
+    } else if (scope === 'range') {
+      const from = Number(extraParams.fromShareNo) || 1;
+      const to = Number(extraParams.toShareNo) || 100;
+      targetItems = attendanceList.filter(s => {
+        const num = Number(s.entity_id);
+        return num >= from && num <= to;
+      });
+    } else if (scope === 'village') {
+      const v = String(extraParams.village || '').trim().toLowerCase();
+      targetItems = attendanceList.filter(s => String(s.department || s.village_name || '').trim().toLowerCase() === v);
+    } else if (scope === 'category') {
+      const c = String(extraParams.category || '').trim();
+      targetItems = attendanceList.filter(s => String(s.category || '').trim() === c);
+    } else if (scope === 'all') {
+      targetItems = attendanceList;
+    }
+
+    if (targetItems.length === 0) {
+      showToast('ಹಾಜರು ಮಾಡಲು ಯಾವುದೇ ಶೇರುದಾರರು ಕಂಡುಬಂದಿಲ್ಲ', 'error');
+      return;
+    }
+
+    const targetSet = new Set(targetItems.map(i => String(i.entity_id).trim()));
+
+    // Build payload array
+    const newScans = [];
+    const updatedList = attendanceList.map(item => {
+      const id = String(item.entity_id).trim();
+      if (targetSet.has(id)) {
+        const payload = {
+          agmId: currentAgmKey,
+          date: selectedDate,
+          type: 'Shareholder',
+          entity_id: id,
+          name: item.name,
+          department: item.department,
+          category: item.category || 'ಅ - ವರ್ಗ',
+          status: 'Present',
+          time: item.time || currentTime,
+          scanned_by: item.scanned_by || staffLabel,
+          counter: item.counter || selectedCounter
+        };
+        newScans.push(payload);
+        return {
+          ...item,
+          status: 'Present',
+          time: item.time || currentTime,
+          scanned_by: item.scanned_by || staffLabel,
+          counter: item.counter || selectedCounter
+        };
+      }
+      return item;
+    });
+
+    // Update state
+    setAttendanceList(updatedList);
+    setAllAgmScansMap(prev => {
+      const nextMap = new Map(prev);
+      newScans.forEach(s => {
+        nextMap.set(`${currentAgmKey}_${s.entity_id}`, s);
+      });
+      return nextMap;
+    });
+
+    // Save to localStorage
+    try {
+      localStorage.setItem(`sugar_agm_reset_${currentAgmKey}`, 'false');
+      const localKey = `sugar_agm_scans_${currentAgmKey}`;
+      const existingStr = localStorage.getItem(localKey);
+      let list = [];
+      if (existingStr) {
+        try {
+          const parsed = JSON.parse(existingStr);
+          if (Array.isArray(parsed)) list = parsed.filter(s => !targetSet.has(String(s.entity_id).trim()));
+        } catch (e) {}
+      }
+      list.push(...newScans);
+      localStorage.setItem(localKey, JSON.stringify(list));
+    } catch (e) {
+      console.warn('Local storage save failed:', e);
+    }
+
+    // Save to Cloud DB
+    if (CloudDbService.isEnabled()) {
+      try {
+        if (typeof CloudDbService.saveCollectionBulk === 'function') {
+          await CloudDbService.saveCollectionBulk('agm_attendance_scans', newScans, 'entity_id');
+        } else {
+          newScans.forEach(async (s) => {
+            await CloudDbService.saveCollectionItem('agm_attendance_scans', `${currentAgmKey}_${s.entity_id}`, s);
+          });
+        }
+      } catch (e) {
+        console.warn('Cloud DB bulk save note:', e);
+      }
+    }
+
+    // Broadcast
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        const channel = new BroadcastChannel('sugar_erp_attendance_channel');
+        channel.postMessage({ type: 'BULK_ATTENDANCE_SCANS', agmId: currentAgmKey, count: newScans.length });
+        channel.close();
+      } catch (e) {}
+    }
+
+    setSelectedShareholderIds(new Set());
+    setShowBulkPresentModal(false);
+    playSuccessBeep();
+    showToast(`✅ ${DEFAULT_AGM_CONFIGS[currentAgmKey]?.name || currentAgmKey}: ${newScans.length} ಶೇರುದಾರರಿಗೆ ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ (Bulk Present) ದಾಖಲಿಸಲಾಗಿದೆ!`, 'success');
   };
 
   // ELECTION ELIGIBILITY REPORT CALCULATION ACROSS ALL 5 AGMS
@@ -1330,7 +1593,7 @@ export default function AttendanceModule() {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            ಮಹಾಸಭೆ 1 ರಿಂದ 5 • ಫ್ರೀಜ್ & ರಹಸ್ಯ ಕೋಡ್ ಲಾಕಿಂಗ್ (12071990) • ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ವರದಿ
+            ಮಹಾಸಭೆ 1 ರಿಂದ 5 • ಅಂತಿಮ ಫ್ರೀಜ್ ರಕ್ಷಣೆ • ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ವಹಿ
           </p>
         </div>
 
@@ -1483,9 +1746,44 @@ export default function AttendanceModule() {
           </button>
         </div>
 
-        {/* Freeze / Unlock Action for Active AGM */}
+        {/* Actions for Active AGM: Bulk Present, Reset, Freeze/Unlock */}
         {activeAgmTab !== 'ELECTION_ELIGIBLE' && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Bulk Present Button */}
+            <button
+              onClick={() => {
+                if (isCurrentAgmFrozen) {
+                  showToast(`🔒 ಈ ಮಹಾಸಭೆ (${activeAgmTab}) ಫ್ರೀಜ್ ಆಗಿದೆ. ತಿದ್ದುಪಡಿ ಮಾಡಲು ಮೊದಲು ಅನ್‌ಲಾಕ್ ಮಾಡಿ.`, 'error');
+                  handleRequestUnlock(activeAgmTab);
+                } else {
+                  setShowBulkPresentModal(true);
+                }
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+              title="ಶೇರುದಾರರ ಗುಂಪಿಗೆ ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ ನಮೂದಿಸಿ (Bulk Mark Present)"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ (Bulk Present)</span>
+            </button>
+
+            {/* Reset Attendance Button */}
+            <button
+              onClick={() => {
+                if (isCurrentAgmFrozen) {
+                  showToast(`🔒 ಈ ಮಹಾಸಭೆ (${activeAgmTab}) ಫ್ರೀಜ್ ಆಗಿದೆ. ತಿದ್ದುಪಡಿ ಮಾಡಲು ಮೊದಲು ಅನ್‌ಲಾಕ್ ಮಾಡಿ.`, 'error');
+                  handleRequestUnlock(activeAgmTab);
+                } else {
+                  setShowResetModal(true);
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-rose-950/70 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-500 rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+              title="ಈ ಮಹಾಸಭೆಯ ಶೇರುದಾರರ ಹಾಜರಾತಿ ಸ್ಥಿತಿ ಮರುಹೊಂದಿಸಿ (Reset Status)"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+              <span>ಮರುಹೊಂದಿಸಿ (Reset)</span>
+            </button>
+
+            {/* Freeze / Unlock Button */}
             {isCurrentAgmFrozen ? (
               <button
                 onClick={() => handleRequestUnlock(activeAgmTab)}
@@ -1493,7 +1791,7 @@ export default function AttendanceModule() {
                 title="ರಹಸ್ಯ ಕೋಡ್ ನಮೂದಿಸಿ ಅನ್‌ಫ್ರೀಜ್ / ತಿದ್ದುಪಡಿ ಮಾಡಿ"
               >
                 <Unlock className="w-3.5 h-3.5" />
-                <span>ಅನ್‌ಲಾಕ್ / ತಿದ್ದುಪಡಿ (ಕೋಡ್: 12071990)</span>
+                <span>ಅನ್‌ಲಾಕ್ / ತಿದ್ದುಪಡಿ</span>
               </button>
             ) : (
               <button
@@ -1576,7 +1874,7 @@ export default function AttendanceModule() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleConfirmUnlock();
                   }}
-                  placeholder="ರಹಸ್ಯ ಕೋಡ್ ನಮೂದಿಸಿ (Enter 12071990)..."
+                  placeholder="ಅಧಿಕೃತ ರಹಸ್ಯ ಕೋಡ್ ನಮೂದಿಸಿ (Enter Secret Code)..."
                   className="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-sm text-amber-200 outline-none font-mono tracking-wider"
                 />
                 <button
@@ -1615,6 +1913,346 @@ export default function AttendanceModule() {
                 className="px-5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black rounded-xl text-xs shadow-lg cursor-pointer"
               >
                 ಅನ್‌ಲಾಕ್ ಮಾಡಿ (Unlock)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESET AGM ATTENDANCE CONFIRMATION MODAL */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-rose-500/80 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scaleUp">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-rose-300">
+                    ಹಾಜರಾತಿ ಸ್ಥಿತಿ ಮರುಹೊಂದಿಸಿ (Reset Status)
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {DEFAULT_AGM_CONFIGS[activeAgmTab]?.name} ({DEFAULT_AGM_CONFIGS[activeAgmTab]?.year})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowResetModal(false)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-xs text-rose-200 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <span>
+                ಗಮನಿಸಿ: ಮರುಹೊಂದಿಸಿದ ನಂತರ ಆಯ್ಕೆ ಮಾಡಿದ ಶೇರುದಾರರ ಹಾಜರಾತಿ ಸ್ಥಿತಿಯು <strong>"ಗೈರುಹಾಜರು (Absent)"</strong> ಎಂದು ಬದಲಾಗುತ್ತದೆ.
+              </span>
+            </div>
+
+            {/* Scope Selection */}
+            <div className="space-y-2 text-xs">
+              <label className="block font-bold text-slate-300">
+                ಮರುಹೊಂದಿಸುವ ವ್ಯಾಪ್ತಿ ಆಯ್ಕೆಮಾಡಿ (Select Scope):
+              </label>
+
+              <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                resetScopeChoice === 'all'
+                  ? 'bg-rose-950/60 border-rose-500 text-rose-200'
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+              }`}>
+                <input
+                  type="radio"
+                  name="resetScope"
+                  value="all"
+                  checked={resetScopeChoice === 'all'}
+                  onChange={() => setResetScopeChoice('all')}
+                  className="text-rose-500"
+                />
+                <div className="flex-1">
+                  <div className="font-bold">ಎಲ್ಲಾ ಶೇರುದಾರರನ್ನು ಮರುಹೊಂದಿಸಿ (Reset ALL to Absent)</div>
+                  <div className="text-[11px] text-slate-400">ಈ ಮಹಾಸಭೆಯ ಒಟ್ಟು {attendanceList.length} ಶೇರುದಾರರ ಹಾಜರಾತಿಯನ್ನು ತೆರವುಗೊಳಿಸುತ್ತದೆ</div>
+                </div>
+              </label>
+
+              <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                resetScopeChoice === 'filtered'
+                  ? 'bg-rose-950/60 border-rose-500 text-rose-200'
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+              }`}>
+                <input
+                  type="radio"
+                  name="resetScope"
+                  value="filtered"
+                  checked={resetScopeChoice === 'filtered'}
+                  onChange={() => setResetScopeChoice('filtered')}
+                  className="text-rose-500"
+                />
+                <div className="flex-1">
+                  <div className="font-bold">ಪ್ರಸ್ತುತ ಹುಡುಕಲಾದ / ಫಿಲ್ಟರ್ ಆದವರು ಮಾತ್ರ ({filteredList.length} ಶೇರುದಾರರು)</div>
+                  <div className="text-[11px] text-slate-400">ಪ್ರಸ್ತುತ ಪಟ್ಟಿಯಲ್ಲಿ ಗೋಚರಿಸುವ ಶೇರುದಾರರನ್ನು ಮಾತ್ರ ಗೈರುಹಾಜರು ಮಾಡುತ್ತದೆ</div>
+                </div>
+              </label>
+
+              {selectedShareholderIds.size > 0 && (
+                <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                  resetScopeChoice === 'selected'
+                    ? 'bg-rose-950/60 border-rose-500 text-rose-200'
+                    : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                }`}>
+                  <input
+                    type="radio"
+                    name="resetScope"
+                    value="selected"
+                    checked={resetScopeChoice === 'selected'}
+                    onChange={() => setResetScopeChoice('selected')}
+                    className="text-rose-500"
+                  />
+                  <div className="flex-1">
+                    <div className="font-bold">ಚೆಕ್‌ಬಾಕ್ಸ್ ಮೂಲಕ ಆಯ್ಕೆ ಮಾಡಿದವರು ({selectedShareholderIds.size} ಶೇರುದಾರರು)</div>
+                    <div className="text-[11px] text-slate-400">ಆಯ್ಕೆ ಮಾಡಿದ ನಿರ್ದಿಷ್ಟ ಶೇರುದಾರರನ್ನು ಮಾತ್ರ ಮರುಹೊಂದಿಸುತ್ತದೆ</div>
+                  </div>
+                </label>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                ರದ್ದುಮಾಡಿ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleResetAgmAttendance(resetScopeChoice)}
+                className="px-5 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white rounded-xl text-xs font-black transition-all shadow-lg cursor-pointer flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>ಖಚಿತಪಡಿಸಿ ಮರುಹೊಂದಿಸಿ (Confirm Reset)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BULK SHAREHOLDERS STATUS PRESENT MODAL */}
+      {showBulkPresentModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-emerald-500/80 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4 animate-scaleUp">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-emerald-300">
+                    ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ ದಾಖಲಿಸಿ (Bulk Mark Present)
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {DEFAULT_AGM_CONFIGS[activeAgmTab]?.name} ({DEFAULT_AGM_CONFIGS[activeAgmTab]?.year})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBulkPresentModal(false)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-xl text-xs text-emerald-200 flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <span>
+                ಆಯ್ಕೆ ಮಾಡಿದ ಶೇರುದಾರರಿಗೆ ಪ್ರಸ್ತುತ ಸಮಯ, ಕೌಂಟರ್ ({selectedCounter}) ಮತ್ತು ಸಿಬ್ಬಂದಿ ಸಹಿಯೊಂದಿಗೆ <strong>"ಹಾಜರು (Present)"</strong> ಎಂದು ದಾಖಲಿಸಲಾಗುತ್ತದೆ.
+              </span>
+            </div>
+
+            {/* Scope Modes */}
+            <div className="space-y-2.5 text-xs">
+              <label className="block font-bold text-slate-300">
+                ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ ವಿಧಾನ ಆಯ್ಕೆಮಾಡಿ (Select Mode):
+              </label>
+
+              {/* Mode 1: Filtered */}
+              <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                bulkPresentScope === 'filtered'
+                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+              }`}>
+                <input
+                  type="radio"
+                  name="bulkScope"
+                  value="filtered"
+                  checked={bulkPresentScope === 'filtered'}
+                  onChange={() => setBulkPresentScope('filtered')}
+                  className="mt-1 text-emerald-500"
+                />
+                <div className="flex-1">
+                  <div className="font-bold flex items-center justify-between">
+                    <span>ಪ್ರಸ್ತುತ ಫಿಲ್ಟರ್ ಆದ ಶೇರುದಾರರು</span>
+                    <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-[10px] font-mono">{filteredList.length} ಸದಸ್ಯರು</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    ಸರ್ಚ್ ಅಥವಾ ಫಿಲ್ಟರ್‌ನಲ್ಲಿ ಪ್ರಸ್ತುತ ಕಾಣುತ್ತಿರುವ ಎಲ್ಲಾ ಶೇರುದಾರರಿಗೆ ಹಾಜರಾತಿ ನೀಡುತ್ತದೆ
+                  </div>
+                </div>
+              </label>
+
+              {/* Mode 2: Range */}
+              <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                bulkPresentScope === 'range'
+                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+              }`}>
+                <input
+                  type="radio"
+                  name="bulkScope"
+                  value="range"
+                  checked={bulkPresentScope === 'range'}
+                  onChange={() => setBulkPresentScope('range')}
+                  className="mt-1 text-emerald-500"
+                />
+                <div className="flex-1 space-y-2">
+                  <div className="font-bold">ಷೇರು ಸಂಖ್ಯೆಗಳ ಶ್ರೇಣಿ (Share Number Range)</div>
+                  {bulkPresentScope === 'range' && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-slate-400 text-xs">ನಂ:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={bulkRangeFrom}
+                        onChange={(e) => setBulkRangeFrom(Number(e.target.value))}
+                        className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                        placeholder="From"
+                      />
+                      <span className="text-slate-400 text-xs">ರಿಂದ</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={bulkRangeTo}
+                        onChange={(e) => setBulkRangeTo(Number(e.target.value))}
+                        className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                        placeholder="To"
+                      />
+                      <span className="text-slate-400 text-xs">ವರೆಗೆ</span>
+                    </div>
+                  )}
+                </div>
+              </label>
+
+              {/* Mode 3: Village */}
+              <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                bulkPresentScope === 'village'
+                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+              }`}>
+                <input
+                  type="radio"
+                  name="bulkScope"
+                  value="village"
+                  checked={bulkPresentScope === 'village'}
+                  onChange={() => setBulkPresentScope('village')}
+                  className="mt-1 text-emerald-500"
+                />
+                <div className="flex-1 space-y-2">
+                  <div className="font-bold">ಗ್ರಾಮ / ಸ್ಥಳದ ಪ್ರಕಾರ (By Village / Place)</div>
+                  {bulkPresentScope === 'village' && (
+                    <select
+                      value={bulkSelectedVillage}
+                      onChange={(e) => setBulkSelectedVillage(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none cursor-pointer"
+                    >
+                      <option value="">-- ಗ್ರಾಮ ಆಯ್ಕೆಮಾಡಿ (Select Village) --</option>
+                      {uniqueVillages.map((v, i) => (
+                        <option key={i} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </label>
+
+              {/* Mode 4: Category */}
+              <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                bulkPresentScope === 'category'
+                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+              }`}>
+                <input
+                  type="radio"
+                  name="bulkScope"
+                  value="category"
+                  checked={bulkPresentScope === 'category'}
+                  onChange={() => setBulkPresentScope('category')}
+                  className="mt-1 text-emerald-500"
+                />
+                <div className="flex-1 space-y-2">
+                  <div className="font-bold">ವರ್ಗವಾರು (By Category)</div>
+                  {bulkPresentScope === 'category' && (
+                    <select
+                      value={bulkSelectedCategory}
+                      onChange={(e) => setBulkSelectedCategory(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none cursor-pointer"
+                    >
+                      <option value="ಅ - ವರ್ಗ">ಅ - ವರ್ಗ (A - Category)</option>
+                      <option value="ಬ - ವರ್ಗ">ಬ - ವರ್ಗ (B - Category)</option>
+                      <option value="ಕ - ವರ್ಗ">ಕ - ವರ್ಗ (C - Category)</option>
+                      <option value="ಡ - ವರ್ಗ">ಡ - ವರ್ಗ (D - Category)</option>
+                    </select>
+                  )}
+                </div>
+              </label>
+
+              {/* Mode 5: All */}
+              <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                bulkPresentScope === 'all'
+                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
+                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+              }`}>
+                <input
+                  type="radio"
+                  name="bulkScope"
+                  value="all"
+                  checked={bulkPresentScope === 'all'}
+                  onChange={() => setBulkPresentScope('all')}
+                  className="mt-1 text-emerald-500"
+                />
+                <div className="flex-1">
+                  <div className="font-bold flex items-center justify-between">
+                    <span>ಸಂಪೂರ್ಣ ಶೇರುದಾರರು (Mark ALL Members Present)</span>
+                    <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-[10px] font-mono">{attendanceList.length} ಸದಸ್ಯರು</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    ಸಂಸ್ಥೆಯ ಎಲ್ಲಾ ಸದಸ್ಯರಿಗೂ ಒಟ್ಟಿಗೆ ಹಾಜರಾತಿ ನೀಡುತ್ತದೆ
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowBulkPresentModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                ರದ್ದುಮಾಡಿ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkMarkPresent(bulkPresentScope, {
+                  fromShareNo: bulkRangeFrom,
+                  toShareNo: bulkRangeTo,
+                  village: bulkSelectedVillage,
+                  category: bulkSelectedCategory
+                })}
+                className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-black transition-all shadow-lg cursor-pointer flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>ಖಚಿತಪಡಿಸಿ ಹಾಜರು ಮಾಡಿ (Confirm Bulk Present)</span>
               </button>
             </div>
           </div>
@@ -2101,6 +2739,23 @@ export default function AttendanceModule() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-900 border-b border-slate-800 text-slate-400 uppercase font-semibold text-[10px]">
                   <tr>
+                    <th className="py-3.5 px-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={paginatedList.length > 0 && paginatedList.every(i => selectedShareholderIds.has(String(i.entity_id).trim()))}
+                        onChange={(e) => {
+                          const nextSet = new Set(selectedShareholderIds);
+                          if (e.target.checked) {
+                            paginatedList.forEach(i => nextSet.add(String(i.entity_id).trim()));
+                          } else {
+                            paginatedList.forEach(i => nextSet.delete(String(i.entity_id).trim()));
+                          }
+                          setSelectedShareholderIds(nextSet);
+                        }}
+                        className="w-4 h-4 rounded text-emerald-600 bg-slate-900 border-slate-700 cursor-pointer accent-emerald-500"
+                        title="ಪ್ರಸ್ತುತ ಪುಟದ ಎಲ್ಲರನ್ನೂ ಆಯ್ಕೆ ಮಾಡಿ"
+                      />
+                    </th>
                     <th className="py-3.5 px-4">Entity ID (ಷೇರು ಸಂ)</th>
                     <th className="py-3.5 px-4">Name (ಹೆಸರು)</th>
                     <th className="py-3.5 px-4 text-center">ವರ್ಗ (Category)</th>
@@ -2113,7 +2768,24 @@ export default function AttendanceModule() {
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-200">
                   {paginatedList.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-slate-900/60 transition-colors">
+                    <tr key={idx} className={`hover:bg-slate-900/60 transition-colors ${selectedShareholderIds.has(String(item.entity_id).trim()) ? 'bg-emerald-950/30' : ''}`}>
+                      <td className="py-3 px-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedShareholderIds.has(String(item.entity_id).trim())}
+                          onChange={(e) => {
+                            const nextSet = new Set(selectedShareholderIds);
+                            const id = String(item.entity_id).trim();
+                            if (e.target.checked) {
+                              nextSet.add(id);
+                            } else {
+                              nextSet.delete(id);
+                            }
+                            setSelectedShareholderIds(nextSet);
+                          }}
+                          className="w-4 h-4 rounded text-emerald-600 bg-slate-900 border-slate-700 cursor-pointer accent-emerald-500"
+                        />
+                      </td>
                       <td className="py-3 px-4 font-mono font-semibold text-emerald-400">#{item.entity_id}</td>
                       <td className="py-3 px-4 font-medium text-slate-100">
                         <div className="flex items-center gap-1.5">
@@ -2193,6 +2865,39 @@ export default function AttendanceModule() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* FLOATING ACTION BAR FOR SELECTED SHAREHOLDERS */}
+      {selectedShareholderIds.size > 0 && activeAgmTab !== 'ELECTION_ELIGIBLE' && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-md border-2 border-emerald-500/80 rounded-2xl px-5 py-3 shadow-2xl flex flex-wrap items-center gap-3 animate-slideUp">
+          <div className="flex items-center gap-2 text-white font-bold text-xs">
+            <span className="w-6 h-6 rounded-full bg-emerald-500 text-black flex items-center justify-center text-xs font-black">
+              {selectedShareholderIds.size}
+            </span>
+            <span>ಶೇರುದಾರರು ಆಯ್ಕೆಯಾಗಿದ್ದಾರೆ</span>
+          </div>
+          <div className="h-4 w-px bg-slate-700"></div>
+          <button
+            onClick={() => handleBulkMarkPresent('selected')}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>ಹಾಜರು ಮಾಡಿ (Mark Present)</span>
+          </button>
+          <button
+            onClick={() => handleResetAgmAttendance('selected')}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>ಗೈರುಹಾಜರು / ರಿಸೆಟ್ (Reset to Absent)</span>
+          </button>
+          <button
+            onClick={() => setSelectedShareholderIds(new Set())}
+            className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium cursor-pointer"
+          >
+            ಆಯ್ಕೆ ರದ್ದು
+          </button>
         </div>
       )}
 
