@@ -752,10 +752,19 @@ export default function AttendanceModule() {
     showToast(`📥 AGM ಹಾಜರಾತಿ CSV ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ (${itemsToExport.length} ಸದಸ್ಯರು)`, 'success');
   };
 
-  // OFFICIAL PRINT REGISTER (A4 Landscape)
+  // OFFICIAL PRINT REGISTER (A4 Portrait - Simplified with Signature & Remark)
   const handlePrintAttendance = () => {
     const presentItems = attendanceList.filter(i => i.status === 'Present');
-    const itemsToPrint = presentItems.length > 0 ? presentItems : attendanceList.slice(0, 100);
+    const itemsToPrint = filterStatus === 'Present'
+      ? presentItems
+      : (filterStatus === 'Absent'
+          ? attendanceList.filter(i => i.status === 'Absent')
+          : (presentItems.length > 0 ? presentItems : attendanceList.slice(0, 100)));
+
+    if (itemsToPrint.length === 0) {
+      showToast('⚠️ ಮುದ್ರಿಸಲು ಯಾವುದೇ ಹಾಜರಾತಿ ದಾಖಲೆಗಳಿಲ್ಲ', 'error');
+      return;
+    }
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -774,12 +783,8 @@ export default function AttendanceModule() {
           <td style="font-weight: 700;">${item.name}</td>
           <td style="text-align: center; font-weight: 600;">${item.category || 'ಅ - ವರ್ಗ'}</td>
           <td>${item.department}</td>
-          <td style="text-align: center;">${item.book_no || '—'}</td>
-          <td style="text-align: center; font-family: monospace; font-weight: 600;">${item.time || '—'}</td>
-          <td>${item.scanned_by || '—'}</td>
-          <td>${item.counter || '—'}</td>
-          <td style="text-align: center; color: #047857; font-weight: bold;">${item.status === 'Present' ? '✓ ಹಾಜರು' : 'ಗೈರು'}</td>
-          <td style="border-bottom: 1px dashed #94a3b8; width: 85px;"></td>
+          <td style="border-bottom: 1px dashed #64748b; height: 28px; width: 110px;"></td>
+          <td style="width: 90px;"></td>
         </tr>
       `;
     });
@@ -794,8 +799,8 @@ export default function AttendanceModule() {
   <link href="https://fonts.googleapis.com/css2?family=Anek+Kannada:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     @page {
-      size: A4 landscape;
-      margin: 1cm;
+      size: A4 portrait;
+      margin: 1cm 0.8cm;
     }
     * {
       box-sizing: border-box;
@@ -808,7 +813,7 @@ export default function AttendanceModule() {
       padding: 0;
       color: #000;
       background: #fff;
-      font-size: 11px;
+      font-size: 11.5px;
     }
     .header-box {
       border-bottom: 2px solid #000;
@@ -823,17 +828,18 @@ export default function AttendanceModule() {
       flex: 1;
     }
     .factory-name {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
       color: #000;
+      line-height: 1.2;
     }
     .factory-sub {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 600;
       color: #334155;
     }
     .doc-title {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 800;
       color: #047857;
       margin-top: 3px;
@@ -843,13 +849,13 @@ export default function AttendanceModule() {
     .meta-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      gap: 6px;
       background: #f1f5f9;
       border: 1px solid #cbd5e1;
-      padding: 6px 12px;
+      padding: 6px 10px;
       border-radius: 6px;
-      margin-bottom: 12px;
-      font-size: 11px;
+      margin-bottom: 10px;
+      font-size: 10.5px;
     }
     .meta-item strong {
       color: #0f172a;
@@ -860,13 +866,13 @@ export default function AttendanceModule() {
       margin-bottom: 15px;
     }
     th, td {
-      border: 1px solid #94a3b8;
-      padding: 4px 6px;
+      border: 1px solid #64748b;
+      padding: 5px 6px;
       font-size: 10.5px;
       line-height: 1.25;
     }
     th {
-      background-color: #e2e8f0;
+      background-color: #f1f5f9;
       color: #0f172a;
       font-weight: 800;
       text-align: left;
@@ -875,16 +881,17 @@ export default function AttendanceModule() {
       background-color: #f8fafc;
     }
     .footer-signatures {
-      margin-top: 30px;
+      margin-top: 25px;
       display: flex;
       justify-content: space-between;
-      padding: 0 20px;
-      font-size: 11px;
+      padding: 0 15px;
+      font-size: 10.5px;
       font-weight: 700;
+      page-break-inside: avoid;
     }
     .sig-box {
       text-align: center;
-      width: 180px;
+      width: 160px;
       border-top: 1px dashed #000;
       padding-top: 5px;
     }
@@ -892,16 +899,16 @@ export default function AttendanceModule() {
 </head>
 <body>
   <div class="header-box">
-    <div style="width: 60px;">
-      <img src="${companyLogoUrl}" style="max-height: 48px; max-width: 55px; object-fit: contain;" alt="Logo" onerror="this.style.display='none'" />
+    <div style="width: 50px;">
+      <img src="${companyLogoUrl}" style="max-height: 44px; max-width: 48px; object-fit: contain;" alt="Logo" onerror="this.style.display='none'" />
     </div>
     <div class="header-title-box">
       <div class="factory-name">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204</div>
       <div class="factory-sub">ತಾ|| ಇಂಡಿ / ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ (ಕರ್ನಾಟಕ)</div>
       <div class="doc-title">ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM) ಅಧಿಕೃತ ಹಾಜರಾತಿ ವಹಿ (Official AGM Attendance Register)</div>
     </div>
-    <div style="width: 60px; text-align: right; font-size: 9px; color: #64748b;">
-      <div>ದಿನಾಂಕ: ${selectedDate}</div>
+    <div style="width: 50px; text-align: right; font-size: 9px; color: #64748b;">
+      <div>${selectedDate}</div>
     </div>
   </div>
 
@@ -909,7 +916,7 @@ export default function AttendanceModule() {
     <div class="meta-item">ಸಭೆಯ ದಿನಾಂಕ: <strong>${selectedDate}</strong></div>
     <div class="meta-item">ಒಟ್ಟು ಷೇರುದಾರರು: <strong>${totalMembers.toLocaleString()}</strong></div>
     <div class="meta-item">ಹಾಜರಾದ ಸದಸ್ಯರು: <strong style="color: #047857;">${presentMembers.toLocaleString()}</strong></div>
-    <div class="meta-item">ಕೋರಂ ಶೇಕಡಾವಾರು: <strong>${quorumPct}%</strong></div>
+    <div class="meta-item">ಕೋರಂ ಸ್ಥಿತಿ: <strong>${quorumPct}%</strong></div>
   </div>
 
   <table>
@@ -918,14 +925,10 @@ export default function AttendanceModule() {
         <th style="width: 38px; text-align: center;">ಕ್ರ.ಸಂ.</th>
         <th style="width: 75px; text-align: center;">ಷೇರು ನಂ</th>
         <th>ಶೇರುದಾರರ ಹೆಸರು</th>
-        <th style="width: 75px; text-align: center;">ವರ್ಗ</th>
-        <th style="width: 100px;">ಗ್ರಾಮ / ಸ್ಥಳ</th>
-        <th style="width: 70px; text-align: center;">ಪುಸ್ತಕ ನಂ</th>
-        <th style="width: 70px; text-align: center;">ಸಮಯ</th>
-        <th>ದಾಖಲಿಸಿದ ಸಿಬ್ಬಂದಿ</th>
-        <th style="width: 120px;">ಕೌಂಟರ್</th>
-        <th style="width: 70px; text-align: center;">ಸ್ಥಿತಿ</th>
-        <th style="width: 85px; text-align: center;">ಸಹಿ</th>
+        <th style="width: 72px; text-align: center;">ವರ್ಗ</th>
+        <th style="width: 120px;">ಸ್ಥಳ / ಗ್ರಾಮ</th>
+        <th style="width: 110px; text-align: center;">ಸಹಿ</th>
+        <th style="width: 90px; text-align: center;">ಷರಾ</th>
       </tr>
     </thead>
     <tbody>
@@ -934,9 +937,9 @@ export default function AttendanceModule() {
   </table>
 
   <div class="footer-signatures">
-    <div class="sig-box">ಹಾಜರಾತಿ ನಿರ್ವಾಹಕರು (Operator)</div>
-    <div class="sig-box">ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿಗಳು (Chief Accountant)</div>
-    <div class="sig-box">ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು (Managing Director)</div>
+    <div class="sig-box">ಹಾಜರಾತಿ ನಿರ್ವಾಹಕರು</div>
+    <div class="sig-box">ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿಗಳು</div>
+    <div class="sig-box">ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು</div>
   </div>
 </body>
 </html>`;

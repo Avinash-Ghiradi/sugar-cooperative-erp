@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: add category column, excel .xlsx export, and print option to AGM attendance register"');
+    run('git commit -m "feat: print AGM attendance in portrait mode, remove unneeded columns, and add remark column"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -46,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: AGM attendance category, Excel .xlsx export & print (${Date.now()})`;
+  const commitMsg = `Deploy: AGM attendance portrait print & remark column (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);
