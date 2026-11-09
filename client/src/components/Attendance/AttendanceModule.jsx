@@ -294,9 +294,10 @@ export default function AttendanceModule() {
       let localScans = [];
       try {
         ['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4', 'AGM-5'].forEach(agm => {
+          const isAgmReset = localStorage.getItem(`sugar_agm_reset_${agm}`) === 'true';
           const key = `sugar_agm_scans_${agm}`;
           const saved = localStorage.getItem(key);
-          if (saved) {
+          if (saved && !isAgmReset) {
             const arr = JSON.parse(saved);
             if (Array.isArray(arr)) localScans.push(...arr);
             else if (typeof arr === 'object') localScans.push(...Object.values(arr));
@@ -315,7 +316,10 @@ export default function AttendanceModule() {
           });
         }
         if (!agmKey) agmKey = 'AGM-5';
-        scanMap.set(`${agmKey}_${String(s.entity_id).trim()}`, s);
+        const isAgmReset = localStorage.getItem(`sugar_agm_reset_${agmKey}`) === 'true';
+        if (!isAgmReset) {
+          scanMap.set(`${agmKey}_${String(s.entity_id).trim()}`, s);
+        }
       });
 
       setAllAgmScansMap(scanMap);
@@ -405,11 +409,13 @@ export default function AttendanceModule() {
     isSyncingRef.current = true;
     try {
       const scans = await CloudDbService.getCollection('agm_attendance_scans');
-      if (Array.isArray(scans) && scans.length > 0) {
-        const curMap = allAgmScansMapRef.current;
-        let hasChanges = false;
-        const newMap = new Map(curMap);
+      const curAgm = activeAgmTabRef.current;
+      const curMap = allAgmScansMapRef.current;
 
+      const freshMap = new Map();
+
+      // 1. Process cloud scans
+      if (Array.isArray(scans)) {
         scans.forEach(s => {
           if (!s || !s.entity_id) return;
           let agmKey = s.agmId || s.agm;
@@ -419,33 +425,98 @@ export default function AttendanceModule() {
             });
           }
           if (!agmKey) agmKey = 'AGM-5';
-          const key = `${agmKey}_${String(s.entity_id).trim()}`;
-          if (!newMap.has(key)) {
-            newMap.set(key, s);
-            hasChanges = true;
+          const isAgmReset = (() => {
+            try { return localStorage.getItem(`sugar_agm_reset_${agmKey}`) === 'true'; } catch (e) { return false; }
+          })();
+          if (!isAgmReset) {
+            freshMap.set(`${agmKey}_${String(s.entity_id).trim()}`, s);
           }
         });
+      }
 
-        if (hasChanges) {
-          setAllAgmScansMap(newMap);
-          const curAgm = activeAgmTabRef.current;
-          if (curAgm.startsWith('AGM-')) {
-            setAttendanceList(prev => prev.map(item => {
-              const scan = newMap.get(`${curAgm}_${String(item.entity_id).trim()}`);
-              if (scan && item.status !== 'Present') {
+      // 2. Also incorporate local scans
+      try {
+        ['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4', 'AGM-5'].forEach(agm => {
+          const isAgmReset = localStorage.getItem(`sugar_agm_reset_${agm}`) === 'true';
+          if (!isAgmReset) {
+            const saved = localStorage.getItem(`sugar_agm_scans_${agm}`);
+            if (saved) {
+              const arr = JSON.parse(saved);
+              const list = Array.isArray(arr) ? arr : (typeof arr === 'object' ? Object.values(arr) : []);
+              list.forEach(s => {
+                if (s && s.entity_id) {
+                  const key = `${agm}_${String(s.entity_id).trim()}`;
+                  if (!freshMap.has(key)) freshMap.set(key, s);
+                }
+              });
+            }
+          }
+        });
+      } catch (e) {}
+
+      // 3. Determine if there are changes between freshMap and curMap
+      let hasChanges = freshMap.size !== curMap.size;
+      if (!hasChanges) {
+        for (const [k] of freshMap) {
+          if (!curMap.has(k)) {
+            hasChanges = true;
+            break;
+          }
+        }
+      }
+
+      if (hasChanges) {
+        setAllAgmScansMap(freshMap);
+        if (curAgm.startsWith('AGM-')) {
+          const isCurAgmReset = (() => {
+            try { return localStorage.getItem(`sugar_agm_reset_${curAgm}`) === 'true'; } catch (e) { return false; }
+          })();
+
+          setAttendanceList(prev => prev.map((item, idx) => {
+            const id = String(item.entity_id).trim();
+            const scan = freshMap.get(`${curAgm}_${id}`);
+            const idNum = Number(id) || (idx + 1);
+            const isSynthetic = !scan && !isCurAgmReset && ['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4'].includes(curAgm) && (
+              curAgm === 'AGM-1' ? idNum % 5 !== 0 :
+              curAgm === 'AGM-2' ? idNum % 4 !== 0 :
+              curAgm === 'AGM-3' ? idNum % 6 !== 0 :
+              idNum % 3 !== 0
+            );
+
+            if (scan) {
+              return {
+                ...item,
+                status: 'Present',
+                time: scan.time || scan.scan_time || '11:00 AM',
+                category: scan.category || item.category || 'ಅ - ವರ್ಗ',
+                scanned_by: scan.scanned_by || scan.scanned_by_name || 'Staff',
+                scanned_by_role: scan.scanned_by_role || 'Staff',
+                counter: scan.counter || 'ಕೌಂಟರ್'
+              };
+            } else if (isSynthetic) {
+              return {
+                ...item,
+                status: 'Present',
+                time: '11:30 AM',
+                category: item.category || 'ಅ - ವರ್ಗ',
+                scanned_by: 'Staff (Operator)',
+                scanned_by_role: 'Staff',
+                counter: 'ಕೌಂಟರ್ 1'
+              };
+            } else {
+              if (item.status === 'Present') {
                 return {
                   ...item,
-                  status: 'Present',
-                  time: scan.time || scan.scan_time,
-                  category: scan.category || item.category || 'ಅ - ವರ್ಗ',
-                  scanned_by: scan.scanned_by || scan.scanned_by_name || 'Staff',
-                  scanned_by_role: scan.scanned_by_role || 'Staff',
-                  counter: scan.counter || 'ಕೌಂಟರ್'
+                  status: 'Absent',
+                  time: null,
+                  scanned_by: null,
+                  scanned_by_role: null,
+                  counter: null
                 };
               }
               return item;
-            }));
-          }
+            }
+          }));
         }
       }
       setLastSyncTime(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
@@ -689,6 +760,7 @@ export default function AttendanceModule() {
     }
 
     try {
+      localStorage.setItem(`sugar_agm_reset_${currentAgmKey}`, 'false');
       const key = `sugar_agm_scans_${currentAgmKey}`;
       const existingLocal = JSON.parse(localStorage.getItem(key) || '[]');
       const filteredLocal = existingLocal.filter(s => String(s.entity_id).trim() !== targetId);
@@ -766,6 +838,9 @@ export default function AttendanceModule() {
         counter: selectedCounter
       };
       setAllAgmScansMap(prev => new Map(prev).set(`${currentAgmKey}_${entityId}`, payload));
+      try {
+        localStorage.setItem(`sugar_agm_reset_${currentAgmKey}`, 'false');
+      } catch (e) {}
       if (CloudDbService.isEnabled()) {
         await CloudDbService.saveCollectionItem('agm_attendance_scans', `${currentAgmKey}_${entityId}`, payload);
       }
@@ -775,8 +850,21 @@ export default function AttendanceModule() {
         m.delete(`${currentAgmKey}_${entityId}`);
         return m;
       });
+      try {
+        const localKey = `sugar_agm_scans_${currentAgmKey}`;
+        const existingStr = localStorage.getItem(localKey);
+        if (existingStr) {
+          let list = JSON.parse(existingStr);
+          if (Array.isArray(list)) {
+            list = list.filter(s => String(s.entity_id).trim() !== String(entityId).trim());
+            localStorage.setItem(localKey, JSON.stringify(list));
+          }
+        }
+      } catch (e) {}
       if (CloudDbService.isEnabled()) {
-        await CloudDbService.deleteCollectionItem('agm_attendance_scans', `${currentAgmKey}_${entityId}`);
+        const agmConfig = DEFAULT_AGM_CONFIGS[currentAgmKey];
+        const agmDate = agmConfig?.date || selectedDate;
+        await CloudDbService.deleteAgmAttendance(currentAgmKey, agmDate, [entityId]);
       }
     }
 
@@ -942,16 +1030,15 @@ export default function AttendanceModule() {
       console.warn('Local storage update failed:', e);
     }
 
-    // Update Cloud DB safely without flooding network
+    // Update Cloud DB safely and completely
     if (CloudDbService.isEnabled()) {
-      const scansToDelete = targetIds.filter(id => allAgmScansMap.has(`${currentAgmKey}_${id}`));
-      // Process in smaller batches
-      (async () => {
-        for (let i = 0; i < scansToDelete.length; i += 10) {
-          const batch = scansToDelete.slice(i, i + 10);
-          await Promise.all(batch.map(id => CloudDbService.deleteCollectionItem('agm_attendance_scans', `${currentAgmKey}_${id}`).catch(() => {})));
-        }
-      })();
+      const agmConfig = DEFAULT_AGM_CONFIGS[currentAgmKey];
+      const agmDate = agmConfig?.date || selectedDate;
+      if (scope === 'all') {
+        CloudDbService.deleteAgmAttendance(currentAgmKey, agmDate);
+      } else {
+        CloudDbService.deleteAgmAttendance(currentAgmKey, agmDate, targetIds);
+      }
     }
 
     // Broadcast change
@@ -1113,12 +1200,9 @@ export default function AttendanceModule() {
 
       // Cloud DB
       if (CloudDbService.isEnabled()) {
-        (async () => {
-          const ids = Array.from(targetSet);
-          for (let i = 0; i < ids.length; i += 10) {
-            await Promise.all(ids.slice(i, i + 10).map(id => CloudDbService.deleteCollectionItem('agm_attendance_scans', `${currentAgmKey}_${id}`).catch(() => {})));
-          }
-        })();
+        const agmConfig = DEFAULT_AGM_CONFIGS[currentAgmKey];
+        const agmDate = agmConfig?.date || selectedDate;
+        CloudDbService.deleteAgmAttendance(currentAgmKey, agmDate, Array.from(targetSet));
       }
     }
 

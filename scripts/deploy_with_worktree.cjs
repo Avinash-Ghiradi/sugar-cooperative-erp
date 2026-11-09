@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: change shareholder status by multiple share numbers in bulk modal"');
+    run('git commit -m "fix: resolve AGM 5 reset not clearing scans by fixing Cloud DB delete and sync logic"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }

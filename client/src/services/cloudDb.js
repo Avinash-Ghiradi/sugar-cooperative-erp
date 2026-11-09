@@ -785,6 +785,57 @@ export const CloudDbService = {
     }
   },
 
+  async deleteCollectionWhere(moduleName, filterQuery) {
+    if (!this.isEnabled()) return false;
+    try {
+      const url = `audit_logs?module=eq.${encodeURIComponent(moduleName)}&${filterQuery}`;
+      await this.request(url, { method: 'DELETE' });
+      return true;
+    } catch (err) {
+      console.warn(`Cloud DB deleteCollectionWhere(${moduleName}) failed:`, err.message);
+      return false;
+    }
+  },
+
+  async deleteAgmAttendance(agmId, date, entityIds = null) {
+    if (!this.isEnabled()) return false;
+    try {
+      if (!entityIds || entityIds.length === 0) {
+        const filters = [];
+        if (agmId) filters.push(`record_id.ilike.${encodeURIComponent(agmId)}*`);
+        if (date) filters.push(`record_id.ilike.${encodeURIComponent(date)}*`);
+        if (filters.length > 0) {
+          await this.request(`audit_logs?module=eq.agm_attendance_scans&or=(${filters.join(',')})`, {
+            method: 'DELETE'
+          });
+        }
+      } else {
+        const keysToDelete = new Set();
+        entityIds.forEach(id => {
+          const sId = String(id).trim();
+          if (agmId) keysToDelete.add(`${agmId}_${sId}`);
+          if (date) {
+            keysToDelete.add(`${date}_Shareholder_${sId}`);
+            keysToDelete.add(`${date}_${sId}`);
+          }
+          keysToDelete.add(sId);
+        });
+
+        const keyList = Array.from(keysToDelete);
+        for (let i = 0; i < keyList.length; i += 40) {
+          const chunk = keyList.slice(i, i + 40);
+          await this.request(`audit_logs?module=eq.agm_attendance_scans&record_id=in.(${chunk.join(',')})`, {
+            method: 'DELETE'
+          }).catch(() => {});
+        }
+      }
+      return true;
+    } catch (err) {
+      console.warn('Cloud DB deleteAgmAttendance failed:', err.message);
+      return false;
+    }
+  },
+
   async deleteCollectionItem(moduleName, recordId) {
     if (!this.isEnabled()) return false;
     try {
