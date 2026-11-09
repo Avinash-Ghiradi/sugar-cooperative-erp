@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: add book stickers printing feature (2x5 A4 sheet) by selecting filters in Sugar Allotment"');
+    run('git commit -m "feat: book sticker size 9.8cm x 5.6cm, 0.5cm top/bottom margin, 2x5 grid, with General Board Meeting scanning QR code"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -46,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: book stickers printing in Sugar Allotment (${Date.now()})`;
+  const commitMsg = `Deploy: book stickers 9.8cm x 5.6cm, 0.5cm margin, AGM QR code (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);
