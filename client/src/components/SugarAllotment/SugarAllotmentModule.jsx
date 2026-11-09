@@ -8,6 +8,13 @@ import { useLanguage } from '../../context/LanguageContext';
 import officialCircleData from '../../services/officialCircleData.json';
 import ShareholderForm from '../Shareholders/ShareholderForm';
 import BookStickerModal from './BookStickerModal';
+import SugarReceiptCard from './SugarReceiptCard';
+import {
+  getReceiptQRDataUrl,
+  prefetchReceiptQRCodes,
+  buildA4ReceiptsHtml,
+  openPrintDialog
+} from './sugarReceiptPrint';
 import ErrorBoundary from '../Common/ErrorBoundary';
 import {
   PackageCheck, Search, Printer, Tag, X, Save, Settings, ChevronDown, ChevronUp,
@@ -149,6 +156,17 @@ export default function SugarAllotmentModule() {
   const [showBatchReceiptModal, setShowBatchReceiptModal] = useState(false);
   const [showBookStickerModal, setShowBookStickerModal] = useState(false); // all shareholders
   const [editShareholderModal, setEditShareholderModal] = useState(null); // click on share no
+  // Batch Receipt states
+  const [batchReceiptMode, setBatchReceiptMode] = useState('all'); // 'all' | 'range_pages' | 'range_shares'
+  const [batchFromPage, setBatchFromPage] = useState(1);
+  const [batchToPage, setBatchToPage] = useState(10);
+  const [batchFromShare, setBatchFromShare] = useState('');
+  const [batchToShare, setBatchToShare] = useState('');
+  const [batchPreviewPage, setBatchPreviewPage] = useState(1);
+  const [isPrintingReceipts, setIsPrintingReceipts] = useState(false);
+  const [receiptProgress, setReceiptProgress] = useState(0);
+  const [singleReceiptQr, setSingleReceiptQr] = useState('');
+  const [previewQrMap, setPreviewQrMap] = useState(new Map());
   const [pinInput, setPinInput] = useState('');
   const [pinVerified, setPinVerified] = useState(false);
 
@@ -1164,6 +1182,119 @@ export default function SugarAllotmentModule() {
       return true;
     });
   }, [processedShareholders, settings, editedRows]);
+
+  // Load QR for single receipt modal
+  useEffect(() => {
+    if (activeReceiptModal) {
+      const sNo = activeReceiptModal.share_no || activeReceiptModal.share_number || activeReceiptModal.id;
+      getReceiptQRDataUrl(sNo).then(url => {
+        setSingleReceiptQr(url);
+      });
+    } else {
+      setSingleReceiptQr('');
+    }
+  }, [activeReceiptModal]);
+
+  // Load QR for batch preview page
+  useEffect(() => {
+    if (showBatchReceiptModal && qualifiedForBatchReceipt.length > 0) {
+      const pIdx = (batchPreviewPage - 1) * 2;
+      const s1 = qualifiedForBatchReceipt[pIdx];
+      const s2 = pIdx + 1 < qualifiedForBatchReceipt.length ? qualifiedForBatchReceipt[pIdx + 1] : null;
+
+      const toFetch = [s1, s2].filter(Boolean);
+      Promise.all(
+        toFetch.map(async s => {
+          const sNo = String(s.share_no || s.share_number || s.id);
+          const url = await getReceiptQRDataUrl(sNo);
+          return [sNo, url];
+        })
+      ).then(entries => {
+        setPreviewQrMap(prev => {
+          const next = new Map(prev);
+          entries.forEach(([k, v]) => next.set(k, v));
+          return next;
+        });
+      });
+    }
+  }, [showBatchReceiptModal, batchPreviewPage, qualifiedForBatchReceipt]);
+
+  // Print Single Receipt
+  const handlePrintSingleReceipt = async () => {
+    if (!activeReceiptModal) return;
+    const sNo = String(activeReceiptModal.share_no || activeReceiptModal.share_number || activeReceiptModal.id);
+    const qrUrl = await getReceiptQRDataUrl(sNo);
+    const qrMap = new Map();
+    qrMap.set(sNo, qrUrl);
+    const docTitle = `A4_Sugar_Receipt_${activeReceiptModal.share_no || activeReceiptModal.id}`;
+    const html = buildA4ReceiptsHtml([activeReceiptModal], settings, qrMap, docTitle);
+    openPrintDialog(html);
+  };
+
+  // Print Batch Receipts
+  const handlePrintBatchReceipts = async () => {
+    let targetList = qualifiedForBatchReceipt;
+    if (batchReceiptMode === 'range_pages') {
+      const start = Math.max(0, (Number(batchFromPage) - 1) * 2);
+      const end = Math.min(qualifiedForBatchReceipt.length, Number(batchToPage) * 2);
+      targetList = qualifiedForBatchReceipt.slice(start, end);
+    } else if (batchReceiptMode === 'range_shares') {
+      const f = parseInt(batchFromShare, 10);
+      const t = parseInt(batchToShare, 10);
+      if (!isNaN(f) && !isNaN(t)) {
+        targetList = qualifiedForBatchReceipt.filter(s => {
+          const sn = parseInt(s.share_no || s.share_number || s.id, 10);
+          return !isNaN(sn) && sn >= f && sn <= t;
+        });
+      }
+    }
+
+    if (!targetList || targetList.length === 0) {
+      showToast('ಮುದ್ರಣಕ್ಕಾಗಿ ಯಾವುದೇ ಅರ್ಹ ಶೇರುದಾರರು ಲಭ್ಯವಿಲ್ಲ!', 'error');
+      return;
+    }
+
+    setIsPrintingReceipts(true);
+    setReceiptProgress(0);
+
+    try {
+      const qrMap = await prefetchReceiptQRCodes(targetList, (pct) => {
+        setReceiptProgress(pct);
+      });
+
+      const docTitle = `A4_Sugar_Receipts_${settings.receipt_year_code || '202627'}_(${targetList.length})`;
+      const html = buildA4ReceiptsHtml(targetList, settings, qrMap, docTitle);
+      openPrintDialog(html);
+      setShowBatchReceiptModal(false);
+    } catch (err) {
+      console.error('Error generating batch receipts:', err);
+      showToast('ರಶೀದಿ ತಯಾರಿಕೆಯಲ್ಲಿ ದೋಷ ಸಂಭವಿಸಿದೆ.', 'error');
+    } finally {
+      setIsPrintingReceipts(false);
+      setReceiptProgress(0);
+    }
+  };
+
+  const selectedBatchCount = useMemo(() => {
+    if (batchReceiptMode === 'range_pages') {
+      const start = Math.max(0, (Number(batchFromPage) - 1) * 2);
+      const end = Math.min(qualifiedForBatchReceipt.length, Number(batchToPage) * 2);
+      return Math.max(0, end - start);
+    }
+    if (batchReceiptMode === 'range_shares') {
+      const f = parseInt(batchFromShare, 10);
+      const t = parseInt(batchToShare, 10);
+      if (!isNaN(f) && !isNaN(t)) {
+        return qualifiedForBatchReceipt.filter(s => {
+          const sn = parseInt(s.share_no || s.share_number || s.id, 10);
+          return !isNaN(sn) && sn >= f && sn <= t;
+        }).length;
+      }
+    }
+    return qualifiedForBatchReceipt.length;
+  }, [batchReceiptMode, batchFromPage, batchToPage, batchFromShare, batchToShare, qualifiedForBatchReceipt]);
+
+  const batchTotalPages = Math.max(1, Math.ceil(qualifiedForBatchReceipt.length / 2));
 
   const todayStr = useMemo(() => {
     const now = new Date();
@@ -2498,15 +2629,18 @@ export default function SugarAllotmentModule() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 2: SINGLE SUGAR RECEIPT MODAL ("ರಶೀದಿ") */}
+      {/* MODAL 2: SINGLE SUGAR RECEIPT MODAL ("ರಶೀದಿ") - OFFICIAL A4 FORMAT */}
       {/* ========================================================================= */}
       {activeReceiptModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
-              <h2 className="text-sm font-bold text-purple-300 flex items-center gap-2">
-                ಸಕ್ಕರೆ ಹಂಚಿಕೆ ರಶೀದಿ (Sugar Allotment Receipt)
-              </h2>
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-orange-400" />
+                <h2 className="text-sm font-bold text-slate-100">
+                  ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿ (A4 Sugar Receipt - Office & Shareholder Copies)
+                </h2>
+              </div>
               <button
                 onClick={() => setActiveReceiptModal(null)}
                 className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
@@ -2515,130 +2649,95 @@ export default function SugarAllotmentModule() {
               </button>
             </div>
 
-            {/* Receipt Preview Box */}
-            <div className="p-5 overflow-y-auto space-y-4 text-xs">
-              <div id="singleReceiptPrintArea" className="bg-white text-slate-950 p-5 rounded-2xl border border-slate-300 shadow-sm space-y-3">
-                <div className="text-center border-b pb-2">
-                  <h3 className="font-bold text-sm leading-tight text-emerald-900">
-                    {settings.org_name}
-                  </h3>
-                  <p className="text-[10px] text-slate-600 font-semibold">
-                    ಸಕ್ಕರೆ ಹಂಚಿಕೆ ರಶೀದಿ / Sugar Distribution Receipt
-                  </p>
-                  <p className="text-[10px] font-mono text-slate-500 mt-0.5">
-                    ವರ್ಷ ಕೋಡ್: {settings.receipt_year_code} • ರಶೀದಿ ನಂ: REC-{settings.receipt_year_code}-{String(activeReceiptModal.share_no || activeReceiptModal.id).padStart(5, '0')}
-                  </p>
-                </div>
+            {/* Receipt Preview Area (Side by side 2 copies) */}
+            <div className="p-4 sm:p-6 overflow-y-auto bg-slate-950/60 flex-1 flex flex-col items-center">
+              <div className="text-center mb-3">
+                <span className="text-[11px] text-slate-400">
+                  ಶಾಸನಬದ್ಧ A4 ರಶೀದಿ ಮುದ್ರಣ ವಿನ್ಯಾಸ: ಎಡಭಾಗದಲ್ಲಿ <strong className="text-blue-400 font-bold">ಕಛೇರಿ ಪ್ರತಿ</strong> ಮತ್ತು ಬಲಭಾಗದಲ್ಲಿ <strong className="text-emerald-400 font-bold">ಶೇರುದಾರರ ಪ್ರತಿ</strong>
+                </span>
+              </div>
 
-                <div className="space-y-1 text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">ಶೇರುದಾರರ ಹೆಸರು:</span>
-                    <strong className="text-slate-900">{activeReceiptModal.shareholder_name || activeReceiptModal.name}</strong>
+              {/* Exact A4 Row Preview */}
+              <div className="w-full max-w-3xl bg-white p-3 sm:p-4 rounded-xl shadow-lg border border-slate-300">
+                <div className="flex items-stretch justify-between gap-2 relative">
+                  {/* Left: Office Copy */}
+                  <div className="flex-1">
+                    <SugarReceiptCard
+                      shareholder={activeReceiptModal}
+                      seq={1}
+                      isOfficeCopy={true}
+                      settings={settings}
+                      qrUrl={singleReceiptQr}
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">ಶೇರ್ ಸಂಖ್ಯೆ:</span>
-                    <strong className="font-mono text-blue-800">{activeReceiptModal.share_no || activeReceiptModal.share_number}</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">ಸ್ಥಳ / ಗ್ರಾಮ:</span>
-                    <span>{activeReceiptModal.place || activeReceiptModal.village_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">ಸರ್ಕಲ್:</span>
-                    <span>{activeReceiptModal.circle || activeReceiptModal.circle_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">ದಿನಾಂಕ:</span>
-                    <span>{todayStr}</span>
-                  </div>
-                </div>
 
-                <div className="border-t border-b py-2 my-2 space-y-1 text-[11px] bg-slate-50 p-2.5 rounded-xl">
-                  {(() => {
-                    const shares = getShareholderSharesCount(activeReceiptModal);
-                    const kg = shares * settings.kg_per_share;
-                    const totalAmt = kg * settings.sugar_rate_per_kg;
-                    return (
-                      <>
-                        <div className="flex justify-between">
-                          <span>ಹೊಂದಿರುವ ಶೇರುಗಳು:</span>
-                          <strong className="font-bold">{shares}</strong>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>ಪ್ರತಿ ಶೇರ್‌ಗೆ ಕೋಟಾ:</span>
-                          <span>{settings.kg_per_share} ಕೆಜಿ</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-emerald-800">
-                          <span>ಒಟ್ಟು ಅರ್ಹ ಸಕ್ಕರೆ:</span>
-                          <span className="text-sm">{kg} ಕೆಜಿ</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>ದರ (ಪ್ರತಿ ಕೆಜಿಗೆ):</span>
-                          <span>₹ {settings.sugar_rate_per_kg}.00</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-slate-950 border-t pt-1 mt-1 text-xs">
-                          <span>ಒಟ್ಟು ಪಾವತಿಸಬೇಕಾದ ಮೊತ್ತ:</span>
-                          <span className="text-emerald-700 font-mono">₹ {totalAmt.toLocaleString()}.00</span>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
+                  {/* Vertical Scissor Cut Line */}
+                  <div className="w-6 flex flex-col items-center justify-center relative select-none">
+                    <div className="absolute top-2 bottom-2 left-1/2 -translate-x-1/2 border-l border-dashed border-slate-400" />
+                    <div className="bg-white text-slate-600 font-bold text-xs z-10 py-1 rotate-90">✂</div>
+                  </div>
 
-                <div className="pt-4 flex justify-between text-[10px] text-slate-500 text-center">
-                  <div>
-                    <div className="h-6"></div>
-                    <div className="border-t border-slate-400 pt-1">ಶೇರುದಾರರ ಸಹಿ</div>
-                  </div>
-                  <div>
-                    <div className="h-6"></div>
-                    <div className="border-t border-slate-400 pt-1">ವಿತರಣಾಧಿಕಾರಿ</div>
-                  </div>
-                  <div>
-                    <div className="h-6"></div>
-                    <div className="border-t border-slate-400 pt-1">ಕಚೇರಿ ಮೊಹರು</div>
+                  {/* Right: Shareholder Copy */}
+                  <div className="flex-1">
+                    <SugarReceiptCard
+                      shareholder={activeReceiptModal}
+                      seq={1}
+                      isOfficeCopy={false}
+                      settings={settings}
+                      qrUrl={singleReceiptQr}
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  const printContent = document.getElementById('singleReceiptPrintArea');
-                  const win = window.open('', '_blank');
-                  win.document.write(`<html><head><title>Sugar Receipt</title><style>body{margin:20px; font-family:sans-serif;}</style></head><body>${printContent.innerHTML}</body></html>`);
-                  win.document.close();
-                  win.focus();
-                  setTimeout(() => win.print(), 300);
-                }}
-                className="px-5 py-2 bg-[#00823b] hover:bg-emerald-600 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
-              >
-                <Printer className="w-4 h-4" /> ರಶೀದಿ ಮುದ್ರಿಸಿ
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveReceiptModal(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs cursor-pointer"
-              >
-                ಮುಚ್ಚಿ
-              </button>
+            {/* Modal Footer Actions */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-[11px] text-slate-400">
+                ಶೇರು ನಂ: <strong className="text-white font-mono">{activeReceiptModal.share_no || activeReceiptModal.id}</strong> • {activeReceiptModal.shareholder_name || activeReceiptModal.name}
+              </div>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handlePrintSingleReceipt}
+                  className="px-5 py-2.5 bg-[#00823b] hover:bg-emerald-600 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg transition-all cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" /> A4 ರಶೀದಿ ಮುದ್ರಿಸಿ (Print Receipt)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveReceiptModal(null)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs cursor-pointer"
+                >
+                  ಮುಚ್ಚಿ
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 3: BATCH RECEIPT MODAL ("ಎಲ್ಲರಿಗೂ ರಶೀದಿ") */}
+      {/* MODAL 3: BATCH RECEIPT MODAL ("ಎಲ್ಲರಿಗೂ ರಶೀದಿ") - OFFICIAL A4 2-PER-PAGE FORMAT */}
       {/* ========================================================================= */}
       {showBatchReceiptModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
+            {/* Header */}
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
-              <h2 className="text-sm font-bold text-purple-300 flex items-center gap-2">
-                ಬಲ್ಕ್ ಸಕ್ಕರೆ ಹಂಚಿಕೆ ರಶೀದಿಗಳು (Batch Receipts)
-              </h2>
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-purple-900/40 border border-purple-700/60 rounded-xl text-purple-300">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-purple-200">
+                    ಬಲ್ಕ್ ಸಕ್ಕರೆ ಹಂಚಿಕೆ ರಶೀದಿಗಳು (A4 Batch Receipts - 2 Shareholders / 4 Receipts per Sheet)
+                  </h2>
+                  <p className="text-[11px] text-slate-400">
+                    ಅಧಿಕೃತ ಶಾಸನಬದ್ಧ A4 ನಮೂನೆ: ಪ್ರತಿ ಹಾಳೆಯಲ್ಲಿ 2 ಶೇರುದಾರರು (ಕಛೇರಿ ಪ್ರತಿ + ಶೇರುದಾರರ ಪ್ರತಿ ಮತ್ತು ಕತ್ತರಿ ಕಟ್-ಲೈನ್)
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => setShowBatchReceiptModal(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
@@ -2647,100 +2746,323 @@ export default function SugarAllotmentModule() {
               </button>
             </div>
 
-            <div className="p-5 space-y-4 text-xs text-slate-200">
-              <div className="p-3.5 rounded-2xl bg-purple-950/30 border border-purple-900/50 space-y-2">
-                <p className="font-bold text-purple-200 text-sm">
-                  ಅರ್ಹ ಶೇರುದಾರರ ಸಂಖ್ಯೆ: {qualifiedForBatchReceipt.length.toLocaleString()} ಸದಸ್ಯರು
-                </p>
-                <p className="text-slate-400 text-[11px] leading-relaxed">
-                  ಸೆಟ್ಟಿಂಗ್ಸ್ ಪ್ರಕಾರ (ಸೊನ್ನೆ ಶೇರು, ಹೊರಗಿಡಲಾದ ಸದಸ್ಯರ ಪ್ರಕಾರ ಮತ್ತು ವರ್ಗಗಳನ್ನು ಲೆಕ್ಕಿಸದೆ) ಈ ಕೆಳಗಿನ ಸಾರಾಂಶದಂತೆ ರಶೀದಿಗಳು ರಚಿಸಲ್ಪಡುತ್ತವೆ:
-                </p>
+            {/* Scrollable Body */}
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs text-slate-200 flex-1">
+              {/* Summary Stats Row */}
+              {(() => {
+                let totalKg = 0;
+                let totalAmt = 0;
+                qualifiedForBatchReceipt.forEach(s => {
+                  const sh = getShareholderSharesCount(s);
+                  const kg = sh * settings.kg_per_share;
+                  totalKg += kg;
+                  totalAmt += kg * settings.sugar_rate_per_kg;
+                });
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
+                      <span className="text-slate-400 block text-[10px] font-medium">ಅರ್ಹ ಶೇರುದಾರರು:</span>
+                      <strong className="text-purple-300 text-sm font-bold">
+                        {qualifiedForBatchReceipt.length.toLocaleString()} ಸದಸ್ಯರು
+                      </strong>
+                    </div>
+                    <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
+                      <span className="text-slate-400 block text-[10px] font-medium">ಒಟ್ಟು A4 ಪುಟಗಳು:</span>
+                      <strong className="text-blue-400 text-sm font-bold">
+                        {batchTotalPages.toLocaleString()} ಹಾಳೆಗಳು
+                      </strong>
+                    </div>
+                    <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
+                      <span className="text-slate-400 block text-[10px] font-medium">ಒಟ್ಟು ಸಕ್ಕರೆ ಕೋಟಾ:</span>
+                      <strong className="text-emerald-400 text-sm font-bold">
+                        {totalKg.toLocaleString()} ಕೆಜಿ
+                      </strong>
+                    </div>
+                    <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
+                      <span className="text-slate-400 block text-[10px] font-medium">ಒಟ್ಟು ಪಾವತಿ ಮೊತ್ತ:</span>
+                      <strong className="text-amber-400 text-sm font-bold font-mono">
+                        ₹ {totalAmt.toLocaleString()}
+                      </strong>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Print Selection Mode */}
+              <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 space-y-3">
+                <span className="text-slate-300 font-bold block text-xs">
+                  ಮುದ್ರಣ ವ್ಯಾಪ್ತಿ ಆಯ್ಕೆಮಾಡಿ (Select Print Range):
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Option 1: All */}
+                  <label
+                    onClick={() => setBatchReceiptMode('all')}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
+                      batchReceiptMode === 'all'
+                        ? 'bg-purple-950/40 border-purple-500 text-white'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="batchMode"
+                        checked={batchReceiptMode === 'all'}
+                        onChange={() => setBatchReceiptMode('all')}
+                        className="accent-purple-500 cursor-pointer"
+                      />
+                      <span className="font-bold">ಎಲ್ಲಾ ರಶೀದಿಗಳು</span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 mt-1">
+                      ಎಲ್ಲಾ {qualifiedForBatchReceipt.length.toLocaleString()} ಸದಸ್ಯರು ({batchTotalPages} A4 ಹಾಳೆಗಳು)
+                    </span>
+                  </label>
+
+                  {/* Option 2: Page Range */}
+                  <label
+                    onClick={() => setBatchReceiptMode('range_pages')}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
+                      batchReceiptMode === 'range_pages'
+                        ? 'bg-purple-950/40 border-purple-500 text-white'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="batchMode"
+                        checked={batchReceiptMode === 'range_pages'}
+                        onChange={() => setBatchReceiptMode('range_pages')}
+                        className="accent-purple-500 cursor-pointer"
+                      />
+                      <span className="font-bold">ಪುಟಗಳ ವ್ಯಾಪ್ತಿ (Pages)</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="number"
+                        min="1"
+                        max={batchTotalPages}
+                        value={batchFromPage}
+                        onChange={(e) => setBatchFromPage(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-center text-xs text-white"
+                      />
+                      <span className="text-slate-400">ದಿಂದ</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={batchTotalPages}
+                        value={batchToPage}
+                        onChange={(e) => setBatchToPage(Math.min(batchTotalPages, parseInt(e.target.value) || 1))}
+                        className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-center text-xs text-white"
+                      />
+                      <span className="text-slate-400">ವರೆಗೆ</span>
+                    </div>
+                  </label>
+
+                  {/* Option 3: Share No Range */}
+                  <label
+                    onClick={() => setBatchReceiptMode('range_shares')}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
+                      batchReceiptMode === 'range_shares'
+                        ? 'bg-purple-950/40 border-purple-500 text-white'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="batchMode"
+                        checked={batchReceiptMode === 'range_shares'}
+                        onChange={() => setBatchReceiptMode('range_shares')}
+                        className="accent-purple-500 cursor-pointer"
+                      />
+                      <span className="font-bold">ಶೇರು ಸಂಖ್ಯೆ ವ್ಯಾಪ್ತಿ</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        placeholder="ನಂ ದಿಂದ"
+                        value={batchFromShare}
+                        onChange={(e) => setBatchFromShare(e.target.value)}
+                        className="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-center text-xs text-white font-mono"
+                      />
+                      <span className="text-slate-400">-</span>
+                      <input
+                        type="text"
+                        placeholder="ನಂ ವರೆಗೆ"
+                        value={batchToShare}
+                        onChange={(e) => setBatchToShare(e.target.value)}
+                        className="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-center text-xs text-white font-mono"
+                      />
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Interactive Page Preview Box */}
+              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-300 flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-purple-400" /> A4 ಪುಟ ಮುನ್ನೋಟ (Live Sheet Preview):
+                  </span>
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      disabled={batchPreviewPage <= 1}
+                      onClick={() => setBatchPreviewPage(p => Math.max(1, p - 1))}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-lg font-bold cursor-pointer"
+                    >
+                      ‹ ಹಿಂದಿನ ಪುಟ
+                    </button>
+                    <span className="font-mono text-purple-300 font-bold px-1.5">
+                      ಪುಟ {batchPreviewPage} / {batchTotalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={batchPreviewPage >= batchTotalPages}
+                      onClick={() => setBatchPreviewPage(p => Math.min(batchTotalPages, p + 1))}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-lg font-bold cursor-pointer"
+                    >
+                      ಮುಂದಿನ ಪುಟ ›
+                    </button>
+                  </div>
+                </div>
+
+                {/* The Sheet Preview Display */}
                 {(() => {
-                  let totalKg = 0;
-                  let totalAmt = 0;
-                  qualifiedForBatchReceipt.forEach(s => {
-                    const sh = getShareholderSharesCount(s);
-                    const kg = sh * settings.kg_per_share;
-                    totalKg += kg;
-                    totalAmt += kg * settings.sugar_rate_per_kg;
-                  });
+                  const idx1 = (batchPreviewPage - 1) * 2;
+                  const idx2 = idx1 + 1;
+                  const s1 = qualifiedForBatchReceipt[idx1];
+                  const s2 = idx2 < qualifiedForBatchReceipt.length ? qualifiedForBatchReceipt[idx2] : null;
+
+                  if (!s1) {
+                    return (
+                      <div className="p-8 text-center text-slate-500">
+                        ಯಾವುದೇ ಶೇರುದಾರರು ಕಂಡುಬಂದಿಲ್ಲ.
+                      </div>
+                    );
+                  }
+
+                  const qr1 = previewQrMap.get(String(s1.share_no || s1.id)) || '';
+                  const qr2 = s2 ? (previewQrMap.get(String(s2.share_no || s2.id)) || '') : '';
+
                   return (
-                    <div className="grid grid-cols-2 gap-3 pt-1">
-                      <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
-                        <span className="text-slate-400 block text-[10px]">ಒಟ್ಟು ಸಕ್ಕರೆ ಕೋಟಾ:</span>
-                        <strong className="text-emerald-400 text-sm">{totalKg.toLocaleString()} ಕೆಜಿ</strong>
+                    <div className="w-full max-w-3xl mx-auto bg-white p-3.5 sm:p-4 rounded-xl shadow-xl border border-slate-300 text-slate-900 space-y-3">
+                      {/* Row 1: Shareholder 1 */}
+                      <div className="flex items-stretch justify-between gap-2 relative">
+                        <div className="flex-1">
+                          <SugarReceiptCard
+                            shareholder={s1}
+                            seq={idx1 + 1}
+                            isOfficeCopy={true}
+                            settings={settings}
+                            qrUrl={qr1}
+                          />
+                        </div>
+                        <div className="w-6 flex flex-col items-center justify-center relative select-none">
+                          <div className="absolute top-2 bottom-2 left-1/2 -translate-x-1/2 border-l border-dashed border-slate-400" />
+                          <div className="bg-white text-slate-600 font-bold text-xs z-10 py-1 rotate-90">✂</div>
+                        </div>
+                        <div className="flex-1">
+                          <SugarReceiptCard
+                            shareholder={s1}
+                            seq={idx1 + 1}
+                            isOfficeCopy={false}
+                            settings={settings}
+                            qrUrl={qr1}
+                          />
+                        </div>
                       </div>
-                      <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
-                        <span className="text-slate-400 block text-[10px]">ಒಟ್ಟು ಪಾವತಿ ಮೊತ್ತ:</span>
-                        <strong className="text-purple-300 text-sm font-mono">₹ {totalAmt.toLocaleString()}</strong>
+
+                      {/* Horizontal Cut Line */}
+                      <div className="w-full flex items-center justify-center relative py-1 select-none">
+                        <div className="absolute left-2 right-2 top-1/2 -translate-y-1/2 border-t border-dashed border-slate-400" />
+                        <div className="bg-white text-slate-600 font-bold text-xs z-10 px-2">✂</div>
                       </div>
+
+                      {/* Row 2: Shareholder 2 */}
+                      {s2 ? (
+                        <div className="flex items-stretch justify-between gap-2 relative">
+                          <div className="flex-1">
+                            <SugarReceiptCard
+                              shareholder={s2}
+                              seq={idx2 + 1}
+                              isOfficeCopy={true}
+                              settings={settings}
+                              qrUrl={qr2}
+                            />
+                          </div>
+                          <div className="w-6 flex flex-col items-center justify-center relative select-none">
+                            <div className="absolute top-2 bottom-2 left-1/2 -translate-x-1/2 border-l border-dashed border-slate-400" />
+                            <div className="bg-white text-slate-600 font-bold text-xs z-10 py-1 rotate-90">✂</div>
+                          </div>
+                          <div className="flex-1">
+                            <SugarReceiptCard
+                              shareholder={s2}
+                              seq={idx2 + 1}
+                              isOfficeCopy={false}
+                              settings={settings}
+                              qrUrl={qr2}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-6 text-center text-slate-400 border border-dashed border-slate-300 rounded-lg">
+                          (ಈ ಪುಟದಲ್ಲಿ 1 ಸದಸ್ಯ ಮಾತ್ರ - ಕೆಳಭಾಗ ಖಾಲಿ ಇರುತ್ತದೆ)
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
               </div>
 
-              <p className="text-[11px] text-slate-400">
-                ಮುದ್ರಣ ಬಟನ್ ಕ್ಲಿಕ್ ಮಾಡಿದಾಗ ಎಲ್ಲಾ {qualifiedForBatchReceipt.length} ರಶೀದಿಗಳನ್ನು ಒಂದೇ ಮುದ್ರಣ ಪಟ್ಟಿಯಲ್ಲಿ ಪ್ರಿಂಟ್ ಮಾಡಬಹುದು.
-              </p>
+              {/* Progress Indicator */}
+              {isPrintingReceipts && (
+                <div className="p-4 bg-purple-950/60 border border-purple-800 rounded-2xl space-y-2 animate-pulse">
+                  <div className="flex justify-between font-bold text-purple-200">
+                    <span>ಕ್ಯೂಆರ್ ಕೋಡ್ ಮತ್ತು A4 ಪುಟಗಳನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...</span>
+                    <span>{receiptProgress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-purple-500 h-2.5 rounded-full transition-all duration-200"
+                      style={{ width: `${receiptProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  const win = window.open('', '_blank');
-                  let bHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Batch Sugar Receipts</title><style>
-                    body { font-family: sans-serif; margin: 15px; font-size: 11px; }
-                    .voucher { border: 1px dashed #444; padding: 12px; margin-bottom: 20px; page-break-inside: avoid; }
-                    .v-header { text-align: center; border-bottom: 1px solid #777; padding-bottom: 4px; margin-bottom: 6px; }
-                    .v-title { font-size: 13px; font-weight: bold; }
-                    .row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-                    .bold { font-weight: bold; }
-                    .sigs { margin-top: 15px; display: flex; justify-content: space-between; font-size: 9px; }
-                    @media print { body { margin: 0; } }
-                  </style></head><body>`;
-
-                  qualifiedForBatchReceipt.forEach((s, idx) => {
-                    const sh = getShareholderSharesCount(s);
-                    const kg = sh * settings.kg_per_share;
-                    const amt = kg * settings.sugar_rate_per_kg;
-
-                    bHtml += `<div class="voucher">`;
-                    bHtml += `<div class="v-header">`;
-                    bHtml += `<div class="v-title">${settings.org_name}</div>`;
-                    bHtml += `<div>ಸಕ್ಕರೆ ಹಂಚಿಕೆ ರಶೀದಿ (${settings.receipt_year_code}) • ರಶೀದಿ ನಂ: REC-${settings.receipt_year_code}-${String(s.share_no || idx + 1).padStart(5, '0')}</div>`;
-                    bHtml += `</div>`;
-                    bHtml += `<div class="row"><span>ಹೆಸರು: <strong class="bold">${s.shareholder_name || s.name}</strong></span><span>ಶೇರ್ ನಂ: <strong class="bold">${s.share_no || s.share_number}</strong></span></div>`;
-                    bHtml += `<div class="row"><span>ಗ್ರಾಮ: ${s.place || s.village_name}</span><span>ದಿನಾಂಕ: ${todayStr}</span></div>`;
-                    bHtml += `<div class="row" style="border-top:1px solid #ccc; padding-top:4px; margin-top:4px;"><span>ಶೇರುಗಳು: ${sh} x ${settings.kg_per_share} ಕೆಜಿ</span><span>ಅರ್ಹ ಸಕ್ಕರೆ: <strong class="bold">${kg} ಕೆಜಿ</strong></span></div>`;
-                    bHtml += `<div class="row"><span>ದರ: ₹${settings.sugar_rate_per_kg}/ಕೆಜಿ</span><span>ಪಾವತಿ ಮೊತ್ತ: <strong class="bold">₹${amt}</strong></span></div>`;
-                    bHtml += `<div class="sigs"><div>ಶೇರುದಾರರ ಸಹಿ</div><div>ವಿತರಣಾಧಿಕಾರಿ</div><div>ಕಚೇರಿ ಮೊಹರು</div></div>`;
-                    bHtml += `</div>`;
-                  });
-
-                  bHtml += `</body></html>`;
-                  win.document.write(bHtml);
-                  win.document.close();
-                  win.focus();
-                  setTimeout(() => win.print(), 350);
-                }}
-                className="px-5 py-2 bg-[#5925dc] hover:bg-purple-600 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
-              >
-                <Printer className="w-4 h-4" /> ಎಲ್ಲಾ {qualifiedForBatchReceipt.length} ರಶೀದಿಗಳನ್ನು ಮುದ್ರಿಸಿ
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowBatchReceiptModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs cursor-pointer"
-              >
-                ಮುಚ್ಚಿ
-              </button>
+            {/* Modal Footer Actions */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-[11px] text-slate-400">
+                ಆಯ್ಕೆಮಾಡಲಾದ ಸದಸ್ಯರು: <strong className="text-white font-mono">{selectedBatchCount}</strong> ಸದಸ್ಯರು
+                ({Math.ceil(selectedBatchCount / 2)} A4 ಪುಟಗಳು)
+              </div>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  disabled={isPrintingReceipts || selectedBatchCount === 0}
+                  onClick={handlePrintBatchReceipts}
+                  className="px-5 py-2.5 bg-[#5925dc] hover:bg-purple-600 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg transition-all cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  {isPrintingReceipts ? `ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ (${receiptProgress}%)...` : `A4 ರಶೀದಿಗಳನ್ನು ಮುದ್ರಿಸಿ (${selectedBatchCount} ಸದಸ್ಯರು)`}
+                </button>
+                <button
+                  type="button"
+                  disabled={isPrintingReceipts}
+                  onClick={() => setShowBatchReceiptModal(false)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs cursor-pointer"
+                >
+                  ಮುಚ್ಚಿ
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ========================================================================= */}
       {/* MODAL 4: SHAREHOLDER EDIT FLOW (Click Share No -> PIN Auth -> 38-Col Statutory Form) */}
       {/* ========================================================================= */}
       {editShareholderModal && !pinVerified && (

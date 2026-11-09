@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: exact labels - English: AGM Utilities, Kannada: ಮಹಾಸಭೆ ಸೌಲಭ್ಯಗಳು"');
+    run('git commit -m "feat: implement official A4 statutory sugar allotment receipt format (2 shareholders/4 receipts per sheet)"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -46,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: fix Out of Memory crash & memory optimization (${Date.now()})`;
+  const commitMsg = `Deploy: A4 statutory sugar allotment receipt layout matching official format (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);
