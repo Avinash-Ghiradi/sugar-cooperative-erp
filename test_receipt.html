@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>A4 Sugar Distribution Receipts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 5mm 6mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f1f5f9;
+      font-family: 'Noto Sans Kannada', 'Segoe UI', Arial, sans-serif;
+      color: #0f172a;
+    }
+    @media print {
+      body {
+        background: #ffffff;
+      }
+    }
+    .a4-page {
+      width: 198mm;
+      height: 287mm;
+      margin: 0 auto;
+      background: #ffffff;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      position: relative;
+    }
+    .a4-page:last-child {
+      page-break-after: avoid;
+    }
+    .shareholder-row {
+      display: flex;
+      width: 100%;
+      height: 139mm;
+      align-items: stretch;
+      justify-content: space-between;
+      position: relative;
+    }
+    .receipt-card {
+      width: 95.5mm;
+      height: 100%;
+      border: 1.8px solid #ea580c;
+      border-radius: 6px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .vertical-cut-line {
+      width: 6mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .vertical-cut-line::before {
+      content: '';
+      position: absolute;
+      top: 2mm;
+      bottom: 2mm;
+      left: 50%;
+      border-left: 1.2px dashed #94a3b8;
+      transform: translateX(-50%);
+    }
+    .vertical-cut-line .scissor-icon {
+      background: #ffffff;
+      color: #64748b;
+      font-size: 11px;
+      z-index: 2;
+      padding: 2px 0;
+      transform: rotate(90deg);
+    }
+    .horizontal-cut-line {
+      width: 100%;
+      height: 6mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .horizontal-cut-line::before {
+      content: '';
+      position: absolute;
+      left: 2mm;
+      right: 2mm;
+      top: 50%;
+      border-top: 1.2px dashed #94a3b8;
+      transform: translateY(-50%);
+    }
+    .horizontal-cut-line .scissor-icon {
+      background: #ffffff;
+      color: #64748b;
+      font-size: 11px;
+      z-index: 2;
+      padding: 0 4px;
+    }
+    /* Receipt Card Inner Elements */
+    .rc-header {
+      background: #ea580c;
+      color: #ffffff;
+      text-align: center;
+      padding: 4px 6px 3px 6px;
+    }
+    .rc-title {
+      font-size: 12.5px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      line-height: 1.2;
+    }
+    .rc-subtitle {
+      font-size: 9.5px;
+      font-weight: 500;
+      opacity: 0.95;
+      margin-top: 1px;
+      line-height: 1.2;
+    }
+    .rc-subbanner {
+      background: #047857;
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2.5px 8px;
+    }
+    .rc-subbanner-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .rc-copy-badge {
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1.5px 7px;
+      border-radius: 9999px;
+      line-height: 1.2;
+    }
+    .rc-receipt-no {
+      padding: 3.5px 8px 2px 8px;
+      font-size: 10.5px;
+      color: #047857;
+      font-weight: 500;
+    }
+    .rc-receipt-no strong {
+      font-weight: 700;
+      font-family: 'Noto Sans Kannada', 'Segoe UI', monospace;
+    }
+    .rc-shareno-banner {
+      background: #1d4ed8;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      margin: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+    .rc-body {
+      padding: 4px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex: 1;
+    }
+    .rc-details {
+      width: 67%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      height: 100%;
+    }
+    .rc-row {
+      display: flex;
+      align-items: baseline;
+      border-bottom: 1px dotted #cbd5e1;
+      padding: 2px 0;
+      font-size: 10px;
+      line-height: 1.25;
+    }
+    .rc-row:last-child {
+      border-bottom: none;
+    }
+    .rc-label {
+      width: 72px;
+      flex-shrink: 0;
+      color: #1e293b;
+      font-weight: 600;
+    }
+    .rc-colon {
+      margin-right: 4px;
+      color: #475569;
+    }
+    .rc-value {
+      font-weight: 600;
+      color: #0f172a;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .rc-value.name-val {
+      font-weight: 800;
+      font-size: 10.5px;
+    }
+    .rc-qr-box {
+      width: 30%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .rc-qr-img {
+      width: 68px;
+      height: 68px;
+      object-fit: contain;
+      display: block;
+    }
+    .rc-qr-caption {
+      font-size: 7px;
+      font-weight: 700;
+      color: #64748b;
+      margin-top: 2px;
+      line-height: 1.1;
+    }
+    .rc-calc-box {
+      padding: 2px 6px;
+    }
+    .rc-calc-orange {
+      background: #ea580c;
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3.5px 10px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+    .rc-calc-green {
+      background: #047857;
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3.5px 10px;
+      border-radius: 4px;
+      margin-top: 3.5px;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+    .rc-calc-val {
+      font-size: 11.5px;
+      font-weight: 800;
+    }
+    .rc-signatures {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 12px 6px 12px;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+  </style>
+</head>
+<body>
+  <div class="a4-page">
+    
+      <div class="shareholder-row">
+        
+      <div class="receipt-card">
+        <!-- Header -->
+        <div class="rc-header">
+          <div class="rc-title">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.</div>
+          <div class="rc-subtitle">ಮರಗೂರ 586 204 ತಾ|| ಇಂಡಿ ಜಿ|| ವಿಜಯಪುರ</div>
+        </div>
+
+        <!-- Sub Banner -->
+        <div class="rc-subbanner">
+          <div class="rc-subbanner-title">ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿ</div>
+          <div class="rc-copy-badge" style="background-color: #2563eb;">ಕಛೇರಿ ಪ್ರತಿ</div>
+        </div>
+
+        <!-- Receipt No -->
+        <div class="rc-receipt-no">
+          ರಶೀದಿ ಸಂಖ್ಯೆ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp; <strong>ಅರಕೇರಿ/2026270001</strong>
+        </div>
+
+        <!-- Share No Banner -->
+        <div class="rc-shareno-banner">
+          ಶೇರು ಸಂಖ್ಯೆ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp; 11181
+        </div>
+
+        <!-- Body: Details + QR -->
+        <div class="rc-body">
+          <div class="rc-details">
+            <div class="rc-row">
+              <span class="rc-label">ಸದಸ್ಯರ ಹೆಸರು</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value name-val">ವೆಂಕಟೇಶ ಮಹಾದೇವ ಅರಕೇರಿ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ವಿಳಾಸ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ಅರಕೇರಿ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಶೇರು ವರ್ಗ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ದ - ವರ್ಗ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಒಟ್ಟು ಶೇರುಗಳು</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">1</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಪ್ರತಿ ಕೆ.ಜಿ ದರ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ರೂ. 20 /ಕೆ.ಜಿ</span>
+            </div>
+          </div>
+          <div class="rc-qr-box">
+            <img class="rc-qr-img" src="data:image/png;base64,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" alt="QR" />
+            <div class="rc-qr-caption">ಪರಿಶೀಲನೆಗಾಗಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ</div>
+          </div>
+        </div>
+
+        <!-- Calculations -->
+        <div class="rc-calc-box">
+          <div class="rc-calc-orange">
+            <span>ಅರ್ಹ ಸಕ್ಕರೆ</span>
+            <span class="rc-calc-val">25 ಕೆ.ಜಿ</span>
+          </div>
+          <div class="rc-calc-green">
+            <span>ಪಾವತಿಸಬೇಕಾದ ಮೊತ್ತ</span>
+            <span class="rc-calc-val">ರೂ. 500</span>
+          </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="rc-signatures">
+          <div>ಸದಸ್ಯರ ಸಹಿ</div>
+          <div>ವಿತರಣಾಧಿಕಾರಿಗಳ ಸಹಿ</div>
+        </div>
+      </div>
+    
+        <div class="vertical-cut-line">
+          <div class="scissor-icon">✂</div>
+        </div>
+        
+      <div class="receipt-card">
+        <!-- Header -->
+        <div class="rc-header">
+          <div class="rc-title">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.</div>
+          <div class="rc-subtitle">ಮರಗೂರ 586 204 ತಾ|| ಇಂಡಿ ಜಿ|| ವಿಜಯಪುರ</div>
+        </div>
+
+        <!-- Sub Banner -->
+        <div class="rc-subbanner">
+          <div class="rc-subbanner-title">ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿ</div>
+          <div class="rc-copy-badge" style="background-color: #15803d;">ಶೇರುದಾರರ ಪ್ರತಿ</div>
+        </div>
+
+        <!-- Receipt No -->
+        <div class="rc-receipt-no">
+          ರಶೀದಿ ಸಂಖ್ಯೆ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp; <strong>ಅರಕೇರಿ/2026270001</strong>
+        </div>
+
+        <!-- Share No Banner -->
+        <div class="rc-shareno-banner">
+          ಶೇರು ಸಂಖ್ಯೆ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp; 11181
+        </div>
+
+        <!-- Body: Details + QR -->
+        <div class="rc-body">
+          <div class="rc-details">
+            <div class="rc-row">
+              <span class="rc-label">ಸದಸ್ಯರ ಹೆಸರು</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value name-val">ವೆಂಕಟೇಶ ಮಹಾದೇವ ಅರಕೇರಿ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ವಿಳಾಸ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ಅರಕೇರಿ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಶೇರು ವರ್ಗ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ದ - ವರ್ಗ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಒಟ್ಟು ಶೇರುಗಳು</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">1</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಪ್ರತಿ ಕೆ.ಜಿ ದರ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ರೂ. 20 /ಕೆ.ಜಿ</span>
+            </div>
+          </div>
+          <div class="rc-qr-box">
+            <img class="rc-qr-img" src="data:image/png;base64,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" alt="QR" />
+            <div class="rc-qr-caption">ಪರಿಶೀಲನೆಗಾಗಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ</div>
+          </div>
+        </div>
+
+        <!-- Calculations -->
+        <div class="rc-calc-box">
+          <div class="rc-calc-orange">
+            <span>ಅರ್ಹ ಸಕ್ಕರೆ</span>
+            <span class="rc-calc-val">25 ಕೆ.ಜಿ</span>
+          </div>
+          <div class="rc-calc-green">
+            <span>ಪಾವತಿಸಬೇಕಾದ ಮೊತ್ತ</span>
+            <span class="rc-calc-val">ರೂ. 500</span>
+          </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="rc-signatures">
+          <div>ಸದಸ್ಯರ ಸಹಿ</div>
+          <div>ವಿತರಣಾಧಿಕಾರಿಗಳ ಸಹಿ</div>
+        </div>
+      </div>
+    
+      </div>
+    
+    <div class="horizontal-cut-line">
+      <div class="scissor-icon">✂</div>
+    </div>
+    
+      <div class="shareholder-row">
+        
+      <div class="receipt-card">
+        <!-- Header -->
+        <div class="rc-header">
+          <div class="rc-title">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.</div>
+          <div class="rc-subtitle">ಮರಗೂರ 586 204 ತಾ|| ಇಂಡಿ ಜಿ|| ವಿಜಯಪುರ</div>
+        </div>
+
+        <!-- Sub Banner -->
+        <div class="rc-subbanner">
+          <div class="rc-subbanner-title">ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿ</div>
+          <div class="rc-copy-badge" style="background-color: #2563eb;">ಕಛೇರಿ ಪ್ರತಿ</div>
+        </div>
+
+        <!-- Receipt No -->
+        <div class="rc-receipt-no">
+          ರಶೀದಿ ಸಂಖ್ಯೆ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp; <strong>ಅರಕೇರಿ/2026270002</strong>
+        </div>
+
+        <!-- Share No Banner -->
+        <div class="rc-shareno-banner">
+          ಶೇರು ಸಂಖ್ಯೆ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp; 14919
+        </div>
+
+        <!-- Body: Details + QR -->
+        <div class="rc-body">
+          <div class="rc-details">
+            <div class="rc-row">
+              <span class="rc-label">ಸದಸ್ಯರ ಹೆಸರು</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value name-val">ಹುಟ್ಟಪ್ಪ ಹೂವನಳ್ಳಿ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ವಿಳಾಸ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ಅರಕೇರಿ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಶೇರು ವರ್ಗ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ದ - ವರ್ಗ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಒಟ್ಟು ಶೇರುಗಳು</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">2</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಪ್ರತಿ ಕೆ.ಜಿ ದರ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ರೂ. 20 /ಕೆ.ಜಿ</span>
+            </div>
+          </div>
+          <div class="rc-qr-box">
+            <img class="rc-qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAAAAklEQVR4AewaftIAAAceSURBVO3B0YobWxIAwcxG///LuX4RFAa1pZk5vl6oCPuFtX7YxVoHXKx1wMVaBzz4jcrfUjGpTBXvUvlExaQyVbyi8pMqTlH5WyqeLtY64GKtAy7WOuDBH1T8FJVPqEwVr1TcUZlUpopJZap4pWJS+YTKKxV3VKaKOxU/ReWVi7UOuFjrgIu1DnjwIZVPVPwUlVcqJpU7FZPKVPFTKiaVqeJJZVI5ReUTFe+6WOuAi7UOuFjrgAf/kIqvUpkqJpU7FZPKVPFUMal8h8orFXdU/kUXax1wsdYBF2sd8OAfonKn4l0qn1CZKl5R+Y6Kd6lMFVPFv+hirQMu1jrgYq0DHnyo4pSKSeWOylPFd1S8q2JSmSomlXdVfEJlqnhXxSkXax1wsdYBD/5A5W9RmSomlaniSWWqmFSmikllqphUniq+o2JS+VtU/oaLtQ64WOuAi7UOsF/4R6ncqfgqlaliUnml4hMqdyqeVO5U/D+4WOuAi7UOuFjrgAe/UZkq7qicUnFH5aliUrlTcafiq1Q+ofJUMancUblT8YrKVDGpfKLi6WKtAy7WOuBirQMe/KbiOyomlaeKn1TxpDJVTCp3VKaKSeWp4hMVd1ReqZhUpoqfovKJilcu1jrgYq0DLtY64MFvVKaKn6IyVUwqn6h4ReWOylepfIfKKypTxR2Vn1LxCZWp4ulirQMu1jrgYq0DHnxTxbsqJpWpYlKZKr6q4o7KpDJVPKncqbhT8S6VOxV3VF6pmFR+ysVaB1ysdcCDP1CZKiaVqWKqeFKZKiaVqWJSmSqeKiaVOyp3Kl6pmFQ+ofJKxVRxR2Wq+KqKT6i8crHWARdrHXCx1gEP/qBiUvmEylPFd1S8q+JvqZhUvkrlO1SmildU7lTcqXjlYq0DLtY64GKtAx58qOITFU8qn1C5U/GKylRxp+KOyrsqvkrlExWTyk9R+UTF08VaB1ysdcDFWgc8+JDKnYpXKiaVOxV3VJ4qvkNlqpgqXlGZVO5UTCpPFZPKHZU7Kq9UTCp3KiaVVy7WOuBirQMu1jrAfuGGylQxqUwVr6hMFZPKJyqeVL6jYlJ5V8WkcqdiUnmlYlK5UzGpTBXvUvlExdPFWgdcrHXAxVoHPPiNylQxqUwV76r4joqvqviOindVTCp/i8pUMak8VXyi4l0Xax1wsdYBF2sd8OA3FXcq7qhMFU8qdyr+KyrvUpkqJpWpYlKZKp5UJpU7FXdU3qUyVdxRmSqeLtY64GKtAx78RuVOxaQyVUwqTxV3VD5R8VRxR+UTFe9SmSruVPwUlaliqnhF5ZSLtQ64WOuAi7UOePCbilNUpoo7FZPKu1Smijsqk8pU8UrFd6g8VUwqU8Udlb+l4pWLtQ64WOuAi7UOePAblU9UvKtiUvlExaTyVHFH5U7FpDKpfJXKnYonlTsqU8VU8S6VqWJSuVPxysVaB1ysdcDFWgfYLwwqdyomlaliUvmqikllqniXyicq3qVyp2JSeVfFpHKnYlJ5pWJSmSruqEwVTxdrHXCx1gEXax3w4JsqJpWp4hWVqeITKk8Vk8pU8R0q76r4RMW7KiaVr1K5ozJVTBWvXKx1wMVaB1ysdcCDD6ncqZhUXqmYVKaKqWJSeVKZKr5DZap4RWVS+SkqP6nib7hY64CLtQ548BdVTCp3VKaKVyomlaniExWTyisVk8qdiknlqWKqmFSmikllqnhFZar4KRdrHXCx1gEXax1gvzCofKLijsq7Ku6ovKtiUrlTMalMFe9S+SkVk8qdip+i8omKp4u1DrhY64CLtQ548AcVn1CZKl5RmVQ+UfGk8omKSWWqeEVlqpgqJpWp4qsqJpVJ5U7FKyp3Kt51sdYBF2sdcLHWAQ++SeWOyisVd1SmiknlqeJOxaQyVXyVylRxR+VdFZPKd6i8UjGpfNXFWgdcrHXAxVoH2C/8I1TuVLyiMlXcUfkpFZPKVPEulTsVk8pU8S6VqWJSuVPxysVaB1ysdcDFWgc8+I3K31LxCZVXKiaVqeIUlanijspU8UrFd6hMFe+quKMyVTxdrHXAxVoHXKx1wIM/qPgpKqeo3FG5U/FVKpPKVDFVTCrvUvlExU9RmSpeuVjrgIu1DnjwIZVPVPwXKu6oTCpTxaRySsWTyneo/Asu1jrgYq0DLtY64MH/sYp3qUwVn6h4RWWqmFSmiknlqeJOxR2VOxWvqPyUi7UOuFjrgIu1DnjwD6m4o/JVFZ9QeaViqphU7qi8onKnYlK5U/GKyp2KSWVSmSqeLtY64GKtAy7WOuDBhyr+KxWvqNypmFSmijsV76q4o/JKxR2VqWJSmVSminepfNXFWgdcrHXAxVoHPPgDlb9FZaqYVKaKp4pJZVKZKu5UvKJyp+KUiknlTsWk8lQxqUwVd1ReuVjrgIu1DrhY6wD7hbV+2MVaB1ysdcD/AAh911DIDSPeAAAAAElFTkSuQmCC" alt="QR" />
+            <div class="rc-qr-caption">ಪರಿಶೀಲನೆಗಾಗಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ</div>
+          </div>
+        </div>
+
+        <!-- Calculations -->
+        <div class="rc-calc-box">
+          <div class="rc-calc-orange">
+            <span>ಅರ್ಹ ಸಕ್ಕರೆ</span>
+            <span class="rc-calc-val">50 ಕೆ.ಜಿ</span>
+          </div>
+          <div class="rc-calc-green">
+            <span>ಪಾವತಿಸಬೇಕಾದ ಮೊತ್ತ</span>
+            <span class="rc-calc-val">ರೂ. 1,000</span>
+          </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="rc-signatures">
+          <div>ಸದಸ್ಯರ ಸಹಿ</div>
+          <div>ವಿತರಣಾಧಿಕಾರಿಗಳ ಸಹಿ</div>
+        </div>
+      </div>
+    
+        <div class="vertical-cut-line">
+          <div class="scissor-icon">✂</div>
+        </div>
+        
+      <div class="receipt-card">
+        <!-- Header -->
+        <div class="rc-header">
+          <div class="rc-title">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.</div>
+          <div class="rc-subtitle">ಮರಗೂರ 586 204 ತಾ|| ಇಂಡಿ ಜಿ|| ವಿಜಯಪುರ</div>
+        </div>
+
+        <!-- Sub Banner -->
+        <div class="rc-subbanner">
+          <div class="rc-subbanner-title">ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿ</div>
+          <div class="rc-copy-badge" style="background-color: #15803d;">ಶೇರುದಾರರ ಪ್ರತಿ</div>
+        </div>
+
+        <!-- Receipt No -->
+        <div class="rc-receipt-no">
+          ರಶೀದಿ ಸಂಖ್ಯೆ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp; <strong>ಅರಕೇರಿ/2026270002</strong>
+        </div>
+
+        <!-- Share No Banner -->
+        <div class="rc-shareno-banner">
+          ಶೇರು ಸಂಖ್ಯೆ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp; 14919
+        </div>
+
+        <!-- Body: Details + QR -->
+        <div class="rc-body">
+          <div class="rc-details">
+            <div class="rc-row">
+              <span class="rc-label">ಸದಸ್ಯರ ಹೆಸರು</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value name-val">ಹುಟ್ಟಪ್ಪ ಹೂವನಳ್ಳಿ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ವಿಳಾಸ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ಅರಕೇರಿ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಶೇರು ವರ್ಗ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ದ - ವರ್ಗ</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಒಟ್ಟು ಶೇರುಗಳು</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">2</span>
+            </div>
+            <div class="rc-row">
+              <span class="rc-label">ಪ್ರತಿ ಕೆ.ಜಿ ದರ</span>
+              <span class="rc-colon">:</span>
+              <span class="rc-value">ರೂ. 20 /ಕೆ.ಜಿ</span>
+            </div>
+          </div>
+          <div class="rc-qr-box">
+            <img class="rc-qr-img" src="data:image/png;base64,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" alt="QR" />
+            <div class="rc-qr-caption">ಪರಿಶೀಲನೆಗಾಗಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ</div>
+          </div>
+        </div>
+
+        <!-- Calculations -->
+        <div class="rc-calc-box">
+          <div class="rc-calc-orange">
+            <span>ಅರ್ಹ ಸಕ್ಕರೆ</span>
+            <span class="rc-calc-val">50 ಕೆ.ಜಿ</span>
+          </div>
+          <div class="rc-calc-green">
+            <span>ಪಾವತಿಸಬೇಕಾದ ಮೊತ್ತ</span>
+            <span class="rc-calc-val">ರೂ. 1,000</span>
+          </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="rc-signatures">
+          <div>ಸದಸ್ಯರ ಸಹಿ</div>
+          <div>ವಿತರಣಾಧಿಕಾರಿಗಳ ಸಹಿ</div>
+        </div>
+      </div>
+    
+      </div>
+    
+  </div>
+</body>
+</html>
