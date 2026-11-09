@@ -1,7 +1,9 @@
 import LoadingAnimation from '../Common/LoadingAnimation';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { ApiService, getShareholderSharesCount } from '../../services/api';
 import { CloudDbService } from '../../services/cloudDb';
+import { getCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {
@@ -9,7 +11,7 @@ import {
   QrCode, UserCheck, Users, FileSpreadsheet, Sparkles, Filter, Check, ArrowRight,
   Camera, AlertTriangle, X, Image as ImageIcon, Video, VideoOff, ShieldCheck,
   Smartphone, Monitor, Download, Printer, ChevronLeft, ChevronRight, CheckCheck,
-  Radio, Lock
+  Radio, Lock, FileText
 } from 'lucide-react';
 
 const COUNTER_OPTIONS = [
@@ -96,8 +98,8 @@ export default function AttendanceModule() {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08); // A5
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
       gain.gain.setValueAtTime(0.2, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
       osc.connect(gain);
@@ -131,13 +133,13 @@ export default function AttendanceModule() {
       let masterMembers = [];
 
       if (recordType === 'Shareholder') {
-        // Load all shareholders from local DB / API
         const rawSh = await ApiService.getAllShareholdersRaw();
         if (Array.isArray(rawSh) && rawSh.length > 0) {
           masterMembers = rawSh.map((s, idx) => ({
             entity_id: String(s.share_no || s.share_number || s.id || (idx + 1)),
             name: s.shareholder_name || s.name || 'Member',
             department: s.place || s.village_name || '—',
+            category: s.schedule_cast || s.category || 'ಅ - ವರ್ಗ',
             book_no: s.book_no || 'B.No: 1',
             status: 'Absent',
             time: null,
@@ -154,6 +156,7 @@ export default function AttendanceModule() {
               entity_id: String(s.share_no || s.share_number),
               name: s.shareholder_name || s.name,
               department: s.place || s.village_name || '—',
+              category: s.schedule_cast || s.category || 'ಅ - ವರ್ಗ',
               book_no: s.book_no || 'B.No: 1',
               status: 'Absent',
               time: null,
@@ -172,6 +175,7 @@ export default function AttendanceModule() {
             entity_id: String(e.employee_id),
             name: e.name,
             department: e.department || e.designation || '—',
+            category: 'ಸಿಬ್ಬಂದಿ',
             status: 'Absent',
             time: null,
             scanned_by: null,
@@ -221,6 +225,7 @@ export default function AttendanceModule() {
             ...item,
             status: 'Present',
             time: scan.time || scan.scan_time,
+            category: scan.category || item.category || 'ಅ - ವರ್ಗ',
             scanned_by: scan.scanned_by || scan.scanned_by_name || 'Staff',
             scanned_by_role: scan.scanned_by_role || 'Staff',
             counter: scan.counter || 'ಕೌಂಟರ್'
@@ -237,6 +242,7 @@ export default function AttendanceModule() {
             entity_id: eid,
             name: scan.name || 'Member',
             department: scan.department || '—',
+            category: scan.category || 'ಅ - ವರ್ಗ',
             book_no: scan.book_no || '—',
             status: 'Present',
             time: scan.time || scan.scan_time,
@@ -292,6 +298,7 @@ export default function AttendanceModule() {
                   ...item,
                   status: 'Present',
                   time: scan.time || scan.scan_time,
+                  category: scan.category || item.category || 'ಅ - ವರ್ಗ',
                   scanned_by: scan.scanned_by || scan.scanned_by_name || 'Staff',
                   scanned_by_role: scan.scanned_by_role || 'Staff',
                   counter: scan.counter || 'ಕೌಂಟರ್'
@@ -329,7 +336,6 @@ export default function AttendanceModule() {
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onFocus);
 
-    // Cross-tab BroadcastChannel sync for 0ms lag
     let channel = null;
     if (typeof BroadcastChannel !== 'undefined') {
       try {
@@ -346,6 +352,7 @@ export default function AttendanceModule() {
                     ...copy[idx],
                     status: 'Present',
                     time: scan.time,
+                    category: scan.category || copy[idx].category || 'ಅ - ವರ್ಗ',
                     scanned_by: scan.scanned_by,
                     counter: scan.counter
                   };
@@ -374,19 +381,15 @@ export default function AttendanceModule() {
   const extractEntityId = (raw) => {
     if (!raw) return '';
     const text = String(raw).trim();
-    // 1. Employee URL parameter format
     const empMatch = text.match(/[?&](?:emp_attn|emp_id|employee|emp)=([^&]+)/i);
     if (empMatch) return decodeURIComponent(empMatch[1]).trim().toUpperCase();
 
-    // 2. Shareholder URL parameter format (?attn=3652, ?share_no=3652, ?share=3652)
     const urlMatch = text.match(/[?&](?:attn|share_no|share|id)=(\d+)/i);
     if (urlMatch) return urlMatch[1];
 
-    // 3. Employee ID prefix (EMP-001)
     const empPrefixMatch = text.match(/EMP[:\-\s#]*(\d+)/i);
     if (empPrefixMatch) return `EMP-${empPrefixMatch[1].padStart(3, '0')}`;
 
-    // 4. JSON format
     if (text.startsWith('{') && text.endsWith('}')) {
       try {
         const obj = JSON.parse(text);
@@ -397,18 +400,14 @@ export default function AttendanceModule() {
       } catch (e) {}
     }
 
-    // 5. Shareholder prefix format (BSSKN-3652, ATTN: 3652, SHARE #3652)
     const prefixMatch = text.match(/(?:BSSKN|ATTN|SHARE|MEMBER)[:\-\s#]*(\d+)/i);
     if (prefixMatch) return prefixMatch[1];
 
-    // 6. Direct EMP text
     if (/^EMP/i.test(text)) return text.toUpperCase();
 
-    // 7. Raw digits
     return text.replace(/\D/g, '');
   };
 
-  // Debounce refs
   const lastScanTimeRef = useRef(0);
   const lastScannedCodeRef = useRef('');
 
@@ -425,7 +424,6 @@ export default function AttendanceModule() {
       return;
     }
 
-    // Anti-spam debounce (prevent double triggers within 2.5s)
     const now = Date.now();
     if (lastScannedCodeRef.current === targetId && (now - lastScanTimeRef.current) < 2500) {
       return;
@@ -449,7 +447,7 @@ export default function AttendanceModule() {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const deviceType = isMobile ? 'ಮೊಬೈಲ್' : 'ಡೆಸ್ಕ್‌ಟಾಪ್';
 
-    // A. Check if already marked present today
+    // Check if already marked present today
     const foundIdx = attendanceList.findIndex(item => String(item.entity_id).trim().toUpperCase() === targetId.toUpperCase());
     if (foundIdx !== -1) {
       const existing = attendanceList[foundIdx];
@@ -467,7 +465,6 @@ export default function AttendanceModule() {
       }
     }
 
-    // B. Prepare the attendance record
     let updatedItem = null;
 
     if (foundIdx !== -1) {
@@ -485,10 +482,9 @@ export default function AttendanceModule() {
       setAttendanceList(prev => {
         const copy = [...prev];
         copy.splice(foundIdx, 1);
-        return [updatedItem, ...copy]; // Move to top of table
+        return [updatedItem, ...copy];
       });
     } else {
-      // Look up member from database
       let match = null;
       if (isEmployeeScan) {
         try {
@@ -506,6 +502,7 @@ export default function AttendanceModule() {
         entity_id: targetId,
         name: match ? (match.shareholder_name || match.name) : `Member #${targetId}`,
         department: match ? (match.place || match.village_name || match.department || '—') : '—',
+        category: match ? (match.schedule_cast || match.category || 'ಅ - ವರ್ಗ') : 'ಅ - ವರ್ಗ',
         book_no: match?.book_no || '—',
         status: 'Present',
         time: currentTime,
@@ -524,13 +521,14 @@ export default function AttendanceModule() {
     setLastScannedMember(updatedItem);
     playSuccessBeep();
 
-    // C. AUTO-SAVE IMMEDIATELY TO DATABASE (Supabase Cloud DB + IndexedDB + Local Storage)
+    // AUTO-SAVE IMMEDIATELY TO CLOUD DATABASE (Supabase)
     const scanPayload = {
       date: selectedDate,
       type: recordType,
       entity_id: String(targetId),
       name: updatedItem.name,
       department: updatedItem.department,
+      category: updatedItem.category || 'ಅ - ವರ್ಗ',
       book_no: updatedItem.book_no,
       status: 'Present',
       time: currentTime,
@@ -545,7 +543,6 @@ export default function AttendanceModule() {
       method: scanMethod
     };
 
-    // 1. Save to Supabase Cloud DB (agm_attendance_scans)
     if (CloudDbService.isEnabled()) {
       CloudDbService.saveCollectionItem('agm_attendance_scans', `${selectedDate}_${recordType}_${targetId}`, scanPayload)
         .then(() => {
@@ -556,7 +553,6 @@ export default function AttendanceModule() {
         });
     }
 
-    // 2. Save to local storage backup
     try {
       const key = `sugar_agm_scans_${selectedDate}_${recordType}`;
       const existingLocal = JSON.parse(localStorage.getItem(key) || '[]');
@@ -565,7 +561,6 @@ export default function AttendanceModule() {
       localStorage.setItem(key, JSON.stringify(filteredLocal));
     } catch (e) {}
 
-    // 3. Broadcast across all open browser tabs
     if (typeof BroadcastChannel !== 'undefined') {
       try {
         const channel = new BroadcastChannel('sugar_erp_attendance_channel');
@@ -574,7 +569,7 @@ export default function AttendanceModule() {
       } catch (e) {}
     }
 
-    showToast(`✅ ${isEmployeeScan ? 'ಸಿಬ್ಬಂದಿ' : 'ಷೇರು'} #${updatedItem.entity_id} - ${updatedItem.name} ಹಾಜರಾತಿ ಸ್ವಯಂ-ಉಳಿಸಲಾಗಿದೆ! (ದಾಖಲಿಸಿದವರು: ${staffName})`, 'success');
+    showToast(`✅ ${isEmployeeScan ? 'ಸಿಬ್ಬಂದಿ' : 'ಷೇರು'} #${updatedItem.entity_id} - ${updatedItem.name} ಹಾಜರಾತಿ ಸ್ವಯಂ-ಉಳಿಸಲಾಗಿದೆ!`, 'success');
 
     if (scanInputRef.current) scanInputRef.current.focus();
   };
@@ -613,7 +608,6 @@ export default function AttendanceModule() {
       return copy;
     });
 
-    // Auto-save toggle to Cloud DB
     if (CloudDbService.isEnabled()) {
       if (nextStatus === 'Present') {
         await CloudDbService.saveCollectionItem('agm_attendance_scans', `${selectedDate}_${recordType}_${entityId}`, {
@@ -622,6 +616,7 @@ export default function AttendanceModule() {
           entity_id: String(entityId),
           name: updated.name,
           department: updated.department,
+          category: updated.category || 'ಅ - ವರ್ಗ',
           book_no: updated.book_no,
           status: 'Present',
           time: currentTime,
@@ -658,25 +653,92 @@ export default function AttendanceModule() {
     showToast(`ಹಾಜರಾತಿ ಉಳಿಸಲಾಗಿದೆ (${presentCount} ಹಾಜರು)`, 'success');
   };
 
-  // Export AGM Attendance to CSV
+  // EXCEL (.xlsx) EXPORT
+  const handleExportExcel = () => {
+    const presentItems = attendanceList.filter(i => i.status === 'Present');
+    const itemsToExport = presentItems.length > 0 ? presentItems : attendanceList;
+
+    if (itemsToExport.length === 0) {
+      showToast('⚠️ ಎಕ್ಸೆಲ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಲು ಯಾವುದೇ ಹಾಜರಾತಿ ದಾಖಲೆಗಳಿಲ್ಲ', 'error');
+      return;
+    }
+
+    const rows = [
+      ['ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204'],
+      ['ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM) ಅಧಿಕೃತ ಹಾಜರಾತಿ ವಹಿ (Official AGM Attendance Register)'],
+      [`ದಿನಾಂಕ: ${selectedDate} | ಒಟ್ಟು ಸದಸ್ಯರು: ${totalMembers.toLocaleString()} | ಹಾಜರಾದವರು: ${presentMembers.toLocaleString()} | ಕೋರಂ: ${quorumPct}%`],
+      [],
+      [
+        'ಕ್ರಮ ಸಂಖ್ಯೆ',
+        'ಷೇರು / ನೌಕರ ಸಂ',
+        'ಶೇರುದಾರರ ಹೆಸರು',
+        'ವರ್ಗ (Category)',
+        'ಗ್ರಾಮ / ಸ್ಥಳ',
+        'ಪುಸ್ತಕ ನಂ',
+        'ಹಾಜರಾತಿ ಸಮಯ',
+        'ದಾಖಲಿಸಿದ ಸಿಬ್ಬಂದಿ',
+        'ಕೌಂಟರ್ / ಗೇಟ್',
+        'ಹಾಜರಾತಿ ಸ್ಥಿತಿ'
+      ]
+    ];
+
+    itemsToExport.forEach((item, idx) => {
+      rows.push([
+        idx + 1,
+        `#${item.entity_id}`,
+        item.name || '',
+        item.category || 'ಅ - ವರ್ಗ',
+        item.department || '',
+        item.book_no || '—',
+        item.time || '—',
+        item.scanned_by || '—',
+        item.counter || '—',
+        item.status === 'Present' ? 'ಹಾಜರು (Present)' : 'ಗೈರುಹಾಜರು (Absent)'
+      ]);
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    ws['!cols'] = [
+      { wch: 10 },
+      { wch: 15 },
+      { wch: 34 },
+      { wch: 16 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 28 },
+      { wch: 26 },
+      { wch: 16 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'AGM_Attendance');
+    XLSX.writeFile(wb, `AGM_Attendance_${selectedDate}.xlsx`);
+    showToast(`📊 AGM ಹಾಜರಾತಿ ಎಕ್ಸೆಲ್ (.xlsx) ಯಶಸ್ವಿಯಾಗಿ ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ! (${itemsToExport.length} ಸದಸ್ಯರು)`, 'success');
+  };
+
+  // CSV EXPORT
   const handleExportCSV = () => {
     const presentItems = attendanceList.filter(i => i.status === 'Present');
-    if (presentItems.length === 0) {
+    const itemsToExport = presentItems.length > 0 ? presentItems : attendanceList;
+
+    if (itemsToExport.length === 0) {
       showToast('⚠️ ರಫ್ತು ಮಾಡಲು ಯಾವುದೇ ಹಾಜರಾತಿ ದಾಖಲೆಗಳಿಲ್ಲ', 'error');
       return;
     }
 
-    let csvContent = '\uFEFF'; // UTF-8 BOM
+    let csvContent = '\uFEFF';
     csvContent += `ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ., ಮರಗೂರ\n`;
     csvContent += `ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM) ಹಾಜರಾತಿ ವಹಿ - ದಿನಾಂಕ: ${selectedDate}\n\n`;
-    csvContent += `ಕ್ರಮ ಸಂಖ್ಯೆ,ಷೇರು / ನೌಕರ ಸಂ,ಹೆಸರು,ಗ್ರಾಮ / ಸ್ಥಳ,ಪುಸ್ತಕ ನಂ,ಹಾಜರಾತಿ ಸಮಯ,ದಾಖಲಿಸಿದ ಸಿಬ್ಬಂದಿ,ಕೌಂಟರ್,ಸ್ಥಿತಿ\n`;
+    csvContent += `ಕ್ರಮ ಸಂಖ್ಯೆ,ಷೇರು / ನೌಕರ ಸಂ,ಹೆಸರು,ವರ್ಗ (Category),ಗ್ರಾಮ / ಸ್ಥಳ,ಪುಸ್ತಕ ನಂ,ಹಾಜರಾತಿ ಸಮಯ,ದಾಖಲಿಸಿದ ಸಿಬ್ಬಂದಿ,ಕೌಂಟರ್,ಸ್ಥಿತಿ\n`;
 
-    presentItems.forEach((item, idx) => {
+    itemsToExport.forEach((item, idx) => {
       const cleanName = (item.name || '').replace(/,/g, ' ');
       const cleanDept = (item.department || '').replace(/,/g, ' ');
       const cleanStaff = (item.scanned_by || '').replace(/,/g, ' ');
       const cleanCounter = (item.counter || '').replace(/,/g, ' ');
-      csvContent += `${idx + 1},#${item.entity_id},"${cleanName}","${cleanDept}","${item.book_no || '—'}",${item.time || '—'},"${cleanStaff}","${cleanCounter}",ಹಾಜರು (Present)\n`;
+      csvContent += `${idx + 1},#${item.entity_id},"${cleanName}","${item.category || 'ಅ - ವರ್ಗ'}","${cleanDept}","${item.book_no || '—'}",${item.time || '—'},"${cleanStaff}","${cleanCounter}",${item.status === 'Present' ? 'ಹಾಜರು (Present)' : 'ಗೈರುಹಾಜರು (Absent)'}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -687,7 +749,214 @@ export default function AttendanceModule() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast(`📥 AGM ಹಾಜರಾತಿ ವಹಿ ಯಶಸ್ವಿಯಾಗಿ ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ (${presentItems.length} ಸದಸ್ಯರು)`, 'success');
+    showToast(`📥 AGM ಹಾಜರಾತಿ CSV ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ (${itemsToExport.length} ಸದಸ್ಯರು)`, 'success');
+  };
+
+  // OFFICIAL PRINT REGISTER (A4 Landscape)
+  const handlePrintAttendance = () => {
+    const presentItems = attendanceList.filter(i => i.status === 'Present');
+    const itemsToPrint = presentItems.length > 0 ? presentItems : attendanceList.slice(0, 100);
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast('ಪಾಪ್-ಅಪ್ ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಅನುಮತಿಸಿ.', 'error');
+      return;
+    }
+
+    const companyLogoUrl = getCompanyLogo() || DEFAULT_LOGO_PATH;
+
+    let tableRows = '';
+    itemsToPrint.forEach((item, idx) => {
+      tableRows += `
+        <tr>
+          <td style="text-align: center; font-family: monospace;">${idx + 1}</td>
+          <td style="text-align: center; font-family: monospace; font-weight: bold; color: #047857;">#${item.entity_id}</td>
+          <td style="font-weight: 700;">${item.name}</td>
+          <td style="text-align: center; font-weight: 600;">${item.category || 'ಅ - ವರ್ಗ'}</td>
+          <td>${item.department}</td>
+          <td style="text-align: center;">${item.book_no || '—'}</td>
+          <td style="text-align: center; font-family: monospace; font-weight: 600;">${item.time || '—'}</td>
+          <td>${item.scanned_by || '—'}</td>
+          <td>${item.counter || '—'}</td>
+          <td style="text-align: center; color: #047857; font-weight: bold;">${item.status === 'Present' ? '✓ ಹಾಜರು' : 'ಗೈರು'}</td>
+          <td style="border-bottom: 1px dashed #94a3b8; width: 85px;"></td>
+        </tr>
+      `;
+    });
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AGM Attendance Register - ${selectedDate}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anek+Kannada:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 1cm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      font-family: 'Anek Kannada', 'Noto Sans Kannada', sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #000;
+      background: #fff;
+      font-size: 11px;
+    }
+    .header-box {
+      border-bottom: 2px solid #000;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-title-box {
+      text-align: center;
+      flex: 1;
+    }
+    .factory-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: #000;
+    }
+    .factory-sub {
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
+    }
+    .doc-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #047857;
+      margin-top: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 11px;
+    }
+    .meta-item strong {
+      color: #0f172a;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+    th, td {
+      border: 1px solid #94a3b8;
+      padding: 4px 6px;
+      font-size: 10.5px;
+      line-height: 1.25;
+    }
+    th {
+      background-color: #e2e8f0;
+      color: #0f172a;
+      font-weight: 800;
+      text-align: left;
+    }
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    .footer-signatures {
+      margin-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .sig-box {
+      text-align: center;
+      width: 180px;
+      border-top: 1px dashed #000;
+      padding-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-box">
+    <div style="width: 60px;">
+      <img src="${companyLogoUrl}" style="max-height: 48px; max-width: 55px; object-fit: contain;" alt="Logo" onerror="this.style.display='none'" />
+    </div>
+    <div class="header-title-box">
+      <div class="factory-name">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204</div>
+      <div class="factory-sub">ತಾ|| ಇಂಡಿ / ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ (ಕರ್ನಾಟಕ)</div>
+      <div class="doc-title">ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM) ಅಧಿಕೃತ ಹಾಜರಾತಿ ವಹಿ (Official AGM Attendance Register)</div>
+    </div>
+    <div style="width: 60px; text-align: right; font-size: 9px; color: #64748b;">
+      <div>ದಿನಾಂಕ: ${selectedDate}</div>
+    </div>
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-item">ಸಭೆಯ ದಿನಾಂಕ: <strong>${selectedDate}</strong></div>
+    <div class="meta-item">ಒಟ್ಟು ಷೇರುದಾರರು: <strong>${totalMembers.toLocaleString()}</strong></div>
+    <div class="meta-item">ಹಾಜರಾದ ಸದಸ್ಯರು: <strong style="color: #047857;">${presentMembers.toLocaleString()}</strong></div>
+    <div class="meta-item">ಕೋರಂ ಶೇಕಡಾವಾರು: <strong>${quorumPct}%</strong></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 38px; text-align: center;">ಕ್ರ.ಸಂ.</th>
+        <th style="width: 75px; text-align: center;">ಷೇರು ನಂ</th>
+        <th>ಶೇರುದಾರರ ಹೆಸರು</th>
+        <th style="width: 75px; text-align: center;">ವರ್ಗ</th>
+        <th style="width: 100px;">ಗ್ರಾಮ / ಸ್ಥಳ</th>
+        <th style="width: 70px; text-align: center;">ಪುಸ್ತಕ ನಂ</th>
+        <th style="width: 70px; text-align: center;">ಸಮಯ</th>
+        <th>ದಾಖಲಿಸಿದ ಸಿಬ್ಬಂದಿ</th>
+        <th style="width: 120px;">ಕೌಂಟರ್</th>
+        <th style="width: 70px; text-align: center;">ಸ್ಥಿತಿ</th>
+        <th style="width: 85px; text-align: center;">ಸಹಿ</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+
+  <div class="footer-signatures">
+    <div class="sig-box">ಹಾಜರಾತಿ ನಿರ್ವಾಹಕರು (Operator)</div>
+    <div class="sig-box">ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿಗಳು (Chief Accountant)</div>
+    <div class="sig-box">ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು (Managing Director)</div>
+  </div>
+</body>
+</html>`;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+
+    if (printWindow.document.fonts && printWindow.document.fonts.ready) {
+      printWindow.document.fonts.ready.then(() => {
+        setTimeout(() => {
+          try { printWindow.print(); } catch (e) {}
+        }, 300);
+      });
+    } else {
+      setTimeout(() => {
+        try { printWindow.print(); } catch (e) {}
+      }, 700);
+    }
   };
 
   // Handle Photo File Upload QR Scanning
@@ -845,7 +1114,8 @@ export default function AttendanceModule() {
         const matchId = String(item.entity_id).toLowerCase().includes(q);
         const matchName = String(item.name).toLowerCase().includes(q);
         const matchDept = String(item.department).toLowerCase().includes(q);
-        return matchId || matchName || matchDept;
+        const matchCat = String(item.category || '').toLowerCase().includes(q);
+        return matchId || matchName || matchDept || matchCat;
       }
       return true;
     });
@@ -880,15 +1150,15 @@ export default function AttendanceModule() {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            ಮಲ್ಟಿ-ಡಿವೈಸ್ ಕ್ಲೌಡ್ ಸಿಂಕ್ • ಲಾಗಿನ್ ಸಿಬ್ಬಂದಿ ಟ್ರ್ಯಾಕಿಂಗ್ • QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಆದ ತಕ್ಷಣ ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಸ್ವಯಂ-ದಾಖಲು
+            ಮಲ್ಟಿ-ಡಿವೈಸ್ ಕ್ಲೌಡ್ ಸಿಂಕ್ • ಲಾಗಿನ್ ಸಿಬ್ಬಂದಿ ಟ್ರ್ಯಾಕಿಂಗ್ • ವರ್ಗ ವಿವರ • ಎಕ್ಸೆಲ್ & ಮುದ್ರಣ ಸೌಲಭ್ಯ
           </p>
         </div>
 
-        {/* Top Controls: AGM Date, Counter, Sync Status */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Top Controls: AGM Date, Counter, Sync Status, Excel, Print, CSV */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* AGM Meeting Date */}
           <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
-            <span className="text-slate-400 font-semibold">ಮಹಾಸಭೆ ದಿನಾಂಕ:</span>
+            <span className="text-slate-400 font-semibold">ದಿನಾಂಕ:</span>
             <input
               type="date"
               value={selectedDate}
@@ -906,7 +1176,7 @@ export default function AttendanceModule() {
             <select
               value={selectedCounter}
               onChange={(e) => handleCounterChange(e.target.value)}
-              className="bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer max-w-[160px] truncate"
+              className="bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer max-w-[150px] truncate"
             >
               {COUNTER_OPTIONS.map((c, i) => (
                 <option key={i} value={c} className="bg-slate-900 text-slate-100">{c}</option>
@@ -914,25 +1184,45 @@ export default function AttendanceModule() {
             </select>
           </div>
 
-          {/* Live Sync Status & Manual Sync Button */}
+          {/* Live Sync Button */}
           <button
             onClick={() => syncWithCloudNow()}
             disabled={isSyncing}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 rounded-xl text-xs font-bold transition-all shadow cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 rounded-xl text-xs font-bold transition-all shadow cursor-pointer disabled:opacity-50"
             title="ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್‌ನಿಂದ ಇತ್ತೀಚಿನ ಹಾಜರಾತಿ ಸಿಂಕ್ ಮಾಡಿ"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-amber-400' : 'text-cyan-400'}`} />
-            <span>{isSyncing ? 'ಸಿಂಕ್ ಆಗುತ್ತಿದೆ...' : 'ಸಿಂಕ್'}</span>
+            <span>ಸಿಂಕ್</span>
           </button>
 
-          {/* Export to CSV */}
+          {/* Excel Export (.xlsx) */}
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+            title="ಹಾಜರಾತಿ ವಹಿಯನ್ನು ಅಧಿಕೃತ ಎಕ್ಸೆಲ್ (.xlsx) ರೂಪದಲ್ಲಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-white" />
+            <span>ಎಕ್ಸೆಲ್ (.xlsx)</span>
+          </button>
+
+          {/* Print Register */}
+          <button
+            onClick={handlePrintAttendance}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+            title="AGM ಹಾಜರಾತಿ ವಹಿಯನ್ನು ಮುದ್ರಿಸಿ (Print Official Register)"
+          >
+            <Printer className="w-3.5 h-3.5 text-white" />
+            <span>ಮುದ್ರಿಸಿ</span>
+          </button>
+
+          {/* CSV Export */}
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
-            title="ಹಾಜರಾತಿ ವಹಿಯನ್ನು ಎಕ್ಸೆಲ್/CSV ರೂಪದಲ್ಲಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold transition-all shadow cursor-pointer"
+            title="CSV ಫೈಲ್ ಡೌನ್‌ಲೋಡ್"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">CSV ಎಕ್ಸ್‌ಪೋರ್ಟ್</span>
+            <Download className="w-3.5 h-3.5 text-slate-400" />
+            <span>CSV</span>
           </button>
         </div>
       </div>
@@ -1030,7 +1320,7 @@ export default function AttendanceModule() {
               <p className="text-xs text-slate-400">
                 {recordType === 'Employee'
                   ? 'ಸಿಬ್ಬಂದಿ ಗುರುತಿನ ಚೀಟಿಯ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ Emp ID ನಮೂದಿಸಿ'
-                  : 'ಶೇರುದಾರರ ಪುಸ್ತಕ ಸ್ಟಿಕ್ಕರ್ / ID ಕಾರ್ಡ್‌ನ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ ಶೇರು ನಂ ನಮೂದಿಸಿ (Auto-saved to Database)'}
+                  : 'ಶೇರುದಾರರ ಪುಸ್ತಕ ಸ್ಟಿಕ್ಕರ್ / ID ಕಾರ್ಡ್‌ನ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ ಷೇರು ನಂ ನಮೂದಿಸಿ (Auto-saved to Database)'}
               </p>
             </div>
           </div>
@@ -1243,6 +1533,9 @@ export default function AttendanceModule() {
                   <span className="text-[11px] font-mono text-emerald-400">
                     ({recordType === 'Employee' || String(lastScannedMember.entity_id).startsWith('EMP') ? `Emp ID: ${lastScannedMember.entity_id}` : `ಷೇರು #${lastScannedMember.entity_id}`})
                   </span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-800 text-amber-300 border border-slate-700">
+                    {lastScannedMember.category || 'ಅ - ವರ್ಗ'}
+                  </span>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                     ⚡ ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಸೇವ್ ಆಗಿದೆ
                   </span>
@@ -1337,13 +1630,13 @@ export default function AttendanceModule() {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Search Name, Share No, Place..."
+            placeholder="Search Name, Share No, Place, Category..."
             className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500"
           />
         </div>
       </div>
 
-      {/* Register Table with Recorded By Staff Column */}
+      {/* Register Table with Category Column and Clean Name Display */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
         {loading ? (
           <LoadingAnimation
@@ -1362,6 +1655,7 @@ export default function AttendanceModule() {
                 <tr>
                   <th className="py-3.5 px-4">Entity ID (ಷೇರು / ನೌಕರ ಸಂ)</th>
                   <th className="py-3.5 px-4">Name (ಹೆಸರು)</th>
+                  <th className="py-3.5 px-4 text-center">ವರ್ಗ (Category)</th>
                   <th className="py-3.5 px-4">Place / Dept (ಸ್ಥಳ)</th>
                   <th className="py-3.5 px-4">Scan Time (ಸಮಯ)</th>
                   <th className="py-3.5 px-4">ದಾಖಲಿಸಿದ ಸಿಬ್ಬಂದಿ (Recorded By)</th>
@@ -1376,10 +1670,15 @@ export default function AttendanceModule() {
                     <td className="py-3 px-4 font-medium text-slate-100">
                       <div className="flex items-center gap-1.5">
                         <span>{item.name}</span>
-                        {item.shares && (
-                          <span className="text-[10px] text-slate-500">({item.shares} ಶೇರು)</span>
-                        )}
+                        {Number(item.shares) > 0 ? (
+                          <span className="text-[10px] text-slate-400">({item.shares} ಶೇರು)</span>
+                        ) : null}
                       </div>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-slate-900 border border-slate-700/80 text-amber-300 whitespace-nowrap">
+                        {item.category || 'ಅ - ವರ್ಗ'}
+                      </span>
                     </td>
                     <td className="py-3 px-4 text-slate-400">{item.department}</td>
                     <td className="py-3 px-4 font-mono text-slate-300 font-semibold">{item.time || '—'}</td>
