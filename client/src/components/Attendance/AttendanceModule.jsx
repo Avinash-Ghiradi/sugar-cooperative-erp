@@ -106,6 +106,12 @@ export default function AttendanceModule() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
   const scanInputRef = useRef(null);
+  const masterShareholdersRef = useRef([]);
+  const isSyncingRef = useRef(false);
+  const activeAgmTabRef = useRef(activeAgmTab);
+  activeAgmTabRef.current = activeAgmTab;
+  const allAgmScansMapRef = useRef(allAgmScansMap);
+  allAgmScansMapRef.current = allAgmScansMap;
 
   // Multi-select & Bulk / Reset States
   const [selectedShareholderIds, setSelectedShareholderIds] = useState(new Set());
@@ -242,34 +248,37 @@ export default function AttendanceModule() {
   const loadMasterAndAttendance = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      // A. Load Master Shareholders
-      let masterMembers = [];
-      const rawSh = await ApiService.getAllShareholdersRaw();
-      if (Array.isArray(rawSh) && rawSh.length > 0) {
-        masterMembers = rawSh.map((s, idx) => ({
-          entity_id: String(s.share_no || s.share_number || s.id || (idx + 1)),
-          name: s.shareholder_name || s.name || 'Member',
-          department: s.place || s.village_name || '—',
-          category: s.schedule_cast || s.category || 'ಅ - ವರ್ಗ',
-          book_no: s.book_no || 'B.No: 1',
-          photo_url: s.photo_url || null,
-          shares: getShareholderSharesCount(s)
-        }));
-      } else {
-        const shRes = await ApiService.getShareholders({ page: 1, limit: 350, status: 'Active' });
-        if (shRes && shRes.data) {
-          masterMembers = shRes.data.map(s => ({
-            entity_id: String(s.share_no || s.share_number),
-            name: s.shareholder_name || s.name,
+      // A. Load Master Shareholders (Cached in ref to prevent memory exhaustion on tab switch)
+      let masterMembers = masterShareholdersRef.current;
+      if (!masterMembers || masterMembers.length === 0) {
+        const rawSh = await ApiService.getAllShareholdersRaw();
+        if (Array.isArray(rawSh) && rawSh.length > 0) {
+          masterMembers = rawSh.map((s, idx) => ({
+            entity_id: String(s.share_no || s.share_number || s.id || (idx + 1)),
+            name: s.shareholder_name || s.name || 'Member',
             department: s.place || s.village_name || '—',
             category: s.schedule_cast || s.category || 'ಅ - ವರ್ಗ',
             book_no: s.book_no || 'B.No: 1',
             photo_url: s.photo_url || null,
             shares: getShareholderSharesCount(s)
           }));
+        } else {
+          const shRes = await ApiService.getShareholders({ page: 1, limit: 350, status: 'Active' });
+          if (shRes && shRes.data) {
+            masterMembers = shRes.data.map(s => ({
+              entity_id: String(s.share_no || s.share_number),
+              name: s.shareholder_name || s.name,
+              department: s.place || s.village_name || '—',
+              category: s.schedule_cast || s.category || 'ಅ - ವರ್ಗ',
+              book_no: s.book_no || 'B.No: 1',
+              photo_url: s.photo_url || null,
+              shares: getShareholderSharesCount(s)
+            }));
+          }
         }
+        masterShareholdersRef.current = masterMembers;
+        setMasterShareholders(masterMembers);
       }
-      setMasterShareholders(masterMembers);
 
       // B. Load Cloud Scans for all AGMs
       let cloudScans = [];
@@ -291,96 +300,17 @@ export default function AttendanceModule() {
           if (saved) {
             const arr = JSON.parse(saved);
             if (Array.isArray(arr)) localScans.push(...arr);
+            else if (typeof arr === 'object') localScans.push(...Object.values(arr));
           }
         });
       } catch (e) {}
 
-      // D. Build Combined Map: `${agmId}_${entityId}` -> scan
+      // D. Build Combined Map: `${agmId}_${entityId}` -> scan (Only holds ACTUAL scans, saves huge RAM)
       const scanMap = new Map();
-
-      // Seed realistic historical attendance for past AGMs (1, 2, 3, 4) if empty and not reset
-      const isResetAgm = (agm) => {
-        try {
-          return localStorage.getItem(`sugar_agm_reset_${agm}`) === 'true';
-        } catch (e) {
-          return false;
-        }
-      };
-
-      const hasPastScans = [...localScans, ...cloudScans].some(s => ['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4'].includes(s?.agmId || s?.agm));
-      if (!hasPastScans && masterMembers.length > 0) {
-        // Deterministic realistic seeding: majority of shareholders attended 3 or 4 AGMs
-        masterMembers.forEach((m, idx) => {
-          const idNum = Number(m.entity_id) || (idx + 1);
-          // AGM-1 (2022)
-          if (!isResetAgm('AGM-1') && idNum % 5 !== 0) {
-            scanMap.set(`AGM-1_${m.entity_id}`, {
-              agmId: 'AGM-1',
-              date: DEFAULT_AGM_CONFIGS['AGM-1'].date,
-              entity_id: m.entity_id,
-              name: m.name,
-              category: m.category,
-              department: m.department,
-              time: '11:30 AM',
-              status: 'Present',
-              scanned_by: 'Staff (Operator)',
-              counter: 'ಕೌಂಟರ್ 1'
-            });
-          }
-          // AGM-2 (2023)
-          if (!isResetAgm('AGM-2') && idNum % 4 !== 0) {
-            scanMap.set(`AGM-2_${m.entity_id}`, {
-              agmId: 'AGM-2',
-              date: DEFAULT_AGM_CONFIGS['AGM-2'].date,
-              entity_id: m.entity_id,
-              name: m.name,
-              category: m.category,
-              department: m.department,
-              time: '11:45 AM',
-              status: 'Present',
-              scanned_by: 'Staff (Operator)',
-              counter: 'ಕೌಂಟರ್ 2'
-            });
-          }
-          // AGM-3 (2024)
-          if (!isResetAgm('AGM-3') && idNum % 6 !== 0) {
-            scanMap.set(`AGM-3_${m.entity_id}`, {
-              agmId: 'AGM-3',
-              date: DEFAULT_AGM_CONFIGS['AGM-3'].date,
-              entity_id: m.entity_id,
-              name: m.name,
-              category: m.category,
-              department: m.department,
-              time: '12:15 PM',
-              status: 'Present',
-              scanned_by: 'Staff (Operator)',
-              counter: 'ಕೌಂಟರ್ 1'
-            });
-          }
-          // AGM-4 (2025)
-          if (!isResetAgm('AGM-4') && idNum % 3 !== 0) {
-            scanMap.set(`AGM-4_${m.entity_id}`, {
-              agmId: 'AGM-4',
-              date: DEFAULT_AGM_CONFIGS['AGM-4'].date,
-              entity_id: m.entity_id,
-              name: m.name,
-              category: m.category,
-              department: m.department,
-              time: '12:30 PM',
-              status: 'Present',
-              scanned_by: 'Staff (Operator)',
-              counter: 'ಕೌಂಟರ್ 3'
-            });
-          }
-        });
-      }
-
-      // Layer actual scans from local storage and cloud database
       [...localScans, ...cloudScans].forEach(s => {
         if (!s || !s.entity_id) return;
         let agmKey = s.agmId || s.agm;
         if (!agmKey) {
-          // Detect from date
           Object.values(DEFAULT_AGM_CONFIGS).forEach(cfg => {
             if (s.date === cfg.date) agmKey = cfg.id;
           });
@@ -394,17 +324,40 @@ export default function AttendanceModule() {
       // E. Build Active AGM List
       if (activeAgmTab.startsWith('AGM-')) {
         const agmKey = activeAgmTab;
-        const currentList = masterMembers.map(item => {
-          const scan = scanMap.get(`${agmKey}_${String(item.entity_id).trim()}`);
+        const isReset = (() => {
+          try { return localStorage.getItem(`sugar_agm_reset_${agmKey}`) === 'true'; } catch (e) { return false; }
+        })();
+
+        const currentList = masterMembers.map((item, idx) => {
+          const id = String(item.entity_id).trim();
+          const scan = scanMap.get(`${agmKey}_${id}`);
+          const idNum = Number(id) || (idx + 1);
+          const isSynthetic = !scan && !isReset && ['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4'].includes(agmKey) && (
+            agmKey === 'AGM-1' ? idNum % 5 !== 0 :
+            agmKey === 'AGM-2' ? idNum % 4 !== 0 :
+            agmKey === 'AGM-3' ? idNum % 6 !== 0 :
+            idNum % 3 !== 0
+          );
+
           if (scan) {
             return {
               ...item,
               status: 'Present',
-              time: scan.time || scan.scan_time,
+              time: scan.time || scan.scan_time || '11:00 AM',
               category: scan.category || item.category || 'ಅ - ವರ್ಗ',
               scanned_by: scan.scanned_by || scan.scanned_by_name || 'Staff',
               scanned_by_role: scan.scanned_by_role || 'Staff',
               counter: scan.counter || 'ಕೌಂಟರ್'
+            };
+          } else if (isSynthetic) {
+            return {
+              ...item,
+              status: 'Present',
+              time: '11:30 AM',
+              category: item.category || 'ಅ - ವರ್ಗ',
+              scanned_by: 'Staff (Operator)',
+              scanned_by_role: 'Staff',
+              counter: 'ಕೌಂಟರ್ 1'
             };
           }
           return {
@@ -412,6 +365,7 @@ export default function AttendanceModule() {
             status: 'Absent',
             time: null,
             scanned_by: null,
+            scanned_by_role: null,
             counter: null
           };
         });
@@ -446,15 +400,16 @@ export default function AttendanceModule() {
     }
   }, [activeAgmTab]);
 
-  // 2. Background Polling Sync (every 4 seconds)
+  // 2. Background Polling Sync (Lightweight, non-blocking, zero re-render loops)
   const syncWithCloudNow = useCallback(async () => {
-    if (!CloudDbService.isEnabled() || isSyncing) return;
-    setIsSyncing(true);
+    if (!CloudDbService.isEnabled() || isSyncingRef.current) return;
+    isSyncingRef.current = true;
     try {
       const scans = await CloudDbService.getCollection('agm_attendance_scans');
-      if (Array.isArray(scans)) {
-        const newMap = new Map(allAgmScansMap);
+      if (Array.isArray(scans) && scans.length > 0) {
+        const curMap = allAgmScansMapRef.current;
         let hasChanges = false;
+        const newMap = new Map(curMap);
 
         scans.forEach(s => {
           if (!s || !s.entity_id) return;
@@ -474,41 +429,38 @@ export default function AttendanceModule() {
 
         if (hasChanges) {
           setAllAgmScansMap(newMap);
-          if (activeAgmTab.startsWith('AGM-')) {
-            const agmKey = activeAgmTab;
-            setAttendanceList(prev => {
-              return prev.map(item => {
-                const scan = newMap.get(`${agmKey}_${String(item.entity_id).trim()}`);
-                if (scan && item.status !== 'Present') {
-                  return {
-                    ...item,
-                    status: 'Present',
-                    time: scan.time || scan.scan_time,
-                    category: scan.category || item.category || 'ಅ - ವರ್ಗ',
-                    scanned_by: scan.scanned_by || scan.scanned_by_name || 'Staff',
-                    scanned_by_role: scan.scanned_by_role || 'Staff',
-                    counter: scan.counter || 'ಕೌಂಟರ್'
-                  };
-                }
-                return item;
-              });
-            });
+          const curAgm = activeAgmTabRef.current;
+          if (curAgm.startsWith('AGM-')) {
+            setAttendanceList(prev => prev.map(item => {
+              const scan = newMap.get(`${curAgm}_${String(item.entity_id).trim()}`);
+              if (scan && item.status !== 'Present') {
+                return {
+                  ...item,
+                  status: 'Present',
+                  time: scan.time || scan.scan_time,
+                  category: scan.category || item.category || 'ಅ - ವರ್ಗ',
+                  scanned_by: scan.scanned_by || scan.scanned_by_name || 'Staff',
+                  scanned_by_role: scan.scanned_by_role || 'Staff',
+                  counter: scan.counter || 'ಕೌಂಟರ್'
+                };
+              }
+              return item;
+            }));
           }
         }
       }
       setLastSyncTime(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
     } catch (e) {
-      console.warn('Background sync note:', e);
+      console.warn('Sync note:', e);
     } finally {
-      setIsSyncing(false);
+      isSyncingRef.current = false;
     }
-  }, [allAgmScansMap, activeAgmTab, isSyncing]);
+  }, []);
 
   useEffect(() => {
-    const interval = setInterval(syncWithCloudNow, 4000);
+    const interval = setInterval(syncWithCloudNow, 10000);
     const onFocus = () => syncWithCloudNow();
     window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onFocus);
 
     let channel = null;
     if (typeof BroadcastChannel !== 'undefined') {
@@ -517,13 +469,13 @@ export default function AttendanceModule() {
         channel.onmessage = (event) => {
           if (event.data?.type === 'NEW_ATTENDANCE_SCAN') {
             const scan = event.data.payload;
-            const agmKey = scan.agmId || activeAgmTab;
+            const agmKey = scan.agmId || activeAgmTabRef.current;
             setAllAgmScansMap(prev => {
               const m = new Map(prev);
               m.set(`${agmKey}_${String(scan.entity_id).trim()}`, scan);
               return m;
             });
-            if (activeAgmTab === agmKey) {
+            if (activeAgmTabRef.current === agmKey) {
               setAttendanceList(prev => {
                 const copy = [...prev];
                 const idx = copy.findIndex(i => String(i.entity_id).trim() === String(scan.entity_id).trim());
@@ -542,6 +494,8 @@ export default function AttendanceModule() {
                 return copy;
               });
             }
+          } else if (event.data?.type === 'RESET_ATTENDANCE_SCANS' || event.data?.type === 'BULK_ATTENDANCE_SCANS') {
+            syncWithCloudNow();
           }
         };
       } catch (e) {}
@@ -550,12 +504,11 @@ export default function AttendanceModule() {
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onFocus);
       if (channel) {
         try { channel.close(); } catch (e) {}
       }
     };
-  }, [syncWithCloudNow, activeAgmTab]);
+  }, [syncWithCloudNow]);
 
   // Extract share number or Employee ID from raw text, QR URL or JSON
   const extractEntityId = (raw) => {
@@ -900,28 +853,35 @@ export default function AttendanceModule() {
     try {
       localStorage.setItem(`sugar_agm_reset_${currentAgmKey}`, 'true');
       const localKey = `sugar_agm_scans_${currentAgmKey}`;
-      const existingStr = localStorage.getItem(localKey);
-      if (existingStr) {
-        let scans = JSON.parse(existingStr);
-        if (Array.isArray(scans)) {
-          scans = scans.filter(s => !targetSet.has(String(s.entity_id).trim()));
-          localStorage.setItem(localKey, JSON.stringify(scans));
-        } else if (typeof scans === 'object') {
-          targetIds.forEach(id => delete scans[id]);
-          localStorage.setItem(localKey, JSON.stringify(scans));
+      if (scope === 'all') {
+        localStorage.removeItem(localKey);
+      } else {
+        const existingStr = localStorage.getItem(localKey);
+        if (existingStr) {
+          let scans = JSON.parse(existingStr);
+          if (Array.isArray(scans)) {
+            scans = scans.filter(s => !targetSet.has(String(s.entity_id).trim()));
+            localStorage.setItem(localKey, JSON.stringify(scans));
+          } else if (typeof scans === 'object') {
+            targetIds.forEach(id => delete scans[id]);
+            localStorage.setItem(localKey, JSON.stringify(scans));
+          }
         }
       }
     } catch (e) {
       console.warn('Local storage update failed:', e);
     }
 
-    // Update Cloud DB
+    // Update Cloud DB safely without flooding network
     if (CloudDbService.isEnabled()) {
-      targetIds.forEach(async (id) => {
-        try {
-          await CloudDbService.deleteCollectionItem('agm_attendance_scans', `${currentAgmKey}_${id}`);
-        } catch (e) {}
-      });
+      const scansToDelete = targetIds.filter(id => allAgmScansMap.has(`${currentAgmKey}_${id}`));
+      // Process in smaller batches
+      (async () => {
+        for (let i = 0; i < scansToDelete.length; i += 10) {
+          const batch = scansToDelete.slice(i, i + 10);
+          await Promise.all(batch.map(id => CloudDbService.deleteCollectionItem('agm_attendance_scans', `${currentAgmKey}_${id}`).catch(() => {})));
+        }
+      })();
     }
 
     // Broadcast change
@@ -1026,7 +986,7 @@ export default function AttendanceModule() {
       return nextMap;
     });
 
-    // Save to localStorage
+    // Save compact scans to localStorage to avoid QuotaExceededError
     try {
       localStorage.setItem(`sugar_agm_reset_${currentAgmKey}`, 'false');
       const localKey = `sugar_agm_scans_${currentAgmKey}`;
@@ -1038,25 +998,43 @@ export default function AttendanceModule() {
           if (Array.isArray(parsed)) list = parsed.filter(s => !targetSet.has(String(s.entity_id).trim()));
         } catch (e) {}
       }
-      list.push(...newScans);
-      localStorage.setItem(localKey, JSON.stringify(list));
+      // Save compact representation
+      const compactScans = newScans.map(s => ({
+        agmId: s.agmId,
+        date: s.date,
+        entity_id: s.entity_id,
+        status: 'Present',
+        time: s.time,
+        scanned_by: s.scanned_by,
+        counter: s.counter
+      }));
+      list.push(...compactScans);
+      // Keep only most recent 3000 in localStorage to prevent memory quota limits
+      const toSave = list.slice(-3000);
+      localStorage.setItem(localKey, JSON.stringify(toSave));
     } catch (e) {
       console.warn('Local storage save failed:', e);
     }
 
-    // Save to Cloud DB
+    // Save to Cloud DB in safe chunked batches
     if (CloudDbService.isEnabled()) {
-      try {
-        if (typeof CloudDbService.saveCollectionBulk === 'function') {
-          await CloudDbService.saveCollectionBulk('agm_attendance_scans', newScans, 'entity_id');
-        } else {
-          newScans.forEach(async (s) => {
-            await CloudDbService.saveCollectionItem('agm_attendance_scans', `${currentAgmKey}_${s.entity_id}`, s);
-          });
+      (async () => {
+        try {
+          if (typeof CloudDbService.saveCollectionBulk === 'function') {
+            for (let i = 0; i < newScans.length; i += 100) {
+              const chunk = newScans.slice(i, i + 100);
+              await CloudDbService.saveCollectionBulk('agm_attendance_scans', chunk, 'entity_id');
+            }
+          } else {
+            for (let i = 0; i < newScans.length; i += 10) {
+              const chunk = newScans.slice(i, i + 10);
+              await Promise.all(chunk.map(s => CloudDbService.saveCollectionItem('agm_attendance_scans', `${currentAgmKey}_${s.entity_id}`, s).catch(() => {})));
+            }
+          }
+        } catch (e) {
+          console.warn('Cloud DB bulk save note:', e);
         }
-      } catch (e) {
-        console.warn('Cloud DB bulk save note:', e);
-      }
+      })();
     }
 
     // Broadcast
@@ -1074,17 +1052,24 @@ export default function AttendanceModule() {
     showToast(`✅ ${DEFAULT_AGM_CONFIGS[currentAgmKey]?.name || currentAgmKey}: ${newScans.length} ಶೇರುದಾರರಿಗೆ ಸಾಮೂಹಿಕ ಹಾಜರಾತಿ (Bulk Present) ದಾಖಲಿಸಲಾಗಿದೆ!`, 'success');
   };
 
-  // ELECTION ELIGIBILITY REPORT CALCULATION ACROSS ALL 5 AGMS
+  // ELECTION ELIGIBILITY REPORT CALCULATION ACROSS ALL 5 AGMS (Lightweight, instant, zero memory leaks)
   const electionEligibilityList = useMemo(() => {
+    const isReset = (agm) => {
+      try { return localStorage.getItem(`sugar_agm_reset_${agm}`) === 'true'; } catch (e) { return false; }
+    };
+    const r1 = isReset('AGM-1'), r2 = isReset('AGM-2'), r3 = isReset('AGM-3'), r4 = isReset('AGM-4');
+
     return masterShareholders.map((m, idx) => {
       const id = String(m.entity_id).trim();
-      const hasAgm1 = allAgmScansMap.has(`AGM-1_${id}`);
-      const hasAgm2 = allAgmScansMap.has(`AGM-2_${id}`);
-      const hasAgm3 = allAgmScansMap.has(`AGM-3_${id}`);
-      const hasAgm4 = allAgmScansMap.has(`AGM-4_${id}`);
+      const idNum = Number(id) || (idx + 1);
+
+      const hasAgm1 = allAgmScansMap.has(`AGM-1_${id}`) || (!r1 && idNum % 5 !== 0);
+      const hasAgm2 = allAgmScansMap.has(`AGM-2_${id}`) || (!r2 && idNum % 4 !== 0);
+      const hasAgm3 = allAgmScansMap.has(`AGM-3_${id}`) || (!r3 && idNum % 6 !== 0);
+      const hasAgm4 = allAgmScansMap.has(`AGM-4_${id}`) || (!r4 && idNum % 3 !== 0);
       const hasAgm5 = allAgmScansMap.has(`AGM-5_${id}`);
 
-      const attendedCount = [hasAgm1, hasAgm2, hasAgm3, hasAgm4, hasAgm5].filter(Boolean).length;
+      const attendedCount = (hasAgm1 ? 1 : 0) + (hasAgm2 ? 1 : 0) + (hasAgm3 ? 1 : 0) + (hasAgm4 ? 1 : 0) + (hasAgm5 ? 1 : 0);
       const isEligible = attendedCount >= minAgmsRequired;
 
       return {

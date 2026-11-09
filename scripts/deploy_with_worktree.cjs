@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: hide secret code in UI, add AGM attendance reset and bulk present options"');
+    run('git commit -m "fix: resolve Out of Memory crash by eliminating re-render loop and optimizing 17k records"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -46,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: hide secret code in UI, add AGM attendance reset & bulk present (${Date.now()})`;
+  const commitMsg = `Deploy: fix Out of Memory crash & memory optimization (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);
