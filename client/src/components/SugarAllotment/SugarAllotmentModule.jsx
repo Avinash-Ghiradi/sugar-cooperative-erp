@@ -4,6 +4,7 @@ import { ApiService, isShareholderInactive, getShareholderSharesCount } from '..
 import { CloudDbService } from '../../services/cloudDb';
 import { getCompanyLogo, getHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import officialCircleData from '../../services/officialCircleData.json';
 import ShareholderForm from '../Shareholders/ShareholderForm';
 import BookStickerModal from './BookStickerModal';
@@ -62,6 +63,7 @@ const toAbsoluteUrl = (url) => {
 
 export default function SugarAllotmentModule() {
   const { showToast, user } = useAuth();
+  const { isEnglish } = useLanguage();
 
   // All shareholders loaded from database
   const [allShareholders, setAllShareholders] = useState([]);
@@ -1426,13 +1428,15 @@ export default function SugarAllotmentModule() {
           </div>
           <div>
             <h1 className="text-base font-black text-slate-100 flex items-center gap-2">
-              <span>AGM Utilities (ಮಹಾಸಭೆ ಸೌಲಭ್ಯಗಳು)</span>
+              <span>{isEnglish ? 'AGM Utilities' : 'ಮಹಾಸಭೆ ಸೌಲಭ್ಯಗಳು'}</span>
               <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/40 px-2.5 py-0.5 rounded-full font-bold">
-                ಸಕ್ಕರೆ ಕೋಟಾ & ಮುದ್ರಣ
+                {isEnglish ? 'AGM Utilities' : 'ಮಹಾಸಭೆ ಸೌಲಭ್ಯಗಳು'}
               </span>
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Annual General Meeting Utilities, Sugar Quota Allotment & Statutory Stickers
+              {isEnglish 
+                ? 'Annual General Meeting Utilities, Sugar Quota Allotment & Statutory Stickers'
+                : 'ವಾರ್ಷಿಕ ಮಹಾಸಭೆಯ ಶೇರುದಾರರ ಸೌಲಭ್ಯಗಳು, ಸಕ್ಕರೆ ಕೋಟಾ ಹಂಚಿಕೆ ಮತ್ತು ಪುಸ್ತಕ ಸ್ಟಿಕ್ಕರ್‌ಗಳು'}
             </p>
           </div>
         </div>

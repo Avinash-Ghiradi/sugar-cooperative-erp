@@ -27,7 +27,7 @@ export const translations = {
     menu_merge_shares: '4. ಬಹು-ಶೇರು ವಿಲೀನ',
     menu_transactions: 'ಆರ್ಥಿಕ ವಹಿವಾಟು',
     menu_attendance: 'ಹಾಜರಾತಿ ವಹಿ',
-    menu_sugar_allotment: 'AGM Utilities (ಸಕ್ಕರೆ ಹಂಚಿಕೆ)',
+    menu_sugar_allotment: 'ಮಹಾಸಭೆ ಸೌಲಭ್ಯಗಳು',
     menu_villages: 'ಗ್ರಾಮಗಳ ಪಟ್ಟಿ',
     menu_circles: 'ವಲಯಗಳ ಪಟ್ಟಿ',
     menu_reports: 'ವರದಿಗಳು & ವಿಶ್ಲೇಷಣೆ',

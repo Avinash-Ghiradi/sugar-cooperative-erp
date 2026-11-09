@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: rename Sugar Allotment to AGM Utilities across sidebar, reports, and module"');
+    run('git commit -m "feat: exact labels - English: AGM Utilities, Kannada: ಮಹಾಸಭೆ ಸೌಲಭ್ಯಗಳು"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
