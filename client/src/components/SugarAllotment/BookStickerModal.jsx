@@ -88,7 +88,7 @@ export function formatNameWithPrefix(name, prefix = 'ಶ್ರೀ/ಶ್ರೀ�
   return prefix ? `${prefix} ${clean}` : clean;
 }
 
-// QR Code In-Memory Cache
+// QR Code In-Memory Cache with high-DPI 300px resolution
 const qrCache = new Map();
 
 export async function generateShareholderQRDataUrl(shareNo, payloadType = 'url') {
@@ -97,7 +97,7 @@ export async function generateShareholderQRDataUrl(shareNo, payloadType = 'url')
     ? cleanNo
     : `https://avinash-ghiradi.github.io/sugar-cooperative-erp/?attn=${encodeURIComponent(cleanNo)}`;
 
-  const cacheKey = `${payloadType}_${cleanNo}`;
+  const cacheKey = `${payloadType}_${cleanNo}_v3`;
   if (qrCache.has(cacheKey)) {
     return qrCache.get(cacheKey);
   }
@@ -105,7 +105,7 @@ export async function generateShareholderQRDataUrl(shareNo, payloadType = 'url')
   try {
     const url = await QRCode.toDataURL(payload, {
       margin: 1,
-      width: 160,
+      width: 300, // High-DPI for razor-sharp large QR code scanning
       errorCorrectionLevel: 'M',
       color: {
         dark: '#000000',
@@ -141,7 +141,7 @@ export default function BookStickerModal({
   const [qrCodeMap, setQrCodeMap] = useState(new Map());
   const [qrLoading, setQrLoading] = useState(false);
 
-  // Exact statutory sticker sheet specifications
+  // Exact statutory sticker sheet specifications (9.8cm width x 5.6cm height, 0.5cm top/bottom margin)
   const STICKER_WIDTH = '9.8cm';
   const STICKER_HEIGHT = '5.6cm';
   const PAGE_TOP_BOTTOM_MARGIN = '0.5cm';
@@ -162,7 +162,7 @@ export default function BookStickerModal({
     }
   }, [shareholders]);
 
-  // Pre-generate QR codes for scannable attendance in General Board Meeting
+  // Pre-generate QR codes for fast scannable attendance in General Board Meeting
   useEffect(() => {
     let isMounted = true;
     if (!isOpen || !Array.isArray(shareholders) || shareholders.length === 0) return;
@@ -254,7 +254,7 @@ export default function BookStickerModal({
 
   if (!isOpen) return null;
 
-  // Print execution method matching 9.8cm x 5.6cm and 0.5cm top/bottom margin
+  // Print execution method matching 9.8cm x 5.6cm, 0.5cm margin, larger QR code, and Google Anek Kannada font
   const handlePrint = (printSinglePage = false) => {
     try {
       const companyLogoUrl = getCompanyLogo() || DEFAULT_LOGO_PATH;
@@ -263,11 +263,12 @@ export default function BookStickerModal({
       ApiService.logPrintAction({
         documentType: 'BOOK_STICKERS_PRINT',
         recordId: `STICKERS-AGM-${totalStickers}`,
-        description: `ಸಾಮಾನ್ಯ ಸಭೆ (AGM) ಸ್ಕ್ಯಾನಿಂಗ್ ಕ್ಯೂಆರ್ ಕೋಡ್ ಸಹಿತ ${totalStickers} ಶೇರುದಾರರ ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳ ಮುದ್ರಣ (ಅಳತೆ: 9.8cm × 5.6cm, ಮಾರ್ಜಿನ್: 0.5cm)`,
+        description: `ಸಾಮಾನ್ಯ ಸಭೆ (AGM) ಸ್ಕ್ಯಾನಿಂಗ್ ಕ್ಯೂಆರ್ ಕೋಡ್ & ಅನೆಕ್ ಕನ್ನಡ ಫಾಂಟ್ ಸಹಿತ ${totalStickers} ಶೇರುದಾರರ ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳ ಮುದ್ರಣ (ಅಳತೆ: 9.8cm × 5.6cm, ಮಾರ್ಜಿನ್: 0.5cm)`,
         details: {
           count: totalStickers,
           pages: totalPages,
           hasQrCode: showQrCode,
+          font: 'Anek Kannada',
           dimensions: '9.8cm x 5.6cm',
           margins: '0.5cm',
           filterDescription
@@ -281,9 +282,10 @@ export default function BookStickerModal({
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Book Stickers with AGM QR Code - ${totalStickers} Shareholders</title>
+  <title>Book Stickers (Anek Kannada & AGM QR) - ${totalStickers} Shareholders</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anek+Kannada:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     @page {
       size: A4 portrait;
@@ -298,11 +300,13 @@ export default function BookStickerModal({
       print-color-adjust: exact !important;
     }
     body {
-      font-family: 'Noto Sans Kannada', 'Segoe UI', Arial, sans-serif;
+      font-family: 'Anek Kannada', 'Noto Sans Kannada', 'Segoe UI', Arial, sans-serif;
       margin: 0;
       padding: 0;
       background: #ffffff;
       color: #000000;
+      font-feature-settings: "kern" 1;
+      text-rendering: optimizeLegibility;
     }
     .sticker-page {
       width: 100%;
@@ -329,13 +333,14 @@ export default function BookStickerModal({
       max-height: ${STICKER_HEIGHT};
       border: 1.2px solid #000000;
       border-radius: 9px;
-      padding: 6px 10px 5px 10px;
+      padding: 5px 9px 5px 9px;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       background: #ffffff;
       overflow: hidden;
+      font-family: 'Anek Kannada', sans-serif;
     }
     .sticker-card.blank {
       border: 1px dashed #d1d5db;
@@ -346,34 +351,34 @@ export default function BookStickerModal({
       align-items: flex-start;
       justify-content: space-between;
       width: 100%;
-      height: 34px;
+      height: 32px;
     }
     .sticker-logo-box {
       width: 44px;
-      height: 34px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: flex-start;
     }
     .sticker-logo {
       max-width: 44px;
-      max-height: 34px;
+      max-height: 32px;
       object-fit: contain;
     }
     .sticker-numbers {
       text-align: right;
-      font-family: 'Noto Sans Kannada', Arial, sans-serif;
+      font-family: 'Anek Kannada', sans-serif;
     }
     .sticker-srno {
       font-size: 11px;
       font-weight: 600;
-      line-height: 1.2;
+      line-height: 1.15;
       color: #000000;
     }
     .sticker-shareno {
-      font-size: 13.5px;
-      font-weight: 700;
-      line-height: 1.3;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.25;
       color: #000000;
     }
     .sticker-main-content {
@@ -388,12 +393,13 @@ export default function BookStickerModal({
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 1.5px;
+      gap: 2px;
       min-width: 0;
+      font-family: 'Anek Kannada', sans-serif;
     }
     .sticker-name {
-      font-size: 12.5px;
-      font-weight: 700;
+      font-size: 13.5px;
+      font-weight: 800;
       color: #000000;
       line-height: 1.25;
       white-space: nowrap;
@@ -401,7 +407,7 @@ export default function BookStickerModal({
       text-overflow: ellipsis;
     }
     .sticker-post {
-      font-size: 11.5px;
+      font-size: 12.5px;
       font-weight: 600;
       color: #000000;
       line-height: 1.25;
@@ -410,48 +416,53 @@ export default function BookStickerModal({
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 600;
       color: #000000;
       line-height: 1.25;
     }
     .sticker-pin {
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 600;
       color: #000000;
       line-height: 1.25;
     }
+    /* BIGGER QR CODE BOX & OPTICAL CONTRAST */
     .sticker-qr-box {
-      width: 78px;
-      height: 90px;
-      border: 1px solid #000000;
-      border-radius: 6px;
-      padding: 2px;
+      width: 100px;
+      height: 112px;
+      border: 1.2px solid #000000;
+      border-radius: 7px;
+      padding: 3px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
       background: #ffffff;
-      shrink: 0;
+      flex-shrink: 0;
       box-sizing: border-box;
+      font-family: 'Anek Kannada', sans-serif;
     }
     .sticker-qr-badge {
-      font-size: 7.5px;
-      font-weight: 700;
+      font-size: 8px;
+      font-weight: 800;
       color: #000000;
       text-transform: uppercase;
       line-height: 1;
       text-align: center;
+      letter-spacing: 0.2px;
     }
     .sticker-qr-img {
-      width: 66px;
-      height: 66px;
+      width: 88px;
+      height: 88px;
       object-fit: contain;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
     }
     .sticker-qr-sub {
-      font-size: 8px;
-      font-family: monospace;
-      font-weight: 700;
+      font-size: 9px;
+      font-family: monospace, 'Anek Kannada', sans-serif;
+      font-weight: 800;
       color: #000000;
       line-height: 1;
       text-align: center;
@@ -562,8 +573,11 @@ export default function BookStickerModal({
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base sm:text-lg font-black text-slate-100">
-                  ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳು ಮುದ್ರಣ (Book Stickers with AGM QR Code)
+                <h2 className="text-base sm:text-lg font-black text-slate-100 flex items-center gap-2">
+                  <span>ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳು ಮುದ್ರಣ (Book Stickers)</span>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    Anek Kannada Font
+                  </span>
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300">
                   ಅಳತೆ: 9.8cm × 5.6cm • ಮಾರ್ಜಿನ್: 0.5cm
@@ -573,7 +587,7 @@ export default function BookStickerModal({
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-medium mt-0.5">
-                {filterDescription || 'ಸಾಮಾನ್ಯ ಸಭೆ (AGM) ಸ್ಕ್ಯಾನಿಂಗ್ ಕ್ಯೂಆರ್ ಕೋಡ್ ಸಹಿತ ಪಾಸ್‌ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳು (2 ಕಾಲಂ × 5 ಸಾಲು = 10 ಸ್ಟಿಕ್ಕರ್‌ಗಳು)'}
+                {filterDescription || 'ದೊಡ್ಡ ಗಾತ್ರದ ಸಾಮಾನ್ಯ ಸಭೆ (AGM) QR ಕೋಡ್ ಮತ್ತು ಗೂಗಲ್ ಅನೆಕ್ ಕನ್ನಡ ಫಾಂಟ್ ಸಹಿತ ಪಾಸ್‌ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳು'}
               </p>
             </div>
           </div>
@@ -604,7 +618,7 @@ export default function BookStickerModal({
 
         {/* Collapsible Settings Drawer */}
         {showSettingsDrawer && (
-          <div className="p-4 bg-slate-950/95 border-b border-slate-800 text-xs space-y-3 shrink-0 animate-fadeIn">
+          <div className="p-4 bg-slate-950/95 border-b border-slate-800 text-xs space-y-3 shrink-0 animate-fadeIn font-sans">
             {/* Top Row: Address Defaults */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
@@ -702,7 +716,7 @@ export default function BookStickerModal({
                   />
                   <span className="flex items-center gap-1">
                     <QrCode className="w-3.5 h-3.5 text-amber-400" />
-                    <span>ಸಾಮಾನ್ಯ ಸಭೆ QR ಕೋಡ್</span>
+                    <span>ದೊಡ್ಡ AGM QR ಕೋಡ್</span>
                   </span>
                 </label>
               </div>
@@ -723,7 +737,7 @@ export default function BookStickerModal({
             {/* Statutory Dimension Pill */}
             <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
               <span className="text-emerald-400 font-medium">
-                ✓ ಅಧಿಕೃತ ಶಾಸನಬದ್ಧ ಅಳತೆ: ಅಗಲ 9.8cm × ಎತ್ತರ 5.6cm • ಮೇಲಿನ ಮತ್ತು ಕೆಳಗಿನ ಮಾರ್ಜಿನ್ 0.5cm (2 ಕಾಲಂ × 5 ಸಾಲು = 10 ಲೇಬಲ್‌ಗಳು)
+                ✓ ಫಾಂಟ್: Google Anek Kannada • ಅಳತೆ: 9.8cm × 5.6cm • ಮಾರ್ಜಿನ್: 0.5cm (ದೊಡ್ಡ ಗಾತ್ರದ AGM QR ಕೋಡ್ ಸಕ್ರಿಯವಾಗಿದೆ)
               </span>
               {qrLoading && (
                 <span className="text-amber-400 flex items-center gap-1.5 font-mono">
@@ -762,9 +776,12 @@ export default function BookStickerModal({
           </div>
         </div>
 
-        {/* Live A4 Sticker Sheet Preview Container */}
+        {/* Live A4 Sticker Sheet Preview Container with Google Anek Kannada Font */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-950/50 flex justify-center">
-          <div className="w-full max-w-4xl bg-white text-black rounded-2xl shadow-2xl p-4 sm:p-6 border border-slate-300 select-none">
+          <div
+            className="w-full max-w-4xl bg-white text-black rounded-2xl shadow-2xl p-4 sm:p-6 border border-slate-300 select-none"
+            style={{ fontFamily: "'Anek Kannada', 'Noto Sans Kannada', sans-serif" }}
+          >
             {/* The 2 x 5 Grid Container (Matching 9.8cm x 5.6cm layout) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {currentPageItems.map((slot, idx) => {
@@ -772,7 +789,7 @@ export default function BookStickerModal({
                   return (
                     <div
                       key={`blank-${idx}`}
-                      className="h-34 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs font-mono"
+                      className="h-36 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs font-mono"
                     >
                       [ಖಾಲಿ ಸ್ಥಾನ {slot.slotNo}]
                     </div>
@@ -794,7 +811,8 @@ export default function BookStickerModal({
                 return (
                   <div
                     key={item.id}
-                    className="h-34 rounded-xl border border-black p-2.5 sm:p-3 bg-white flex flex-col justify-between shadow-xs transition-transform hover:scale-101"
+                    className="h-36 rounded-xl border border-black p-2.5 sm:p-3 bg-white flex flex-col justify-between shadow-xs transition-transform hover:scale-101"
+                    style={{ fontFamily: "'Anek Kannada', sans-serif" }}
                   >
                     {/* Top Row: Logo on Left, Sr.No & Share No on Right */}
                     <div className="flex items-start justify-between gap-2">
@@ -808,48 +826,48 @@ export default function BookStickerModal({
                           />
                         )}
                       </div>
-                      <div className="text-right font-sans">
+                      <div className="text-right">
                         <div className="text-[11px] font-semibold text-black leading-tight">
                           {srNoDisplay}
                         </div>
-                        <div className="text-[13px] font-black text-black leading-tight">
+                        <div className="text-[14px] font-extrabold text-black leading-tight">
                           Share No.: {item.shareNo}
                         </div>
                       </div>
                     </div>
 
-                    {/* Middle Details + Right-side QR Code */}
+                    {/* Middle Details + Larger Right-side QR Code */}
                     <div className="flex items-center justify-between gap-2 mt-0.5">
-                      <div className="space-y-0.5 flex-1 min-w-0">
-                        <div className="text-xs sm:text-[12.5px] font-bold text-black leading-snug truncate">
+                      <div className="space-y-0.5 flex-1 min-w-0 pr-1">
+                        <div className="text-xs sm:text-[13.5px] font-extrabold text-black leading-snug truncate">
                           {item.name}
                         </div>
-                        <div className="text-[11.5px] font-semibold text-black leading-tight">
+                        <div className="text-[12px] sm:text-[12.5px] font-semibold text-black leading-tight">
                           ಪೋಸ್ಟ್: {item.place}
                         </div>
-                        <div className="flex items-center justify-between text-[11.5px] font-semibold text-black leading-tight">
+                        <div className="flex items-center justify-between text-[11.5px] sm:text-[12px] font-semibold text-black leading-tight">
                           <span>ತಾಲೂಕ್: {item.taluk}</span>
                           <span className="mr-1">ಜಿಲ್ಲಾ: {item.district}</span>
                         </div>
-                        <div className="text-[11px] font-semibold text-black leading-tight">
+                        <div className="text-[11.5px] font-semibold text-black leading-tight">
                           ಪಿನ್-ಕೋಡ್: {item.pincode}
                         </div>
                       </div>
 
-                      {/* Shareholder General Board Meeting QR Code */}
+                      {/* BIGGER Shareholder General Board Meeting QR Code */}
                       {showQrCode && (
-                        <div className="w-18 h-20 border border-black rounded-lg p-1 flex flex-col items-center justify-between bg-white shrink-0">
-                          <span className="text-[7.5px] font-black text-black uppercase leading-none">
+                        <div className="w-22 sm:w-24 h-26 sm:h-28 border-1.5 border-black rounded-lg p-1 flex flex-col items-center justify-between bg-white shrink-0 shadow-xs">
+                          <span className="text-[8px] font-extrabold text-black uppercase leading-none tracking-tight">
                             ಸಾಮಾನ್ಯ ಸಭೆ
                           </span>
                           {qrUrl ? (
-                            <img src={qrUrl} alt="AGM QR" className="w-14 h-14 object-contain" />
+                            <img src={qrUrl} alt="AGM QR" className="w-18 sm:w-20 h-18 sm:h-20 object-contain" />
                           ) : (
-                            <div className="w-14 h-14 bg-slate-100 flex items-center justify-center text-[8px] text-slate-400">
+                            <div className="w-18 sm:w-20 h-18 sm:h-20 bg-slate-100 flex items-center justify-center text-[9px] text-slate-400">
                               QR...
                             </div>
                           )}
-                          <span className="text-[8px] font-mono font-bold text-black leading-none">
+                          <span className="text-[8.5px] font-mono font-bold text-black leading-none">
                             #{item.shareNo}
                           </span>
                         </div>
@@ -864,8 +882,9 @@ export default function BookStickerModal({
 
         {/* Modal Bottom Action Bar */}
         <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-          <div className="text-xs text-slate-400">
-            A4 ಅಳತೆಯ ಸ್ವಯಂ-ಅಂಟಿಕೊಳ್ಳುವ ಸ್ಟಿಕ್ಕರ್ ಶೀಟ್ (ಅಗಲ 9.8cm × ಎತ್ತರ 5.6cm, ಮಾರ್ಜಿನ್ 0.5cm) ಮುದ್ರಿಸಲು ಸಿದ್ಧವಾಗಿದೆ.
+          <div className="text-xs text-slate-400 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>A4 ಅಳತೆಯ ಸ್ವಯಂ-ಅಂಟಿಕೊಳ್ಳುವ ಸ್ಟಿಕ್ಕರ್ ಶೀಟ್ (ಅಗಲ 9.8cm × ಎತ್ತರ 5.6cm, ಮಾರ್ಜಿನ್ 0.5cm, Anek Kannada ಫಾಂಟ್).</span>
           </div>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
