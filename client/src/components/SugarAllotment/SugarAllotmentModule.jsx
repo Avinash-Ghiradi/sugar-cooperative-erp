@@ -1775,6 +1775,17 @@ export default function SugarAllotmentModule() {
             ಎಲ್ಲರಿಗೂ ರಶೀದಿ
           </button>
 
+          {/* Book Stickers Button */}
+          <button
+            type="button"
+            onClick={() => setShowBookStickerModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#d97706] hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-md transition-all cursor-pointer"
+            title="ಆಯ್ಕೆ ಮಾಡಿದ ಫಿಲ್ಟರ್‌ಗಳ ಪ್ರಕಾರ ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳು ಮುದ್ರಿಸಿ (Print Book Stickers)"
+          >
+            <Tag className="w-4 h-4 text-white" />
+            <span>ಬುಕ್ ಸ್ಟಿಕ್ಕರ್‌ಗಳು</span>
+          </button>
+
           {/* Clear Button */}
           <button
             type="button"
@@ -2813,6 +2824,20 @@ export default function SugarAllotmentModule() {
           }}
         />
       )}
+      {/* MODAL: BOOK STICKER PRINT MODAL */}
+      <BookStickerModal
+        isOpen={showBookStickerModal}
+        onClose={() => setShowBookStickerModal(false)}
+        shareholders={processedShareholders}
+        user={user}
+        filterDescription={
+          searchAddress
+            ? `ಗ್ರಾಮ/ಸ್ಥಳ: ${searchAddress} • ಒಟ್ಟು ${processedShareholders.length} ಶೇರುದಾರರು`
+            : selectedCircle && selectedCircle !== 'all'
+            ? `ವಲಯ: ${selectedCircle} • ಒಟ್ಟು ${processedShareholders.length} ಶೇರುದಾರರು`
+            : `ಸಕ್ಕರೆ ಹಂಚಿಕೆ ಪಟ್ಟಿ • ಒಟ್ಟು ${processedShareholders.length} ಶೇರುದಾರರು`
+        }
+      />
     </div>
   );
 }
