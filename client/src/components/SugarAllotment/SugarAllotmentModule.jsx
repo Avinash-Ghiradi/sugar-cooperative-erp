@@ -1418,6 +1418,25 @@ export default function SugarAllotmentModule() {
 
   return (
     <div className="space-y-4 text-xs">
+      {/* AGM Utilities Module Title Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800 shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+            <PackageCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-base font-black text-slate-100 flex items-center gap-2">
+              <span>AGM Utilities (ಮಹಾಸಭೆ ಸೌಲಭ್ಯಗಳು)</span>
+              <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/40 px-2.5 py-0.5 rounded-full font-bold">
+                ಸಕ್ಕರೆ ಕೋಟಾ & ಮುದ್ರಣ
+              </span>
+            </h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Annual General Meeting Utilities, Sugar Quota Allotment & Statutory Stickers
+            </p>
+          </div>
+        </div>
+      </div>
       {/* FILTER PANEL (Matching Image 3) */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3.5">
         {/* ROW 1: 3 Main Search Inputs */}

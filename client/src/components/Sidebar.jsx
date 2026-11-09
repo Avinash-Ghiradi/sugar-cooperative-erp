@@ -16,7 +16,7 @@ const MENU_ITEMS = [
   { id: 'shareholders', label: 'Shareholders', icon: Users },
   { id: 'transactions', label: 'Transactions', icon: CreditCard },
   { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
-  { id: 'sugar_allotment', label: 'Sugar Allotment', icon: PackageCheck },
+  { id: 'sugar_allotment', label: 'AGM Utilities', icon: PackageCheck },
   { id: 'villages', label: 'Village Master', icon: Building2 },
   { id: 'circles', label: 'Circle Master', icon: MapPin },
   { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
@@ -41,7 +41,7 @@ const SHAREHOLDER_MODULES = ['shareholders', 'enrollment', 'varasa', 'vargavane'
 const REPORT_SUB_ITEMS = [
   { id: 'shareholders', label: '1. ಶೇರುದಾರರ ವಿವರ ವರದಿಗಳು (Shareholders)', icon: Users },
   { id: 'transactions', label: '2. ಆರ್ಥಿಕ ವಹಿವಾಟು ವಹಿ (Financial Ledger)', icon: CreditCard },
-  { id: 'sugar', label: '3. ಸಕ್ಕರೆ ಕೋಟಾ ಹಂಚಿಕೆ (Sugar Allotment)', icon: PackageCheck },
+  { id: 'sugar', label: '3. AGM Utilities (ಸಕ್ಕರೆ ಹಂಚಿಕೆ)', icon: PackageCheck },
   { id: 'varasa', label: '4. ವಾರಸುದಾರರ ಆಡಿಟ್ (Varasa Audit)', icon: History },
   { id: 'villages', label: '5. ಗ್ರಾಮ & ವಲಯ ಸಾರಾಂಶ (Villages & Circles)', icon: Building2 },
 ];
@@ -60,7 +60,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       case 'shareholders': return isEnglish ? 'Shareholders' : 'ಶೇರುದಾರರು';
       case 'transactions': return isEnglish ? 'Transactions' : 'ವಹಿವಾಟುಗಳು';
       case 'attendance': return isEnglish ? 'Attendance' : 'ಹಾಜರಾತಿ';
-      case 'sugar_allotment': return isEnglish ? 'Sugar Allotment' : 'ಸಕ್ಕರೆ ಹಂಚಿಕೆ';
+      case 'sugar_allotment': return isEnglish ? 'AGM Utilities' : 'AGM Utilities (ಸಕ್ಕರೆ ಹಂಚಿಕೆ)';
       case 'villages': return isEnglish ? 'Village Master' : 'ಗ್ರಾಮಗಳ ಪಟ್ಟಿ';
       case 'circles': return isEnglish ? 'Circle Master' : 'ವಲಯಗಳ ಪಟ್ಟಿ';
       case 'reports': return isEnglish ? 'Reports & Analytics' : 'ವರದಿಗಳು & ವಿಶ್ಲೇಷಣೆ';
@@ -89,7 +89,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     switch (id) {
       case 'shareholders': return isEnglish ? '1. Shareholders Reports' : '1. ಶೇರುದಾರರ ವಿವರ ವರದಿಗಳು';
       case 'transactions': return isEnglish ? '2. Financial Ledger' : '2. ಆರ್ಥಿಕ ವಹಿವಾಟು ವಹಿ';
-      case 'sugar': return isEnglish ? '3. Sugar Allotment' : '3. ಸಕ್ಕರೆ ಕೋಟಾ ಹಂಚಿಕೆ';
+      case 'sugar': return isEnglish ? '3. AGM Utilities' : '3. AGM Utilities (ಸಕ್ಕರೆ ಹಂಚಿಕೆ)';
       case 'varasa': return isEnglish ? '4. Varasa Audit' : '4. ವಾರಸುದಾರರ ಆಡಿಟ್';
       case 'villages': return isEnglish ? '5. Villages & Circles' : '5. ಗ್ರಾಮ & ವಲಯ ಸಾರಾಂಶ';
       default: return id;
