@@ -2054,46 +2054,9 @@ export default function AttendanceModule() {
           </button>
         </div>
 
-        {/* Actions for Active AGM: Particular AGM Manual Entry, Consolidated Register, Bulk Present, Reset, Freeze/Unlock */}
+        {/* Actions for Active AGM: Reset, Freeze/Unlock */}
         {activeAgmTab !== 'ELECTION_ELIGIBLE' && (
           <div className="flex flex-wrap items-center gap-2">
-            {/* Open Particular AGM Manual Entry Modal Button */}
-            <button
-              onClick={() => setShowParticularManualModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer border border-purple-500/40"
-              title={`${DEFAULT_AGM_CONFIGS[activeAgmTab]?.name || 'AGM'} (${DEFAULT_AGM_CONFIGS[activeAgmTab]?.year || ''}) ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ನಮೂದು`}
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-purple-200" />
-              <span>📖 ಕೈಪಿಡಿ ನಮೂದು ({DEFAULT_AGM_CONFIGS[activeAgmTab]?.name || 'AGM'})</span>
-            </button>
-
-            {/* Consolidated 5-AGMs Register Button */}
-            <button
-              onClick={() => setShowManualBookModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 hover:text-white border border-purple-600/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
-              title="ಎಲ್ಲಾ 5 ಮಹಾಸಭೆಗಳ ಸಂಯೋಜಿತ ಕೈಪಿಡಿ ಹಾಜರಾತಿ ವಹಿ (Consolidated 5-AGMs Register)"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-purple-400" />
-              <span>📊 ಸಂಯೋಜಿತ ವಹಿ (5 AGMs)</span>
-            </button>
-
-            {/* Bulk Status by Share Numbers Button */}
-            <button
-              onClick={() => {
-                if (isCurrentAgmFrozen) {
-                  showToast(`🔒 ಈ ಮಹಾಸಭೆ (${activeAgmTab}) ಫ್ರೀಜ್ ಆಗಿದೆ. ತಿದ್ದುಪಡಿ ಮಾಡಲು ಮೊದಲು ಅನ್‌ಲಾಕ್ ಮಾಡಿ.`, 'error');
-                  handleRequestUnlock(activeAgmTab);
-                } else {
-                  setShowBulkPresentModal(true);
-                }
-              }}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
-              title="ಶೇರು ಸಂಖ್ಯೆಗಳ ಮೂಲಕ ಸ್ಥಿತಿ (ಹಾಜರು / ಗೈರುಹಾಜರು) ಬದಲಾಯಿಸಿ"
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>👥 ಶೇರು ನಂ ಮೂಲಕ ಸ್ಥಿತಿ ಬದಲಾವಣೆ</span>
-            </button>
-
             {/* Reset Attendance Button */}
             <button
               onClick={() => {
@@ -2881,19 +2844,39 @@ export default function AttendanceModule() {
                   <QrCode className="w-5 h-5 animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-emerald-300 flex items-center gap-2">
-                    <span>{DEFAULT_AGM_CONFIGS[activeAgmTab]?.labelKn || activeAgmTab} ಹಾಜರಾತಿ QR ಸ್ಕ್ಯಾನರ್</span>
-                    {isCurrentAgmFrozen ? (
-                      <span className="text-[10px] bg-amber-500 text-black px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
-                        <Lock className="w-2.5 h-2.5" /> ಫ್ರೀಜ್ ಆಗಿದೆ
-                      </span>
-                    ) : (
-                      <span className="text-[10px] bg-emerald-900/90 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-600 font-bold">
-                        ⚡ ಸ್ವಯಂ ಉಳಿತಾಯ ಸಕ್ರಿಯ
-                      </span>
-                    )}
-                  </h3>
-                  <p className="text-xs text-slate-400">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h3 className="text-sm font-black text-emerald-300 flex items-center gap-2">
+                      <span>{DEFAULT_AGM_CONFIGS[activeAgmTab]?.labelKn || activeAgmTab} ಹಾಜರಾತಿ QR ಸ್ಕ್ಯಾನರ್</span>
+                      {isCurrentAgmFrozen ? (
+                        <span className="text-[10px] bg-amber-500 text-black px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5" /> ಫ್ರೀಜ್ ಆಗಿದೆ
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-emerald-900/90 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-600 font-bold">
+                          ⚡ ಸ್ವಯಂ ಉಳಿತಾಯ ಸಕ್ರಿಯ
+                        </span>
+                      )}
+                    </h3>
+
+                    {/* Bulk Status by Share Numbers Button inside Scanner Box */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isCurrentAgmFrozen) {
+                          showToast(`🔒 ಈ ಮಹಾಸಭೆ (${activeAgmTab}) ಫ್ರೀಜ್ ಆಗಿದೆ. ತಿದ್ದುಪಡಿ ಮಾಡಲು ಮೊದಲು ಅನ್‌ಲಾಕ್ ಮಾಡಿ.`, 'error');
+                          handleRequestUnlock(activeAgmTab);
+                        } else {
+                          setShowBulkPresentModal(true);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer border border-teal-400/40"
+                      title="ಶೇರು ಸಂಖ್ಯೆಗಳ ಮೂಲಕ ಸ್ಥಿತಿ (ಹಾಜರು / ಗೈರುಹಾಜರು) ಬದಲಾಯಿಸಿ"
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>👥 ಶೇರು ನಂ ಮೂಲಕ ಸ್ಥಿತಿ ಬದಲಾವಣೆ</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
                     ಶೇರುದಾರರ ಪುಸ್ತಕ ಸ್ಟಿಕ್ಕರ್ QR ಕೋಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ ಷೇರು ನಂ ನಮೂದಿಸಿ (Auto-saved to Database)
                   </p>
                 </div>
