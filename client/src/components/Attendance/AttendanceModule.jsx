@@ -6,13 +6,14 @@ import { CloudDbService } from '../../services/cloudDb';
 import { getCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import ManualAttendanceModal from './ManualAttendanceModal';
 import {
   CalendarCheck, Search, CheckCircle2, XCircle, Clock, Save, RefreshCw,
   QrCode, UserCheck, Users, FileSpreadsheet, Sparkles, Filter, Check, ArrowRight,
   Camera, AlertTriangle, X, Image as ImageIcon, Video, VideoOff, ShieldCheck,
   Smartphone, Monitor, Download, Printer, ChevronLeft, ChevronRight, CheckCheck,
   Radio, Lock, Unlock, Vote, Award, FileText, KeyRound, Eye, EyeOff, RotateCcw,
-  CheckSquare, Square, ListChecks, Layers
+  CheckSquare, Square, ListChecks, Layers, BookOpen
 } from 'lucide-react';
 
 const SECRET_UNLOCK_CODE = '12071990';
@@ -129,6 +130,7 @@ export default function AttendanceModule() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetScopeChoice, setResetScopeChoice] = useState('all'); // 'all', 'filtered', 'selected'
   const [showBulkPresentModal, setShowBulkPresentModal] = useState(false);
+  const [showManualBookModal, setShowManualBookModal] = useState(false);
   const [bulkTargetStatus, setBulkTargetStatus] = useState('Present'); // 'Present' or 'Absent'
   const [bulkShareNumbersInput, setBulkShareNumbersInput] = useState('');
   const [bulkSelectedIds, setBulkSelectedIds] = useState(new Set());
@@ -146,7 +148,7 @@ export default function AttendanceModule() {
 
   // Is current AGM frozen?
   const isCurrentAgmFrozen = useMemo(() => {
-    if (activeAgmTab === 'ELECTION_ELIGIBLE' || activeAgmTab === 'EMPLOYEE') return false;
+    if (activeAgmTab === 'ELECTION_ELIGIBLE' || activeAgmTab === 'EMPLOYEE' || activeAgmTab === 'MANUAL_BOOK_REGISTER') return false;
     return Boolean(frozenAgms[activeAgmTab]);
   }, [frozenAgms, activeAgmTab]);
 
@@ -1832,7 +1834,7 @@ export default function AttendanceModule() {
 
         {/* Top Controls: Date, Counter, Sync, Excel, Print */}
         <div className="flex flex-wrap items-center gap-2">
-          {activeAgmTab !== 'ELECTION_ELIGIBLE' && (
+          {activeAgmTab !== 'ELECTION_ELIGIBLE' && activeAgmTab !== 'MANUAL_BOOK_REGISTER' && (
             <>
               <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
                 <span className="text-slate-400 font-semibold">ದಿನಾಂಕ:</span>
@@ -1977,11 +1979,38 @@ export default function AttendanceModule() {
             <Vote className="w-4 h-4 text-amber-300" />
             <span>🗳️ ಚುನಾವಣಾ ಅರ್ಹತೆ (Election Eligible Tab - 5 AGMs: 2023-24 to 2027-28)</span>
           </button>
+
+          {/* Manual Attendance Book Register Tab */}
+          <button
+            onClick={() => {
+              setActiveAgmTab('MANUAL_BOOK_REGISTER');
+              setCurrentPage(1);
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              activeAgmTab === 'MANUAL_BOOK_REGISTER'
+                ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 text-white shadow-xl ring-2 ring-purple-400'
+                : 'bg-slate-900 text-purple-300 border border-purple-600/50 hover:bg-purple-950/40'
+            }`}
+            title="ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ವಹಿ (Manual Book Attendance Register - 5 Years)"
+          >
+            <BookOpen className="w-4 h-4 text-purple-300" />
+            <span>📖 ಕೈಪಿಡಿ ಪುಸ್ತಕ ವಹಿ (Manual Book Register)</span>
+          </button>
         </div>
 
-        {/* Actions for Active AGM: Bulk Present, Reset, Freeze/Unlock */}
-        {activeAgmTab !== 'ELECTION_ELIGIBLE' && (
+        {/* Actions for Active AGM: Bulk Present, Reset, Freeze/Unlock, Manual Book Entry Modal */}
+        {activeAgmTab !== 'ELECTION_ELIGIBLE' && activeAgmTab !== 'MANUAL_BOOK_REGISTER' && (
           <div className="flex flex-wrap items-center gap-2">
+            {/* Open Manual Book Entry Modal Button */}
+            <button
+              onClick={() => setShowManualBookModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer border border-purple-500/40"
+              title="ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ನಮೂದು ಮಾದರಿ (Manual Book Attendance Entry Modal)"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-purple-200" />
+              <span>📖 ಕೈಪಿಡಿ ನಮೂದು (Manual Book Entry)</span>
+            </button>
+
             {/* Bulk Status by Share Numbers Button */}
             <button
               onClick={() => {
@@ -2041,7 +2070,7 @@ export default function AttendanceModule() {
       </div>
 
       {/* FROZEN AGM BANNER */}
-      {isCurrentAgmFrozen && activeAgmTab !== 'ELECTION_ELIGIBLE' && (
+      {isCurrentAgmFrozen && activeAgmTab !== 'ELECTION_ELIGIBLE' && activeAgmTab !== 'MANUAL_BOOK_REGISTER' && (
         <div className="p-3.5 bg-amber-950/70 border-2 border-amber-500 rounded-2xl text-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg animate-fadeIn">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
@@ -2065,6 +2094,19 @@ export default function AttendanceModule() {
             <span>ರಹಸ್ಯ ಕೋಡ್ ನಮೂದಿಸಿ ಅನ್‌ಲಾಕ್ ಮಾಡಿ</span>
           </button>
         </div>
+      )}
+
+      {/* MANUAL BOOK ATTENDANCE MODAL */}
+      {showManualBookModal && (
+        <ManualAttendanceModal
+          isOpen={showManualBookModal}
+          onClose={() => setShowManualBookModal(false)}
+          masterShareholders={masterShareholders}
+          allAgmScansMap={allAgmScansMap}
+          isModal={true}
+          showToast={showToast}
+          user={user}
+        />
       )}
 
       {/* UNLOCK SECRET CODE MODAL */}
@@ -2525,9 +2567,19 @@ export default function AttendanceModule() {
       )}
 
       {/* ======================================================== */}
-      {/* VIEW 1: ELECTION ELIGIBILITY TAB (ALL 5 AGMS REPORT) */}
+      {/* VIEW 0: MANUAL BOOK ATTENDANCE REGISTER TAB */}
       {/* ======================================================== */}
-      {activeAgmTab === 'ELECTION_ELIGIBLE' ? (
+      {activeAgmTab === 'MANUAL_BOOK_REGISTER' ? (
+        <ManualAttendanceModal
+          isOpen={true}
+          onClose={() => setActiveAgmTab('AGM-10')}
+          masterShareholders={masterShareholders}
+          allAgmScansMap={allAgmScansMap}
+          isModal={false}
+          showToast={showToast}
+          user={user}
+        />
+      ) : activeAgmTab === 'ELECTION_ELIGIBLE' ? (
         <div className="space-y-5 animate-fadeIn">
           {/* Election Rule & Summary Bar */}
           <div className="bg-gradient-to-r from-amber-950/80 via-slate-950 to-amber-950/70 border-2 border-amber-500/60 rounded-2xl p-4 shadow-xl space-y-4">
@@ -3134,7 +3186,7 @@ export default function AttendanceModule() {
       )}
 
       {/* FLOATING ACTION BAR FOR SELECTED SHAREHOLDERS */}
-      {selectedShareholderIds.size > 0 && activeAgmTab !== 'ELECTION_ELIGIBLE' && (
+      {selectedShareholderIds.size > 0 && activeAgmTab !== 'ELECTION_ELIGIBLE' && activeAgmTab !== 'MANUAL_BOOK_REGISTER' && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-md border-2 border-emerald-500/80 rounded-2xl px-5 py-3 shadow-2xl flex flex-wrap items-center gap-3 animate-slideUp">
           <div className="flex items-center gap-2 text-white font-bold text-xs">
             <span className="w-6 h-6 rounded-full bg-emerald-500 text-black flex items-center justify-center text-xs font-black">

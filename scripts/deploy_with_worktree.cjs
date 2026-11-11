@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: exact years for AGM 6 (2023-24) to AGM 10 (2027-28)"');
+    run('git commit -m "feat: add manual attendance book register modal & tab matching statutory ledger format"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -46,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: exact years for AGM 6 (2023-24) to AGM 10 (2027-28) (${Date.now()})`;
+  const commitMsg = `Deploy: add manual attendance book register modal & tab (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);

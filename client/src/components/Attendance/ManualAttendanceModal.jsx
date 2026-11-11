@@ -1,0 +1,1257 @@
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import * as XLSX from 'xlsx';
+import {
+  BookOpen, FileSpreadsheet, Save, Download, Printer, Search,
+  CheckCircle2, XCircle, RotateCcw, Plus, X, Filter, ChevronLeft,
+  ChevronRight, ArrowRight, Layers, Sparkles, Check, Upload, Award
+} from 'lucide-react';
+
+const STORAGE_KEY = 'sugar_erp_manual_book_attendance';
+
+// Default Year Ranges
+const YEAR_PRESETS = {
+  HISTORIC_2018_2023: {
+    id: 'HISTORIC_2018_2023',
+    name: '2018-19 ರಿಂದ 2022-23 (ಕೈಪಿಡಿ ಪುಸ್ತಕ ದಾಖಲೆಗಳು - 5 ವರ್ಷಗಳ ಹಿಂದಿನ ನಮೂದು)',
+    shortName: '2018-19 to 2022-23',
+    years: ['2018-19', '2019-20', '2020-21', '2021-22', '2022-23']
+  },
+  CURRENT_2023_2028: {
+    id: 'CURRENT_2023_2028',
+    name: '2023-24 ರಿಂದ 2027-28 (AGM 6 ರಿಂದ AGM 10 - ಪ್ರಸ್ತುತ 5 ವರ್ಷಗಳು)',
+    shortName: '2023-24 to 2027-28 (AGM 6-10)',
+    years: ['2023-24', '2024-25', '2025-26', '2026-27', '2027-28']
+  }
+};
+
+// Color styles exactly matching the statutory ledger image
+const YEAR_THEMES = [
+  {
+    // Year 1 (2018-19) - Lilac/Purple
+    headerBg: '#D8B4E2',
+    headerText: '#2e1065',
+    subHeaderBg: '#E9D5FF',
+    subHeaderText: '#3b0764',
+    borderCol: 'border-purple-300 dark:border-purple-800',
+    cellBg: 'bg-purple-50/40 dark:bg-purple-950/20',
+    focusRing: 'focus:ring-purple-500 focus:border-purple-500',
+    badge: 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-900/60 dark:text-purple-200'
+  },
+  {
+    // Year 2 (2019-20) - Soft Cyan/Sky
+    headerBg: '#CFFAFE',
+    headerText: '#164e63',
+    subHeaderBg: '#E0F2FE',
+    subHeaderText: '#0369a1',
+    borderCol: 'border-cyan-300 dark:border-cyan-800',
+    cellBg: 'bg-cyan-50/40 dark:bg-cyan-950/20',
+    focusRing: 'focus:ring-cyan-500 focus:border-cyan-500',
+    badge: 'bg-cyan-100 text-cyan-900 border-cyan-300 dark:bg-cyan-900/60 dark:text-cyan-200'
+  },
+  {
+    // Year 3 (2020-21) - Peach/Apricot
+    headerBg: '#FFEDD5',
+    headerText: '#7c2d12',
+    subHeaderBg: '#FEF3C7',
+    subHeaderText: '#92400e',
+    borderCol: 'border-amber-300 dark:border-amber-800',
+    cellBg: 'bg-amber-50/40 dark:bg-amber-950/20',
+    focusRing: 'focus:ring-amber-500 focus:border-amber-500',
+    badge: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/60 dark:text-amber-200'
+  },
+  {
+    // Year 4 (2021-22) - Soft Pink/Rose
+    headerBg: '#FCE7F3',
+    headerText: '#831843',
+    subHeaderBg: '#FFE4E6',
+    subHeaderText: '#9f1239',
+    borderCol: 'border-pink-300 dark:border-pink-800',
+    cellBg: 'bg-pink-50/40 dark:bg-pink-950/20',
+    focusRing: 'focus:ring-pink-500 focus:border-pink-500',
+    badge: 'bg-pink-100 text-pink-900 border-pink-300 dark:bg-pink-900/60 dark:text-pink-200'
+  },
+  {
+    // Year 5 (2022-23) - Light Slate/Grey
+    headerBg: '#E2E8F0',
+    headerText: '#1e293b',
+    subHeaderBg: '#F1F5F9',
+    subHeaderText: '#334155',
+    borderCol: 'border-slate-300 dark:border-slate-700',
+    cellBg: 'bg-slate-50/50 dark:bg-slate-900/30',
+    focusRing: 'focus:ring-slate-500 focus:border-slate-500',
+    badge: 'bg-slate-200 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200'
+  }
+];
+
+const GRAND_TOTAL_THEME = {
+  headerBg: '#FED7AA',
+  headerText: '#7c2d12',
+  borderCol: 'border-orange-400 dark:border-orange-800',
+  cellBg: 'bg-amber-50/80 dark:bg-amber-950/30',
+  badge: 'bg-amber-500 text-slate-950 font-black'
+};
+
+// Initial demonstration seed matching the user's uploaded register screenshot
+const INITIAL_DEMO_SEED = {
+  '118': {
+    '2018-19': { status: 'P', bookNo: '13', slNo: '36' },
+    '2019-20': { status: 'P', bookNo: '27', slNo: '0' },
+    '2020-21': { status: '0', bookNo: '0', slNo: '0' },
+    '2021-22': { status: '0', bookNo: '0', slNo: '0' },
+    '2022-23': { status: '0', bookNo: '0', slNo: '0' }
+  },
+  '119': {
+    '2018-19': { status: '0', bookNo: '0', slNo: '0' },
+    '2019-20': { status: 'P', bookNo: '28', slNo: '9' },
+    '2020-21': { status: 'P', bookNo: '17', slNo: '24' },
+    '2021-22': { status: 'P', bookNo: '23', slNo: '32' },
+    '2022-23': { status: 'P', bookNo: '36', slNo: '19' }
+  }
+};
+
+export default function ManualAttendanceModal({
+  isOpen = true,
+  onClose = () => {},
+  masterShareholders = [],
+  allAgmScansMap = new Map(),
+  isModal = true,
+  showToast = () => {},
+  user = null
+}) {
+  // Preset selector
+  const [selectedPresetKey, setSelectedPresetKey] = useState('HISTORIC_2018_2023');
+  const currentPreset = YEAR_PRESETS[selectedPresetKey] || YEAR_PRESETS.HISTORIC_2018_2023;
+  const activeYears = currentPreset.years;
+
+  // Stored Manual Records Map: { [shareNo]: { [year]: { status: 'P'|'0', bookNo: '13', slNo: '36' } } }
+  const [manualRecords, setManualRecords] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_DEMO_SEED;
+  });
+
+  // Search & Filter
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterMode, setFilterMode] = useState('ALL'); // 'ALL' | 'PRESENT' | 'ELIGIBLE' | 'ABSENT'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
+  // Quick Single-Entry Form State
+  const [quickShareNo, setQuickShareNo] = useState('');
+  const [quickYear, setQuickYear] = useState(activeYears[0]);
+  const [quickStatus, setQuickStatus] = useState('P');
+  const [quickBookNo, setQuickBookNo] = useState('');
+  const [quickSlNo, setQuickSlNo] = useState('');
+  const [autoIncrementSlNo, setAutoIncrementSlNo] = useState(true);
+
+  // Batch Book Entry Drawer / Modal
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [batchYear, setBatchYear] = useState(activeYears[0]);
+  const [batchBookNo, setBatchBookNo] = useState('');
+  const [batchStartSlNo, setBatchStartSlNo] = useState('1');
+  const [batchShareNosInput, setBatchShareNosInput] = useState('');
+
+  // Audio Beep
+  const playBeep = (freq = 880, duration = 0.08) => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    } catch (e) {}
+  };
+
+  // Sync year selection when preset changes
+  useEffect(() => {
+    setQuickYear(activeYears[0]);
+    setBatchYear(activeYears[0]);
+  }, [selectedPresetKey]);
+
+  // Persist records to localStorage on change
+  const saveRecords = (updater) => {
+    setManualRecords(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch (e) {
+        console.error('Failed to save manual attendance to localStorage', e);
+      }
+      return next;
+    });
+  };
+
+  // Resolve single shareholder details for quick form
+  const matchedMember = useMemo(() => {
+    const q = quickShareNo.trim();
+    if (!q) return null;
+    return masterShareholders.find(m => String(m.entity_id).trim() === q);
+  }, [quickShareNo, masterShareholders]);
+
+  // Update specific cell (status, bookNo, or slNo)
+  const handleCellChange = (shareNo, year, field, value) => {
+    const sId = String(shareNo).trim();
+    saveRecords(prev => {
+      const memberRec = { ...(prev[sId] || {}) };
+      const currYearData = { ...(memberRec[year] || { status: '0', bookNo: '0', slNo: '0' }) };
+
+      if (field === 'status') {
+        currYearData.status = value;
+      } else if (field === 'bookNo') {
+        currYearData.bookNo = value;
+        // If user enters a book number, automatically mark Present 'P'
+        if (value && String(value).trim() !== '0') {
+          currYearData.status = 'P';
+        }
+      } else if (field === 'slNo') {
+        currYearData.slNo = value;
+        if (value && String(value).trim() !== '0') {
+          currYearData.status = 'P';
+        }
+      }
+
+      memberRec[year] = currYearData;
+      return {
+        ...prev,
+        [sId]: memberRec
+      };
+    });
+  };
+
+  // Toggle status button 'P' <-> '0'
+  const handleToggleStatus = (shareNo, year) => {
+    const sId = String(shareNo).trim();
+    const curr = manualRecords[sId]?.[year]?.status || '0';
+    const nextStatus = curr === 'P' ? '0' : 'P';
+    handleCellChange(sId, year, 'status', nextStatus);
+    playBeep(nextStatus === 'P' ? 880 : 440, 0.05);
+  };
+
+  // Save from Quick Form
+  const handleQuickFormSubmit = (e) => {
+    if (e) e.preventDefault();
+    const sId = quickShareNo.trim();
+    if (!sId) {
+      if (typeof showToast === 'function') showToast('⚠️ ದಯವಿಟ್ಟು ಶೇರು ಸಂಖ್ಯೆ ನಮೂದಿಸಿ', 'warning');
+      return;
+    }
+
+    const bNo = quickBookNo.trim() || '0';
+    const sNo = quickSlNo.trim() || '0';
+    const st = quickStatus;
+
+    handleCellChange(sId, quickYear, 'status', st);
+    handleCellChange(sId, quickYear, 'bookNo', bNo);
+    handleCellChange(sId, quickYear, 'slNo', sNo);
+
+    playBeep(980, 0.08);
+    if (typeof showToast === 'function') {
+      showToast(`✅ ಷೇರು #${sId}: ${quickYear} ಪುಸ್ತಕ ನಂ: ${bNo}, ಕ್ರಮ ನಂ: ${sNo} ದಾಖಲಾಗಿದೆ!`, 'success');
+    }
+
+    // Auto-advance Sl No and clear share no for next quick entry
+    if (autoIncrementSlNo && sNo !== '0' && !isNaN(Number(sNo))) {
+      setQuickSlNo(String(Number(sNo) + 1));
+    }
+    setQuickShareNo('');
+    // Keep focus ready for next shareholder
+    const inputEl = document.getElementById('quick-share-no-input');
+    if (inputEl) inputEl.focus();
+  };
+
+  // Execute Batch Assignment for a Book
+  const handleBatchSubmit = (e) => {
+    if (e) e.preventDefault();
+    const bNo = batchBookNo.trim();
+    if (!bNo) {
+      if (typeof showToast === 'function') showToast('⚠️ ಪುಸ್ತಕ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ (Enter Book No)', 'warning');
+      return;
+    }
+
+    const rawList = batchShareNosInput
+      .split(/[\s,;\n]+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    if (rawList.length === 0) {
+      if (typeof showToast === 'function') showToast('⚠️ ಕನಿಷ್ಠ 1 ಶೇರು ಸಂಖ್ಯೆ ನಮೂದಿಸಿ', 'warning');
+      return;
+    }
+
+    let startSerial = Number(batchStartSlNo) || 1;
+
+    saveRecords(prev => {
+      const next = { ...prev };
+      rawList.forEach((sId, index) => {
+        const cleanId = String(sId).trim();
+        const memberRec = { ...(next[cleanId] || {}) };
+        memberRec[batchYear] = {
+          status: 'P',
+          bookNo: bNo,
+          slNo: String(startSerial + index)
+        };
+        next[cleanId] = memberRec;
+      });
+      return next;
+    });
+
+    playBeep(1040, 0.12);
+    if (typeof showToast === 'function') {
+      showToast(`✅ ${rawList.length} ಶೇರುದಾರರಿಗೆ ಪುಸ್ತಕ ನಂ ${bNo} ರಲ್ಲಿ ಕ್ರಮವಾಗಿ ದಾಖಲಿಸಲಾಗಿದೆ!`, 'success');
+    }
+    setShowBatchModal(false);
+    setBatchShareNosInput('');
+  };
+
+  // Reset all manual entries with confirmation
+  const handleResetRecords = () => {
+    if (window.confirm('⚠️ ನೀವು ಎಲ್ಲಾ ಕೈಪಿಡಿ ಹಾಜರಾತಿ ಪುಸ್ತಕ ದಾಖಲೆಗಳನ್ನು ಮರುಹೊಂದಿಸಲು (Reset) ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ಹಿಂಪಡೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ.')) {
+      setManualRecords({});
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {}
+      if (typeof showToast === 'function') showToast('🔄 ಕೈಪಿಡಿ ದಾಖಲೆಗಳನ್ನು ಮರುಹೊಂದಿಸಲಾಗಿದೆ', 'info');
+    }
+  };
+
+  // Compute full view items with attendance numbers and grand total
+  const processedShareholders = useMemo(() => {
+    return masterShareholders.map((m, idx) => {
+      const sId = String(m.entity_id).trim();
+      const rec = manualRecords[sId] || {};
+
+      let totalP = 0;
+      const yearData = {};
+
+      activeYears.forEach(yr => {
+        const yRec = rec[yr] || { status: '0', bookNo: '0', slNo: '0' };
+        const status = yRec.status === 'P' || yRec.status === 'p' ? 'P' : '0';
+        const bookNo = yRec.bookNo !== undefined ? String(yRec.bookNo).trim() : '0';
+        const slNo = yRec.slNo !== undefined ? String(yRec.slNo).trim() : '0';
+
+        if (status === 'P') totalP++;
+
+        yearData[yr] = {
+          status,
+          bookNo: bookNo === '' ? '0' : bookNo,
+          slNo: slNo === '' ? '0' : slNo
+        };
+      });
+
+      return {
+        ...m,
+        entity_id: sId,
+        yearData,
+        grandTotal: totalP,
+        isEligible: totalP >= 2
+      };
+    });
+  }, [masterShareholders, manualRecords, activeYears]);
+
+  // Filter and search
+  const filteredShareholders = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+
+    return processedShareholders.filter(item => {
+      // Filter Mode
+      if (filterMode === 'PRESENT' && item.grandTotal === 0) return false;
+      if (filterMode === 'ELIGIBLE' && item.grandTotal < 2) return false;
+      if (filterMode === 'ABSENT' && item.grandTotal > 0) return false;
+
+      // Search Query
+      if (q) {
+        const idMatch = String(item.entity_id).toLowerCase().includes(q);
+        const nameMatch = (item.name || '').toLowerCase().includes(q);
+        const villageMatch = (item.department || '').toLowerCase().includes(q);
+        const catMatch = (item.category || '').toLowerCase().includes(q);
+
+        // Also check if search query matches any entered Book No
+        const bookMatch = activeYears.some(yr => {
+          const b = item.yearData[yr]?.bookNo;
+          return b && String(b).toLowerCase() === q;
+        });
+
+        if (!idMatch && !nameMatch && !villageMatch && !catMatch && !bookMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [processedShareholders, filterMode, searchQuery, activeYears]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredShareholders.length / pageSize) || 1;
+  const paginatedList = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredShareholders.slice(start, start + pageSize);
+  }, [filteredShareholders, currentPage, pageSize]);
+
+  // Stats
+  const totalMembersCount = processedShareholders.length;
+  const presentAnyCount = processedShareholders.filter(i => i.grandTotal > 0).length;
+  const eligibleCount = processedShareholders.filter(i => i.grandTotal >= 2).length;
+  const absentCount = totalMembersCount - presentAnyCount;
+
+  // EXPORT EXCEL (Exact replica of user's uploaded image with 2-tier headers)
+  const handleExportExcel = () => {
+    const titleRow1 = ['ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204'];
+    const titleRow2 = [`ಕೈಪಿಡಿ ಪುಸ್ತಕ ಮಹಾಸಭೆ ಹಾಜರಾತಿ ವಹಿ (${currentPreset.name})`];
+    const emptyRow = [];
+
+    // Header Tier 1: Grouped Years
+    const headerTier1 = [
+      'ಕ್ರಮ ಸಂ (Sl No)',
+      'ಷೇರು ಸಂಖ್ಯೆ (Share No)',
+      'ಶೇರುದಾರರ ಹೆಸರು (Shareholder Name)',
+      'ಗ್ರಾಮ / ಸ್ಥಳ (Village)',
+      'ವರ್ಗ (Category)'
+    ];
+
+    activeYears.forEach(yr => {
+      headerTier1.push(yr, '', ''); // Spans 3 columns
+    });
+    headerTier1.push('Grand Total');
+
+    // Header Tier 2: Sub-columns
+    const headerTier2 = [
+      '', '', '', '', ''
+    ];
+    activeYears.forEach(yr => {
+      headerTier2.push(yr, 'AGM Attendance Book No', 'Sl No');
+    });
+    headerTier2.push('');
+
+    const rows = [titleRow1, titleRow2, emptyRow, headerTier1, headerTier2];
+
+    // Data rows
+    filteredShareholders.forEach((item, idx) => {
+      const row = [
+        idx + 1,
+        `#${item.entity_id}`,
+        item.name,
+        item.department,
+        item.category || 'ಅ - ವರ್ಗ'
+      ];
+
+      activeYears.forEach(yr => {
+        const yd = item.yearData[yr] || { status: '0', bookNo: '0', slNo: '0' };
+        row.push(yd.status, yd.bookNo, yd.slNo);
+      });
+
+      row.push(item.grandTotal);
+      rows.push(row);
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Merges for the 2-tier headers
+    const headerRowIdx = 3;
+    const merges = [
+      // Title merges
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 5 + activeYears.length * 3 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 5 + activeYears.length * 3 } },
+
+      // Left fixed columns merge rows 3 and 4
+      { s: { r: headerRowIdx, c: 0 }, e: { r: headerRowIdx + 1, c: 0 } },
+      { s: { r: headerRowIdx, c: 1 }, e: { r: headerRowIdx + 1, c: 1 } },
+      { s: { r: headerRowIdx, c: 2 }, e: { r: headerRowIdx + 1, c: 2 } },
+      { s: { r: headerRowIdx, c: 3 }, e: { r: headerRowIdx + 1, c: 3 } },
+      { s: { r: headerRowIdx, c: 4 }, e: { r: headerRowIdx + 1, c: 4 } }
+    ];
+
+    // Merge each 3-col year group in Header Tier 1
+    activeYears.forEach((yr, i) => {
+      const startCol = 5 + i * 3;
+      merges.push({
+        s: { r: headerRowIdx, c: startCol },
+        e: { r: headerRowIdx, c: startCol + 2 }
+      });
+    });
+
+    // Grand total merge
+    const grandTotalCol = 5 + activeYears.length * 3;
+    merges.push({
+      s: { r: headerRowIdx, c: grandTotalCol },
+      e: { r: headerRowIdx + 1, c: grandTotalCol }
+    });
+
+    ws['!merges'] = merges;
+
+    // Column widths
+    const cols = [
+      { wch: 8 },  // Sl No
+      { wch: 14 }, // Share No
+      { wch: 30 }, // Name
+      { wch: 18 }, // Village
+      { wch: 12 }  // Category
+    ];
+    activeYears.forEach(() => {
+      cols.push({ wch: 10 }, { wch: 22 }, { wch: 10 });
+    });
+    cols.push({ wch: 14 }); // Grand Total
+    ws['!cols'] = cols;
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Manual_Attendance_Register');
+    const filename = `Manual_Attendance_Book_Register_${selectedPresetKey}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, filename);
+
+    if (typeof showToast === 'function') {
+      showToast(`📊 ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ಎಕ್ಸೆಲ್ ಯಶಸ್ವಿಯಾಗಿ ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ!`, 'success');
+    }
+  };
+
+  // Statutory Print Window
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ವಹಿ - ${currentPreset.name}</title>
+        <style>
+          @page { size: A4 landscape; margin: 8mm 6mm; }
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 9px; color: #111; margin: 0; padding: 0; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px; }
+          .header h1 { margin: 0; font-size: 15px; font-weight: bold; color: #047857; }
+          .header h2 { margin: 2px 0 0 0; font-size: 11px; color: #333; }
+          .header p { margin: 2px 0 0 0; font-size: 8.5px; color: #555; }
+          table { width: 100%; border-collapse: collapse; text-align: center; }
+          th, td { border: 1px solid #777; padding: 3px 2px; }
+          th { font-size: 8.5px; font-weight: bold; }
+          .y0 { background-color: #D8B4E2; }
+          .y1 { background-color: #CFFAFE; }
+          .y2 { background-color: #FFEDD5; }
+          .y3 { background-color: #FCE7F3; }
+          .y4 { background-color: #E2E8F0; }
+          .gt { background-color: #FED7AA; font-weight: bold; }
+          .text-left { text-align: left; }
+          .font-bold { font-weight: bold; }
+          .footer { margin-top: 15px; display: flex; justify-content: space-between; font-size: 9px; font-weight: bold; padding: 0 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204</h1>
+          <h2>ಕೈಪಿಡಿ ಪುಸ್ತಕ ಮಹಾಸಭೆ ಹಾಜರಾತಿ ವಹಿ (${currentPreset.name})</h2>
+          <p>ದಿನಾಂಕ: ${new Date().toLocaleDateString('kn-IN')} | ಒಟ್ಟು ಸದಸ್ಯರು: ${filteredShareholders.length}</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th rowspan="2" style="width: 25px;">ಕ್ರ.ಸಂ</th>
+              <th rowspan="2" style="width: 45px;">ಷೇರು ನಂ</th>
+              <th rowspan="2" style="width: 150px;">ಶೇರುದಾರರ ಹೆಸರು</th>
+              <th rowspan="2" style="width: 80px;">ಸ್ಥಳ / ಗ್ರಾಮ</th>
+              ${activeYears.map((yr, idx) => `<th colspan="3" class="y${idx}">${yr}</th>`).join('')}
+              <th rowspan="2" class="gt" style="width: 40px;">Grand Total</th>
+            </tr>
+            <tr>
+              ${activeYears.map((yr, idx) => `
+                <th class="y${idx}">${yr}</th>
+                <th class="y${idx}">Book No</th>
+                <th class="y${idx}">Sl No</th>
+              `).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredShareholders.slice(0, 500).map((item, idx) => `
+              <tr>
+                <td>${idx + 1}</td>
+                <td class="font-bold">#${item.entity_id}</td>
+                <td class="text-left font-bold">${item.name}</td>
+                <td class="text-left">${item.department}</td>
+                ${activeYears.map(yr => {
+                  const yd = item.yearData[yr] || { status: '0', bookNo: '0', slNo: '0' };
+                  return `
+                    <td class="font-bold">${yd.status === 'P' ? '<span style="color:#047857;">P</span>' : '<span style="color:#888;">0</span>'}</td>
+                    <td>${yd.bookNo}</td>
+                    <td>${yd.slNo}</td>
+                  `;
+                }).join('')}
+                <td class="gt">${item.grandTotal}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="footer">
+          <div>ಲಿಪಿಕಾರರ ಸಹಿ (Clerk)</div>
+          <div>ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿಗಳು (Chief Accounts Officer)</div>
+          <div>ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು (Managing Director)</div>
+        </div>
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
+  // Render Component Container: Either as Modal or Embedded Tab
+  const content = (
+    <div className={`space-y-4 animate-fadeIn ${isModal ? 'p-1' : ''}`}>
+      {/* 1. Header Banner & Preset Switcher */}
+      <div className="bg-gradient-to-r from-purple-950/90 via-slate-950 to-indigo-950/90 border-2 border-purple-500/50 rounded-2xl p-4 shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center text-white shadow-lg ring-2 ring-purple-400/50">
+              <BookOpen className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-black text-white tracking-wide flex items-center gap-2">
+                  <span>ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ನಮೂದು (Manual Attendance Book Register)</span>
+                </h2>
+                <span className="text-[10px] bg-purple-500/30 text-purple-200 border border-purple-400/40 px-2.5 py-0.5 rounded-full font-bold">
+                  Statutory Ledger Format
+                </span>
+              </div>
+              <p className="text-xs text-purple-200/80 mt-0.5">
+                ಕಳೆದ 5 ಮಹಾಸಭೆಗಳ ಭೌತಿಕ ಸಹಿ ಪುಸ್ತಕಗಳ ದಾಖಲೆ (Book No & Serial No ನಮೂದು ಮತ್ತು ಪರಿಶೀಲನೆ)
+              </p>
+            </div>
+          </div>
+
+          {/* Preset Selector */}
+          <div className="flex flex-wrap items-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-purple-500/30">
+            <span className="text-[11px] text-purple-300 font-bold px-2">ವರ್ಷಗಳ ಶ್ರೇಣಿ:</span>
+            {Object.values(YEAR_PRESETS).map(pr => {
+              const isSelected = selectedPresetKey === pr.id;
+              return (
+                <button
+                  key={pr.id}
+                  onClick={() => {
+                    setSelectedPresetKey(pr.id);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md ring-1 ring-purple-300'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {pr.shortName}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Action buttons: Print, Excel, Batch, Reset */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowBatchModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/80 hover:bg-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer border border-indigo-400/40"
+              title="ಒಂದು ಪುಸ್ತಕದ ಶೇರುದಾರರಿಗೆ ಸಾಮೂಹಿಕವಾಗಿ ನಮೂದಿಸಿ"
+            >
+              <Layers className="w-3.5 h-3.5 text-indigo-200" />
+              <span>ಪುಸ್ತಕ ಸಾಮೂಹಿಕ ನಮೂದು (Batch)</span>
+            </button>
+
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700/80 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer border border-emerald-400/40"
+              title="ಎಕ್ಸೆಲ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ (Excel Export)"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-200" />
+              <span>ಎಕ್ಸೆಲ್ ಡೌನ್‌ಲೋಡ್</span>
+            </button>
+
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all shadow cursor-pointer border border-slate-700"
+              title="A4 ಮುದ್ರಣ (Print)"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-300" />
+              <span>ಮುದ್ರಿಸಿ</span>
+            </button>
+
+            <button
+              onClick={handleResetRecords}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-200 rounded-xl text-xs font-bold transition-all border border-slate-700 hover:border-rose-500/50 cursor-pointer"
+              title="ದಾಖಲೆಗಳನ್ನು ತೆರವುಗೊಳಿಸಿ / ಮರುಹೊಂದಿಸಿ (Reset)"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+
+            {isModal && (
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer ml-1"
+                title="ಮುಚ್ಚಿ (Close)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 4 Stats Chips */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-3 mt-3 border-t border-purple-500/20">
+          <div className="bg-slate-900/80 border border-purple-900/50 p-2.5 rounded-xl flex items-center justify-between">
+            <div>
+              <div className="text-[11px] text-purple-300">ಒಟ್ಟು ಶೇರುದಾರರು</div>
+              <div className="text-lg font-bold text-white font-mono">{totalMembersCount.toLocaleString()}</div>
+            </div>
+            <Award className="w-5 h-5 text-purple-400" />
+          </div>
+
+          <div className="bg-slate-900/80 border border-emerald-900/50 p-2.5 rounded-xl flex items-center justify-between">
+            <div>
+              <div className="text-[11px] text-emerald-300">ಹಾಜರಾದವರು (ಕನಿಷ್ಠ 1)</div>
+              <div className="text-lg font-bold text-emerald-300 font-mono">{presentAnyCount.toLocaleString()}</div>
+            </div>
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+          </div>
+
+          <div className="bg-slate-900/80 border border-amber-900/50 p-2.5 rounded-xl flex items-center justify-between">
+            <div>
+              <div className="text-[11px] text-amber-300">ಚುನಾವಣಾ ಅರ್ಹರು (2+ AGMs)</div>
+              <div className="text-lg font-bold text-amber-300 font-mono">{eligibleCount.toLocaleString()}</div>
+            </div>
+            <Award className="w-5 h-5 text-amber-400" />
+          </div>
+
+          <div className="bg-slate-900/80 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
+            <div>
+              <div className="text-[11px] text-slate-400">ಗೈರುಹಾಜರು (0 AGMs)</div>
+              <div className="text-lg font-bold text-slate-300 font-mono">{absentCount.toLocaleString()}</div>
+            </div>
+            <XCircle className="w-5 h-5 text-slate-500" />
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Fast Single-Entry Bar (ವೇಗದ ಪ್ರತ್ಯೇಕ ನಮೂದು) */}
+      <div className="bg-slate-900/95 border border-purple-500/40 rounded-2xl p-3.5 shadow-lg">
+        <form onSubmit={handleQuickFormSubmit} className="flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex items-center gap-1.5 text-purple-300 font-bold">
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <span>ತ್ವರಿತ ನಮೂದು:</span>
+          </div>
+
+          {/* Share Number Input */}
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 focus-within:border-purple-400">
+            <span className="text-slate-400 font-bold">ಷೇರು ನಂ:</span>
+            <input
+              id="quick-share-no-input"
+              type="text"
+              value={quickShareNo}
+              onChange={(e) => setQuickShareNo(e.target.value)}
+              placeholder="Ex: 118"
+              className="w-20 bg-transparent text-emerald-400 font-mono font-bold outline-none text-xs"
+            />
+          </div>
+
+          {/* Year Dropdown */}
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5">
+            <span className="text-slate-400 font-bold">ವರ್ಷ:</span>
+            <select
+              value={quickYear}
+              onChange={(e) => setQuickYear(e.target.value)}
+              className="bg-transparent text-purple-300 font-bold outline-none cursor-pointer text-xs"
+            >
+              {activeYears.map(yr => (
+                <option key={yr} value={yr} className="bg-slate-900 text-white">
+                  {yr}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status Toggle P / 0 */}
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl px-2 py-1">
+            <span className="text-slate-400 font-bold mr-1">ಸ್ಥಿತಿ:</span>
+            <button
+              type="button"
+              onClick={() => setQuickStatus('P')}
+              className={`px-2.5 py-1 rounded-lg font-bold text-xs cursor-pointer transition-all ${
+                quickStatus === 'P' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              P (ಹಾಜರು)
+            </button>
+            <button
+              type="button"
+              onClick={() => setQuickStatus('0')}
+              className={`px-2 py-1 rounded-lg font-bold text-xs cursor-pointer transition-all ${
+                quickStatus === '0' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              0 (ಗೈರು)
+            </button>
+          </div>
+
+          {/* Book No Input */}
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 focus-within:border-purple-400">
+            <span className="text-slate-400 font-bold">ಪುಸ್ತಕ ನಂ (Book No):</span>
+            <input
+              type="text"
+              value={quickBookNo}
+              onChange={(e) => setQuickBookNo(e.target.value)}
+              placeholder="Ex: 13"
+              className="w-16 bg-transparent text-amber-300 font-mono font-bold outline-none text-xs"
+            />
+          </div>
+
+          {/* Sl No in Book Input */}
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 focus-within:border-purple-400">
+            <span className="text-slate-400 font-bold">ಕ್ರಮ ನಂ (Sl No):</span>
+            <input
+              type="text"
+              value={quickSlNo}
+              onChange={(e) => setQuickSlNo(e.target.value)}
+              placeholder="Ex: 36"
+              className="w-16 bg-transparent text-amber-300 font-mono font-bold outline-none text-xs"
+            />
+          </div>
+
+          {/* Save Button */}
+          <button
+            type="submit"
+            className="flex items-center gap-1 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow cursor-pointer"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>ದಾಖಲಿಸಿ (Save)</span>
+          </button>
+
+          {/* Auto increment toggle */}
+          <label className="flex items-center gap-1.5 text-slate-400 cursor-pointer select-none ml-auto">
+            <input
+              type="checkbox"
+              checked={autoIncrementSlNo}
+              onChange={(e) => setAutoIncrementSlNo(e.target.checked)}
+              className="rounded accent-purple-600 cursor-pointer"
+            />
+            <span className="text-[11px]">ಆಟೋ ಕ್ರಮ ನಂ ಹೆಚ್ಚಳ (+1)</span>
+          </label>
+        </form>
+
+        {/* Matched shareholder info chip */}
+        {matchedMember && (
+          <div className="mt-2 pt-2 border-t border-slate-800 flex items-center gap-2 text-xs text-purple-200">
+            <span className="font-bold text-emerald-400">#{matchedMember.entity_id}</span>
+            <span className="font-semibold text-white">{matchedMember.name}</span>
+            <span className="text-slate-400">• {matchedMember.department}</span>
+            <span className="text-amber-300 text-[10px] bg-slate-800 px-2 py-0.5 rounded">
+              {matchedMember.category || 'ಅ - ವರ್ಗ'}
+            </span>
+            <span className="text-slate-400 ml-auto text-[11px]">
+              ಈಗಿರುವ ಒಟ್ಟು ಹಾಜರಾತಿ: <b className="text-emerald-400">{processedShareholders.find(s => s.entity_id === matchedMember.entity_id)?.grandTotal || 0} / 5</b>
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Filter Bar & Search */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/90 p-2.5 rounded-2xl border border-slate-800 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-400 mr-1">ಫಿಲ್ಟರ್:</span>
+          <button
+            onClick={() => { setFilterMode('ALL'); setCurrentPage(1); }}
+            className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              filterMode === 'ALL' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            ಎಲ್ಲಾ ({totalMembersCount.toLocaleString()})
+          </button>
+          <button
+            onClick={() => { setFilterMode('PRESENT'); setCurrentPage(1); }}
+            className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              filterMode === 'PRESENT' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            ಹಾಜರಾದವರು ({presentAnyCount.toLocaleString()})
+          </button>
+          <button
+            onClick={() => { setFilterMode('ELIGIBLE'); setCurrentPage(1); }}
+            className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              filterMode === 'ELIGIBLE' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            ಚುನಾವಣಾ ಅರ್ಹರು 2+ ({eligibleCount.toLocaleString()})
+          </button>
+          <button
+            onClick={() => { setFilterMode('ABSENT'); setCurrentPage(1); }}
+            className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              filterMode === 'ABSENT' ? 'bg-rose-600 text-white shadow' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            ಗೈರುಹಾಜರು ({absentCount.toLocaleString()})
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Search Input */}
+          <div className="relative min-w-[260px]">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              placeholder="Search Name, Share #, Village, Book #..."
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 outline-none focus:border-purple-500"
+            />
+          </div>
+
+          {/* Rows per page */}
+          <select
+            value={pageSize}
+            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+            className="bg-slate-900 border border-slate-800 text-slate-300 rounded-xl px-2 py-1.5 text-xs outline-none cursor-pointer"
+          >
+            <option value={25}>25 ಸಾಲುಗಳು</option>
+            <option value={50}>50 ಸಾಲುಗಳು</option>
+            <option value={100}>100 ಸಾಲುಗಳು</option>
+            <option value={200}>200 ಸಾಲುಗಳು</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 4. Statutory Master Ledger Table (Exact replica of media_1794376454040_b8d05ac7.png) */}
+      <div className="bg-slate-950/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto max-h-[62vh]">
+          <table className="w-full text-center text-xs border-collapse select-none">
+            {/* Header Tier 1: Grouped Years */}
+            <thead className="sticky top-0 z-20 shadow-md">
+              <tr className="border-b border-slate-700 font-bold uppercase text-[11px]">
+                <th rowSpan={2} className="py-2.5 px-2 bg-slate-900 text-slate-300 border-r border-slate-700 w-12 sticky left-0 z-30">
+                  ಕ್ರ.ಸಂ
+                </th>
+                <th rowSpan={2} className="py-2.5 px-3 bg-slate-900 text-slate-300 border-r border-slate-700 w-24 sticky left-12 z-30">
+                  ಷೇರು ನಂ
+                </th>
+                <th rowSpan={2} className="py-2.5 px-3 bg-slate-900 text-slate-300 border-r border-slate-700 text-left min-w-[180px] sticky left-36 z-30">
+                  ಶೇರುದಾರರ ಹೆಸರು
+                </th>
+                <th rowSpan={2} className="py-2.5 px-2.5 bg-slate-900 text-slate-300 border-r border-slate-700 text-left min-w-[110px]">
+                  ಸ್ಥಳ / ಗ್ರಾಮ
+                </th>
+                <th rowSpan={2} className="py-2.5 px-2 bg-slate-900 text-slate-300 border-r border-slate-700 w-16">
+                  ವರ್ಗ
+                </th>
+
+                {/* 5 Year Super Headers (Colored as per screenshot) */}
+                {activeYears.map((yr, idx) => {
+                  const theme = YEAR_THEMES[idx] || YEAR_THEMES[0];
+                  return (
+                    <th
+                      key={yr}
+                      colSpan={3}
+                      style={{ backgroundColor: theme.headerBg, color: theme.headerText }}
+                      className="py-2 px-2 border-r border-slate-700 font-black text-xs tracking-wider"
+                    >
+                      {yr}
+                    </th>
+                  );
+                })}
+
+                {/* Grand Total Header */}
+                <th
+                  rowSpan={2}
+                  style={{ backgroundColor: GRAND_TOTAL_THEME.headerBg, color: GRAND_TOTAL_THEME.headerText }}
+                  className="py-2.5 px-3 border-l border-slate-700 font-black text-xs w-20 sticky right-0 z-30"
+                >
+                  Grand<br />Total
+                </th>
+              </tr>
+
+              {/* Header Tier 2: Sub-columns for each year */}
+              <tr className="border-b border-slate-700 font-bold text-[10px]">
+                {activeYears.map((yr, idx) => {
+                  const theme = YEAR_THEMES[idx] || YEAR_THEMES[0];
+                  return (
+                    <React.Fragment key={`${yr}_sub`}>
+                      <th
+                        style={{ backgroundColor: theme.subHeaderBg, color: theme.subHeaderText }}
+                        className="py-1.5 px-2 border-r border-slate-300/40 w-14"
+                        title={`${yr} ಹಾಜರಾತಿ ಸ್ಥಿತಿ (P / 0)`}
+                      >
+                        {yr}
+                      </th>
+                      <th
+                        style={{ backgroundColor: theme.subHeaderBg, color: theme.subHeaderText }}
+                        className="py-1.5 px-2 border-r border-slate-300/40 min-w-[90px]"
+                        title="AGM Attendance Book No"
+                      >
+                        AGM<br />Attendance<br />Book No
+                      </th>
+                      <th
+                        style={{ backgroundColor: theme.subHeaderBg, color: theme.subHeaderText }}
+                        className="py-1.5 px-2 border-r border-slate-700 w-16"
+                        title="Sl No in Book"
+                      >
+                        Sl No
+                      </th>
+                    </React.Fragment>
+                  );
+                })}
+              </tr>
+            </thead>
+
+            {/* Table Body */}
+            <tbody className="divide-y divide-slate-800 text-slate-200">
+              {paginatedList.map((item, rowIdx) => {
+                const globalIdx = (currentPage - 1) * pageSize + rowIdx + 1;
+                return (
+                  <tr key={item.entity_id} className="hover:bg-slate-900/80 transition-colors">
+                    {/* Fixed Sl No */}
+                    <td className="py-2 px-2 border-r border-slate-800 text-slate-400 font-mono bg-slate-950/90 sticky left-0 z-10">
+                      {globalIdx}
+                    </td>
+
+                    {/* Share Number */}
+                    <td className="py-2 px-3 border-r border-slate-800 font-mono font-bold text-emerald-400 bg-slate-950/90 sticky left-12 z-10">
+                      #{item.entity_id}
+                    </td>
+
+                    {/* Member Name */}
+                    <td className="py-2 px-3 border-r border-slate-800 text-left font-medium text-slate-100 bg-slate-950/90 sticky left-36 z-10">
+                      <div className="truncate max-w-[200px]" title={item.name}>
+                        {item.name}
+                      </div>
+                    </td>
+
+                    {/* Village */}
+                    <td className="py-2 px-2.5 border-r border-slate-800 text-left text-slate-300 truncate max-w-[120px]">
+                      {item.department}
+                    </td>
+
+                    {/* Category */}
+                    <td className="py-2 px-2 border-r border-slate-800">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-slate-700 text-amber-300">
+                        {item.category || 'ಅ - ವರ್ಗ'}
+                      </span>
+                    </td>
+
+                    {/* 5 Year Groups Sub-cells */}
+                    {activeYears.map((yr, idx) => {
+                      const yd = item.yearData[yr] || { status: '0', bookNo: '0', slNo: '0' };
+                      const theme = YEAR_THEMES[idx] || YEAR_THEMES[0];
+                      const isPresent = yd.status === 'P';
+
+                      return (
+                        <React.Fragment key={`${item.entity_id}_${yr}`}>
+                          {/* 1. Status P / 0 button */}
+                          <td className={`py-1.5 px-1 border-r border-slate-800/80 ${theme.cellBg}`}>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(item.entity_id, yr)}
+                              className={`w-7 h-7 rounded-md font-bold text-xs transition-all cursor-pointer flex items-center justify-center mx-auto ${
+                                isPresent
+                                  ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-400'
+                                  : 'bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700'
+                              }`}
+                              title={`ಕ್ಲಿಕ್ ಮಾಡಿ ಸ್ಥಿತಿ ಬದಲಾಯಿಸಿ (${isPresent ? 'P' : '0'})`}
+                            >
+                              {yd.status}
+                            </button>
+                          </td>
+
+                          {/* 2. AGM Attendance Book No Input */}
+                          <td className={`py-1.5 px-1 border-r border-slate-800/80 ${theme.cellBg}`}>
+                            <input
+                              type="text"
+                              value={yd.bookNo}
+                              onChange={(e) => handleCellChange(item.entity_id, yr, 'bookNo', e.target.value)}
+                              className={`w-16 text-center bg-slate-900/90 text-slate-100 font-mono font-bold py-1 px-1 rounded-md border border-slate-700/80 outline-none text-xs transition-all ${theme.focusRing}`}
+                              placeholder="0"
+                            />
+                          </td>
+
+                          {/* 3. Sl No in Book Input */}
+                          <td className={`py-1.5 px-1 border-r border-slate-800 ${theme.cellBg}`}>
+                            <input
+                              type="text"
+                              value={yd.slNo}
+                              onChange={(e) => handleCellChange(item.entity_id, yr, 'slNo', e.target.value)}
+                              className={`w-14 text-center bg-slate-900/90 text-slate-100 font-mono font-bold py-1 px-1 rounded-md border border-slate-700/80 outline-none text-xs transition-all ${theme.focusRing}`}
+                              placeholder="0"
+                            />
+                          </td>
+                        </React.Fragment>
+                      );
+                    })}
+
+                    {/* Grand Total Cell */}
+                    <td className={`py-2 px-3 border-l border-slate-800 font-mono font-black text-sm sticky right-0 z-10 bg-slate-950/95`}>
+                      <span
+                        className={`inline-block px-2.5 py-0.5 rounded-full ${
+                          item.grandTotal >= 2
+                            ? 'bg-amber-400 text-slate-950 shadow-sm'
+                            : item.grandTotal > 0
+                            ? 'bg-slate-700 text-white'
+                            : 'text-slate-500'
+                        }`}
+                      >
+                        {item.grandTotal}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 5. Pagination Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-900 border-t border-slate-800 text-xs">
+          <div className="text-slate-400">
+            ತೋರಿಸಲಾಗುತ್ತಿದೆ: <b className="text-slate-200">
+              {filteredShareholders.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+            </b> ರಿಂದ <b className="text-slate-200">
+              {Math.min(currentPage * pageSize, filteredShareholders.length)}
+            </b> (ಒಟ್ಟು <b className="text-purple-300">{filteredShareholders.length.toLocaleString()}</b> ಶೇರುದಾರರು)
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 font-bold cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <span className="px-3 py-1 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 font-mono font-bold">
+              ಪುಟ {currentPage} / {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 font-bold cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 6. Batch Assignment Drawer / Modal */}
+      {showBatchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-indigo-500/60 rounded-2xl w-full max-w-lg shadow-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-indigo-400">
+                <Layers className="w-5 h-5" />
+                <h3 className="text-base font-bold text-white">ಪುಸ್ತಕ ಸಾಮೂಹಿಕ ನಮೂದು (Batch Book Assignment)</h3>
+              </div>
+              <button
+                onClick={() => setShowBatchModal(false)}
+                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              ಒಂದು ಭೌತಿಕ ಪುಸ್ತಕದ (Book No) ಅಡಿಯಲ್ಲಿ ಸಹಿ ಮಾಡಿದ ಶೇರುದಾರರ ಸಂಖ್ಯೆಗಳನ್ನು ಒಂದೇ ಬಾರಿಗೆ ಕ್ರಮ ಸಂಖ್ಯೆಗಳೊಂದಿಗೆ (Sl No) ದಾಖಲಿಸಿ.
+            </p>
+
+            <form onSubmit={handleBatchSubmit} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">ವರ್ಷ ಆಯ್ಕೆಮಾಡಿ:</label>
+                  <select
+                    value={batchYear}
+                    onChange={(e) => setBatchYear(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-purple-300 font-bold outline-none cursor-pointer"
+                  >
+                    {activeYears.map(yr => (
+                      <option key={yr} value={yr} className="bg-slate-900 text-white">
+                        {yr}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">ಪುಸ್ತಕ ಸಂಖ್ಯೆ (Book No):</label>
+                  <input
+                    type="text"
+                    value={batchBookNo}
+                    onChange={(e) => setBatchBookNo(e.target.value)}
+                    placeholder="Ex: 13, 27, 28"
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-300 font-mono font-bold outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">ಪ್ರಾರಂಭದ ಕ್ರಮ ಸಂಖ್ಯೆ (Starting Sl No in Book):</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={batchStartSlNo}
+                  onChange={(e) => setBatchStartSlNo(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono font-bold outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">
+                  ಶೇರು ಸಂಖ್ಯೆಗಳು (ಕಾಮಾ ಅಥವಾ ಸ್ಪೇಸ್ ಅಥವಾ ಹೊಸ ಸಾಲಿನ ಮೂಲಕ ನಮೂದಿಸಿ):
+                </label>
+                <textarea
+                  rows={4}
+                  value={batchShareNosInput}
+                  onChange={(e) => setBatchShareNosInput(e.target.value)}
+                  placeholder="Ex: 118, 119, 120, 125, 140 ಅಥವಾ ಎಕ್ಸೆಲ್ ನಿಂದ ಕಾಪಿ ಮಾಡಿ ಪೇಸ್ಟ್ ಮಾಡಿ"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-emerald-400 font-mono text-xs outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowBatchModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer"
+                >
+                  ರದ್ದುಮಾಡಿ
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold shadow-lg cursor-pointer"
+                >
+                  ಸಾಮೂಹಿಕವಾಗಿ ದಾಖಲಿಸಿ (Assign All)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // If used as modal, render backdrop wrapper
+  if (isModal) {
+    if (!isOpen) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn">
+        <div className="bg-slate-950 border-2 border-purple-500/70 rounded-3xl w-full max-w-[96vw] max-h-[95vh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4">
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  // If used as tab view
+  return content;
+}
