@@ -2030,30 +2030,31 @@ export default function AttendanceModule() {
             );
           })}
 
-          {/* Election Eligible Tab for ALL 5 AGMs */}
+          {/* Election Eligible Tab for ALL 5 AGMs - Compact & proportional */}
           <button
             onClick={() => {
               setActiveAgmTab('ELECTION_ELIGIBLE');
               setCurrentPage(1);
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeAgmTab === 'ELECTION_ELIGIBLE'
-                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-xl ring-2 ring-amber-400'
-                : 'bg-slate-900 text-amber-300 border border-amber-600/50 hover:bg-amber-950/40'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg ring-2 ring-amber-400'
+                : 'bg-slate-900 text-amber-300 border border-amber-600/50 hover:bg-amber-950/40 hover:text-white'
             }`}
+            title="ಚುನಾವಣಾ ಅರ್ಹತೆ (Election Eligible Tab - 5 AGMs: 2023-24 to 2027-28)"
           >
-            <Vote className="w-4 h-4 text-amber-300" />
-            <span>🗳️ ಚುನಾವಣಾ ಅರ್ಹತೆ (Election Eligible Tab - 5 AGMs: 2023-24 to 2027-28)</span>
+            <Vote className="w-3.5 h-3.5 text-amber-300" />
+            <span>🗳️ ಚುನಾವಣಾ ಅರ್ಹತೆ (5 AGMs)</span>
           </button>
 
-          {/* Consolidated 5-AGMs Register Button in Tabs */}
+          {/* Consolidated 5-AGMs Register Button - Side by Side with Election Tab */}
           <button
             onClick={() => setShowManualBookModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-purple-950/40 text-purple-300 border border-purple-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer ml-auto"
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-purple-950/40 text-purple-300 hover:text-white border border-purple-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer whitespace-nowrap shrink-0"
             title="ಎಲ್ಲಾ 5 ಮಹಾಸಭೆಗಳ ಸಂಯೋಜಿತ ಕೈಪಿಡಿ ಹಾಜರಾತಿ ವಹಿ (Consolidated 5-AGMs Register)"
           >
             <BookOpen className="w-3.5 h-3.5 text-purple-400" />
-            <span>📊 5 ಮಹಾಸಭೆಗಳ ಸಂಯೋಜಿತ ವಹಿ</span>
+            <span>📊 ಸಂಯೋಜಿತ ವಹಿ (5 AGMs)</span>
           </button>
         </div>
 
