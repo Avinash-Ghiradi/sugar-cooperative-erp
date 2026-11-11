@@ -1881,86 +1881,93 @@ export default function AttendanceModule() {
   return (
     <div className="space-y-5">
 
-      {/* Top Header & Role-Based Access Control Banner */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-950/80 p-4 rounded-2xl border border-slate-800 shadow-xl">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-black text-slate-100 flex items-center gap-2">
-              <CalendarCheck className="w-5 h-5 text-emerald-400" />
-              <span>ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2023-24 ರಿಂದ 2027-28) ಮತ್ತು ಚುನಾವಣಾ ಅರ್ಹತಾ ನಿರ್ವಹಣೆ</span>
+      {/* Top Header Banner: Single Line Title & All Buttons Below */}
+      <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 shadow-xl space-y-3">
+        {/* Line 1: Title full width on a single line */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <CalendarCheck className="w-4 h-4" />
+            </div>
+            <h1 className="text-base sm:text-lg font-black text-slate-100 tracking-tight whitespace-nowrap">
+              ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2023-24 ರಿಂದ 2027-28) ಮತ್ತು ಚುನಾವಣಾ ಅರ್ಹತಾ ನಿರ್ವಹಣೆ
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
               5-Year AGM Suite
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-[11px] text-slate-400 hidden xl:block">
             ಮಹಾಸಭೆ 6 ರಿಂದ 10 (2023-24 - 2027-28) • ಅಂತಿಮ ಫ್ರೀಜ್ ರಕ್ಷಣೆ • ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ವಹಿ
           </p>
         </div>
 
-        {/* Top Controls: Date, Counter, Sync, Excel, Print */}
-        <div className="flex flex-wrap items-center gap-2">
-          {activeAgmTab !== 'ELECTION_ELIGIBLE' && (
-            <>
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
-                <span className="text-slate-400 font-semibold">ದಿನಾಂಕ:</span>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  disabled={isCurrentAgmFrozen}
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="bg-transparent text-emerald-300 font-mono font-bold outline-none cursor-pointer disabled:opacity-50"
-                />
-              </div>
+        {/* Line 2: All Action Buttons and Controls Below the Title */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-0.5">
+          <div className="flex flex-wrap items-center gap-2">
+            {activeAgmTab !== 'ELECTION_ELIGIBLE' && (
+              <>
+                <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+                  <span className="text-slate-400 font-semibold">ದಿನಾಂಕ:</span>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    disabled={isCurrentAgmFrozen}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="bg-transparent text-emerald-300 font-mono font-bold outline-none cursor-pointer disabled:opacity-50"
+                  />
+                </div>
 
-              <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-xl text-xs">
-                <span className="text-amber-400 font-bold shrink-0">ಕೌಂಟರ್:</span>
-                <select
-                  value={selectedCounter}
-                  onChange={(e) => handleCounterChange(e.target.value)}
-                  className="bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer max-w-[150px] truncate"
-                >
-                  {COUNTER_OPTIONS.map((c, i) => (
-                    <option key={i} value={c} className="bg-slate-900 text-slate-100">{c}</option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
+                <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-xl text-xs">
+                  <span className="text-amber-400 font-bold shrink-0">ಕೌಂಟರ್:</span>
+                  <select
+                    value={selectedCounter}
+                    onChange={(e) => handleCounterChange(e.target.value)}
+                    className="bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer max-w-[150px] truncate"
+                  >
+                    {COUNTER_OPTIONS.map((c, i) => (
+                      <option key={i} value={c} className="bg-slate-900 text-slate-100">{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
 
-          {/* Sync Button */}
-          <button
-            onClick={() => syncWithCloudNow()}
-            disabled={isSyncing}
-            className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 rounded-xl text-xs font-bold transition-all shadow cursor-pointer disabled:opacity-50"
-            title="ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್‌ನಿಂದ ಇತ್ತೀಚಿನ ಹಾಜರಾತಿ ಸಿಂಕ್ ಮಾಡಿ"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-amber-400' : 'text-cyan-400'}`} />
-            <span>ಸಿಂಕ್</span>
-          </button>
+            {/* Sync Button */}
+            <button
+              onClick={() => syncWithCloudNow()}
+              disabled={isSyncing}
+              className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 rounded-xl text-xs font-bold transition-all shadow cursor-pointer disabled:opacity-50"
+              title="ಕ್ಲೌಡ್ ಡೇಟಾಬೇಸ್‌ನಿಂದ ಇತ್ತೀಚಿನ ಹಾಜರಾತಿ ಸಿಂಕ್ ಮಾಡಿ"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-amber-400' : 'text-cyan-400'}`} />
+              <span>ಸಿಂಕ್</span>
+            </button>
+          </div>
 
-          {/* Excel Export (.xlsx) */}
-          <button
-            onClick={handleExportExcel}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
-            title="ಹಾಜರಾತಿ ವಹಿಯನ್ನು ಎಕ್ಸೆಲ್ (.xlsx) ರೂಪದಲ್ಲಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-white" />
-            <span>ಎಕ್ಸೆಲ್ (.xlsx)</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Excel Export (.xlsx) */}
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+              title="ಹಾಜರಾತಿ ವಹಿಯನ್ನು ಎಕ್ಸೆಲ್ (.xlsx) ರೂಪದಲ್ಲಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-white" />
+              <span>ಎಕ್ಸೆಲ್ (.xlsx)</span>
+            </button>
 
-          {/* Print Register */}
-          <button
-            onClick={handlePrintAttendance}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
-            title="ಅಧಿಕೃತ ವಹಿಯನ್ನು ಮುದ್ರಿಸಿ (Portrait Print)"
-          >
-            <Printer className="w-3.5 h-3.5 text-white" />
-            <span>ಮುದ್ರಿಸಿ</span>
-          </button>
+            {/* Print Register */}
+            <button
+              onClick={handlePrintAttendance}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+              title="ಅಧಿಕೃತ ವಹಿಯನ್ನು ಮುದ್ರಿಸಿ (Portrait Print)"
+            >
+              <Printer className="w-3.5 h-3.5 text-white" />
+              <span>ಮುದ್ರಿಸಿ</span>
+            </button>
+          </div>
         </div>
       </div>
 
