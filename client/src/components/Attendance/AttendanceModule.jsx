@@ -87,6 +87,7 @@ export default function AttendanceModule() {
   // Minimum required AGMs to be election eligible (Default: 2 of 5 AGMs as per Section 20(2) KCS Act)
   const [minAgmsRequired, setMinAgmsRequired] = useState(2);
   const [electionFilterStatus, setElectionFilterStatus] = useState('All'); // 'All', 'Eligible', 'Ineligible'
+  const [electionCategoryFilter, setElectionCategoryFilter] = useState('ALL'); // 'ALL' | 'ಅ - ವರ್ಗ' | 'ಬ - ವರ್ಗ' | 'ಡ - ವರ್ಗ'
 
   // Current AGM Date
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -1456,10 +1457,14 @@ export default function AttendanceModule() {
     });
   }, [activeAgmTab, masterShareholders, allAgmScansMap, minAgmsRequired]);
 
-  // Filtered Election List
+  // Filtered Election List (supports Status, Category, and Text Search)
   const filteredElectionList = useMemo(() => {
     if (activeAgmTab !== 'ELECTION_ELIGIBLE') return [];
     return electionEligibilityList.filter(item => {
+      if (electionCategoryFilter !== 'ALL') {
+        const cat = (item.category || 'ಅ - ವರ್ಗ').trim();
+        if (cat !== electionCategoryFilter) return false;
+      }
       if (electionFilterStatus === 'Eligible' && !item.isEligible) return false;
       if (electionFilterStatus === 'Ineligible' && item.isEligible) return false;
       if (searchQuery) {
@@ -1472,13 +1477,42 @@ export default function AttendanceModule() {
       }
       return true;
     });
-  }, [activeAgmTab, electionEligibilityList, electionFilterStatus, searchQuery]);
+  }, [activeAgmTab, electionEligibilityList, electionCategoryFilter, electionFilterStatus, searchQuery]);
 
   // Election Stats
   const totalCoopMembers = masterShareholders.length || 17085;
   const eligibleVotersCount = electionEligibilityList.filter(i => i.isEligible).length;
   const ineligibleVotersCount = totalCoopMembers - eligibleVotersCount;
   const voterEligibilityRate = totalCoopMembers > 0 ? ((eligibleVotersCount / totalCoopMembers) * 100).toFixed(1) : 0;
+
+  // Category-wise Breakdown of Eligible Voters (ವರ್ಗಾವಾರು ಚುನಾವಣೆಗೆ ಅರ್ಹರು)
+  const electionCategoryStats = useMemo(() => {
+    if (activeAgmTab !== 'ELECTION_ELIGIBLE') return {};
+    const stats = {
+      'ಅ - ವರ್ಗ': { total: 0, eligible: 0, ineligible: 0, rate: '0.0', label: 'ಅ - ವರ್ಗ (ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯರು)' },
+      'ಬ - ವರ್ಗ': { total: 0, eligible: 0, ineligible: 0, rate: '0.0', label: 'ಬ - ವರ್ಗ (ಸಹಕಾರಿ ಸಂಘಗಳು / ಪಿಕೆಪಿಎಸ್)' },
+      'ಡ - ವರ್ಗ': { total: 0, eligible: 0, ineligible: 0, rate: '0.0', label: 'ಡ - ವರ್ಗ (ಬೆಳೆಗಾರರಲ್ಲದ ಸದಸ್ಯರು)' }
+    };
+
+    electionEligibilityList.forEach(item => {
+      const cat = (item.category || 'ಅ - ವರ್ಗ').trim();
+      if (!stats[cat]) {
+        stats[cat] = { total: 0, eligible: 0, ineligible: 0, rate: '0.0', label: cat };
+      }
+      stats[cat].total += 1;
+      if (item.isEligible) {
+        stats[cat].eligible += 1;
+      } else {
+        stats[cat].ineligible += 1;
+      }
+    });
+
+    Object.keys(stats).forEach(k => {
+      stats[k].rate = stats[k].total > 0 ? ((stats[k].eligible / stats[k].total) * 100).toFixed(1) : '0.0';
+    });
+
+    return stats;
+  }, [activeAgmTab, electionEligibilityList]);
 
   // EXCEL (.xlsx) EXPORT (Both for Single AGM & All 5 AGMs Election Report)
   const handleExportExcel = () => {
@@ -2729,12 +2763,27 @@ export default function AttendanceModule() {
                 <Users className="w-5 h-5 text-slate-500" />
               </div>
 
-              <div className="bg-slate-900/90 border border-emerald-800/60 p-3.5 rounded-2xl flex items-center justify-between">
-                <div>
-                  <div className="text-emerald-400 font-medium">ಚುನಾವಣೆಗೆ ಅರ್ಹರು (Eligible)</div>
-                  <div className="text-xl font-bold text-emerald-300 font-mono mt-0.5">{eligibleVotersCount.toLocaleString()}</div>
+              <div className="bg-slate-900/90 border border-emerald-800/60 p-3.5 rounded-2xl flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-emerald-400 font-medium">ಚುನಾವಣೆಗೆ ಅರ್ಹರು (Eligible)</div>
+                    <div className="text-xl font-bold text-emerald-300 font-mono mt-0.5">{eligibleVotersCount.toLocaleString()}</div>
+                  </div>
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 </div>
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                {/* Category-wise mini pills */}
+                <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-emerald-900/50 text-[10.5px]">
+                  <span className="text-slate-400 font-medium">ವರ್ಗ:</span>
+                  <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-1.5 py-0.5 rounded font-mono font-bold" title="ಅ - ವರ್ಗ (ಕಬ್ಬು ಬೆಳೆಗಾರರು)">
+                    ಅ: {electionCategoryStats['ಅ - ವರ್ಗ']?.eligible?.toLocaleString() || 0}
+                  </span>
+                  <span className="bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 px-1.5 py-0.5 rounded font-mono font-bold" title="ಬ - ವರ್ಗ (ಸಹಕಾರಿ ಸಂಘಗಳು)">
+                    ಬ: {electionCategoryStats['ಬ - ವರ್ಗ']?.eligible?.toLocaleString() || 0}
+                  </span>
+                  <span className="bg-amber-950/80 text-amber-300 border border-amber-800/60 px-1.5 py-0.5 rounded font-mono font-bold" title="ಡ - ವರ್ಗ (ಬೆಳೆಗಾರರಲ್ಲದವರು)">
+                    ಡ: {electionCategoryStats['ಡ - ವರ್ಗ']?.eligible?.toLocaleString() || 0}
+                  </span>
+                </div>
               </div>
 
               <div className="bg-slate-900/90 border border-rose-800/60 p-3.5 rounded-2xl flex items-center justify-between">
@@ -2753,12 +2802,138 @@ export default function AttendanceModule() {
                 <Award className="w-5 h-5 text-amber-400" />
               </div>
             </div>
+
+            {/* Dedicated Category-wise Eligible Voters Grid (ವರ್ಗವಾರು ಚುನಾವಣೆಗೆ ಅರ್ಹರು) */}
+            <div className="pt-2 border-t border-amber-900/40">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <span>🏷️ ವರ್ಗವಾರು ಚುನಾವಣೆಗೆ ಅರ್ಹರು (Category-wise Eligible Voters)</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
+                    ಕೆಳಗೆ ಕ್ಲಿಕ್ ಮಾಡಿ ಆ ವರ್ಗವನ್ನು ಫಿಲ್ಟರ್ ಮಾಡಿ
+                  </span>
+                </div>
+                {electionCategoryFilter !== 'ALL' && (
+                  <button
+                    onClick={() => { setElectionCategoryFilter('ALL'); setCurrentPage(1); }}
+                    className="text-[11px] text-amber-400 hover:text-white underline cursor-pointer"
+                  >
+                    ಎಲ್ಲಾ ವರ್ಗಗಳನ್ನು ವೀಕ್ಷಿಸಿ (Clear Filter)
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                {/* 1. ಅ - ವರ್ಗ */}
+                <div
+                  onClick={() => {
+                    setElectionCategoryFilter(prev => prev === 'ಅ - ವರ್ಗ' ? 'ALL' : 'ಅ - ವರ್ಗ');
+                    setCurrentPage(1);
+                  }}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                    electionCategoryFilter === 'ಅ - ವರ್ಗ'
+                      ? 'bg-emerald-950/80 border-emerald-400 ring-2 ring-emerald-500/50 shadow-lg'
+                      : 'bg-slate-900/80 border-slate-800 hover:border-emerald-700/60 hover:bg-slate-900'
+                  }`}
+                  title="ಅ - ವರ್ಗ (ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯರು) ಶೇರುದಾರರನ್ನು ಫಿಲ್ಟರ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        ಅ - ವರ್ಗ
+                      </span>
+                      <span className="font-semibold text-slate-200 text-xs">ಕಬ್ಬು ಬೆಳೆಗಾರ ಸದಸ್ಯರು</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      ಒಟ್ಟು: <strong className="font-mono text-slate-200">{electionCategoryStats['ಅ - ವರ್ಗ']?.total?.toLocaleString() || 0}</strong>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-black text-emerald-400 font-mono">
+                      {electionCategoryStats['ಅ - ವರ್ಗ']?.eligible?.toLocaleString() || 0}
+                    </div>
+                    <div className="text-[10.5px] font-bold text-emerald-400/90">
+                      ಅರ್ಹರು ({electionCategoryStats['ಅ - ವರ್ಗ']?.rate || '0.0'}%)
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. ಬ - ವರ್ಗ */}
+                <div
+                  onClick={() => {
+                    setElectionCategoryFilter(prev => prev === 'ಬ - ವರ್ಗ' ? 'ALL' : 'ಬ - ವರ್ಗ');
+                    setCurrentPage(1);
+                  }}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                    electionCategoryFilter === 'ಬ - ವರ್ಗ'
+                      ? 'bg-cyan-950/80 border-cyan-400 ring-2 ring-cyan-500/50 shadow-lg'
+                      : 'bg-slate-900/80 border-slate-800 hover:border-cyan-700/60 hover:bg-slate-900'
+                  }`}
+                  title="ಬ - ವರ್ಗ (ಸಹಕಾರಿ ಸಂಘಗಳು / ಪಿಕೆಪಿಎಸ್) ಶೇರುದಾರರನ್ನು ಫಿಲ್ಟರ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                        ಬ - ವರ್ಗ
+                      </span>
+                      <span className="font-semibold text-slate-200 text-xs">ಸಹಕಾರಿ ಸಂಘಗಳು / PKPS</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      ಒಟ್ಟು: <strong className="font-mono text-slate-200">{electionCategoryStats['ಬ - ವರ್ಗ']?.total?.toLocaleString() || 0}</strong>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-black text-cyan-400 font-mono">
+                      {electionCategoryStats['ಬ - ವರ್ಗ']?.eligible?.toLocaleString() || 0}
+                    </div>
+                    <div className="text-[10.5px] font-bold text-cyan-400/90">
+                      ಅರ್ಹರು ({electionCategoryStats['ಬ - ವರ್ಗ']?.rate || '0.0'}%)
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. ಡ - ವರ್ಗ */}
+                <div
+                  onClick={() => {
+                    setElectionCategoryFilter(prev => prev === 'ಡ - ವರ್ಗ' ? 'ALL' : 'ಡ - ವರ್ಗ');
+                    setCurrentPage(1);
+                  }}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                    electionCategoryFilter === 'ಡ - ವರ್ಗ'
+                      ? 'bg-amber-950/80 border-amber-400 ring-2 ring-amber-500/50 shadow-lg'
+                      : 'bg-slate-900/80 border-slate-800 hover:border-amber-700/60 hover:bg-slate-900'
+                  }`}
+                  title="ಡ - ವರ್ಗ (ಬೆಳೆಗಾರರಲ್ಲದ ಸದಸ್ಯರು) ಶೇರುದಾರರನ್ನು ಫಿಲ್ಟರ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        ಡ - ವರ್ಗ
+                      </span>
+                      <span className="font-semibold text-slate-200 text-xs">ಬೆಳೆಗಾರರಲ್ಲದ ಸದಸ್ಯರು</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      ಒಟ್ಟು: <strong className="font-mono text-slate-200">{electionCategoryStats['ಡ - ವರ್ಗ']?.total?.toLocaleString() || 0}</strong>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-black text-amber-400 font-mono">
+                      {electionCategoryStats['ಡ - ವರ್ಗ']?.eligible?.toLocaleString() || 0}
+                    </div>
+                    <div className="text-[10.5px] font-bold text-amber-400/90">
+                      ಅರ್ಹರು ({electionCategoryStats['ಡ - ವರ್ಗ']?.rate || '0.0'}%)
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Election Filter & Search */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-slate-400 mr-1">ಫಿಲ್ಟರ್:</span>
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="text-slate-400 mr-1">ಸ್ಥಿತಿ:</span>
               <button
                 onClick={() => { setElectionFilterStatus('All'); setCurrentPage(1); }}
                 className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
@@ -2782,6 +2957,42 @@ export default function AttendanceModule() {
                 }`}
               >
                 ಅನರ್ಹರು ({ineligibleVotersCount.toLocaleString()})
+              </button>
+
+              <span className="text-slate-700 mx-1 hidden sm:inline">|</span>
+
+              <span className="text-slate-400 mr-1">ವರ್ಗ:</span>
+              <button
+                onClick={() => { setElectionCategoryFilter('ALL'); setCurrentPage(1); }}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  electionCategoryFilter === 'ALL' ? 'bg-amber-600 text-black shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                ಎಲ್ಲಾ ವರ್ಗ
+              </button>
+              <button
+                onClick={() => { setElectionCategoryFilter('ಅ - ವರ್ಗ'); setCurrentPage(1); }}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  electionCategoryFilter === 'ಅ - ವರ್ಗ' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                ಅ - ವರ್ಗ ({electionCategoryStats['ಅ - ವರ್ಗ']?.eligible?.toLocaleString() || 0})
+              </button>
+              <button
+                onClick={() => { setElectionCategoryFilter('ಬ - ವರ್ಗ'); setCurrentPage(1); }}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  electionCategoryFilter === 'ಬ - ವರ್ಗ' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                ಬ - ವರ್ಗ ({electionCategoryStats['ಬ - ವರ್ಗ']?.eligible?.toLocaleString() || 0})
+              </button>
+              <button
+                onClick={() => { setElectionCategoryFilter('ಡ - ವರ್ಗ'); setCurrentPage(1); }}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  electionCategoryFilter === 'ಡ - ವರ್ಗ' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                ಡ - ವರ್ಗ ({electionCategoryStats['ಡ - ವರ್ಗ']?.eligible?.toLocaleString() || 0})
               </button>
             </div>
 

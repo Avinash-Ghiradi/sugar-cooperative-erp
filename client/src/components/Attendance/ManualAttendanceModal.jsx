@@ -240,6 +240,22 @@ export default function ManualAttendanceModal({
   const eligibleCount = useMemo(() => processedShareholders.filter(s => s.isEligible).length, [processedShareholders]);
   const absentCount = totalMembersCount - presentAnyCount;
 
+  // Category breakdown of eligible voters
+  const categoryStats = useMemo(() => {
+    const stats = {
+      'ಅ - ವರ್ಗ': { total: 0, eligible: 0 },
+      'ಬ - ವರ್ಗ': { total: 0, eligible: 0 },
+      'ಡ - ವರ್ಗ': { total: 0, eligible: 0 }
+    };
+    processedShareholders.forEach(s => {
+      const cat = (s.category || 'ಅ - ವರ್ಗ').trim();
+      if (!stats[cat]) stats[cat] = { total: 0, eligible: 0 };
+      stats[cat].total += 1;
+      if (s.isEligible) stats[cat].eligible += 1;
+    });
+    return stats;
+  }, [processedShareholders]);
+
   // Pagination
   const totalPages = Math.ceil(filteredShareholders.length / pageSize) || 1;
   const paginatedList = useMemo(() => {
@@ -537,12 +553,26 @@ export default function ManualAttendanceModal({
               <CheckCircle2 className="w-5 h-5 text-emerald-400" />
             </div>
 
-            <div className="bg-slate-900/80 border border-amber-900/50 p-2.5 rounded-xl flex items-center justify-between">
-              <div>
-                <div className="text-[11px] text-amber-300">ಚುನಾವಣಾ ಅರ್ಹರು (2+ AGMs)</div>
-                <div className="text-lg font-bold text-amber-300 font-mono">{eligibleCount.toLocaleString()}</div>
+            <div className="bg-slate-900/80 border border-amber-900/50 p-2.5 rounded-xl flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] text-amber-300">ಚುನಾವಣಾ ಅರ್ಹರು (2+ AGMs)</div>
+                  <div className="text-lg font-bold text-amber-300 font-mono">{eligibleCount.toLocaleString()}</div>
+                </div>
+                <Award className="w-5 h-5 text-amber-400" />
               </div>
-              <Award className="w-5 h-5 text-amber-400" />
+              <div className="flex items-center gap-1.5 mt-1 pt-1 border-t border-amber-900/40 text-[10px]">
+                <span className="text-slate-400">ವರ್ಗ:</span>
+                <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-1 rounded font-mono font-bold" title="ಅ - ವರ್ಗ (ಕಬ್ಬು ಬೆಳೆಗಾರರು)">
+                  ಅ: {categoryStats['ಅ - ವರ್ಗ']?.eligible || 0}
+                </span>
+                <span className="bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 px-1 rounded font-mono font-bold" title="ಬ - ವರ್ಗ (ಸಹಕಾರಿ ಸಂಘಗಳು)">
+                  ಬ: {categoryStats['ಬ - ವರ್ಗ']?.eligible || 0}
+                </span>
+                <span className="bg-amber-950/80 text-amber-300 border border-amber-800/60 px-1 rounded font-mono font-bold" title="ಡ - ವರ್ಗ (ಬೆಳೆಗಾರರಲ್ಲದವರು)">
+                  ಡ: {categoryStats['ಡ - ವರ್ಗ']?.eligible || 0}
+                </span>
+              </div>
             </div>
 
             <div className="bg-slate-900/80 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between">
