@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: implement official A4 statutory sugar allotment receipt format (2 shareholders/4 receipts per sheet)"');
+    run('git commit -m "feat: change AGM 1-5 to AGM 6-10 (From 2024 to 2029) across tabs, reports, excel, and print"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -46,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: A4 statutory sugar allotment receipt layout matching official format (${Date.now()})`;
+  const commitMsg = `Deploy: change AGM 1-5 to AGM 6-10 (From 2024 to 2029) (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);

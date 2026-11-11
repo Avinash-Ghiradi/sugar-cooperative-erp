@@ -28,11 +28,17 @@ const COUNTER_OPTIONS = [
 ];
 
 const DEFAULT_AGM_CONFIGS = {
-  'AGM-1': { id: 'AGM-1', name: 'AGM 1', labelKn: '೧ನೇ ಮಹಾಸಭೆ (2022)', year: '2022', date: '2022-09-25', defaultFrozen: true },
-  'AGM-2': { id: 'AGM-2', name: 'AGM 2', labelKn: '೨ನೇ ಮಹಾಸಭೆ (2023)', year: '2023', date: '2023-09-24', defaultFrozen: true },
-  'AGM-3': { id: 'AGM-3', name: 'AGM 3', labelKn: '೩ನೇ ಮಹಾಸಭೆ (2024)', year: '2024', date: '2024-09-29', defaultFrozen: true },
-  'AGM-4': { id: 'AGM-4', name: 'AGM 4', labelKn: '೪ನೇ ಮಹಾಸಭೆ (2025)', year: '2025', date: '2025-09-28', defaultFrozen: true },
-  'AGM-5': { id: 'AGM-5', name: 'AGM 5', labelKn: '೫ನೇ ಮಹಾಸಭೆ (2026 - ಪ್ರಸ್ತುತ)', year: '2026', date: '2026-11-09', defaultFrozen: false }
+  'AGM-6': { id: 'AGM-6', name: 'AGM 6', labelKn: '೬ನೇ ಮಹಾಸಭೆ (2024-25)', year: '2024-25', date: '2024-09-25', defaultFrozen: true },
+  'AGM-7': { id: 'AGM-7', name: 'AGM 7', labelKn: '೭ನೇ ಮಹಾಸಭೆ (2025-26)', year: '2025-26', date: '2025-09-24', defaultFrozen: true },
+  'AGM-8': { id: 'AGM-8', name: 'AGM 8', labelKn: '೮ನೇ ಮಹಾಸಭೆ (2026-27)', year: '2026-27', date: '2026-09-29', defaultFrozen: true },
+  'AGM-9': { id: 'AGM-9', name: 'AGM 9', labelKn: '೯ನೇ ಮಹಾಸಭೆ (2027-28)', year: '2027-28', date: '2027-09-28', defaultFrozen: true },
+  'AGM-10': { id: 'AGM-10', name: 'AGM 10', labelKn: '೧೦ನೇ ಮಹಾಸಭೆ (2028-29 - ಪ್ರಸ್ತುತ)', year: '2028-29', date: '2028-11-09', defaultFrozen: false },
+  // Aliases for backward compatibility with existing scans
+  'AGM-1': { id: 'AGM-6', name: 'AGM 6', labelKn: '೬ನೇ ಮಹಾಸಭೆ (2024-25)', year: '2024-25', date: '2024-09-25', defaultFrozen: true },
+  'AGM-2': { id: 'AGM-7', name: 'AGM 7', labelKn: '೭ನೇ ಮಹಾಸಭೆ (2025-26)', year: '2025-26', date: '2025-09-24', defaultFrozen: true },
+  'AGM-3': { id: 'AGM-8', name: 'AGM 8', labelKn: '೮ನೇ ಮಹಾಸಭೆ (2026-27)', year: '2026-27', date: '2026-09-29', defaultFrozen: true },
+  'AGM-4': { id: 'AGM-9', name: 'AGM 9', labelKn: '೯ನೇ ಮಹಾಸಭೆ (2027-28)', year: '2027-28', date: '2027-09-28', defaultFrozen: true },
+  'AGM-5': { id: 'AGM-10', name: 'AGM 10', labelKn: '೧೦ನೇ ಮಹಾಸಭೆ (2028-29 - ಪ್ರಸ್ತುತ)', year: '2028-29', date: '2028-11-09', defaultFrozen: false }
 };
 
 export default function AttendanceModule() {
@@ -46,8 +52,8 @@ export default function AttendanceModule() {
     return allowedRoles.includes(user.role);
   }, [user, hasPermission]);
 
-  // Main Active AGM Tab: 'AGM-1' | 'AGM-2' | 'AGM-3' | 'AGM-4' | 'AGM-5' | 'ELECTION_ELIGIBLE' | 'EMPLOYEE'
-  const [activeAgmTab, setActiveAgmTab] = useState('AGM-5');
+  // Main Active AGM Tab: 'AGM-6' | 'AGM-7' | 'AGM-8' | 'AGM-9' | 'AGM-10' | 'ELECTION_ELIGIBLE' | 'EMPLOYEE'
+  const [activeAgmTab, setActiveAgmTab] = useState('AGM-10');
 
   // Freeze state per AGM (persisted in localStorage and Cloud DB)
   const [frozenAgms, setFrozenAgms] = useState(() => {
@@ -56,6 +62,11 @@ export default function AttendanceModule() {
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return {
+      'AGM-6': true,
+      'AGM-7': true,
+      'AGM-8': true,
+      'AGM-9': true,
+      'AGM-10': false,
       'AGM-1': true,
       'AGM-2': true,
       'AGM-3': true,
@@ -77,7 +88,7 @@ export default function AttendanceModule() {
 
   // Current AGM Date
   const [selectedDate, setSelectedDate] = useState(() => {
-    return DEFAULT_AGM_CONFIGS['AGM-5'].date;
+    return DEFAULT_AGM_CONFIGS['AGM-10']?.date || '2028-11-09';
   });
 
   // Counter Selection (persisted per device in localStorage)
@@ -293,7 +304,7 @@ export default function AttendanceModule() {
       // C. Load Local Backups
       let localScans = [];
       try {
-        ['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4', 'AGM-5'].forEach(agm => {
+        ['AGM-6', 'AGM-7', 'AGM-8', 'AGM-9', 'AGM-10', 'AGM-1', 'AGM-2', 'AGM-3', 'AGM-4', 'AGM-5'].forEach(agm => {
           const isAgmReset = localStorage.getItem(`sugar_agm_reset_${agm}`) === 'true';
           const key = `sugar_agm_scans_${agm}`;
           const saved = localStorage.getItem(key);
@@ -315,7 +326,12 @@ export default function AttendanceModule() {
             if (s.date === cfg.date) agmKey = cfg.id;
           });
         }
-        if (!agmKey) agmKey = 'AGM-5';
+        if (!agmKey) agmKey = 'AGM-10';
+        if (agmKey === 'AGM-1') agmKey = 'AGM-6';
+        if (agmKey === 'AGM-2') agmKey = 'AGM-7';
+        if (agmKey === 'AGM-3') agmKey = 'AGM-8';
+        if (agmKey === 'AGM-4') agmKey = 'AGM-9';
+        if (agmKey === 'AGM-5') agmKey = 'AGM-10';
         const isAgmReset = localStorage.getItem(`sugar_agm_reset_${agmKey}`) === 'true';
         if (!isAgmReset) {
           scanMap.set(`${agmKey}_${String(s.entity_id).trim()}`, s);
@@ -335,10 +351,10 @@ export default function AttendanceModule() {
           const id = String(item.entity_id).trim();
           const scan = scanMap.get(`${agmKey}_${id}`);
           const idNum = Number(id) || (idx + 1);
-          const isSynthetic = !scan && !isReset && ['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4'].includes(agmKey) && (
-            agmKey === 'AGM-1' ? idNum % 5 !== 0 :
-            agmKey === 'AGM-2' ? idNum % 4 !== 0 :
-            agmKey === 'AGM-3' ? idNum % 6 !== 0 :
+          const isSynthetic = !scan && !isReset && ['AGM-6', 'AGM-7', 'AGM-8', 'AGM-9', 'AGM-1', 'AGM-2', 'AGM-3', 'AGM-4'].includes(agmKey) && (
+            (agmKey === 'AGM-6' || agmKey === 'AGM-1') ? idNum % 5 !== 0 :
+            (agmKey === 'AGM-7' || agmKey === 'AGM-2') ? idNum % 4 !== 0 :
+            (agmKey === 'AGM-8' || agmKey === 'AGM-3') ? idNum % 6 !== 0 :
             idNum % 3 !== 0
           );
 
@@ -424,7 +440,12 @@ export default function AttendanceModule() {
               if (s.date === cfg.date) agmKey = cfg.id;
             });
           }
-          if (!agmKey) agmKey = 'AGM-5';
+          if (!agmKey) agmKey = 'AGM-10';
+        if (agmKey === 'AGM-1') agmKey = 'AGM-6';
+        if (agmKey === 'AGM-2') agmKey = 'AGM-7';
+        if (agmKey === 'AGM-3') agmKey = 'AGM-8';
+        if (agmKey === 'AGM-4') agmKey = 'AGM-9';
+        if (agmKey === 'AGM-5') agmKey = 'AGM-10';
           const isAgmReset = (() => {
             try { return localStorage.getItem(`sugar_agm_reset_${agmKey}`) === 'true'; } catch (e) { return false; }
           })();
@@ -436,7 +457,7 @@ export default function AttendanceModule() {
 
       // 2. Also incorporate local scans
       try {
-        ['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4', 'AGM-5'].forEach(agm => {
+        ['AGM-6', 'AGM-7', 'AGM-8', 'AGM-9', 'AGM-10', 'AGM-1', 'AGM-2', 'AGM-3', 'AGM-4', 'AGM-5'].forEach(agm => {
           const isAgmReset = localStorage.getItem(`sugar_agm_reset_${agm}`) === 'true';
           if (!isAgmReset) {
             const saved = localStorage.getItem(`sugar_agm_scans_${agm}`);
@@ -476,10 +497,10 @@ export default function AttendanceModule() {
             const id = String(item.entity_id).trim();
             const scan = freshMap.get(`${curAgm}_${id}`);
             const idNum = Number(id) || (idx + 1);
-            const isSynthetic = !scan && !isCurAgmReset && ['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4'].includes(curAgm) && (
-              curAgm === 'AGM-1' ? idNum % 5 !== 0 :
-              curAgm === 'AGM-2' ? idNum % 4 !== 0 :
-              curAgm === 'AGM-3' ? idNum % 6 !== 0 :
+            const isSynthetic = !scan && !isCurAgmReset && ['AGM-6', 'AGM-7', 'AGM-8', 'AGM-9', 'AGM-1', 'AGM-2', 'AGM-3', 'AGM-4'].includes(curAgm) && (
+              (curAgm === 'AGM-6' || curAgm === 'AGM-1') ? idNum % 5 !== 0 :
+              (curAgm === 'AGM-7' || curAgm === 'AGM-2') ? idNum % 4 !== 0 :
+              (curAgm === 'AGM-8' || curAgm === 'AGM-3') ? idNum % 6 !== 0 :
               idNum % 3 !== 0
             );
 
@@ -1274,28 +1295,38 @@ export default function AttendanceModule() {
     const isReset = (agm) => {
       try { return localStorage.getItem(`sugar_agm_reset_${agm}`) === 'true'; } catch (e) { return false; }
     };
-    const r1 = isReset('AGM-1'), r2 = isReset('AGM-2'), r3 = isReset('AGM-3'), r4 = isReset('AGM-4');
+    const r6 = isReset('AGM-6') || isReset('AGM-1');
+    const r7 = isReset('AGM-7') || isReset('AGM-2');
+    const r8 = isReset('AGM-8') || isReset('AGM-3');
+    const r9 = isReset('AGM-9') || isReset('AGM-4');
+    const r10 = isReset('AGM-10') || isReset('AGM-5');
 
     return masterShareholders.map((m, idx) => {
       const id = String(m.entity_id).trim();
       const idNum = Number(id) || (idx + 1);
 
-      const hasAgm1 = allAgmScansMap.has(`AGM-1_${id}`) || (!r1 && idNum % 5 !== 0);
-      const hasAgm2 = allAgmScansMap.has(`AGM-2_${id}`) || (!r2 && idNum % 4 !== 0);
-      const hasAgm3 = allAgmScansMap.has(`AGM-3_${id}`) || (!r3 && idNum % 6 !== 0);
-      const hasAgm4 = allAgmScansMap.has(`AGM-4_${id}`) || (!r4 && idNum % 3 !== 0);
-      const hasAgm5 = allAgmScansMap.has(`AGM-5_${id}`);
+      const hasAgm6 = allAgmScansMap.has(`AGM-6_${id}`) || allAgmScansMap.has(`AGM-1_${id}`) || (!r6 && idNum % 5 !== 0);
+      const hasAgm7 = allAgmScansMap.has(`AGM-7_${id}`) || allAgmScansMap.has(`AGM-2_${id}`) || (!r7 && idNum % 4 !== 0);
+      const hasAgm8 = allAgmScansMap.has(`AGM-8_${id}`) || allAgmScansMap.has(`AGM-3_${id}`) || (!r8 && idNum % 6 !== 0);
+      const hasAgm9 = allAgmScansMap.has(`AGM-9_${id}`) || allAgmScansMap.has(`AGM-4_${id}`) || (!r9 && idNum % 3 !== 0);
+      const hasAgm10 = allAgmScansMap.has(`AGM-10_${id}`) || allAgmScansMap.has(`AGM-5_${id}`);
 
-      const attendedCount = (hasAgm1 ? 1 : 0) + (hasAgm2 ? 1 : 0) + (hasAgm3 ? 1 : 0) + (hasAgm4 ? 1 : 0) + (hasAgm5 ? 1 : 0);
+      const attendedCount = (hasAgm6 ? 1 : 0) + (hasAgm7 ? 1 : 0) + (hasAgm8 ? 1 : 0) + (hasAgm9 ? 1 : 0) + (hasAgm10 ? 1 : 0);
       const isEligible = attendedCount >= minAgmsRequired;
 
       return {
         ...m,
-        hasAgm1,
-        hasAgm2,
-        hasAgm3,
-        hasAgm4,
-        hasAgm5,
+        hasAgm6,
+        hasAgm7,
+        hasAgm8,
+        hasAgm9,
+        hasAgm10,
+        // backward-compatibility aliases
+        hasAgm1: hasAgm6,
+        hasAgm2: hasAgm7,
+        hasAgm3: hasAgm8,
+        hasAgm4: hasAgm9,
+        hasAgm5: hasAgm10,
         attendedCount,
         isEligible,
         statusLabel: isEligible ? 'ಅರ್ಹರು (Eligible)' : 'ಅನರ್ಹರು (Ineligible)'
@@ -1331,7 +1362,7 @@ export default function AttendanceModule() {
     if (activeAgmTab === 'ELECTION_ELIGIBLE') {
       const rows = [
         ['ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204'],
-        ['ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 1 ರಿಂದ 5) ಆಧಾರಿತ ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ಪಟ್ಟಿ (Election Voter Eligibility Register)'],
+        ['ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2024 ರಿಂದ 2029) ಆಧಾರಿತ ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ಪಟ್ಟಿ (Election Voter Eligibility Register)'],
         [`ಅರ್ಹತಾ ನಿಯಮ: ಕಲಂ 20(2) ನಿಯಮಾನುಸಾರ ಕಳೆದ 5 ರಲ್ಲಿ ಕನಿಷ್ಠ ${minAgmsRequired} ಮಹಾಸಭೆಗಳಿಗೆ ಹಾಜರಾತಿ | ಒಟ್ಟು ಸದಸ್ಯರು: ${totalCoopMembers.toLocaleString()} | ಚುನಾವಣೆಗೆ ಅರ್ಹರು: ${eligibleVotersCount.toLocaleString()} | ಅರ್ಹತಾ ಪ್ರಮಾಣ: ${voterEligibilityRate}%`],
         [],
         [
@@ -1340,11 +1371,11 @@ export default function AttendanceModule() {
           'ಶೇರುದಾರರ ಹೆಸರು',
           'ವರ್ಗ (Category)',
           'ಗ್ರಾಮ / ಸ್ಥಳ',
-          'AGM 1 (2022)',
-          'AGM 2 (2023)',
-          'AGM 3 (2024)',
-          'AGM 4 (2025)',
-          'AGM 5 (2026)',
+          'AGM 6 (2024-25)',
+          'AGM 7 (2025-26)',
+          'AGM 8 (2026-27)',
+          'AGM 9 (2027-28)',
+          'AGM 10 (2028-29)',
           'ಒಟ್ಟು ಹಾಜರಾತಿ',
           'ಚುನಾವಣಾ ಅರ್ಹತೆ (Election Eligibility)',
           'ಷರಾ (Remark)'
@@ -1358,11 +1389,11 @@ export default function AttendanceModule() {
           item.name,
           item.category || 'ಅ - ವರ್ಗ',
           item.department,
-          item.hasAgm1 ? 'ಹಾಜರು (P)' : 'ಗೈರು (A)',
-          item.hasAgm2 ? 'ಹಾಜರು (P)' : 'ಗೈರು (A)',
-          item.hasAgm3 ? 'ಹಾಜರು (P)' : 'ಗೈರು (A)',
-          item.hasAgm4 ? 'ಹಾಜರು (P)' : 'ಗೈರು (A)',
-          item.hasAgm5 ? 'ಹಾಜರು (P)' : 'ಗೈರು (A)',
+          item.hasAgm6 ? 'ಹಾಜರು (P)' : 'ಗೈರು (A)',
+          item.hasAgm7 ? 'ಹಾಜರು (P)' : 'ಗೈರು (A)',
+          item.hasAgm8 ? 'ಹಾಜರು (P)' : 'ಗೈರು (A)',
+          item.hasAgm9 ? 'ಹಾಜರು (P)' : 'ಗೈರು (A)',
+          item.hasAgm10 ? 'ಹಾಜರು (P)' : 'ಗೈರು (A)',
           `${item.attendedCount} / 5`,
           item.isEligible ? 'ಅರ್ಹರು (Eligible)' : 'ಅನರ್ಹರು (Ineligible)',
           ''
@@ -1480,7 +1511,7 @@ export default function AttendanceModule() {
     <div style="flex: 1;">
       <div class="factory-name">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204</div>
       <div class="factory-sub">ತಾ|| ಇಂಡಿ / ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ (ಕರ್ನಾಟಕ)</div>
-      <div class="doc-title">ಮಹಾಸಭೆ (AGM 1 ರಿಂದ 5) ಆಧಾರಿತ ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ಪಟ್ಟಿ</div>
+      <div class="doc-title">ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2024 ರಿಂದ 2029) ಆಧಾರಿತ ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ಪಟ್ಟಿ</div>
     </div>
   </div>
   <div class="meta-grid">
@@ -1497,11 +1528,11 @@ export default function AttendanceModule() {
         <th>ಶೇರುದಾರರ ಹೆಸರು</th>
         <th style="width: 55px; text-align: center;">ವರ್ಗ</th>
         <th style="width: 85px;">ಸ್ಥಳ / ಗ್ರಾಮ</th>
-        <th style="width: 32px; text-align: center;">AGM 1</th>
-        <th style="width: 32px; text-align: center;">AGM 2</th>
-        <th style="width: 32px; text-align: center;">AGM 3</th>
-        <th style="width: 32px; text-align: center;">AGM 4</th>
-        <th style="width: 32px; text-align: center;">AGM 5</th>
+        <th style="width: 38px; text-align: center;">AGM 6</th>
+        <th style="width: 38px; text-align: center;">AGM 7</th>
+        <th style="width: 38px; text-align: center;">AGM 8</th>
+        <th style="width: 38px; text-align: center;">AGM 9</th>
+        <th style="width: 38px; text-align: center;">AGM 10</th>
         <th style="width: 40px; text-align: center;">ಒಟ್ಟು</th>
         <th style="width: 60px; text-align: center;">ಅರ್ಹತೆ</th>
         <th style="width: 60px; text-align: center;">ಷರಾ</th>
@@ -1788,14 +1819,14 @@ export default function AttendanceModule() {
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-black text-slate-100 flex items-center gap-2">
               <CalendarCheck className="w-5 h-5 text-emerald-400" />
-              <span>ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 1 ರಿಂದ 5) ಮತ್ತು ಚುನಾವಣಾ ಅರ್ಹತಾ ನಿರ್ವಹಣೆ</span>
+              <span>ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2024 ರಿಂದ 2029) ಮತ್ತು ಚುನಾವಣಾ ಅರ್ಹತಾ ನಿರ್ವಹಣೆ</span>
             </h1>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
               5-Year AGM Suite
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            ಮಹಾಸಭೆ 1 ರಿಂದ 5 • ಅಂತಿಮ ಫ್ರೀಜ್ ರಕ್ಷಣೆ • ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ವಹಿ
+            ಮಹಾಸಭೆ 6 ರಿಂದ 10 (2024 - 2029) • ಅಂತಿಮ ಫ್ರೀಜ್ ರಕ್ಷಣೆ • ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ವಹಿ
           </p>
         </div>
 
@@ -1900,7 +1931,7 @@ export default function AttendanceModule() {
       {/* 5 AGM TABS + ELECTION ELIGIBLE TAB */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
         <div className="flex flex-wrap items-center gap-2">
-          {['AGM-1', 'AGM-2', 'AGM-3', 'AGM-4', 'AGM-5'].map(agmKey => {
+          {['AGM-6', 'AGM-7', 'AGM-8', 'AGM-9', 'AGM-10'].map(agmKey => {
             const cfg = DEFAULT_AGM_CONFIGS[agmKey];
             const isFrozen = frozenAgms[agmKey];
             const isActive = activeAgmTab === agmKey;
@@ -1944,7 +1975,7 @@ export default function AttendanceModule() {
             }`}
           >
             <Vote className="w-4 h-4 text-amber-300" />
-            <span>🗳️ ಚುನಾವಣಾ ಅರ್ಹತೆ (Election Eligible Tab - 5 AGMs)</span>
+            <span>🗳️ ಚುನಾವಣಾ ಅರ್ಹತೆ (Election Eligible Tab - 5 AGMs: 2024 to 2029)</span>
           </button>
         </div>
 
@@ -2623,11 +2654,11 @@ export default function AttendanceModule() {
                     <th className="py-3.5 px-4">ಶೇರುದಾರರ ಹೆಸರು</th>
                     <th className="py-3.5 px-3 text-center">ವರ್ಗ</th>
                     <th className="py-3.5 px-3">ಸ್ಥಳ / ಗ್ರಾಮ</th>
-                    <th className="py-3.5 px-2 text-center" title="2022 AGM 1">AGM 1</th>
-                    <th className="py-3.5 px-2 text-center" title="2023 AGM 2">AGM 2</th>
-                    <th className="py-3.5 px-2 text-center" title="2024 AGM 3">AGM 3</th>
-                    <th className="py-3.5 px-2 text-center" title="2025 AGM 4">AGM 4</th>
-                    <th className="py-3.5 px-2 text-center" title="2026 AGM 5">AGM 5</th>
+                    <th className="py-3.5 px-2 text-center" title="2024-25 AGM 6">AGM 6</th>
+                    <th className="py-3.5 px-2 text-center" title="2025-26 AGM 7">AGM 7</th>
+                    <th className="py-3.5 px-2 text-center" title="2026-27 AGM 8">AGM 8</th>
+                    <th className="py-3.5 px-2 text-center" title="2027-28 AGM 9">AGM 9</th>
+                    <th className="py-3.5 px-2 text-center" title="2028-29 AGM 10">AGM 10</th>
                     <th className="py-3.5 px-3 text-center">ಹಾಜರಾತಿ</th>
                     <th className="py-3.5 px-4 text-center">ಚುನಾವಣಾ ಅರ್ಹತೆ (Eligibility)</th>
                   </tr>
@@ -2651,19 +2682,19 @@ export default function AttendanceModule() {
                       </td>
                       <td className="py-3 px-3 text-slate-300">{item.department}</td>
                       <td className="py-3 px-2 text-center">
-                        {item.hasAgm1 ? <span className="text-emerald-400 font-bold text-xs">✓</span> : <span className="text-slate-600">—</span>}
+                        {item.hasAgm6 ? <span className="text-emerald-400 font-bold text-xs">✓</span> : <span className="text-slate-600">—</span>}
                       </td>
                       <td className="py-3 px-2 text-center">
-                        {item.hasAgm2 ? <span className="text-emerald-400 font-bold text-xs">✓</span> : <span className="text-slate-600">—</span>}
+                        {item.hasAgm7 ? <span className="text-emerald-400 font-bold text-xs">✓</span> : <span className="text-slate-600">—</span>}
                       </td>
                       <td className="py-3 px-2 text-center">
-                        {item.hasAgm3 ? <span className="text-emerald-400 font-bold text-xs">✓</span> : <span className="text-slate-600">—</span>}
+                        {item.hasAgm8 ? <span className="text-emerald-400 font-bold text-xs">✓</span> : <span className="text-slate-600">—</span>}
                       </td>
                       <td className="py-3 px-2 text-center">
-                        {item.hasAgm4 ? <span className="text-emerald-400 font-bold text-xs">✓</span> : <span className="text-slate-600">—</span>}
+                        {item.hasAgm9 ? <span className="text-emerald-400 font-bold text-xs">✓</span> : <span className="text-slate-600">—</span>}
                       </td>
                       <td className="py-3 px-2 text-center">
-                        {item.hasAgm5 ? <span className="text-emerald-400 font-bold text-xs">✓</span> : <span className="text-slate-600">—</span>}
+                        {item.hasAgm10 ? <span className="text-emerald-400 font-bold text-xs">✓</span> : <span className="text-slate-600">—</span>}
                       </td>
                       <td className="py-3 px-3 text-center font-mono font-bold text-slate-200">
                         {item.attendedCount} / 5
