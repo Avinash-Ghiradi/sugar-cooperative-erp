@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: change AGM 1-5 to AGM 6-10 (From 2024 to 2029) across tabs, reports, excel, and print"');
+    run('git commit -m "feat: exact years for AGM 6 (2023-24) to AGM 10 (2027-28)"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -46,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: change AGM 1-5 to AGM 6-10 (From 2024 to 2029) (${Date.now()})`;
+  const commitMsg = `Deploy: exact years for AGM 6 (2023-24) to AGM 10 (2027-28) (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);

@@ -28,17 +28,17 @@ const COUNTER_OPTIONS = [
 ];
 
 const DEFAULT_AGM_CONFIGS = {
-  'AGM-6': { id: 'AGM-6', name: 'AGM 6', labelKn: '೬ನೇ ಮಹಾಸಭೆ (2024-25)', year: '2024-25', date: '2024-09-25', defaultFrozen: true },
-  'AGM-7': { id: 'AGM-7', name: 'AGM 7', labelKn: '೭ನೇ ಮಹಾಸಭೆ (2025-26)', year: '2025-26', date: '2025-09-24', defaultFrozen: true },
-  'AGM-8': { id: 'AGM-8', name: 'AGM 8', labelKn: '೮ನೇ ಮಹಾಸಭೆ (2026-27)', year: '2026-27', date: '2026-09-29', defaultFrozen: true },
-  'AGM-9': { id: 'AGM-9', name: 'AGM 9', labelKn: '೯ನೇ ಮಹಾಸಭೆ (2027-28)', year: '2027-28', date: '2027-09-28', defaultFrozen: true },
-  'AGM-10': { id: 'AGM-10', name: 'AGM 10', labelKn: '೧೦ನೇ ಮಹಾಸಭೆ (2028-29 - ಪ್ರಸ್ತುತ)', year: '2028-29', date: '2028-11-09', defaultFrozen: false },
+  'AGM-6': { id: 'AGM-6', name: 'AGM 6', labelKn: '೬ನೇ ಮಹಾಸಭೆ (2023-24)', year: '2023-24', date: '2023-09-25', defaultFrozen: true },
+  'AGM-7': { id: 'AGM-7', name: 'AGM 7', labelKn: '೭ನೇ ಮಹಾಸಭೆ (2024-25)', year: '2024-25', date: '2024-09-24', defaultFrozen: true },
+  'AGM-8': { id: 'AGM-8', name: 'AGM 8', labelKn: '೮ನೇ ಮಹಾಸಭೆ (2025-26)', year: '2025-26', date: '2025-09-29', defaultFrozen: true },
+  'AGM-9': { id: 'AGM-9', name: 'AGM 9', labelKn: '೯ನೇ ಮಹಾಸಭೆ (2026-27)', year: '2026-27', date: '2026-09-28', defaultFrozen: true },
+  'AGM-10': { id: 'AGM-10', name: 'AGM 10', labelKn: '೧೦ನೇ ಮಹಾಸಭೆ (2027-28 - ಪ್ರಸ್ತುತ)', year: '2027-28', date: '2027-11-09', defaultFrozen: false },
   // Aliases for backward compatibility with existing scans
-  'AGM-1': { id: 'AGM-6', name: 'AGM 6', labelKn: '೬ನೇ ಮಹಾಸಭೆ (2024-25)', year: '2024-25', date: '2024-09-25', defaultFrozen: true },
-  'AGM-2': { id: 'AGM-7', name: 'AGM 7', labelKn: '೭ನೇ ಮಹಾಸಭೆ (2025-26)', year: '2025-26', date: '2025-09-24', defaultFrozen: true },
-  'AGM-3': { id: 'AGM-8', name: 'AGM 8', labelKn: '೮ನೇ ಮಹಾಸಭೆ (2026-27)', year: '2026-27', date: '2026-09-29', defaultFrozen: true },
-  'AGM-4': { id: 'AGM-9', name: 'AGM 9', labelKn: '೯ನೇ ಮಹಾಸಭೆ (2027-28)', year: '2027-28', date: '2027-09-28', defaultFrozen: true },
-  'AGM-5': { id: 'AGM-10', name: 'AGM 10', labelKn: '೧೦ನೇ ಮಹಾಸಭೆ (2028-29 - ಪ್ರಸ್ತುತ)', year: '2028-29', date: '2028-11-09', defaultFrozen: false }
+  'AGM-1': { id: 'AGM-6', name: 'AGM 6', labelKn: '೬ನೇ ಮಹಾಸಭೆ (2023-24)', year: '2023-24', date: '2023-09-25', defaultFrozen: true },
+  'AGM-2': { id: 'AGM-7', name: 'AGM 7', labelKn: '೭ನೇ ಮಹಾಸಭೆ (2024-25)', year: '2024-25', date: '2024-09-24', defaultFrozen: true },
+  'AGM-3': { id: 'AGM-8', name: 'AGM 8', labelKn: '೮ನೇ ಮಹಾಸಭೆ (2025-26)', year: '2025-26', date: '2025-09-29', defaultFrozen: true },
+  'AGM-4': { id: 'AGM-9', name: 'AGM 9', labelKn: '೯ನೇ ಮಹಾಸಭೆ (2026-27)', year: '2026-27', date: '2026-09-28', defaultFrozen: true },
+  'AGM-5': { id: 'AGM-10', name: 'AGM 10', labelKn: '೧೦ನೇ ಮಹಾಸಭೆ (2027-28 - ಪ್ರಸ್ತುತ)', year: '2027-28', date: '2027-11-09', defaultFrozen: false }
 };
 
 export default function AttendanceModule() {
@@ -88,7 +88,7 @@ export default function AttendanceModule() {
 
   // Current AGM Date
   const [selectedDate, setSelectedDate] = useState(() => {
-    return DEFAULT_AGM_CONFIGS['AGM-10']?.date || '2028-11-09';
+    return DEFAULT_AGM_CONFIGS['AGM-10']?.date || '2027-11-09';
   });
 
   // Counter Selection (persisted per device in localStorage)
@@ -1362,7 +1362,7 @@ export default function AttendanceModule() {
     if (activeAgmTab === 'ELECTION_ELIGIBLE') {
       const rows = [
         ['ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204'],
-        ['ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2024 ರಿಂದ 2029) ಆಧಾರಿತ ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ಪಟ್ಟಿ (Election Voter Eligibility Register)'],
+        ['ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2023-24 ರಿಂದ 2027-28) ಆಧಾರಿತ ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ಪಟ್ಟಿ (Election Voter Eligibility Register)'],
         [`ಅರ್ಹತಾ ನಿಯಮ: ಕಲಂ 20(2) ನಿಯಮಾನುಸಾರ ಕಳೆದ 5 ರಲ್ಲಿ ಕನಿಷ್ಠ ${minAgmsRequired} ಮಹಾಸಭೆಗಳಿಗೆ ಹಾಜರಾತಿ | ಒಟ್ಟು ಸದಸ್ಯರು: ${totalCoopMembers.toLocaleString()} | ಚುನಾವಣೆಗೆ ಅರ್ಹರು: ${eligibleVotersCount.toLocaleString()} | ಅರ್ಹತಾ ಪ್ರಮಾಣ: ${voterEligibilityRate}%`],
         [],
         [
@@ -1371,11 +1371,11 @@ export default function AttendanceModule() {
           'ಶೇರುದಾರರ ಹೆಸರು',
           'ವರ್ಗ (Category)',
           'ಗ್ರಾಮ / ಸ್ಥಳ',
-          'AGM 6 (2024-25)',
-          'AGM 7 (2025-26)',
-          'AGM 8 (2026-27)',
-          'AGM 9 (2027-28)',
-          'AGM 10 (2028-29)',
+          'AGM 6 (2023-24)',
+          'AGM 7 (2024-25)',
+          'AGM 8 (2025-26)',
+          'AGM 9 (2026-27)',
+          'AGM 10 (2027-28)',
           'ಒಟ್ಟು ಹಾಜರಾತಿ',
           'ಚುನಾವಣಾ ಅರ್ಹತೆ (Election Eligibility)',
           'ಷರಾ (Remark)'
@@ -1511,7 +1511,7 @@ export default function AttendanceModule() {
     <div style="flex: 1;">
       <div class="factory-name">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204</div>
       <div class="factory-sub">ತಾ|| ಇಂಡಿ / ಚಡಚಣ, ಜಿ|| ವಿಜಯಪುರ (ಕರ್ನಾಟಕ)</div>
-      <div class="doc-title">ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2024 ರಿಂದ 2029) ಆಧಾರಿತ ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ಪಟ್ಟಿ</div>
+      <div class="doc-title">ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2023-24 ರಿಂದ 2027-28) ಆಧಾರಿತ ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ಪಟ್ಟಿ</div>
     </div>
   </div>
   <div class="meta-grid">
@@ -1819,14 +1819,14 @@ export default function AttendanceModule() {
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-black text-slate-100 flex items-center gap-2">
               <CalendarCheck className="w-5 h-5 text-emerald-400" />
-              <span>ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2024 ರಿಂದ 2029) ಮತ್ತು ಚುನಾವಣಾ ಅರ್ಹತಾ ನಿರ್ವಹಣೆ</span>
+              <span>ವಾರ್ಷಿಕ ಮಹಾಸಭೆ (AGM 6 ರಿಂದ 10: 2023-24 ರಿಂದ 2027-28) ಮತ್ತು ಚುನಾವಣಾ ಅರ್ಹತಾ ನಿರ್ವಹಣೆ</span>
             </h1>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
               5-Year AGM Suite
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            ಮಹಾಸಭೆ 6 ರಿಂದ 10 (2024 - 2029) • ಅಂತಿಮ ಫ್ರೀಜ್ ರಕ್ಷಣೆ • ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ವಹಿ
+            ಮಹಾಸಭೆ 6 ರಿಂದ 10 (2023-24 - 2027-28) • ಅಂತಿಮ ಫ್ರೀಜ್ ರಕ್ಷಣೆ • ಅಧಿಕೃತ ಚುನಾವಣಾ ಮತದಾರರ ಅರ್ಹತಾ ವಹಿ
           </p>
         </div>
 
@@ -1975,7 +1975,7 @@ export default function AttendanceModule() {
             }`}
           >
             <Vote className="w-4 h-4 text-amber-300" />
-            <span>🗳️ ಚುನಾವಣಾ ಅರ್ಹತೆ (Election Eligible Tab - 5 AGMs: 2024 to 2029)</span>
+            <span>🗳️ ಚುನಾವಣಾ ಅರ್ಹತೆ (Election Eligible Tab - 5 AGMs: 2023-24 to 2027-28)</span>
           </button>
         </div>
 
@@ -2654,11 +2654,11 @@ export default function AttendanceModule() {
                     <th className="py-3.5 px-4">ಶೇರುದಾರರ ಹೆಸರು</th>
                     <th className="py-3.5 px-3 text-center">ವರ್ಗ</th>
                     <th className="py-3.5 px-3">ಸ್ಥಳ / ಗ್ರಾಮ</th>
-                    <th className="py-3.5 px-2 text-center" title="2024-25 AGM 6">AGM 6</th>
-                    <th className="py-3.5 px-2 text-center" title="2025-26 AGM 7">AGM 7</th>
-                    <th className="py-3.5 px-2 text-center" title="2026-27 AGM 8">AGM 8</th>
-                    <th className="py-3.5 px-2 text-center" title="2027-28 AGM 9">AGM 9</th>
-                    <th className="py-3.5 px-2 text-center" title="2028-29 AGM 10">AGM 10</th>
+                    <th className="py-3.5 px-2 text-center" title="2023-24 AGM 6">AGM 6</th>
+                    <th className="py-3.5 px-2 text-center" title="2024-25 AGM 7">AGM 7</th>
+                    <th className="py-3.5 px-2 text-center" title="2025-26 AGM 8">AGM 8</th>
+                    <th className="py-3.5 px-2 text-center" title="2026-27 AGM 9">AGM 9</th>
+                    <th className="py-3.5 px-2 text-center" title="2027-28 AGM 10">AGM 10</th>
                     <th className="py-3.5 px-3 text-center">ಹಾಜರಾತಿ</th>
                     <th className="py-3.5 px-4 text-center">ಚುನಾವಣಾ ಅರ್ಹತೆ (Eligibility)</th>
                   </tr>
