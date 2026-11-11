@@ -1357,6 +1357,8 @@ export default function AttendanceModule() {
 
   // ELECTION ELIGIBILITY REPORT CALCULATION ACROSS ALL 5 AGMS (Lightweight, instant, zero memory leaks)
   const electionEligibilityList = useMemo(() => {
+    if (activeAgmTab !== 'ELECTION_ELIGIBLE') return [];
+
     const isReset = (agm) => {
       try { return localStorage.getItem(`sugar_agm_reset_${agm}`) === 'true'; } catch (e) { return false; }
     };
@@ -1397,10 +1399,11 @@ export default function AttendanceModule() {
         statusLabel: isEligible ? 'ಅರ್ಹರು (Eligible)' : 'ಅನರ್ಹರು (Ineligible)'
       };
     });
-  }, [masterShareholders, allAgmScansMap, minAgmsRequired]);
+  }, [activeAgmTab, masterShareholders, allAgmScansMap, minAgmsRequired]);
 
   // Filtered Election List
   const filteredElectionList = useMemo(() => {
+    if (activeAgmTab !== 'ELECTION_ELIGIBLE') return [];
     return electionEligibilityList.filter(item => {
       if (electionFilterStatus === 'Eligible' && !item.isEligible) return false;
       if (electionFilterStatus === 'Ineligible' && item.isEligible) return false;
@@ -1414,10 +1417,10 @@ export default function AttendanceModule() {
       }
       return true;
     });
-  }, [electionEligibilityList, electionFilterStatus, searchQuery]);
+  }, [activeAgmTab, electionEligibilityList, electionFilterStatus, searchQuery]);
 
   // Election Stats
-  const totalCoopMembers = electionEligibilityList.length || 17085;
+  const totalCoopMembers = masterShareholders.length || 17085;
   const eligibleVotersCount = electionEligibilityList.filter(i => i.isEligible).length;
   const ineligibleVotersCount = totalCoopMembers - eligibleVotersCount;
   const voterEligibilityRate = totalCoopMembers > 0 ? ((eligibleVotersCount / totalCoopMembers) * 100).toFixed(1) : 0;
