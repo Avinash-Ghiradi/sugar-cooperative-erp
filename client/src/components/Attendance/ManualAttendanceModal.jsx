@@ -270,21 +270,182 @@ export default function ManualAttendanceModal({
     if (inputEl) inputEl.focus();
   };
 
-  // Execute Batch Assignment for a Book
-  const handleBatchSubmit = (e) => {
-    if (e) e.preventDefault();
+  // Map of master shareholders for instant O(1) lookups
+  const masterShareholdersMap = useMemo(() => {
+    const map = new Map();
+    masterShareholders.forEach(m => {
+      const cleanId = String(m.entity_id || '').trim().replace(/^#+/, '');
+      map.set(cleanId, m);
+    });
+    return map;
+  }, [masterShareholders]);
+
+  // Parsed list of share IDs from batch input (supports comma, space, newline, '#', and range e.g. 10-15)
+  const batchParsedIds = useMemo(() => {
+    const rawTokens = batchShareNosInput
+      .split(/[\s,;\n]+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    const ids = [];
+    rawTokens.forEach(token => {
+      const clean = token.replace(/^#+/, '');
+      const rangeMatch = clean.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+      if (rangeMatch) {
+        const start = parseInt(rangeMatch[1], 10);
+        const end = parseInt(rangeMatch[2], 10);
+        if (start <= end && end - start <= 500) {
+          for (let i = start; i <= end; i++) {
+            ids.push(String(i));
+          }
+          return;
+        }
+      }
+      if (clean) {
+        ids.push(clean);
+      }
+    });
+
+    return ids;
+  }, [batchShareNosInput]);
+
+  // Resolved shareholders list for the batch modal preview & print
+  const batchResolvedList = useMemo(() => {
+    const startSl = Number(batchStartSlNo) || 1;
+    return batchParsedIds.map((id, index) => {
+      const member = masterShareholdersMap.get(id);
+      return {
+        bookSlNo: startSl + index,
+        entity_id: id,
+        name: member?.name || `ಶೇರುದಾರ #${id}`,
+        department: member?.department || member?.village || '—',
+        category: member?.category || 'ಅ - ವರ್ಗ',
+        shares: member?.shares || '1',
+        isFound: Boolean(member)
+      };
+    });
+  }, [batchParsedIds, batchStartSlNo, masterShareholdersMap]);
+
+  // Remove a single shareholder from batch input
+  const handleRemoveBatchId = (idToRemove) => {
+    const updated = batchParsedIds.filter(id => id !== idToRemove);
+    setBatchShareNosInput(updated.join(', '));
+  };
+
+  // Print official Attendance Register for this specific Book batch
+  const handlePrintBatchList = () => {
+    if (batchResolvedList.length === 0) {
+      if (typeof showToast === 'function') showToast('⚠️ ಮುದ್ರಿಸಲು ಯಾವುದೇ ಶೇರುದಾರರು ಕಂಡುಬಂದಿಲ್ಲ', 'warning');
+      return;
+    }
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) return;
+
+    const bNo = batchBookNo.trim() || '1';
+    const totalCount = batchResolvedList.length;
+    const startSl = Number(batchStartSlNo) || 1;
+    const endSl = startSl + totalCount - 1;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>ಪುಸ್ತಕ #${bNo} ಹಾಜರಾತಿ ವಹಿ - ${batchYear}</title>
+        <style>
+          @page { size: A4 portrait; margin: 10mm 8mm; }
+          body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 0; }
+          .header { text-align: center; border-bottom: 2px solid #047857; padding-bottom: 6px; margin-bottom: 10px; }
+          .header h1 { margin: 0; font-size: 16px; font-weight: bold; color: #047857; }
+          .header h2 { margin: 2px 0 0; font-size: 12px; font-weight: bold; color: #1e293b; }
+          .meta-grid { display: flex; justify-content: space-between; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; margin-bottom: 10px; font-size: 11px; }
+          .meta-item { display: flex; gap: 4px; }
+          .meta-label { color: #64748b; font-weight: 600; }
+          .meta-value { color: #0f172a; font-weight: bold; }
+          table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+          th, td { border: 1px solid #475569; padding: 5px 6px; font-size: 10.5px; }
+          th { background-color: #f1f5f9; font-weight: bold; text-align: center; }
+          .text-left { text-align: left; }
+          .text-center { text-align: center; }
+          .font-bold { font-weight: bold; }
+          .sig-cell { width: 130px; height: 26px; }
+          .remark-cell { width: 70px; }
+          .footer { margin-top: 40px; display: flex; justify-content: space-between; font-size: 10.5px; font-weight: bold; padding: 0 10px; }
+          .footer-item { text-align: center; min-width: 120px; border-top: 1px solid #94a3b8; padding-top: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ, ಮರಗೂರ - 586204</h1>
+          <p style="margin:2px 0 0; font-size:9.5px; color:#555;">ತಾ|| ಅಫಜಲಪುರ, ಜಿ|| ಕಲಬುರಗಿ (ಕರ್ನಾಟಕ)</p>
+          <h2>ವಾರ್ಷಿಕ ಮಹಾಸಭೆ ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ವಹಿ (AGM Book Attendance Register)</h2>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-item"><span class="meta-label">ಮಹಾಸಭೆಯ ವರ್ಷ:</span> <span class="meta-value">${batchYear}</span></div>
+          <div class="meta-item"><span class="meta-label">ಪುಸ್ತಕ ಸಂಖ್ಯೆ (Book No):</span> <span class="meta-value">ಪುಸ್ತಕ #${bNo}</span></div>
+          <div class="meta-item"><span class="meta-label">ಕ್ರಮ ಸಂಖ್ಯೆ ವ್ಯಾಪ್ತಿ:</span> <span class="meta-value">${startSl} ರಿಂದ ${endSl}</span></div>
+          <div class="meta-item"><span class="meta-label">ಒಟ್ಟು ಶೇರುದಾರರು:</span> <span class="meta-value">${totalCount}</span></div>
+          <div class="meta-item"><span class="meta-label">ದಿನಾಂಕ:</span> <span class="meta-value">${new Date().toLocaleDateString('kn-IN')}</span></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 38px;">ಪುಸ್ತಕ<br/>ಕ್ರ.ಸಂ</th>
+              <th style="width: 60px;">ಷೇರು ನಂ</th>
+              <th class="text-left">ಶೇರುದಾರರ ಹೆಸರು</th>
+              <th class="text-left" style="width: 110px;">ಸ್ಥಳ / ಗ್ರಾಮ</th>
+              <th style="width: 65px;">ವರ್ಗ</th>
+              <th style="width: 55px;">ಹಾಜರಾತಿ</th>
+              <th class="sig-cell">ಸಹಿ / ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು<br/>(Signature)</th>
+              <th class="remark-cell">ಷರಾ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${batchResolvedList.map(item => `
+              <tr>
+                <td class="text-center font-bold">${item.bookSlNo}</td>
+                <td class="text-center font-bold" style="color:#047857;">#${item.entity_id}</td>
+                <td class="text-left font-bold">${item.name}</td>
+                <td class="text-left">${item.department}</td>
+                <td class="text-center font-bold">${item.category}</td>
+                <td class="text-center font-bold" style="color:#047857;">P (ಹಾಜರು)</td>
+                <td class="sig-cell"></td>
+                <td class="remark-cell"></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <div class="footer-item">ದಾಖಲಿಸಿದ ಸಿಬ್ಬಂದಿ ಸಹಿ<br/>(Operator / Clerk)</div>
+          <div class="footer-item">ಕೌಂಟರ್ ಉಸ್ತುವಾರಿ ಸಹಿ<br/>(Counter In-charge)</div>
+          <div class="footer-item">ಮುಖ್ಯ ಲೆಕ್ಕಾಧಿಕಾರಿಗಳು<br/>(Chief Accounts Officer)</div>
+          <div class="footer-item">ವ್ಯವಸ್ಥಾಪಕ ನಿರ್ದೇಶಕರು<br/>(Managing Director)</div>
+        </div>
+
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWin.document.write(html);
+    printWin.document.close();
+  };
+
+  // Execute Batch Assignment for a Book (with optional print trigger)
+  const handleBatchSubmit = (e, shouldPrintAfter = false) => {
+    if (e && e.preventDefault) e.preventDefault();
     const bNo = batchBookNo.trim();
     if (!bNo) {
       if (typeof showToast === 'function') showToast('⚠️ ಪುಸ್ತಕ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ (Enter Book No)', 'warning');
       return;
     }
 
-    const rawList = batchShareNosInput
-      .split(/[\s,;\n]+/)
-      .map(s => s.trim())
-      .filter(Boolean);
-
-    if (rawList.length === 0) {
+    if (batchParsedIds.length === 0) {
       if (typeof showToast === 'function') showToast('⚠️ ಕನಿಷ್ಠ 1 ಶೇರು ಸಂಖ್ಯೆ ನಮೂದಿಸಿ', 'warning');
       return;
     }
@@ -293,8 +454,7 @@ export default function ManualAttendanceModal({
 
     saveRecords(prev => {
       const next = { ...prev };
-      rawList.forEach((sId, index) => {
-        const cleanId = String(sId).trim();
+      batchParsedIds.forEach((cleanId, index) => {
         const memberRec = { ...(next[cleanId] || {}) };
         memberRec[batchYear] = {
           status: 'P',
@@ -308,8 +468,16 @@ export default function ManualAttendanceModal({
 
     playBeep(1040, 0.12);
     if (typeof showToast === 'function') {
-      showToast(`✅ ${rawList.length} ಶೇರುದಾರರಿಗೆ ಪುಸ್ತಕ ನಂ ${bNo} ರಲ್ಲಿ ಕ್ರಮವಾಗಿ ದಾಖಲಿಸಲಾಗಿದೆ!`, 'success');
+      showToast(`✅ ${batchParsedIds.length} ಶೇರುದಾರರಿಗೆ ಪುಸ್ತಕ #${bNo} ರಲ್ಲಿ ಕ್ರಮವಾಗಿ ದಾಖಲಿಸಲಾಗಿದೆ!`, 'success');
     }
+
+    if (shouldPrintAfter) {
+      handlePrintBatchList();
+    }
+
+    // Set search query in the main view to this Book No so the user immediately sees all these shareholders!
+    setSearchQuery(bNo);
+    setCurrentPage(1);
     setShowBatchModal(false);
     setBatchShareNosInput('');
   };
@@ -1143,35 +1311,39 @@ export default function ManualAttendanceModal({
         </div>
       </div>
 
-      {/* 6. Batch Assignment Drawer / Modal */}
+      {/* 6. Batch Assignment Drawer / Modal with Live Shareholders Preview & Print Option */}
       {showBatchModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border-2 border-indigo-500/60 rounded-2xl w-full max-w-lg shadow-2xl p-5 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-indigo-500/70 rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-indigo-400">
-                <Layers className="w-5 h-5" />
-                <h3 className="text-base font-bold text-white">ಪುಸ್ತಕ ಸಾಮೂಹಿಕ ನಮೂದು (Batch Book Assignment)</h3>
+              <div className="flex items-center gap-2.5 text-indigo-400">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">ಪುಸ್ತಕ ಸಾಮೂಹಿಕ ನಮೂದು & ಮುದ್ರಣ (Batch Assignment & Print)</h3>
+                  <p className="text-xs text-slate-400">
+                    ಭೌತಿಕ ಪುಸ್ತಕದ ಸಂಖ್ಯೆ, ಶೇರುದಾರರ ವಿವರಗಳನ್ನು ಪರಿಶೀಲಿಸಿ ದಾಖಲಿಸಿ ಮತ್ತು ಹಾಜರಾತಿ ಪಟ್ಟಿಯನ್ನು ಪ್ರಿಂಟ್ ಮಾಡಿ
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setShowBatchModal(false)}
-                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-all"
+                title="ಮುಚ್ಚಿ"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-300">
-              ಒಂದು ಭೌತಿಕ ಪುಸ್ತಕದ (Book No) ಅಡಿಯಲ್ಲಿ ಸಹಿ ಮಾಡಿದ ಶೇರುದಾರರ ಸಂಖ್ಯೆಗಳನ್ನು ಒಂದೇ ಬಾರಿಗೆ ಕ್ರಮ ಸಂಖ್ಯೆಗಳೊಂದಿಗೆ (Sl No) ದಾಖಲಿಸಿ.
-            </p>
-
-            <form onSubmit={handleBatchSubmit} className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={(e) => handleBatchSubmit(e, false)} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
                 <div>
-                  <label className="block text-slate-400 font-bold mb-1">ವರ್ಷ ಆಯ್ಕೆಮಾಡಿ:</label>
+                  <label className="block text-slate-400 font-bold mb-1">ಮಹಾಸಭೆ ವರ್ಷ ಆಯ್ಕೆಮಾಡಿ:</label>
                   <select
                     value={batchYear}
                     onChange={(e) => setBatchYear(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-purple-300 font-bold outline-none cursor-pointer"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-purple-300 font-bold outline-none cursor-pointer"
                   >
                     {activeYears.map(yr => (
                       <option key={yr} value={yr} className="bg-slate-900 text-white">
@@ -1187,51 +1359,172 @@ export default function ManualAttendanceModal({
                     type="text"
                     value={batchBookNo}
                     onChange={(e) => setBatchBookNo(e.target.value)}
-                    placeholder="Ex: 13, 27, 28"
+                    placeholder="Ex: 12, 13, 27"
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-300 font-mono font-bold outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-amber-300 font-mono font-bold outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">ಪ್ರಾರಂಭದ ಕ್ರಮ ಸಂಖ್ಯೆ (Start Sl No):</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={batchStartSlNo}
+                    onChange={(e) => setBatchStartSlNo(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-mono font-bold outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-400 font-bold mb-1">ಪ್ರಾರಂಭದ ಕ್ರಮ ಸಂಖ್ಯೆ (Starting Sl No in Book):</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={batchStartSlNo}
-                  onChange={(e) => setBatchStartSlNo(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 font-mono font-bold outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">
-                  ಶೇರು ಸಂಖ್ಯೆಗಳು (ಕಾಮಾ ಅಥವಾ ಸ್ಪೇಸ್ ಅಥವಾ ಹೊಸ ಸಾಲಿನ ಮೂಲಕ ನಮೂದಿಸಿ):
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-slate-300 font-bold">
+                    ಶೇರು ಸಂಖ್ಯೆಗಳು (ಕಾಮಾ ಅಥವಾ ಸ್ಪೇಸ್ ಅಥವಾ ಹೊಸ ಸಾಲಿನ ಮೂಲಕ ನಮೂದಿಸಿ):
+                  </label>
+                  {batchParsedIds.length > 0 && (
+                    <span className="text-[11px] text-emerald-400 font-mono font-bold">
+                      {batchParsedIds.length} ಶೇರು ಸಂಖ್ಯೆಗಳು ನಮೂದಿಸಲಾಗಿದೆ
+                    </span>
+                  )}
+                </div>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={batchShareNosInput}
                   onChange={(e) => setBatchShareNosInput(e.target.value)}
-                  placeholder="Ex: 118, 119, 120, 125, 140 ಅಥವಾ ಎಕ್ಸೆಲ್ ನಿಂದ ಕಾಪಿ ಮಾಡಿ ಪೇಸ್ಟ್ ಮಾಡಿ"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-emerald-400 font-mono text-xs outline-none focus:border-indigo-500"
+                  placeholder="Ex: 1, 28, #4698, 55, 2698, 15264, 894 (ಅಥವಾ 100-115)"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-emerald-400 font-mono text-xs outline-none focus:border-indigo-500 transition-all placeholder:text-slate-600 leading-relaxed"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              {/* LIVE RESOLVED SHAREHOLDERS PREVIEW */}
+              {batchResolvedList.length > 0 && (
+                <div className="bg-slate-950 border-2 border-indigo-500/40 rounded-2xl p-3.5 space-y-2.5 animate-fadeIn shadow-lg">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-white text-xs flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>ನಮೂದಿಸಿದ ಶೇರುದಾರರ ಪಟ್ಟಿ (Matched Shareholders):</span>
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold font-mono text-xs border border-emerald-500/40">
+                        {batchResolvedList.length} ಸದಸ್ಯರು
+                      </span>
+                      {batchBookNo && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/40">
+                          ಪುಸ್ತಕ #{batchBookNo}
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handlePrintBatchList}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer border border-indigo-400/50"
+                      title="ಈ ಶೇರುದಾರರ ಹಾಜರಾತಿ ವಹಿಯನ್ನು ಪ್ರಿಂಟ್ ಮಾಡಿ"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-indigo-200" />
+                      <span>🖨️ ಈ ಪಟ್ಟಿ ಮುದ್ರಿಸಿ (Print Register)</span>
+                    </button>
+                  </div>
+
+                  {/* Scrollable Table of Matched Shareholders */}
+                  <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-800">
+                    <table className="w-full text-xs text-left select-none border-collapse">
+                      <thead className="bg-slate-900 text-slate-300 sticky top-0 text-[10.5px] uppercase font-bold border-b border-slate-800">
+                        <tr>
+                          <th className="py-2 px-2.5 text-center w-14">ಕ್ರ.ಸಂ</th>
+                          <th className="py-2 px-3 w-24">ಷೇರು ನಂ</th>
+                          <th className="py-2 px-3">ಶೇರುದಾರರ ಹೆಸರು</th>
+                          <th className="py-2 px-3">ಸ್ಥಳ / ಗ್ರಾಮ</th>
+                          <th className="py-2 px-2 text-center w-20">ವರ್ಗ</th>
+                          <th className="py-2 px-2 text-center w-16">ಸ್ಥಿತಿ</th>
+                          <th className="py-2 px-2 text-center w-10">ತೆಗೆ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/80 text-slate-200">
+                        {batchResolvedList.map((item) => (
+                          <tr key={item.entity_id} className="hover:bg-slate-900/60 transition-colors">
+                            <td className="py-2 px-2.5 text-center font-mono font-bold text-slate-400">
+                              {item.bookSlNo}
+                            </td>
+                            <td className="py-2 px-3 font-mono font-bold text-emerald-400">
+                              #{item.entity_id}
+                            </td>
+                            <td className="py-2 px-3 font-semibold text-white truncate max-w-[200px]" title={item.name}>
+                              {item.name}
+                            </td>
+                            <td className="py-2 px-3 text-slate-300 truncate max-w-[140px]" title={item.department}>
+                              {item.department}
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <span className="px-2 py-0.5 rounded text-[10.5px] bg-slate-900 border border-slate-700 text-amber-300 font-bold">
+                                {item.category}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                                P (ಹಾಜರು)
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveBatchId(item.entity_id)}
+                                className="text-slate-500 hover:text-rose-400 cursor-pointer p-1 rounded hover:bg-slate-800 transition"
+                                title="ಪಟ್ಟಿಯಿಂದ ತೆಗೆದುಹಾಕಿ"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons in Batch Modal */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowBatchModal(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer transition text-xs"
                 >
-                  ರದ್ದುಮಾಡಿ
+                  ರದ್ದುಮಾಡಿ (Cancel)
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold shadow-lg cursor-pointer"
-                >
-                  ಸಾಮೂಹಿಕವಾಗಿ ದಾಖಲಿಸಿ (Assign All)
-                </button>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={batchResolvedList.length === 0}
+                    onClick={handlePrintBatchList}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-bold border border-slate-700 cursor-pointer transition shadow text-xs"
+                    title="ಶೇರುದಾರರ ಪಟ್ಟಿಯನ್ನು ಮಾತ್ರ ಮುದ್ರಿಸಿ"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-indigo-300" />
+                    <span>🖨️ ಮುದ್ರಿಸಿ (Print Only)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={batchResolvedList.length === 0}
+                    onClick={(e) => handleBatchSubmit(e, true)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-bold shadow-lg cursor-pointer transition text-xs"
+                    title="ವಹಿಯಲ್ಲಿ ದಾಖಲಿಸಿ ಮತ್ತು ಅಧಿಕೃತ ಪ್ರಿಂಟ್ ತೆರೆಯಿರಿ"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-emerald-200" />
+                    <span>💾 & 🖨️ ದಾಖಲಿಸಿ ಮತ್ತು ಮುದ್ರಿಸಿ (Assign & Print)</span>
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={batchResolvedList.length === 0}
+                    className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-bold shadow-lg cursor-pointer transition text-xs"
+                  >
+                    💾 ದಾಖಲಿಸಿ ({batchResolvedList.length} ಸದಸ್ಯರು)
+                  </button>
+                </div>
               </div>
             </form>
           </div>

@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: add manual attendance book register modal & tab matching statutory ledger format"');
+    run('git commit -m "feat: show all shareholders live preview in batch modal and provide print register option"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
@@ -46,7 +46,7 @@ try {
 
   console.log('=== Step 5: Commit and push gh-pages from worktree ===');
   run('git add -A', wtPath);
-  const commitMsg = `Deploy: add manual attendance book register modal & tab (${Date.now()})`;
+  const commitMsg = `Deploy: batch shareholders preview and print (${Date.now()})`;
   try {
     run(`git commit -m "${commitMsg}"`, wtPath);
     run('git push origin gh-pages', wtPath);
