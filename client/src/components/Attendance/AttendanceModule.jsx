@@ -7,6 +7,7 @@ import { getCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationSe
 import { useAuth } from '../../context/AuthContext';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import ManualAttendanceModal from './ManualAttendanceModal';
+import ParticularAgmManualModal from './ParticularAgmManualModal';
 import {
   CalendarCheck, Search, CheckCircle2, XCircle, Clock, Save, RefreshCw,
   QrCode, UserCheck, Users, FileSpreadsheet, Sparkles, Filter, Check, ArrowRight,
@@ -131,6 +132,7 @@ export default function AttendanceModule() {
   const [resetScopeChoice, setResetScopeChoice] = useState('all'); // 'all', 'filtered', 'selected'
   const [showBulkPresentModal, setShowBulkPresentModal] = useState(false);
   const [showManualBookModal, setShowManualBookModal] = useState(false);
+  const [showParticularManualModal, setShowParticularManualModal] = useState(false);
   const [bulkTargetStatus, setBulkTargetStatus] = useState('Present'); // 'Present' or 'Absent'
   const [bulkShareNumbersInput, setBulkShareNumbersInput] = useState('');
   const [bulkSelectedIds, setBulkSelectedIds] = useState(new Set());
@@ -2040,19 +2042,39 @@ export default function AttendanceModule() {
             <Vote className="w-4 h-4 text-amber-300" />
             <span>🗳️ ಚುನಾವಣಾ ಅರ್ಹತೆ (Election Eligible Tab - 5 AGMs: 2023-24 to 2027-28)</span>
           </button>
+
+          {/* Consolidated 5-AGMs Register Button in Tabs */}
+          <button
+            onClick={() => setShowManualBookModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-purple-950/40 text-purple-300 border border-purple-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer ml-auto"
+            title="ಎಲ್ಲಾ 5 ಮಹಾಸಭೆಗಳ ಸಂಯೋಜಿತ ಕೈಪಿಡಿ ಹಾಜರಾತಿ ವಹಿ (Consolidated 5-AGMs Register)"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-purple-400" />
+            <span>📊 5 ಮಹಾಸಭೆಗಳ ಸಂಯೋಜಿತ ವಹಿ</span>
+          </button>
         </div>
 
-        {/* Actions for Active AGM: Bulk Present, Reset, Freeze/Unlock, Manual Book Entry Modal */}
+        {/* Actions for Active AGM: Particular AGM Manual Entry, Consolidated Register, Bulk Present, Reset, Freeze/Unlock */}
         {activeAgmTab !== 'ELECTION_ELIGIBLE' && (
           <div className="flex flex-wrap items-center gap-2">
-            {/* Open Manual Book Entry Modal Button */}
+            {/* Open Particular AGM Manual Entry Modal Button */}
             <button
-              onClick={() => setShowManualBookModal(true)}
+              onClick={() => setShowParticularManualModal(true)}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer border border-purple-500/40"
-              title="ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ನಮೂದು ಮಾದರಿ (Manual Book Attendance Entry Modal)"
+              title={`${DEFAULT_AGM_CONFIGS[activeAgmTab]?.name || 'AGM'} (${DEFAULT_AGM_CONFIGS[activeAgmTab]?.year || ''}) ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ನಮೂದು`}
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-purple-200" />
-              <span>📖 ಕೈಪಿಡಿ ನಮೂದು (Manual Book Entry)</span>
+              <span>📖 ಕೈಪಿಡಿ ನಮೂದು ({DEFAULT_AGM_CONFIGS[activeAgmTab]?.name || 'AGM'})</span>
+            </button>
+
+            {/* Consolidated 5-AGMs Register Button */}
+            <button
+              onClick={() => setShowManualBookModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 hover:text-white border border-purple-600/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer"
+              title="ಎಲ್ಲಾ 5 ಮಹಾಸಭೆಗಳ ಸಂಯೋಜಿತ ಕೈಪಿಡಿ ಹಾಜರಾತಿ ವಹಿ (Consolidated 5-AGMs Register)"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-purple-400" />
+              <span>📊 ಸಂಯೋಜಿತ ವಹಿ (5 AGMs)</span>
             </button>
 
             {/* Bulk Status by Share Numbers Button */}
@@ -2140,7 +2162,7 @@ export default function AttendanceModule() {
         </div>
       )}
 
-      {/* MANUAL BOOK ATTENDANCE MODAL */}
+      {/* CONSOLIDATED 5-AGMs MANUAL BOOK ATTENDANCE MODAL */}
       {showManualBookModal && (
         <ManualAttendanceModal
           isOpen={showManualBookModal}
@@ -2149,6 +2171,21 @@ export default function AttendanceModule() {
           allAgmScansMap={allAgmScansMap}
           onManualAttendanceUpdate={handleManualAttendanceSync}
           isModal={true}
+          showToast={showToast}
+          user={user}
+        />
+      )}
+
+      {/* PARTICULAR AGM MANUAL BOOK ENTRY MODAL */}
+      {showParticularManualModal && (
+        <ParticularAgmManualModal
+          isOpen={showParticularManualModal}
+          onClose={() => setShowParticularManualModal(false)}
+          agmKey={activeAgmTab}
+          agmConfig={DEFAULT_AGM_CONFIGS[activeAgmTab]}
+          masterShareholders={masterShareholders}
+          allAgmScansMap={allAgmScansMap}
+          onSaveRecord={handleManualAttendanceSync}
           showToast={showToast}
           user={user}
         />
@@ -2937,9 +2974,22 @@ export default function AttendanceModule() {
                 disabled={!canRecordAttendance || isCurrentAgmFrozen}
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                title="ಗ್ಯಾಲರಿಯಿಂದ ಚಿತ್ರ ಆಯ್ಕೆ ಮಾಡಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ"
               >
                 <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
                 <span className="hidden lg:inline">ಗ್ಯಾಲರಿ</span>
+              </button>
+
+              {/* Particular AGM Manual Book Entry Button (Scan or Manual Option) */}
+              <button
+                type="button"
+                disabled={!canRecordAttendance || isCurrentAgmFrozen}
+                onClick={() => setShowParticularManualModal(true)}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white border border-purple-500/50 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer shrink-0 disabled:opacity-50"
+                title={`${DEFAULT_AGM_CONFIGS[activeAgmTab]?.name || 'AGM'} (${DEFAULT_AGM_CONFIGS[activeAgmTab]?.year || ''}) ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ನಮೂದು`}
+              >
+                <BookOpen className="w-3.5 h-3.5 text-purple-200" />
+                <span>📖 ಕೈಪಿಡಿ ನಮೂದು</span>
               </button>
             </div>
 

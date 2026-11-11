@@ -9,8 +9,21 @@ import {
 
 const STORAGE_KEY = 'sugar_erp_manual_book_attendance';
 
-// Default Year Ranges (Active default is 2023-24 to 2026-27 / 2027-28)
+// Default Year Ranges (Active default is 2023-24 to 2027-28 - All 5 AGMs)
 const YEAR_PRESETS = {
+  CURRENT_2023_2028: {
+    id: 'CURRENT_2023_2028',
+    name: '2023-24 ರಿಂದ 2027-28 (ಮಹಾಸಭೆ 6 ರಿಂದ 10 - ಎಲ್ಲಾ 5 ಮಹಾಸಭೆಗಳು)',
+    shortName: '2023-24 to 2027-28 (AGM 6-10)',
+    years: ['2023-24', '2024-25', '2025-26', '2026-27', '2027-28'],
+    yearAgmMap: {
+      '2023-24': 'AGM 6',
+      '2024-25': 'AGM 7',
+      '2025-26': 'AGM 8',
+      '2026-27': 'AGM 9',
+      '2027-28': 'AGM 10'
+    }
+  },
   CURRENT_2023_2027: {
     id: 'CURRENT_2023_2027',
     name: '2023-24 ರಿಂದ 2026-27 (ಮಹಾಸಭೆ 6 ರಿಂದ 9 - 4 ವರ್ಷಗಳು)',
@@ -21,19 +34,6 @@ const YEAR_PRESETS = {
       '2024-25': 'AGM 7',
       '2025-26': 'AGM 8',
       '2026-27': 'AGM 9'
-    }
-  },
-  CURRENT_2023_2028: {
-    id: 'CURRENT_2023_2028',
-    name: '2023-24 ರಿಂದ 2027-28 (ಮಹಾಸಭೆ 6 ರಿಂದ 10 - ಎಲ್ಲಾ 5 ವರ್ಷಗಳು)',
-    shortName: '2023-24 to 2027-28 (AGM 6-10)',
-    years: ['2023-24', '2024-25', '2025-26', '2026-27', '2027-28'],
-    yearAgmMap: {
-      '2023-24': 'AGM 6',
-      '2024-25': 'AGM 7',
-      '2025-26': 'AGM 8',
-      '2026-27': 'AGM 9',
-      '2027-28': 'AGM 10'
     }
   },
   HISTORIC_2018_2023: {
@@ -136,9 +136,9 @@ export default function ManualAttendanceModal({
   showToast = () => {},
   user = null
 }) {
-  // Preset selector - Default is 2023-24 to 2026-27 (AGM 6 to AGM 9)
-  const [selectedPresetKey, setSelectedPresetKey] = useState('CURRENT_2023_2027');
-  const currentPreset = YEAR_PRESETS[selectedPresetKey] || YEAR_PRESETS.CURRENT_2023_2027;
+  // Preset selector - Default is 2023-24 to 2027-28 (AGM 6 to AGM 10 - All 5 AGMs)
+  const [selectedPresetKey, setSelectedPresetKey] = useState('CURRENT_2023_2028');
+  const currentPreset = YEAR_PRESETS[selectedPresetKey] || YEAR_PRESETS.CURRENT_2023_2028;
   const activeYears = currentPreset.years;
 
   // Stored Manual Records Map: { [shareNo]: { [year]: { status: 'P'|'0', bookNo: '13', slNo: '36' } } }
@@ -849,14 +849,14 @@ export default function ManualAttendanceModal({
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-black text-white tracking-wide flex items-center gap-2">
-                    <span>ಕೈಪಿಡಿ ಪುಸ್ತಕ ಹಾಜರಾತಿ ನಮೂದು (Manual Attendance Book Register)</span>
+                    <span>📊 ಎಲ್ಲಾ 5 ಮಹಾಸಭೆಗಳ ಸಂಯೋಜಿತ ಕೈಪಿಡಿ ಹಾಜರಾತಿ ವಹಿ (Consolidated 5-AGMs Register)</span>
                   </h2>
                   <span className="text-[10px] bg-purple-500/30 text-purple-200 border border-purple-400/40 px-2.5 py-0.5 rounded-full font-bold">
-                    Statutory Ledger & QR Scan Linked
+                    AGM 6 to AGM 10 (2023-24 to 2027-28)
                   </span>
                 </div>
                 <p className="text-xs text-purple-200/80 mt-0.5">
-                  ಮಹಾಸಭೆಗಳ ಹಾಜರಾತಿ: QR ಸ್ಕ್ಯಾನರ್ ಅಥವಾ ಕೈಪಿಡಿ ಪುಸ್ತಕ (Book No & Sl No) ಎರಡೂ ವಿಧಾನಗಳಿಂದ ನಮೂದಿಸಬಹುದು
+                  ಎಲ್ಲಾ 5 ಮಹಾಸಭೆಗಳ ಒಟ್ಟು ಸಂಯೋಜಿತ ವಹಿ: QR ಸ್ಕ್ಯಾನರ್ ಅಥವಾ ಕೈಪಿಡಿ ಪುಸ್ತಕ (Book No & Sl No) ದಾಖಲೆಗಳು
                 </p>
               </div>
             </div>
