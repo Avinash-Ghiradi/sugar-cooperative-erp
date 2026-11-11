@@ -72,21 +72,23 @@ export default function ParticularAgmManualModal({
     } catch (e) {}
   };
 
-  // Map of master shareholders for instant O(1) lookups
+  // Map of master shareholders for instant O(1) lookups (Exact share number matching: '1' vs '#1')
   const masterShareholdersMap = useMemo(() => {
     const map = new Map();
     masterShareholders.forEach(m => {
-      const cleanId = String(m.entity_id || '').trim().replace(/^#+/, '');
-      map.set(cleanId, m);
+      const rawId = String(m.entity_id || '').trim();
+      if (!rawId) return;
+      map.set(rawId, m);
+      map.set(rawId.toUpperCase(), m);
     });
     return map;
   }, [masterShareholders]);
 
-  // Resolve single shareholder details for quick form
+  // Resolve single shareholder details for quick form (Exact match)
   const matchedMember = useMemo(() => {
-    const q = quickShareNo.trim().replace(/^#+/, '');
+    const q = quickShareNo.trim();
     if (!q) return null;
-    return masterShareholdersMap.get(q) || null;
+    return masterShareholdersMap.get(q) || masterShareholdersMap.get(q.toUpperCase()) || null;
   }, [quickShareNo, masterShareholdersMap]);
 
   // Persist records to localStorage on change
@@ -104,7 +106,7 @@ export default function ParticularAgmManualModal({
 
   // Update specific cell (status, bookNo, or slNo)
   const handleCellChange = (shareNo, field, value) => {
-    const sId = String(shareNo).trim().replace(/^#+/, '');
+    const sId = String(shareNo).trim();
     let updatedStatus = '0';
     let updatedBookNo = '0';
     let updatedSlNo = '0';
@@ -146,12 +148,10 @@ export default function ParticularAgmManualModal({
 
   // Toggle status button 'P' <-> '0'
   const handleToggleStatus = (shareNo) => {
-    const sId = String(shareNo).trim().replace(/^#+/, '');
+    const sId = String(shareNo).trim();
     const currItem = processedShareholders.find(s => s.entity_id === sId);
     const currStatus = currItem?.status || '0';
     const nextStatus = currStatus === 'P' ? '0' : 'P';
-    const currBook = currItem?.bookNo || '0';
-    const currSl = currItem?.slNo || '0';
 
     handleCellChange(sId, 'status', nextStatus);
     playBeep(nextStatus === 'P' ? 880 : 440, 0.05);
@@ -160,7 +160,7 @@ export default function ParticularAgmManualModal({
   // Save from Quick Form
   const handleQuickFormSubmit = (e) => {
     if (e) e.preventDefault();
-    const sId = quickShareNo.trim().replace(/^#+/, '');
+    const sId = quickShareNo.trim();
     if (!sId) {
       if (typeof showToast === 'function') showToast('⚠️ ದಯವಿಟ್ಟು ಶೇರು ಸಂಖ್ಯೆ ನಮೂದಿಸಿ', 'warning');
       return;
@@ -176,7 +176,7 @@ export default function ParticularAgmManualModal({
 
     playBeep(980, 0.08);
     if (typeof showToast === 'function') {
-      showToast(`✅ ${agmName}: ಷೇರು #${sId} - ಪುಸ್ತಕ ನಂ: ${bNo}, ಕ್ರಮ ನಂ: ${sNo} ದಾಖಲಾಗಿದೆ!`, 'success');
+      showToast(`✅ ${agmName}: ಷೇರು ${sId.startsWith('#') ? sId : `#${sId}`} - ಪುಸ್ತಕ ನಂ: ${bNo}, ಕ್ರಮ ನಂ: ${sNo} ದಾಖಲಾಗಿದೆ!`, 'success');
     }
 
     // Auto-advance Sl No and clear share no for next quick entry
@@ -188,7 +188,7 @@ export default function ParticularAgmManualModal({
     if (inputEl) inputEl.focus();
   };
 
-  // Parsed list of share IDs from batch input
+  // Parsed list of share IDs from batch input (preserves exact token: '1' vs '#1', supports ranges e.g. 10-15)
   const batchParsedIds = useMemo(() => {
     const rawTokens = batchShareNosInput
       .split(/[\s,;\n]+/)
@@ -197,45 +197,46 @@ export default function ParticularAgmManualModal({
 
     const ids = [];
     rawTokens.forEach(token => {
-      const clean = token.replace(/^#+/, '');
-      const rangeMatch = clean.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+      const isHash = token.startsWith('#');
+      const cleanNum = token.replace(/^#+/, '');
+      const rangeMatch = cleanNum.match(/^(\d+)\s*[-–]\s*(\d+)$/);
       if (rangeMatch) {
         const start = parseInt(rangeMatch[1], 10);
         const end = parseInt(rangeMatch[2], 10);
         if (start <= end && end - start <= 500) {
           for (let i = start; i <= end; i++) {
-            ids.push(String(i));
+            ids.push(isHash ? `#${i}` : String(i));
           }
           return;
         }
       }
-      if (clean) {
-        ids.push(clean);
+      if (token) {
+        ids.push(token);
       }
     });
 
     return ids;
   }, [batchShareNosInput]);
 
-  // Resolved shareholders list for batch modal preview & print
+  // Resolved shareholders list for batch modal preview & print (Exact match: '1' -> Regular, '#1' -> SC)
   const batchResolvedList = useMemo(() => {
     const startSl = Number(batchStartSlNo) || 1;
     return batchParsedIds.map((id, index) => {
-      const member = masterShareholdersMap.get(id);
+      const member = masterShareholdersMap.get(id) || masterShareholdersMap.get(id.toUpperCase());
       return {
         bookSlNo: startSl + index,
         entity_id: id,
-        name: member?.name || `ಶೇರುದಾರ #${id}`,
-        department: member?.department || member?.village || '—',
+        name: member?.name || (member ? `ಶೇರುದಾರ #${id}` : `⚠️ ಶೇರು #${id} ಕಂಡುಬಂದಿಲ್ಲ`),
+        department: member?.department || member?.village || member?.place || '—',
         category: member?.category || 'ಅ - ವರ್ಗ',
         isFound: Boolean(member)
       };
     });
   }, [batchParsedIds, batchStartSlNo, masterShareholdersMap]);
 
-  // Remove a single shareholder from batch input
-  const handleRemoveBatchId = (idToRemove) => {
-    const updated = batchParsedIds.filter(id => id !== idToRemove);
+  // Remove a single shareholder from batch input (by index)
+  const handleRemoveBatchId = (indexToRemove) => {
+    const updated = batchParsedIds.filter((_, idx) => idx !== indexToRemove);
     setBatchShareNosInput(updated.join(', '));
   };
 
@@ -314,7 +315,7 @@ export default function ParticularAgmManualModal({
             ${batchResolvedList.map(item => `
               <tr>
                 <td class="text-center font-bold">${item.bookSlNo}</td>
-                <td class="text-center font-bold" style="color:#047857;">#${item.entity_id}</td>
+                <td class="text-center font-bold" style="color:#047857;">${item.entity_id}</td>
                 <td class="text-left font-bold">${item.name}</td>
                 <td class="text-left">${item.department}</td>
                 <td class="text-center font-bold">${item.category}</td>
@@ -362,19 +363,19 @@ export default function ParticularAgmManualModal({
 
     saveRecords(prev => {
       const next = { ...prev };
-      batchParsedIds.forEach((cleanId, index) => {
-        const memberRec = { ...(next[cleanId] || {}) };
+      batchParsedIds.forEach((targetId, index) => {
+        const memberRec = { ...(next[targetId] || {}) };
         const sl = String(startSerial + index);
         memberRec[agmYear] = {
           status: 'P',
           bookNo: bNo,
           slNo: sl
         };
-        next[cleanId] = memberRec;
+        next[targetId] = memberRec;
 
         // Synchronize with scan records
         if (typeof onSaveRecord === 'function') {
-          onSaveRecord(cleanId, agmYear, 'P', bNo, sl);
+          onSaveRecord(targetId, agmYear, 'P', bNo, sl);
         }
       });
       return next;
@@ -398,7 +399,7 @@ export default function ParticularAgmManualModal({
   // Compute shareholders list for this specific AGM
   const processedShareholders = useMemo(() => {
     return masterShareholders.map((m) => {
-      const sId = String(m.entity_id || '').trim().replace(/^#+/, '');
+      const sId = String(m.entity_id || '').trim();
       const rec = manualRecords[sId] || {};
 
       // Check scan record in allAgmScansMap for this AGM
@@ -783,7 +784,7 @@ export default function ParticularAgmManualModal({
           {/* Matched shareholder info chip */}
           {matchedMember && (
             <div className="mt-2 pt-2 border-t border-slate-800 flex items-center gap-2 text-xs text-purple-200">
-              <span className="font-bold text-emerald-400">#{matchedMember.entity_id}</span>
+              <span className="font-bold text-emerald-400">{matchedMember.entity_id}</span>
               <span className="font-semibold text-white">{matchedMember.name}</span>
               <span className="text-slate-400">• {matchedMember.department}</span>
               <span className="text-amber-300 text-[10px] bg-slate-800 px-2 py-0.5 rounded">
@@ -886,7 +887,7 @@ export default function ParticularAgmManualModal({
                       </td>
 
                       <td className="py-2 px-3 border-r border-slate-800 font-mono font-bold text-emerald-400">
-                        #{item.entity_id}
+                        {item.entity_id}
                       </td>
 
                       <td className="py-2 px-3 border-r border-slate-800 text-left font-medium text-slate-100">
@@ -1115,13 +1116,13 @@ export default function ParticularAgmManualModal({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/80 text-slate-200">
-                          {batchResolvedList.map((item) => (
-                            <tr key={item.entity_id} className="hover:bg-slate-900/60 transition-colors">
+                          {batchResolvedList.map((item, index) => (
+                            <tr key={`${item.entity_id}_${index}`} className="hover:bg-slate-900/60 transition-colors">
                               <td className="py-2 px-2.5 text-center font-mono font-bold text-slate-400">
                                 {item.bookSlNo}
                               </td>
                               <td className="py-2 px-3 font-mono font-bold text-emerald-400">
-                                #{item.entity_id}
+                                {item.entity_id}
                               </td>
                               <td className="py-2 px-3 font-semibold text-white truncate max-w-[200px]" title={item.name}>
                                 {item.name}
@@ -1142,7 +1143,7 @@ export default function ParticularAgmManualModal({
                               <td className="py-2 px-2 text-center">
                                 <button
                                   type="button"
-                                  onClick={() => handleRemoveBatchId(item.entity_id)}
+                                  onClick={() => handleRemoveBatchId(index)}
                                   className="text-slate-500 hover:text-rose-400 cursor-pointer p-1 rounded hover:bg-slate-800 transition"
                                   title="ಪಟ್ಟಿಯಿಂದ ತೆಗೆದುಹಾಕಿ"
                                 >

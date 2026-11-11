@@ -260,7 +260,7 @@ export default function AttendanceModule() {
 
   // Synchronization between Manual Book Entry and Scanned Attendance
   const handleManualAttendanceSync = useCallback((shareNo, yearKey, status, bookNo, slNo) => {
-    const sId = String(shareNo).trim().replace(/^#+/, '');
+    const sId = String(shareNo).trim();
     const agmKeyMap = {
       '2023-24': 'AGM-6',
       '2024-25': 'AGM-7',
@@ -457,7 +457,15 @@ export default function AttendanceModule() {
         currentList.sort((a, b) => {
           if (a.status === 'Present' && b.status !== 'Present') return -1;
           if (a.status !== 'Present' && b.status === 'Present') return 1;
-          return Number(a.entity_id) - Number(b.entity_id);
+          const aIsHash = String(a.entity_id).startsWith('#');
+          const bIsHash = String(b.entity_id).startsWith('#');
+          if (aIsHash !== bIsHash) {
+            return aIsHash ? 1 : -1;
+          }
+          const numA = parseInt(String(a.entity_id).replace(/\D/g, ''), 10) || 0;
+          const numB = parseInt(String(b.entity_id).replace(/\D/g, ''), 10) || 0;
+          if (numA !== numB) return numA - numB;
+          return String(a.entity_id).localeCompare(String(b.entity_id));
         });
 
         setAttendanceList(currentList);
@@ -673,8 +681,15 @@ export default function AttendanceModule() {
     const empMatch = text.match(/[?&](?:emp_attn|emp_id|employee|emp)=([^&]+)/i);
     if (empMatch) return decodeURIComponent(empMatch[1]).trim().toUpperCase();
 
-    const urlMatch = text.match(/[?&](?:attn|share_no|share|id)=(\d+)/i);
-    if (urlMatch) return urlMatch[1];
+    const urlMatch = text.match(/[?&](?:attn|share_no|share|id)=([^&]+)/i);
+    if (urlMatch) {
+      const decoded = decodeURIComponent(urlMatch[1]).trim();
+      if (decoded.startsWith('#')) {
+        const num = decoded.slice(1).replace(/\D/g, '');
+        return num ? `#${num}` : decoded;
+      }
+      return decoded.replace(/\D/g, '');
+    }
 
     const empPrefixMatch = text.match(/EMP[:\-\s#]*(\d+)/i);
     if (empPrefixMatch) return `EMP-${empPrefixMatch[1].padStart(3, '0')}`;
@@ -684,15 +699,41 @@ export default function AttendanceModule() {
         const obj = JSON.parse(text);
         if (obj.employee_id) return String(obj.employee_id).trim().toUpperCase();
         if (obj.emp_attn) return String(obj.emp_attn).trim().toUpperCase();
-        if (obj.share_no) return String(obj.share_no).replace(/\D/g, '');
-        if (obj.attn) return String(obj.attn).replace(/\D/g, '');
+        if (obj.share_no) {
+          const s = String(obj.share_no).trim();
+          if (s.startsWith('#')) {
+            const num = s.slice(1).replace(/\D/g, '');
+            return num ? `#${num}` : s;
+          }
+          return s.replace(/\D/g, '');
+        }
+        if (obj.attn) {
+          const s = String(obj.attn).trim();
+          if (s.startsWith('#')) {
+            const num = s.slice(1).replace(/\D/g, '');
+            return num ? `#${num}` : s;
+          }
+          return s.replace(/\D/g, '');
+        }
       } catch (e) {}
     }
 
-    const prefixMatch = text.match(/(?:BSSKN|ATTN|SHARE|MEMBER)[:\-\s#]*(\d+)/i);
-    if (prefixMatch) return prefixMatch[1];
+    const prefixMatch = text.match(/(?:BSSKN|ATTN|SHARE|MEMBER)[:\-\s]*([#\d]+)/i);
+    if (prefixMatch) {
+      const val = prefixMatch[1].trim();
+      if (val.startsWith('#')) {
+        const num = val.slice(1).replace(/\D/g, '');
+        return num ? `#${num}` : val;
+      }
+      return val.replace(/\D/g, '');
+    }
 
     if (/^EMP/i.test(text)) return text.toUpperCase();
+
+    if (text.startsWith('#')) {
+      const numPart = text.slice(1).replace(/\D/g, '');
+      return numPart ? `#${numPart}` : text;
+    }
 
     return text.replace(/\D/g, '');
   };
@@ -904,7 +945,15 @@ export default function AttendanceModule() {
       copy.sort((a, b) => {
         if (a.status === 'Present' && b.status !== 'Present') return -1;
         if (a.status !== 'Present' && b.status === 'Present') return 1;
-        return Number(a.entity_id) - Number(b.entity_id);
+        const aIsHash = String(a.entity_id).startsWith('#');
+        const bIsHash = String(b.entity_id).startsWith('#');
+        if (aIsHash !== bIsHash) {
+          return aIsHash ? 1 : -1;
+        }
+        const numA = parseInt(String(a.entity_id).replace(/\D/g, ''), 10) || 0;
+        const numB = parseInt(String(b.entity_id).replace(/\D/g, ''), 10) || 0;
+        if (numA !== numB) return numA - numB;
+        return String(a.entity_id).localeCompare(String(b.entity_id));
       });
       return copy;
     });
@@ -957,7 +1006,7 @@ export default function AttendanceModule() {
     showToast(`ಷೇರು #${entityId} ಸ್ಥಿತಿ '${nextStatus}' ಎಂದು ಬದಲಾಯಿಸಲಾಗಿದೆ`, 'info');
   };
 
-  // Parse multiple share numbers from raw text (supports commas, spaces, newlines, and ranges like 1-50)
+  // Parse multiple share numbers from raw text (supports commas, spaces, newlines, and ranges like 1-50, #1-#10)
   const parseShareNumbers = useCallback((text) => {
     if (!text) return [];
     const parts = String(text).split(/[\s,;\n\t]+/);
@@ -965,24 +1014,30 @@ export default function AttendanceModule() {
     parts.forEach(part => {
       part = part.trim();
       if (!part) return;
-      if (part.includes('-')) {
-        const sub = part.split('-');
+      const isHash = part.startsWith('#');
+      const cleanPart = part.replace(/^#+/, '');
+      if (cleanPart.includes('-')) {
+        const sub = cleanPart.split('-');
         if (sub.length === 2) {
           const start = parseInt(sub[0], 10);
           const end = parseInt(sub[1], 10);
           if (!isNaN(start) && !isNaN(end) && start <= end && end - start <= 2000) {
             for (let i = start; i <= end; i++) {
-              resultSet.add(String(i));
+              resultSet.add(isHash ? `#${i}` : String(i));
             }
             return;
           }
         }
       }
-      const num = parseInt(part, 10);
-      if (!isNaN(num)) {
-        resultSet.add(String(num));
-      } else {
+      if (isHash) {
         resultSet.add(part);
+      } else {
+        const num = parseInt(cleanPart, 10);
+        if (!isNaN(num)) {
+          resultSet.add(String(num));
+        } else {
+          resultSet.add(cleanPart);
+        }
       }
     });
     return Array.from(resultSet);
@@ -1453,7 +1508,7 @@ export default function AttendanceModule() {
       filteredElectionList.forEach((item, idx) => {
         rows.push([
           idx + 1,
-          `#${item.entity_id}`,
+          item.entity_id,
           item.name,
           item.category || 'ಅ - ವರ್ಗ',
           item.department,
@@ -1495,7 +1550,7 @@ export default function AttendanceModule() {
       itemsToExport.forEach((item, idx) => {
         rows.push([
           idx + 1,
-          `#${item.entity_id}`,
+          item.entity_id,
           item.name || '',
           item.category || 'ಅ - ವರ್ಗ',
           item.department || '',
@@ -1533,7 +1588,7 @@ export default function AttendanceModule() {
         tableRows += `
           <tr>
             <td style="text-align: center; font-family: monospace;">${idx + 1}</td>
-            <td style="text-align: center; font-family: monospace; font-weight: bold; color: #047857;">#${item.entity_id}</td>
+            <td style="text-align: center; font-family: monospace; font-weight: bold; color: #047857;">${item.entity_id}</td>
             <td style="font-weight: 700;">${item.name}</td>
             <td style="text-align: center; font-weight: 600;">${item.category || 'ಅ - ವರ್ಗ'}</td>
             <td>${item.department}</td>
@@ -1634,7 +1689,7 @@ export default function AttendanceModule() {
         tableRows += `
           <tr>
             <td style="text-align: center; font-family: monospace;">${idx + 1}</td>
-            <td style="text-align: center; font-family: monospace; font-weight: bold; color: #047857;">#${item.entity_id}</td>
+            <td style="text-align: center; font-family: monospace; font-weight: bold; color: #047857;">${item.entity_id}</td>
             <td style="font-weight: 700;">${item.name}</td>
             <td style="text-align: center; font-weight: 600;">${item.category || 'ಅ - ವರ್ಗ'}</td>
             <td>${item.department}</td>
@@ -2513,7 +2568,7 @@ export default function AttendanceModule() {
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold font-mono text-emerald-400">#{s.entity_id}</span>
+                          <span className="font-bold font-mono text-emerald-400">{s.entity_id}</span>
                           <span>{s.name}</span>
                           <span className="text-[10px] text-slate-400">({s.department || 'ಊರು ಇಲ್ಲ'})</span>
                         </div>
@@ -2563,7 +2618,7 @@ export default function AttendanceModule() {
                       key={s.entity_id}
                       className="bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 text-xs text-slate-200 flex items-center gap-1.5 group hover:border-slate-500"
                     >
-                      <span className="font-bold text-emerald-400 font-mono">#{s.entity_id}</span>
+                      <span className="font-bold text-emerald-400 font-mono">{s.entity_id}</span>
                       <span className="max-w-[120px] truncate">{s.name}</span>
                       <span className={`text-[9px] px-1 rounded ${
                         s.status === 'Present' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
@@ -2764,7 +2819,7 @@ export default function AttendanceModule() {
                 <tbody className="divide-y divide-slate-800/60 text-slate-200">
                   {paginatedElectionList.map((item, idx) => (
                     <tr key={idx} className="hover:bg-slate-900/60 transition-colors">
-                      <td className="py-3 px-3 font-mono font-semibold text-emerald-400">#{item.entity_id}</td>
+                      <td className="py-3 px-3 font-mono font-semibold text-emerald-400">{item.entity_id}</td>
                       <td className="py-3 px-4 font-medium text-slate-100">
                         <div className="flex items-center gap-1.5">
                           <span>{item.name}</span>
@@ -3017,7 +3072,7 @@ export default function AttendanceModule() {
                   <AlertTriangle className="w-5 h-5 text-amber-400" />
                   <div>
                     <div className="font-black text-amber-300 text-sm">
-                      ⚠️ ಈಗಾಗಲೇ ಹಾಜರಾತಿ ದಾಖಲಾಗಿದೆ! #{duplicateWarning.entity_id} - {duplicateWarning.name}
+                      ⚠️ ಈಗಾಗಲೇ ಹಾಜರಾತಿ ದಾಖಲಾಗಿದೆ! {duplicateWarning.entity_id} - {duplicateWarning.name}
                     </div>
                     <div className="text-[11.5px] text-amber-100 mt-0.5">
                       ದಾಖಲಾದ ಸಮಯ: <strong>{duplicateWarning.time}</strong> • ಸಿಬ್ಬಂದಿ: <strong>{duplicateWarning.scanned_by}</strong> ({duplicateWarning.counter})
@@ -3035,7 +3090,7 @@ export default function AttendanceModule() {
               <div className="bg-emerald-950/80 border-2 border-emerald-500 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-fadeIn">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-lg border border-emerald-500/50 bg-slate-900 flex items-center justify-center font-bold text-emerald-400 font-mono text-sm overflow-hidden shrink-0">
-                    #{lastScannedMember.entity_id}
+                    {lastScannedMember.entity_id}
                   </div>
                   <div>
                     <div className="font-bold text-emerald-200 text-sm flex items-center gap-2">
@@ -3182,7 +3237,7 @@ export default function AttendanceModule() {
                           className="w-4 h-4 rounded text-emerald-600 bg-slate-900 border-slate-700 cursor-pointer accent-emerald-500"
                         />
                       </td>
-                      <td className="py-3 px-4 font-mono font-semibold text-emerald-400">#{item.entity_id}</td>
+                      <td className="py-3 px-4 font-mono font-semibold text-emerald-400">{item.entity_id}</td>
                       <td className="py-3 px-4 font-medium text-slate-100">
                         <div className="flex items-center gap-1.5">
                           <span>{item.name}</span>
