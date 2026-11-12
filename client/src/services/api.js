@@ -2418,29 +2418,27 @@ export const ApiService = {
       const qLower = search.trim().toLowerCase();
       const isNum = /^\d+$/.test(qLower);
       const getRank = (item) => {
-        const sh = String(item.share_no || item.share_number || '').trim().replace(/^[#\s]+/, '').toLowerCase();
+        const shExact = String(item.share_no || item.share_number || '').trim().toLowerCase();
         const sl = String(item.sl_no || item.id || '').trim().toLowerCase();
         const rec = String(item.receipt_no || '').trim().toLowerCase();
         const allShares = Array.isArray(item.all_share_numbers) ? item.all_share_numbers.map(s => String(s).trim().toLowerCase()) : [];
 
+        // Absolute Priority 1: Exact Share Number match (strictly preserving #, ಬ-$, etc.)
+        if (shExact === qLower || allShares.includes(qLower)) return 1;
+
         if (isNum) {
-          // Rank 1: Exact Share Number match FIRST
-          if (sh === qLower || allShares.includes(qLower)) return 1;
-          // Rank 2: Exact Serial Number match SECOND
           if (sl === qLower) return 2;
-          // Rank 3: Exact Receipt Number match THIRD
           if (rec === qLower) return 3;
-          // Rank 4: Share Number starts with query
-          if (sh.startsWith(qLower)) return 4;
-          // Rank 5: Receipt Number starts with query
+          if (shExact.startsWith(qLower)) return 4;
           if (rec.startsWith(qLower)) return 5;
-          // Rank 6: Share Number contains query
-          if (sh.includes(qLower)) return 6;
-          // Rank 7: Receipt Number contains query
+          if (shExact.includes(qLower)) return 6;
           if (rec.includes(qLower)) return 7;
-          // Rank 8: Shareholder name starts with query
           const nm = String(item.shareholder_name || item.name || '').toLowerCase();
           if (nm.startsWith(qLower)) return 8;
+          return 9;
+        } else if (/^[#\$\w\-]+\d+$/i.test(qLower)) {
+          if (shExact.startsWith(qLower)) return 4;
+          if (shExact.includes(qLower)) return 6;
           return 9;
         } else {
           const nm = String(item.shareholder_name || item.name || '').toLowerCase();

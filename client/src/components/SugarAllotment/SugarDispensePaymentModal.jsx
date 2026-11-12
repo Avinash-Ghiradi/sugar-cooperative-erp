@@ -36,21 +36,22 @@ import {
 
 /**
  * Cleanly extract Shareholder number from:
- * 1. URL: ...?attn=236
- * 2. Prefix: BSSKN-236, SN-236, SHARE-236, #236
- * 3. JSON string: {"share_no": 236}
- * 4. Plain number: 236
+ * 1. URL: ...?attn=236 or ...?share_no=#126
+ * 2. System Prefix: BSSKN-236, BSSKN-#126, SN: 236 (preserves symbols like # or ಬ-$)
+ * 3. JSON string: {"share_no": "#126"}
+ * 4. Exact Share Number (e.g. #126, 126, ಬ-$1)
  */
 export function extractShareNoFromInput(raw) {
-  if (!raw) return '';
+  if (raw === undefined || raw === null) return '';
   let text = String(raw).trim();
+  if (!text) return '';
 
   // 1. URL search parameter
   try {
     if (text.includes('?')) {
       const urlObj = new URL(text.startsWith('http') ? text : `https://dummy.com/${text}`);
       const param = urlObj.searchParams.get('attn') || urlObj.searchParams.get('share_no') || urlObj.searchParams.get('id');
-      if (param) return param.trim().replace(/\D/g, '');
+      if (param) return param.trim();
     }
   } catch (e) {}
 
@@ -58,19 +59,18 @@ export function extractShareNoFromInput(raw) {
   if (text.startsWith('{') && text.endsWith('}')) {
     try {
       const obj = JSON.parse(text);
-      if (obj.share_no) return String(obj.share_no).trim().replace(/\D/g, '');
-      if (obj.id) return String(obj.id).trim().replace(/\D/g, '');
+      if (obj.share_no !== undefined && obj.share_no !== null) return String(obj.share_no).trim();
+      if (obj.id !== undefined && obj.id !== null) return String(obj.id).trim();
     } catch (e) {}
   }
 
-  // 3. Prefix matching: BSSKN-236, SN-236, SHARE-236, #236
-  const match = text.match(/(?:BSSKN|ATTN|SHARE|MEMBER|SN)[:\-\s#]*(\d+)/i);
-  if (match) {
-    return match[1].trim();
+  // 3. System prefix removal (e.g. BSSKN-126, BSSKN-#126, SN: 126, SHARE-#126, MEMBER-126)
+  const prefixMatch = text.match(/^(?:BSSKN|ATTN|SHARE|MEMBER|SN)[:\-\s]+(.*)$/i);
+  if (prefixMatch && prefixMatch[1]) {
+    text = prefixMatch[1].trim();
   }
 
-  // 4. Fallback: extract digits
-  return text.replace(/\D/g, '');
+  return text;
 }
 
 /**
@@ -278,7 +278,7 @@ export default function SugarDispensePaymentModal({
   };
 
   // Process raw scanned code (Receipt QR, ID Card QR, Barcode, Manual Input)
-  const handleProcessCode = (rawCode, source = 'ಸ್ಕ್ಯಾನರ್') => {
+  const handleProcessCode = async (rawCode, source = 'ಸ್ಕ್ಯಾನರ್') => {
     const cleanNo = extractShareNoFromInput(rawCode);
     if (!cleanNo) {
       playChime('warning');
@@ -286,18 +286,45 @@ export default function SugarDispensePaymentModal({
       return;
     }
 
-    // Find shareholder in database
-    const matched = allShareholders.find(s => {
-      const sNo = String(s.share_no || s.share_number || s.id || '').replace(/\D/g, '');
-      return sNo === cleanNo;
+    const target = cleanNo.trim();
+    const targetLower = target.toLowerCase();
+    const hasSymbol = /^[^0-9]/.test(target);
+
+    // Find shareholder in database (strictly exact match preserving category symbols like # or ಬ-$)
+    let matched = allShareholders.find(s => {
+      const sNo = String(s.share_no || s.share_number || '').trim().toLowerCase();
+      return sNo === targetLower;
     });
+
+    if (!matched && !hasSymbol) {
+      matched = allShareholders.find(s => {
+        const sSl = String(s.sl_no || '').trim();
+        const sId = String(s.id || s.entity_id || '').trim();
+        return sSl === target || sId === target;
+      });
+    }
+
+    if (!matched) {
+      try {
+        const searchRes = await ApiService.getShareholders({ search: target, limit: 15 });
+        if (searchRes && Array.isArray(searchRes.data) && searchRes.data.length > 0) {
+          matched = searchRes.data.find(s => {
+            const sNo = String(s.share_no || s.share_number || '').trim().toLowerCase();
+            return sNo === targetLower;
+          });
+          if (!matched && !hasSymbol) {
+            matched = searchRes.data[0];
+          }
+        }
+      } catch (e) {}
+    }
 
     if (matched) {
       setScanInput('');
       handleSelectShareholder(matched, source);
     } else {
       playChime('warning');
-      showToast(`⚠️ ಶೇರು ಸಂಖ್ಯೆ #${cleanNo} ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಕಂಡುಬಂದಿಲ್ಲ.`, 'error');
+      showToast(`⚠️ ಶೇರು ಸಂಖ್ಯೆ ${target} ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಕಂಡುಬಂದಿಲ್ಲ.`, 'error');
     }
   };
 

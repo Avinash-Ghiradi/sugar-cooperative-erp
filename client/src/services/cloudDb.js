@@ -133,6 +133,8 @@ export const CloudDbService = {
       const cleanSearch = (search || '').trim();
       const q = encodeURIComponent(cleanSearch);
       const isNum = cleanSearch.length > 0 && /^\d+$/.test(cleanSearch);
+      const isSymbolShareNo = cleanSearch.length > 0 && /^[#\$\w\-]+\d+$/i.test(cleanSearch);
+      const isShareQuery = (isNum || isSymbolShareNo) && cleanSearch.length <= 10;
 
       // Common filter params (status, book_no, etc.)
       const filterParams = [];
@@ -176,15 +178,23 @@ export const CloudDbService = {
 
       // When searching a number on page 1 without explicit custom sorting:
       // Run parallel queries: exact & prefix share_no matches FIRST, then contained matches!
-      if (cleanSearch && isNum && cleanSearch.length <= 6 && page === 1 && (!sortBy || sortBy === 'share_no')) {
+      if (cleanSearch && isShareQuery && page === 1 && (!sortBy || sortBy === 'share_no')) {
         const filterStr = filterParams.length > 0 ? `&${filterParams.join('&')}` : '';
 
         // 1. Exact matches on share_no, sl_no, or receipt_no (Guarantees exact match is retrieved!)
-        const exactUrl = `${cleanUrl}/rest/v1/shareholders?or=(share_no.eq.${q},sl_no.eq.${q},receipt_no.eq.${q})${filterStr}&order=id.asc&limit=15`;
-        // 2. Prefix matches on share_no or receipt_no (in ascending numerical order)
-        const prefixUrl = `${cleanUrl}/rest/v1/shareholders?or=(share_no.ilike.${q}*,receipt_no.ilike.${q}*)${filterStr}&order=id.asc&limit=60`;
-        // 3. All matching records for total count and contains fallback
-        const allUrl = `${cleanUrl}/rest/v1/shareholders?or=(share_no.eq.${q},share_no.ilike.${q}*,share_no.ilike.*${q}*,receipt_no.eq.${q},receipt_no.ilike.*${q}*,shareholder_name.ilike.*${q}*,mobile_no.ilike.*${q}*)${filterStr}&order=id.asc&limit=${limit}`;
+        const exactMatchClause = isNum 
+          ? `or=(share_no.eq.${q},sl_no.eq.${q},receipt_no.eq.${q})` 
+          : `or=(share_no.eq.${q},share_no.ilike.${q}*)`;
+        const prefixClause = isNum 
+          ? `or=(share_no.ilike.${q}*,receipt_no.ilike.${q}*)` 
+          : `or=(share_no.ilike.${q}*)`;
+        const allClause = isNum 
+          ? `or=(share_no.eq.${q},share_no.ilike.${q}*,share_no.ilike.*${q}*,receipt_no.eq.${q},receipt_no.ilike.*${q}*,shareholder_name.ilike.*${q}*,mobile_no.ilike.*${q}*)` 
+          : `or=(share_no.eq.${q},share_no.ilike.${q}*,share_no.ilike.*${q}*,shareholder_name.ilike.*${q}*)`;
+
+        const exactUrl = `${cleanUrl}/rest/v1/shareholders?${exactMatchClause}${filterStr}&order=id.asc&limit=15`;
+        const prefixUrl = `${cleanUrl}/rest/v1/shareholders?${prefixClause}${filterStr}&order=id.asc&limit=60`;
+        const allUrl = `${cleanUrl}/rest/v1/shareholders?${allClause}${filterStr}&order=id.asc&limit=${limit}`;
 
         const [exactRes, prefixRes, allRes] = await Promise.all([
           fetch(exactUrl, { headers: authHeaders }),
@@ -261,29 +271,34 @@ export const CloudDbService = {
       if (cleanSearch && Array.isArray(data) && (!sortBy || (sortBy === 'share_no' && sortOrder === 'asc'))) {
         const qLower = cleanSearch.toLowerCase();
         const getRank = (item) => {
-          const sh = String(item.share_no || item.share_number || '').trim().replace(/^[#\s]+/, '').toLowerCase();
+          const shExact = String(item.share_no || item.share_number || '').trim().toLowerCase();
           const sl = String(item.sl_no || item.id || '').trim().toLowerCase();
           const rec = String(item.receipt_no || '').trim().toLowerCase();
           const allShares = Array.isArray(item.all_share_numbers) ? item.all_share_numbers.map(s => String(s).trim().toLowerCase()) : [];
 
+          // Absolute Priority 1: Exact Share Number match (strictly preserving #, ಬ-$, etc.)
+          if (shExact === qLower || allShares.includes(qLower)) return 1;
+
           if (isNum) {
-            // Rank 1: Exact Share Number match FIRST (Absolute Top Priority!)
-            if (sh === qLower || allShares.includes(qLower)) return 1;
             // Rank 2: Exact Serial Number match SECOND
             if (sl === qLower) return 2;
             // Rank 3: Exact Receipt Number match THIRD
             if (rec === qLower) return 3;
-            // Rank 4: Share Number starts with query (Prefix match e.g. 1180, 1181)
-            if (sh.startsWith(qLower)) return 4;
+            // Rank 4: Share Number starts with query
+            if (shExact.startsWith(qLower)) return 4;
             // Rank 5: Receipt Number starts with query
             if (rec.startsWith(qLower)) return 5;
-            // Rank 6: Share Number contains query (e.g. 2118, 5118)
-            if (sh.includes(qLower)) return 6;
+            // Rank 6: Share Number contains query
+            if (shExact.includes(qLower)) return 6;
             // Rank 7: Receipt Number contains query
             if (rec.includes(qLower)) return 7;
             // Rank 8: Shareholder name starts with query
             const nm = String(item.shareholder_name || '').toLowerCase();
             if (nm.startsWith(qLower)) return 8;
+            return 9;
+          } else if (isSymbolShareNo) {
+            if (shExact.startsWith(qLower)) return 4;
+            if (shExact.includes(qLower)) return 6;
             return 9;
           } else {
             const nm = String(item.shareholder_name || '').toLowerCase();
