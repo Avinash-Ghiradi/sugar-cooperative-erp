@@ -3728,24 +3728,60 @@ const newSh = {
     return { success: true, transaction_id: newTx.transaction_id };
   },
 
-  async getSugarAllotments({ page = 1, limit = 20, search = '' }) {
+  async getSugarAllotments(options = {}) {
     await ensureDBReady();
+    const { page, limit, search = '' } = options || {};
     if (CloudDbService.isEnabled()) {
       try {
         const cloudData = await CloudDbService.getCollection('sugar_allotments');
         if (Array.isArray(cloudData) && cloudData.length > 0) {
-          mockSugarAllotments = cloudData;
+          const localStored = loadStoredData(STORAGE_KEY_SA, []);
+          const mergedMap = new Map();
+          for (const item of (Array.isArray(localStored) ? localStored : [])) {
+            const k = String(item.record_id || item.allotment_id || item.receipt_no || item.id || '');
+            if (k) mergedMap.set(k, item);
+          }
+          for (const item of cloudData) {
+            const k = String(item.record_id || item.allotment_id || item.receipt_no || item.id || '');
+            if (k) mergedMap.set(k, item);
+          }
+          mockSugarAllotments = Array.from(mergedMap.values());
           saveStoredData(STORAGE_KEY_SA, mockSugarAllotments);
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Error fetching cloud sugar allotments:', e);
+      }
     }
-    const apiRes = await fetchApi(`/sugar-allotment?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
+    const apiRes = await fetchApi(`/sugar-allotment?page=${page || 1}&limit=${limit || 1000}&search=${encodeURIComponent(search)}`);
     if (apiRes && apiRes.success) return apiRes;
+
+    let results = mockSugarAllotments;
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      results = results.filter(a => {
+        const sNo = String(a.share_no || a.share_number || '').toLowerCase();
+        const sName = String(a.shareholder_name || '').toLowerCase();
+        const rNo = String(a.receipt_no || '').toLowerCase();
+        return sNo.includes(q) || sName.includes(q) || rNo.includes(q);
+      });
+    }
+
+    const total = results.length;
+    let pagedData = results;
+    if (limit && limit > 0) {
+      const p = page && page > 0 ? page : 1;
+      pagedData = results.slice((p - 1) * limit, p * limit);
+    }
 
     return {
       success: true,
-      data: mockSugarAllotments.slice((page - 1) * limit, page * limit),
-      pagination: { total: mockSugarAllotments.length, page, limit, totalPages: Math.max(1, Math.ceil(mockSugarAllotments.length / limit)) }
+      data: pagedData,
+      pagination: {
+        total,
+        page: page || 1,
+        limit: limit || total,
+        totalPages: limit ? Math.max(1, Math.ceil(total / limit)) : 1
+      }
     };
   },
 
@@ -3755,38 +3791,58 @@ const newSh = {
     if (apiRes && apiRes.success) return apiRes;
 
     const sh = mockShareholders.find(s => s.shareholder_id === data.shareholder_id);
+    const allotmentId = data.allotment_id || `SA-${Date.now()}`;
     const newSa = {
-      id: mockSugarAllotments.length + 1,
-      allotment_id: `SA-${Date.now()}`,
       ...data,
-      shareholder_name: sh ? (sh.shareholder_name || sh.name) : 'Shareholder',
-      share_number: sh ? (sh.share_no || sh.share_number) : 'SN-1000',
-      village_name: sh ? (sh.place || sh.village_name) : 'Gaon',
-      remaining_quantity_kg: data.sugar_quantity_kg - (data.issued_quantity_kg || 0)
+      id: data.id || mockSugarAllotments.length + 1,
+      allotment_id: allotmentId,
+      record_id: allotmentId,
+      shareholder_name: data.shareholder_name || (sh ? (sh.shareholder_name || sh.name) : 'Member'),
+      share_number: data.share_no || data.share_number || (sh ? (sh.share_no || sh.share_number) : 'SN-1000'),
+      share_no: data.share_no || data.share_number || (sh ? (sh.share_no || sh.share_number) : 'SN-1000'),
+      village_name: data.village || data.village_name || (sh ? (sh.place || sh.village_name) : ''),
+      village: data.village || data.village_name || (sh ? (sh.place || sh.village_name) : ''),
+      sugar_allotted_kg: parseFloat(data.sugar_allotted_kg || data.sugar_quantity_kg || data.issued_quantity_kg) || 25,
+      sugar_quantity_kg: parseFloat(data.sugar_quantity_kg || data.sugar_allotted_kg || data.issued_quantity_kg) || 25,
+      issued_quantity_kg: parseFloat(data.issued_quantity_kg || data.sugar_allotted_kg || data.sugar_quantity_kg) || 25,
+      rate_per_kg: parseFloat(data.rate_per_kg) || 20,
+      total_amount: parseFloat(data.total_amount) || 0,
+      payment_mode: data.payment_mode || 'Cash',
+      payment_status: data.payment_status || 'Paid',
+      allotment_date: data.allotment_date || new Date().toLocaleDateString('en-GB'),
+      created_at: data.created_at || new Date().toISOString(),
+      remaining_quantity_kg: 0
     };
+
+    mockSugarAllotments = mockSugarAllotments.filter(a => (a.allotment_id || a.record_id) !== allotmentId);
     mockSugarAllotments.unshift(newSa);
     saveStoredData(STORAGE_KEY_SA, mockSugarAllotments);
+
     if (CloudDbService.isEnabled()) {
-      CloudDbService.saveCollectionItem('sugar_allotments', newSa.allotment_id, newSa).catch(() => {});
+      try {
+        await CloudDbService.saveCollectionItem('sugar_allotments', newSa.allotment_id, newSa);
+      } catch (cloudErr) {
+        console.warn('Cloud saveCollectionItem sugar_allotments error:', cloudErr);
+      }
     }
 
     try {
       await this.addAuditLog({
         id: `LOG-SUGAR-${newSa.allotment_id}`,
         timestamp: new Date().toISOString(),
-        username: data.issued_by || 'Sugar Operator',
-        performed_by: data.issued_by || 'Sugar Operator',
+        username: data.issued_by || data.weighman_name || 'Sugar Operator',
+        performed_by: data.issued_by || data.weighman_name || 'Sugar Operator',
         role: 'Sugar Operator',
         module: 'Sugar Allotment (ಸಕ್ಕರೆ ಹಂಚಿಕೆ)',
         action: 'SUGAR_ALLOTMENT_ISSUED',
         record_id: `#${newSa.share_number || newSa.share_no}`,
         share_no: newSa.share_number || newSa.share_no,
-        description: `ಸಕ್ಕರೆ ಹಂಚಿಕೆ: ಶೇರುದಾರ #${newSa.share_number || newSa.share_no} (${newSa.shareholder_name}) ಅವರಿಗೆ ${newSa.issued_quantity_kg || newSa.sugar_quantity_kg} ಕೆ.ಜಿ. ಸಕ್ಕರೆ ವಿತರಿಸಲಾಗಿದೆ. ರಶೀದಿ ನಂ: #${newSa.receipt_no || '—'}`,
+        description: `ಸಕ್ಕರೆ ಹಂಚಿಕೆ: ಶೇರುದಾರ #${newSa.share_number || newSa.share_no} (${newSa.shareholder_name}) ಅವರಿಗೆ ${newSa.issued_quantity_kg} ಕೆ.ಜಿ. ಸಕ್ಕರೆ ವಿತರಿಸಲಾಗಿದೆ. ರಶೀದಿ ನಂ: #${newSa.receipt_no || '—'}`,
         details: newSa
       });
     } catch (e) {}
 
-    return { success: true, allotment_id: newSa.allotment_id };
+    return { success: true, allotment_id: newSa.allotment_id, id: newSa.id, data: newSa };
   },
 
   async getVarasaTransfers({ search = '', status = '', taluk = '' } = {}) {

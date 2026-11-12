@@ -249,12 +249,24 @@ export default function SugarDispenseModule() {
     return () => { isMounted = false; };
   }, []);
 
-  // Load allotments history
-  const loadAllotments = async () => {
+  // Fast Map lookup for shareholder details by share_no and id
+  const shareholderLookupMap = useMemo(() => {
+    const map = new Map();
+    for (const sh of allShareholders) {
+      const sNo = String(sh.share_no || sh.share_number || '').trim().replace(/^#/, '');
+      if (sNo) map.set(sNo, sh);
+      if (sh.id) map.set(String(sh.id), sh);
+      if (sh.shareholder_id) map.set(String(sh.shareholder_id), sh);
+    }
+    return map;
+  }, [allShareholders]);
+
+  // Load allotments history from Cloud & Local
+  const loadAllotments = useCallback(async () => {
     try {
       setLoadingAllotments(true);
       const res = await ApiService.getSugarAllotments();
-      if (res && res.data) {
+      if (res && Array.isArray(res.data)) {
         setAllAllotments(res.data);
       }
     } catch (err) {
@@ -262,31 +274,87 @@ export default function SugarDispenseModule() {
     } finally {
       setLoadingAllotments(false);
     }
-  };
+  }, []);
 
-  // Today's Filtered Allotments
+  // Format and enrich allotment record with accurate shareholder name & village
+  const formatAllotmentRecord = useCallback((a) => {
+    const cleanNo = String(a.share_no || a.share_number || '').trim().replace(/^#/, '');
+    const matchedHolder = cleanNo ? shareholderLookupMap.get(cleanNo) : null;
+    const holderName = (a.shareholder_name && a.shareholder_name !== 'Shareholder' && a.shareholder_name !== 'Member')
+      ? a.shareholder_name
+      : (matchedHolder?.shareholder_name || matchedHolder?.name || a.shareholder_name || 'Member');
+    const holderVillage = (a.village && a.village !== 'Gaon')
+      ? a.village
+      : (matchedHolder?.place || matchedHolder?.village || a.village_name || '-');
+    const kg = parseFloat(a.sugar_allotted_kg || a.sugar_quantity_kg || a.issued_quantity_kg || a.allotted_kg || a.quantity_kg) || 25;
+    const rate = parseFloat(a.rate_per_kg) || 20;
+    const amount = parseFloat(a.total_amount || a.amount) || (kg * rate);
+
+    return {
+      ...a,
+      share_no: cleanNo || a.share_no || a.share_number,
+      shareholder_name: holderName,
+      village: holderVillage,
+      sugar_allotted_kg: kg,
+      total_amount: amount,
+      payment_mode: a.payment_mode || 'Cash',
+      payment_status: a.payment_status || 'Paid'
+    };
+  }, [shareholderLookupMap]);
+
+  // All Allotments Enriched with names
+  const allAllotmentsEnriched = useMemo(() => {
+    return allAllotments.map(formatAllotmentRecord);
+  }, [allAllotments, formatAllotmentRecord]);
+
+  // Today's String & Matching
   const todayStr = useMemo(() => {
     const d = new Date();
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   }, []);
 
+  const isRecordToday = useCallback((a) => {
+    if (!a) return false;
+    const now = new Date();
+    const todayD = now.getDate();
+    const todayM = now.getMonth();
+    const todayY = now.getFullYear();
+
+    const dStr = String(a.allotment_date || a.date || '');
+    if (dStr.includes(`${String(todayD).padStart(2, '0')}/${String(todayM + 1).padStart(2, '0')}/${todayY}`)) return true;
+    if (dStr.includes(`${todayY}-${String(todayM + 1).padStart(2, '0')}-${String(todayD).padStart(2, '0')}`)) return true;
+
+    if (a.created_at) {
+      const cDate = new Date(a.created_at);
+      if (!isNaN(cDate.getTime())) {
+        if (cDate.getDate() === todayD && cDate.getMonth() === todayM && cDate.getFullYear() === todayY) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }, []);
+
   const todayAllotments = useMemo(() => {
-    return allAllotments.filter(a => {
-      const recDate = String(a.allotment_date || a.date || a.created_at || '');
-      return recDate.includes(todayStr) || recDate.startsWith(todayStr.split('/').reverse().join('-'));
-    });
-  }, [allAllotments, todayStr]);
+    return allAllotmentsEnriched.filter(isRecordToday);
+  }, [allAllotmentsEnriched, isRecordToday]);
 
   // Today's Statistics
   const todayStats = useMemo(() => {
     const totalMembers = todayAllotments.length;
-    const totalKg = todayAllotments.reduce((sum, a) => sum + (parseFloat(a.sugar_allotted_kg || a.allotted_kg || a.quantity_kg) || 0), 0);
+    const totalKg = todayAllotments.reduce((sum, a) => sum + (parseFloat(a.sugar_allotted_kg) || 0), 0);
     const totalCash = todayAllotments
-      .filter(a => String(a.payment_mode || a.mode || '').toLowerCase().includes('cash') || String(a.payment_mode || '').includes('ನಗದು'))
-      .reduce((sum, a) => sum + (parseFloat(a.total_amount || a.amount) || 0), 0);
+      .filter(a => {
+        const m = String(a.payment_mode || '').toLowerCase();
+        return m.includes('cash') || m.includes('ನಗದು');
+      })
+      .reduce((sum, a) => sum + (parseFloat(a.total_amount) || 0), 0);
     const totalUpi = todayAllotments
-      .filter(a => String(a.payment_mode || a.mode || '').toLowerCase().includes('upi') || String(a.payment_mode || '').includes('ಆನ್‌ಲೈನ್'))
-      .reduce((sum, a) => sum + (parseFloat(a.total_amount || a.amount) || 0), 0);
+      .filter(a => {
+        const m = String(a.payment_mode || '').toLowerCase();
+        return m.includes('upi') || m.includes('qr') || m.includes('online') || m.includes('ಆನ್‌ಲೈನ್') || m.includes('ಆನ್ಲೈನ್');
+      })
+      .reduce((sum, a) => sum + (parseFloat(a.total_amount) || 0), 0);
 
     return {
       totalMembers,
@@ -300,17 +368,17 @@ export default function SugarDispenseModule() {
 
   // Overall Season Statistics
   const seasonStats = useMemo(() => {
-    const seasonList = allAllotments.filter(a => String(a.season || a.crushing_season || '2026-27').includes('2026'));
+    const seasonList = allAllotmentsEnriched.filter(a => String(a.season || a.crushing_season || '2026-27').includes('2026'));
     const totalMembers = seasonList.length;
-    const totalKg = seasonList.reduce((sum, a) => sum + (parseFloat(a.sugar_allotted_kg || a.allotted_kg || a.quantity_kg) || 0), 0);
-    const totalAmt = seasonList.reduce((sum, a) => sum + (parseFloat(a.total_amount || a.amount) || 0), 0);
+    const totalKg = seasonList.reduce((sum, a) => sum + (parseFloat(a.sugar_allotted_kg) || 0), 0);
+    const totalAmt = seasonList.reduce((sum, a) => sum + (parseFloat(a.total_amount) || 0), 0);
     return {
       totalMembers,
       totalKg,
       totalQuintals: (totalKg / 100).toFixed(2),
       totalAmt
     };
-  }, [allAllotments]);
+  }, [allAllotmentsEnriched]);
 
   // Set default values when shareholder is selected
   const handleSelectShareholder = useCallback((holder) => {
@@ -684,9 +752,17 @@ export default function SugarDispenseModule() {
       const res = await ApiService.addSugarAllotment(record);
       if (res && res.success) {
         playChime('success');
-        setLastSavedRecord({ ...record, id: res.id || Date.now() });
+        const savedRec = { ...record, id: res.id || res.allotment_id || Date.now() };
+        setLastSavedRecord(savedRec);
         setShowSuccessDialog(true);
         showToast(`ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ₹${totalAmount} ಪಾವತಿ ಯಶಸ್ವಿಯಾಗಿ ದಾಖಲಾಗಿದೆ!`, 'success');
+        
+        // Instant UI update
+        setAllAllotments(prev => {
+          const filtered = prev.filter(p => (p.record_id || p.allotment_id || p.receipt_no) !== (savedRec.record_id || savedRec.allotment_id || savedRec.receipt_no));
+          return [savedRec, ...filtered];
+        });
+        
         loadAllotments();
       } else {
         throw new Error(res?.message || 'Failed to save');
@@ -854,68 +930,68 @@ export default function SugarDispenseModule() {
       {/* TOP LIVE KPI STATS CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Today Allotted Members */}
-        <div className="bg-gradient-to-br from-emerald-950/60 to-slate-900 border border-emerald-800/50 rounded-2xl p-4 shadow-lg flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-emerald-500/30 dark:border-emerald-800/50 rounded-2xl p-4 shadow-lg flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
+            <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5" />
               <span>ಇಂದು ವಿತರಿಸಲಾದ ಶೇರುದಾರರು</span>
             </div>
-            <div className="text-2xl font-black text-white mt-1 font-mono">
-              {todayStats.totalMembers} <span className="text-xs font-normal text-slate-400">ಜನ</span>
+            <div className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">
+              {todayStats.totalMembers} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">ಜನ</span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-600/20 border border-emerald-300 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 2: Today Sugar Kg */}
-        <div className="bg-gradient-to-br from-teal-950/60 to-slate-900 border border-teal-800/50 rounded-2xl p-4 shadow-lg flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-teal-500/30 dark:border-teal-800/50 rounded-2xl p-4 shadow-lg flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-bold text-teal-400 flex items-center gap-1.5">
+            <div className="text-[11px] font-bold text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
               <Scale className="w-3.5 h-3.5" />
               <span>ಇಂದು ವಿತರಿಸಿದ ಸಕ್ಕರೆ</span>
             </div>
-            <div className="text-2xl font-black text-white mt-1 font-mono">
-              {todayStats.totalKg.toLocaleString()} <span className="text-xs font-normal text-slate-400">ಕೆಜಿ</span>
+            <div className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">
+              {todayStats.totalKg.toLocaleString()} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">ಕೆಜಿ</span>
             </div>
-            <div className="text-[10px] text-teal-300 font-mono mt-0.5">
+            <div className="text-[10px] text-teal-600 dark:text-teal-300 font-mono mt-0.5 font-bold">
               ({todayStats.totalQuintals} ಕ್ವಿಂಟಾಲ್)
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-teal-600/20 border border-teal-500/30 flex items-center justify-center text-teal-400">
+          <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-600/20 border border-teal-300 dark:border-teal-500/30 flex items-center justify-center text-teal-600 dark:text-teal-400">
             <PackageCheck className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 3: Today Cash Collection */}
-        <div className="bg-gradient-to-br from-amber-950/60 to-slate-900 border border-amber-800/50 rounded-2xl p-4 shadow-lg flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-amber-500/30 dark:border-amber-800/50 rounded-2xl p-4 shadow-lg flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-bold text-amber-400 flex items-center gap-1.5">
+            <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
               <Banknote className="w-3.5 h-3.5" />
               <span>ನಗದು ಸಂಗ್ರಹ (Cash)</span>
             </div>
-            <div className="text-2xl font-black text-white mt-1 font-mono">
+            <div className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">
               ₹ {todayStats.totalCash.toLocaleString()}
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-600/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-600/20 border border-amber-300 dark:border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
             <CreditCard className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 4: Today UPI Collection */}
-        <div className="bg-gradient-to-br from-blue-950/60 to-slate-900 border border-blue-800/50 rounded-2xl p-4 shadow-lg flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-blue-500/30 dark:border-blue-800/50 rounded-2xl p-4 shadow-lg flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-bold text-blue-400 flex items-center gap-1.5">
+            <div className="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
               <Smartphone className="w-3.5 h-3.5" />
               <span>UPI / ಆನ್‌ಲೈನ್ ಸಂಗ್ರಹ</span>
             </div>
-            <div className="text-2xl font-black text-white mt-1 font-mono">
+            <div className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-mono">
               ₹ {todayStats.totalUpi.toLocaleString()}
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+          <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-600/20 border border-blue-300 dark:border-blue-500/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
             <Sparkles className="w-5 h-5" />
           </div>
         </div>
@@ -959,7 +1035,7 @@ export default function SugarDispenseModule() {
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          <span>ಸೀಸನ್ ಒಟ್ಟು ವಹಿ ({allAllotments.length})</span>
+          <span>ಸೀಸನ್ ಒಟ್ಟು ವಹಿ ({allAllotmentsEnriched.length})</span>
         </button>
       </div>
 
