@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, FileText, Download, CheckSquare, Square, Calendar, Sparkles } from 'lucide-react';
 import { downloadEnrollmentDocx, formatDocxDate } from '../../services/enrollmentDocxService';
@@ -49,27 +49,24 @@ export default function EnrollmentDocxExportModal({
 
   if (!isOpen) return null;
 
-  const recordsToExport = useMemo(() => {
-    if (scope === 'selected') {
-      if (selectedRecords && selectedRecords.length > 0) {
-        return selectedRecords;
-      }
-      if (selectedIds && selectedIds.size > 0) {
-        return allFilteredRecords.filter(r => {
-          const rawId = r.id !== undefined ? r.id : r.enrollment_id;
-          const strId = String(rawId);
-          const numId = Number(rawId);
-          const enrId = r.enrollment_id ? String(r.enrollment_id) : '';
-          return selectedIds.has(rawId) ||
-                 selectedIds.has(strId) ||
-                 (!isNaN(numId) && selectedIds.has(numId)) ||
-                 (enrId && selectedIds.has(enrId));
-        });
-      }
-      return [];
-    }
-    return allFilteredRecords;
-  }, [scope, selectedRecords, selectedIds, allFilteredRecords]);
+  const isRecordSelected = (r) => {
+    if (!selectedIds || selectedIds.size === 0) return false;
+    const rawId = r.id !== undefined ? r.id : r.enrollment_id;
+    const strId = String(rawId);
+    const numId = Number(rawId);
+    const enrId = r.enrollment_id ? String(r.enrollment_id) : '';
+    return selectedIds.has(rawId) ||
+           selectedIds.has(strId) ||
+           (!isNaN(numId) && selectedIds.has(numId)) ||
+           (enrId && selectedIds.has(enrId));
+  };
+
+  // Plain calculation - zero hook violation risk
+  const recordsToExport = scope === 'selected'
+    ? (selectedRecords && selectedRecords.length > 0
+        ? selectedRecords
+        : (selectedIds && selectedIds.size > 0 ? allFilteredRecords.filter(isRecordSelected) : []))
+    : allFilteredRecords;
 
   const totalShares = recordsToExport.reduce((sum, r) => sum + (parseInt(r.no_shares || r.number_of_shares || 1, 10) || 1), 0);
 

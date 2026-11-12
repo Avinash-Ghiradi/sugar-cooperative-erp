@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer, X, CheckSquare, Square, Layers, Filter, CheckCircle2, FileText, ChevronDown } from 'lucide-react';
 import { useCompanyLogo, useHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
@@ -169,19 +169,12 @@ export default function RegisterListPrintModal({
            (transId && selectedIds.has(transId));
   };
 
-  // Filter records based on scope
-  const recordsToPrint = useMemo(() => {
-    if (scope === 'selected') {
-      if (selectedRecords && selectedRecords.length > 0) {
-        return selectedRecords;
-      }
-      if (selectedIds && selectedIds.size > 0) {
-        return allRecords.filter(isRecordSelected);
-      }
-      return [];
-    }
-    return allRecords;
-  }, [scope, selectedRecords, selectedIds, allRecords]);
+  // Plain calculation - zero hook violation risk
+  const recordsToPrint = scope === 'selected'
+    ? (selectedRecords && selectedRecords.length > 0
+        ? selectedRecords
+        : (selectedIds && selectedIds.size > 0 ? allRecords.filter(isRecordSelected) : []))
+    : allRecords;
 
   // Department and Register Header Title configuration
   let registerTitleKn = '';

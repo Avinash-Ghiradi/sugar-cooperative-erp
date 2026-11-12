@@ -117,8 +117,6 @@ export default function SugarDispensePaymentModal({
   currentUser = null,
   onAllotmentSaved = () => {}
 }) {
-  if (!isOpen) return null;
-
   // Tabs: 'dispense' | 'today_register'
   const [activeTab, setActiveTab] = useState('dispense');
 
@@ -603,6 +601,8 @@ export default function SugarDispensePaymentModal({
       showToast('ಎಕ್ಸೆಲ್ ರಫ್ತಿನಲ್ಲಿ ದೋಷ ಸಂಭವಿಸಿದೆ.', 'error');
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">

@@ -3445,19 +3445,21 @@ export default function SugarAllotmentModule() {
       />
 
       {/* MODAL: SUGAR DISPENSE & PAYMENT COUNTER */}
-      <SugarDispensePaymentModal
-        isOpen={showDispensingModal}
-        onClose={() => {
-          setShowDispensingModal(false);
-          setSelectedShareholderForDispense(null);
-        }}
-        initialShareholder={selectedShareholderForDispense}
-        allShareholders={allShareholders}
-        settings={settings}
-        showToast={showToast}
-        currentUser={user}
-        onAllotmentSaved={() => loadInitialData()}
-      />
+      {showDispensingModal && (
+        <SugarDispensePaymentModal
+          isOpen={showDispensingModal}
+          onClose={() => {
+            setShowDispensingModal(false);
+            setSelectedShareholderForDispense(null);
+          }}
+          initialShareholder={selectedShareholderForDispense}
+          allShareholders={allShareholders}
+          settings={settings}
+          showToast={showToast}
+          currentUser={user}
+          onAllotmentSaved={() => loadInitialData()}
+        />
+      )}
     </div>
   );
 }

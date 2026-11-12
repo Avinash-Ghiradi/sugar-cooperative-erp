@@ -938,36 +938,40 @@ export default function NewShareholderModule() {
       />
 
       {/* Official Statutory Register List Print Modal */}
-      <RegisterListPrintModal
-        isOpen={listPrintModalOpen}
-        onClose={() => setListPrintModalOpen(false)}
-        type="enrollment"
-        allRecords={allPrintRecords.length > 0 ? allPrintRecords : enrollments}
-        selectedIds={selectedIds}
-        selectedRecords={selectedPrintRecords}
-        initialScope={listPrintInitialScope}
-        filterSummary={{
-          search: searchTerm,
-          category: categoryFilter,
-          status: statusFilter
-        }}
-        onClearSelection={clearSelection}
-      />
+      {listPrintModalOpen && (
+        <RegisterListPrintModal
+          isOpen={listPrintModalOpen}
+          onClose={() => setListPrintModalOpen(false)}
+          type="enrollment"
+          allRecords={allPrintRecords.length > 0 ? allPrintRecords : enrollments}
+          selectedIds={selectedIds}
+          selectedRecords={selectedPrintRecords}
+          initialScope={listPrintInitialScope}
+          filterSummary={{
+            search: searchTerm,
+            category: categoryFilter,
+            status: statusFilter
+          }}
+          onClearSelection={clearSelection}
+        />
+      )}
 
       {/* Official Word (.docx) Statutory List Export Modal */}
-      <EnrollmentDocxExportModal
-        isOpen={docxModalOpen}
-        onClose={() => setDocxModalOpen(false)}
-        allFilteredRecords={allPrintRecords.length > 0 ? allPrintRecords : enrollments}
-        selectedIds={selectedIds}
-        selectedRecords={selectedPrintRecords}
-        initialScope={docxInitialScope}
-        filterSummary={{
-          search: searchTerm,
-          category: categoryFilter,
-          status: statusFilter
-        }}
-      />
+      {docxModalOpen && (
+        <EnrollmentDocxExportModal
+          isOpen={docxModalOpen}
+          onClose={() => setDocxModalOpen(false)}
+          allFilteredRecords={allPrintRecords.length > 0 ? allPrintRecords : enrollments}
+          selectedIds={selectedIds}
+          selectedRecords={selectedPrintRecords}
+          initialScope={docxInitialScope}
+          filterSummary={{
+            search: searchTerm,
+            category: categoryFilter,
+            status: statusFilter
+          }}
+        />
+      )}
     </div>
   );
 }
