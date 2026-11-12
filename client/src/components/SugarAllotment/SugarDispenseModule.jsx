@@ -155,6 +155,7 @@ export default function SugarDispenseModule() {
   const [selectedCameraId, setSelectedCameraId] = useState('');
   const [cameraError, setCameraError] = useState('');
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraRetry, setCameraRetry] = useState(0);
 
   // Selected Shareholder for Dispensing
   const [selectedShareholder, setSelectedShareholder] = useState(null);
@@ -351,10 +352,13 @@ export default function SugarDispenseModule() {
       return;
     }
 
+    const cleanNum = Number(cleanNo);
+
     const found = allShareholders.find(s => {
       const sNo = String(s.share_no || '').trim();
       const sId = String(s.id || '').trim();
-      return sNo === cleanNo || sId === cleanNo;
+      const sNum = Number(sNo);
+      return sNo === cleanNo || sId === cleanNo || (!isNaN(cleanNum) && !isNaN(sNum) && cleanNum > 0 && sNum === cleanNum);
     });
 
     if (found) {
@@ -366,103 +370,187 @@ export default function SugarDispenseModule() {
     }
   }, [allShareholders, handleSelectShareholder, scanInput, showToast]);
 
-  // Camera QR Scanner Lifecycle
+  // Safely stop and clear camera scanner
+  const stopCameraSafely = useCallback(async () => {
+    const scanner = html5QrCodeRef.current;
+    html5QrCodeRef.current = null;
+    if (scanner) {
+      try {
+        if (scanner.isScanning) {
+          await scanner.stop().catch(() => {});
+        }
+      } catch (e) {}
+      try {
+        scanner.clear();
+      } catch (e) {}
+    }
+    setIsCameraActive(false);
+  }, []);
+
+  // Handle successful QR scan
+  const handleScanSuccess = useCallback(async (decodedText) => {
+    if (!decodedText) return;
+    await stopCameraSafely();
+    setCameraOpen(false);
+    const cleanNo = extractShareNoFromInput(decodedText);
+    if (cleanNo) {
+      setScanInput(cleanNo);
+      handleSearch(cleanNo);
+    }
+  }, [stopCameraSafely, handleSearch]);
+
+  // Toggle Camera
+  const handleToggleCamera = useCallback(async () => {
+    if (cameraOpen) {
+      await stopCameraSafely();
+      setCameraOpen(false);
+    } else {
+      setCameraError('');
+      setCameraOpen(true);
+    }
+  }, [cameraOpen, stopCameraSafely]);
+
+  // Switch camera device
+  const handleSwitchCamera = useCallback(async (newCamId) => {
+    setSelectedCameraId(newCamId);
+    await stopCameraSafely();
+    setCameraRetry(c => c + 1);
+  }, [stopCameraSafely]);
+
+  // Close camera if user switches tabs
   useEffect(() => {
+    if (activeTab !== 'dispense' && cameraOpen) {
+      stopCameraSafely();
+      setCameraOpen(false);
+    }
+  }, [activeTab, cameraOpen, stopCameraSafely]);
+
+  // Camera QR Scanner Lifecycle using Html5Qrcode
+  useEffect(() => {
+    let isCancelled = false;
+    let localScanner = null;
+
     if (!cameraOpen) {
       if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.stop().then(() => {
-          html5QrCodeRef.current.clear();
-          setIsCameraActive(false);
-        }).catch(() => {
-          setIsCameraActive(false);
-        });
+        const sc = html5QrCodeRef.current;
+        html5QrCodeRef.current = null;
+        try {
+          if (sc.isScanning) {
+            sc.stop().then(() => {
+              try { sc.clear(); } catch (e) {}
+            }).catch(() => {});
+          } else {
+            try { sc.clear(); } catch (e) {}
+          }
+        } catch (e) {}
       }
+      setIsCameraActive(false);
       return;
     }
 
-    let isMounted = true;
-    const scannerId = 'sugar-dispense-fullpage-scanner';
+    setCameraError('');
+    setIsCameraActive(false);
 
     async function initCamera() {
       try {
-        setCameraError('');
-        const devices = await Html5Qrcode.getCameras();
-        if (!isMounted) return;
+        let devices = [];
+        try {
+          devices = await Html5Qrcode.getCameras();
+          if (!isCancelled && devices && devices.length > 0) {
+            setAvailableCameras(devices);
+          }
+        } catch (camErr) {
+          console.warn('Cameras enumeration failed:', camErr);
+        }
 
-        if (devices && devices.length > 0) {
-          setAvailableCameras(devices);
-          let targetCam = devices[0].id;
-          const backCam = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment') || d.label.toLowerCase().includes('rear'));
-          if (backCam) targetCam = backCam.id;
-          setSelectedCameraId(targetCam);
+        if (isCancelled) return;
 
-          const scanner = new Html5Qrcode(scannerId, {
-            formatsToSupport: [
-              Html5QrcodeSupportedFormats.QR_CODE,
-              Html5QrcodeSupportedFormats.CODE_128,
-              Html5QrcodeSupportedFormats.CODE_39,
-              Html5QrcodeSupportedFormats.EAN_13
-            ],
-            verbose: false
-          });
-          html5QrCodeRef.current = scanner;
-
-          await scanner.start(
-            targetCam,
-            {
-              fps: 15,
-              qrbox: { width: 250, height: 250 },
-              aspectRatio: 1.0
-            },
-            (decodedText) => {
-              if (decodedText) {
-                setCameraOpen(false);
-                setScanInput(decodedText);
-                handleSearch(decodedText);
-              }
-            },
-            () => {}
-          );
-          setIsCameraActive(true);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        let cameraTarget;
+        if (selectedCameraId) {
+          cameraTarget = selectedCameraId;
+        } else if (devices && devices.length > 0) {
+          const backCam = devices.find(d => /back|rear|environment/i.test(d.label));
+          cameraTarget = backCam ? backCam.id : devices[0].id;
         } else {
-          setCameraError('ಯಾವುದೇ ಕ್ಯಾಮೆರಾ ಕಂಡುಬಂದಿಲ್ಲ (No camera device detected)');
+          cameraTarget = isMobile ? { facingMode: 'environment' } : { facingMode: 'user' };
+        }
+
+        const scannerElem = document.getElementById('sugar-dispense-fullpage-scanner');
+        if (!scannerElem) {
+          if (!isCancelled) setCameraError('ಕ್ಯಾಮೆರಾ ವಿಂಡೋ ಸಿದ್ಧವಾಗಿಲ್ಲ, ದಯವಿಟ್ಟು ಮತ್ತೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ.');
+          return;
+        }
+        try { scannerElem.innerHTML = ''; } catch (e) {}
+
+        const scanner = new Html5Qrcode('sugar-dispense-fullpage-scanner', {
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.EAN_13
+          ],
+          verbose: false
+        });
+
+        html5QrCodeRef.current = scanner;
+        localScanner = scanner;
+
+        await scanner.start(
+          cameraTarget,
+          {
+            fps: 15,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+          },
+          (decodedText) => {
+            if (decodedText && !isCancelled) {
+              handleScanSuccess(decodedText);
+            }
+          },
+          () => {}
+        );
+
+        if (!isCancelled) {
+          setIsCameraActive(true);
+          setCameraError('');
         }
       } catch (err) {
-        console.warn('Camera error:', err);
-        setCameraError('ಕ್ಯಾಮೆರಾ ಅನುಮತಿ ನಿರಾಕರಿಸಲಾಗಿದೆ ಅಥವಾ ಕ್ಯಾಮೆರಾ ಲಭ್ಯವಿಲ್ಲ: ' + (err.message || err));
-      }
-    }
-
-    const timer = setTimeout(initCamera, 200);
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-      if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.stop().catch(() => {}).finally(() => {
-          try { html5QrCodeRef.current.clear(); } catch (e) {}
+        console.warn('Camera start error:', err);
+        if (!isCancelled) {
+          const errStr = String(err?.message || err || '');
+          if (errStr.includes('Permission') || errStr.includes('NotAllowedError')) {
+            setCameraError('ಕ್ಯಾಮೆರಾ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ (Camera permission required).');
+          } else {
+            setCameraError(`ಕ್ಯಾಮೆರಾ ಆರಂಭಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ: ${errStr}`);
+          }
           setIsCameraActive(false);
-        });
+        }
       }
-    };
-  }, [cameraOpen, handleSearch]);
-
-  // Switch camera device
-  const handleSwitchCamera = async (newCamId) => {
-    setSelectedCameraId(newCamId);
-    if (html5QrCodeRef.current && isCameraActive) {
-      await html5QrCodeRef.current.stop();
-      await html5QrCodeRef.current.start(
-        newCamId,
-        { fps: 15, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-        (decodedText) => {
-          setCameraOpen(false);
-          setScanInput(decodedText);
-          handleSearch(decodedText);
-        },
-        () => {}
-      );
     }
-  };
+
+    const timer = setTimeout(initCamera, 80);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+      if (localScanner) {
+        try {
+          if (localScanner.isScanning) {
+            localScanner.stop().then(() => {
+              try { localScanner.clear(); } catch (e) {}
+            }).catch(() => {});
+          } else {
+            try { localScanner.clear(); } catch (e) {}
+          }
+        } catch (e) {}
+      }
+      if (html5QrCodeRef.current === localScanner) {
+        html5QrCodeRef.current = null;
+      }
+      setIsCameraActive(false);
+    };
+  }, [cameraOpen, selectedCameraId, cameraRetry, handleScanSuccess]);
 
   // Handle Photo / File QR Upload Scan
   const handleFileUpload = async (e) => {
@@ -472,7 +560,7 @@ export default function SugarDispenseModule() {
     try {
       const tempScanner = new Html5Qrcode('temp-sugar-file-scanner-page', { verbose: false });
       const decodedText = await tempScanner.scanFile(file, true);
-      tempScanner.clear();
+      try { tempScanner.clear(); } catch (e) {}
       if (decodedText) {
         setScanInput(decodedText);
         handleSearch(decodedText);
@@ -867,7 +955,7 @@ export default function SugarDispenseModule() {
               <div className="flex flex-wrap items-center gap-2.5 pt-1 border-t border-slate-800/80">
                 <button
                   type="button"
-                  onClick={() => setCameraOpen(!cameraOpen)}
+                  onClick={handleToggleCamera}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                     cameraOpen
                       ? 'bg-rose-950/60 border-rose-700 text-rose-300'
@@ -891,14 +979,17 @@ export default function SugarDispenseModule() {
                 </label>
               </div>
 
-              {/* CAMERA VIEWPORT */}
-              {cameraOpen && (
-                <div className="p-3 bg-slate-950 border border-slate-700 rounded-2xl space-y-2 animate-fadeIn">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                      <Camera className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                      <span>ಕ್ಯಾಮೆರಾದ ಮುಂದೆ ರಶೀದಿ ಅಥವಾ ID QR ಕೋಡ್ ಹಿಡಿಯಿರಿ</span>
-                    </span>
+              {/* CAMERA VIEWPORT - Kept in DOM with display toggle to ensure stable HTML5Qrcode lifecycle */}
+              <div
+                className="p-3 bg-slate-950 border border-slate-700 rounded-2xl space-y-2 animate-fadeIn"
+                style={{ display: cameraOpen ? 'block' : 'none' }}
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                    <span>ಕ್ಯಾಮೆರಾದ ಮುಂದೆ ರಶೀದಿ ಅಥವಾ ID QR ಕೋಡ್ ಹಿಡಿಯಿರಿ</span>
+                  </span>
+                  <div className="flex items-center gap-2">
                     {availableCameras.length > 1 && (
                       <select
                         value={selectedCameraId}
@@ -910,19 +1001,34 @@ export default function SugarDispenseModule() {
                         ))}
                       </select>
                     )}
+                    <button
+                      type="button"
+                      onClick={handleToggleCamera}
+                      className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800"
+                      title="ಕ್ಯಾಮೆರಾ ಮುಚ್ಚಿ"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-
-                  <div className="relative overflow-hidden rounded-xl bg-black aspect-video flex items-center justify-center border border-slate-800">
-                    <div id="sugar-dispense-fullpage-scanner" className="w-full h-full" />
-                  </div>
-
-                  {cameraError && (
-                    <div className="p-2 rounded bg-rose-950/50 border border-rose-800 text-rose-300 text-xs">
-                      {cameraError}
-                    </div>
-                  )}
                 </div>
-              )}
+
+                <div className="relative overflow-hidden rounded-xl bg-black aspect-video flex items-center justify-center border border-slate-800">
+                  <div id="sugar-dispense-fullpage-scanner" className="w-full h-full [&>video]:w-full [&>video]:max-h-[320px] [&>video]:object-contain" />
+                </div>
+
+                {cameraError && (
+                  <div className="p-2 rounded bg-rose-950/50 border border-rose-800 text-rose-300 text-xs flex items-center justify-between">
+                    <span>{cameraError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setCameraRetry(c => c + 1)}
+                      className="px-2 py-0.5 bg-rose-800 hover:bg-rose-700 text-white rounded text-[11px] cursor-pointer"
+                    >
+                      ಮರುಪ್ರಯತ್ನಿಸಿ
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* SHAREHOLDER PROFILE DETAILS CARD */}
