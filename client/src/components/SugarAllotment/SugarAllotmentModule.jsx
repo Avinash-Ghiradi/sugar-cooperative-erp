@@ -167,6 +167,7 @@ export default function SugarAllotmentModule() {
   const [receiptProgress, setReceiptProgress] = useState(0);
   const [singleReceiptQr, setSingleReceiptQr] = useState('');
   const [singleReceiptDuplicate, setSingleReceiptDuplicate] = useState(false);
+  const [singleReceiptLayout, setSingleReceiptLayout] = useState('stacked'); // 'stacked' (Full A4 Top/Bottom) | 'grid' (Side-by-Side)
   const [previewQrMap, setPreviewQrMap] = useState(new Map());
   const [pinInput, setPinInput] = useState('');
   const [pinVerified, setPinVerified] = useState(false);
@@ -1228,8 +1229,10 @@ export default function SugarAllotmentModule() {
     const qrMap = new Map();
     qrMap.set(sNo, qrUrl);
     const docTitle = `A4_Sugar_Receipt_${activeReceiptModal.share_no || activeReceiptModal.id}`;
-    const listToPrint = singleReceiptDuplicate ? [activeReceiptModal, activeReceiptModal] : [activeReceiptModal];
-    const html = buildA4ReceiptsHtml(listToPrint, settings, qrMap, docTitle);
+    const listToPrint = (singleReceiptLayout === 'grid' && singleReceiptDuplicate)
+      ? [activeReceiptModal, activeReceiptModal]
+      : [activeReceiptModal];
+    const html = buildA4ReceiptsHtml(listToPrint, settings, qrMap, docTitle, { layout: singleReceiptLayout });
     openPrintDialog(html);
   };
 
@@ -2651,66 +2654,137 @@ export default function SugarAllotmentModule() {
               </button>
             </div>
 
-            {/* Receipt Preview Area (Side by side 2 copies) */}
+            {/* Receipt Preview Area */}
             <div className="p-4 sm:p-6 overflow-y-auto bg-slate-950/60 flex-1 flex flex-col items-center">
-              <div className="text-center mb-3">
-                <span className="text-[11px] text-slate-400">
-                  ಶಾಸನಬದ್ಧ A4 ರಶೀದಿ ಮುದ್ರಣ ವಿನ್ಯಾಸ: ಎಡಭಾಗದಲ್ಲಿ <strong className="text-blue-400 font-bold">ಕಛೇರಿ ಪ್ರತಿ</strong> ಮತ್ತು ಬಲಭಾಗದಲ್ಲಿ <strong className="text-emerald-400 font-bold">ಶೇರುದಾರರ ಪ್ರತಿ</strong>
+              {/* Layout Switcher Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 w-full max-w-3xl mb-4">
+                <span className="text-[11.5px] text-slate-300 font-semibold flex items-center gap-1.5">
+                  <span>📐 ರಶೀದಿ ವಿನ್ಯಾಸ ಶೈಲಿ:</span>
                 </span>
+                <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setSingleReceiptLayout('stacked')}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      singleReceiptLayout === 'stacked'
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>📄 ಪೂರ್ಣ A4 ಹಾಳೆ (ಮೇಲೆ ಕಛೇರಿ | ಕೆಳಗೆ ಸದಸ್ಯರ ಪ್ರತಿ)</span>
+                    <span className="text-[9.5px] bg-emerald-900/60 text-emerald-200 px-1.5 py-0.2 rounded border border-emerald-400/40">
+                      ದೊಡ್ಡ ಫಾಂಟ್ & ಸಹಿ ಸ್ಥಳ
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSingleReceiptLayout('grid')}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      singleReceiptLayout === 'grid'
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>📑 ಪಕ್ಕ-ಪಕ್ಕ (Side-by-Side)</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Exact A4 Row Preview */}
-              <div className="w-full max-w-3xl bg-white p-3 sm:p-4 rounded-xl shadow-lg border border-slate-300">
-                <div className="flex items-stretch justify-between gap-2 relative">
-                  {/* Left: Office Copy */}
-                  <div className="flex-1">
+              {/* Exact A4 Preview Container */}
+              <div className="w-full max-w-3xl bg-white p-3 sm:p-5 rounded-2xl shadow-xl border border-slate-300">
+                {singleReceiptLayout === 'stacked' ? (
+                  <div className="flex flex-col gap-3">
+                    {/* Top: Office Copy */}
                     <SugarReceiptCard
                       shareholder={activeReceiptModal}
                       seq={1}
                       isOfficeCopy={true}
                       settings={settings}
                       qrUrl={singleReceiptQr}
+                      layout="stacked"
                     />
-                  </div>
 
-                  {/* Vertical Scissor Cut Line */}
-                  <div className="w-6 flex flex-col items-center justify-center relative select-none">
-                    <div className="absolute top-2 bottom-2 left-1/2 -translate-x-1/2 border-l border-dashed border-slate-400" />
-                    <div className="bg-white text-slate-600 font-bold text-xs z-10 py-1 rotate-90">✂</div>
-                  </div>
+                    {/* Horizontal Scissor Cut Line */}
+                    <div className="flex items-center justify-center gap-2 py-1 select-none">
+                      <div className="flex-1 border-t-2 border-dashed border-slate-400"></div>
+                      <div className="text-slate-600 font-bold text-xs bg-slate-100 px-3 py-0.5 rounded-full border border-slate-300 flex items-center gap-1.5">
+                        <span>✂</span>
+                        <span className="text-[10px]">ಇಲ್ಲಿ ಕತ್ತರಿಸಿ • ಕಛೇರಿ ಪ್ರತಿ ಮತ್ತು ಶೇರುದಾರರ ಪ್ರತಿಯನ್ನು ಪ್ರತ್ಯೇಕಿಸಿ (Cut Here)</span>
+                        <span>✂</span>
+                      </div>
+                      <div className="flex-1 border-t-2 border-dashed border-slate-400"></div>
+                    </div>
 
-                  {/* Right: Shareholder Copy */}
-                  <div className="flex-1">
+                    {/* Bottom: Shareholder Copy */}
                     <SugarReceiptCard
                       shareholder={activeReceiptModal}
                       seq={1}
                       isOfficeCopy={false}
                       settings={settings}
                       qrUrl={singleReceiptQr}
+                      layout="stacked"
                     />
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-stretch justify-between gap-2 relative">
+                    {/* Left: Office Copy */}
+                    <div className="flex-1">
+                      <SugarReceiptCard
+                        shareholder={activeReceiptModal}
+                        seq={1}
+                        isOfficeCopy={true}
+                        settings={settings}
+                        qrUrl={singleReceiptQr}
+                        layout="sideBySide"
+                      />
+                    </div>
+
+                    {/* Vertical Scissor Cut Line */}
+                    <div className="w-6 flex flex-col items-center justify-center relative select-none">
+                      <div className="absolute top-2 bottom-2 left-1/2 -translate-x-1/2 border-l border-dashed border-slate-400" />
+                      <div className="bg-white text-slate-600 font-bold text-xs z-10 py-1 rotate-90">✂</div>
+                    </div>
+
+                    {/* Right: Shareholder Copy */}
+                    <div className="flex-1">
+                      <SugarReceiptCard
+                        shareholder={activeReceiptModal}
+                        seq={1}
+                        isOfficeCopy={false}
+                        settings={settings}
+                        qrUrl={singleReceiptQr}
+                        layout="sideBySide"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Modal Footer Actions */}
             <div className="p-4 border-t border-slate-800 bg-slate-950 flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="text-[11px] text-slate-400">
-                  ಶೇರು ನಂ: <strong className="text-white font-mono">{activeReceiptModal.share_no || activeReceiptModal.id}</strong> • {activeReceiptModal.shareholder_name || activeReceiptModal.name}
+                <div className="text-[11.5px] text-slate-400">
+                  ಶೇರು ನಂ: <strong className="text-amber-300 font-mono text-xs">{activeReceiptModal.share_no || activeReceiptModal.id}</strong> • <strong className="text-white">{activeReceiptModal.shareholder_name || activeReceiptModal.name}</strong>
                 </div>
 
-                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer bg-slate-900 px-3 py-1 rounded-xl border border-slate-800 hover:border-slate-700 select-none">
-                  <input
-                    type="checkbox"
-                    checked={singleReceiptDuplicate}
-                    onChange={(e) => setSingleReceiptDuplicate(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded text-emerald-500 bg-slate-800 border-slate-700 cursor-pointer accent-emerald-500"
-                  />
-                  <span className="font-semibold text-slate-200 text-[11px]">
-                    ಕೆಳಗಿನ ಅರ್ಧದಲ್ಲೂ ನಕಲು ಮುದ್ರಿಸಿ (Duplicate on lower half - 4 receipts)
+                {singleReceiptLayout === 'grid' ? (
+                  <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer bg-slate-900 px-3 py-1 rounded-xl border border-slate-800 hover:border-slate-700 select-none">
+                    <input
+                      type="checkbox"
+                      checked={singleReceiptDuplicate}
+                      onChange={(e) => setSingleReceiptDuplicate(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded text-emerald-500 bg-slate-800 border-slate-700 cursor-pointer accent-emerald-500"
+                    />
+                    <span className="font-semibold text-slate-200 text-[11px]">
+                      ಕೆಳಗಿನ ಅರ್ಧದಲ್ಲೂ ನಕಲು ಮುದ್ರಿಸಿ (Duplicate to fill A4 - 4 receipts)
+                    </span>
+                  </label>
+                ) : (
+                  <span className="text-[11px] text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-2.5 py-0.5 rounded-lg font-bold">
+                    ✓ ಪೂರ್ಣ A4 ಹಾಳೆ: ಮೇಲೆ ಕಛೇರಿ ಪ್ರತಿ, ಕೆಳಗೆ ಶೇರುದಾರರ ಪ್ರತಿ
                   </span>
-                </label>
+                )}
               </div>
 
               <div className="flex items-center gap-2.5">

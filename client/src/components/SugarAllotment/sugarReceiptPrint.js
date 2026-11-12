@@ -1,20 +1,18 @@
 /**
  * sugarReceiptPrint.js
- * Official Statutory Sugar Distribution Receipt (A4 Portrait - 2 Shareholders / 4 Receipts per Page)
- * Left: ಕಛೇರಿ ಪ್ರತಿ (Office Copy) [Blue Badge]
- * Right: ಶೇರುದಾರರ ಪ್ರತಿ (Shareholder Copy) [Green Badge]
+ * Official Statutory Sugar Distribution Receipt (A4 Portrait)
  * Features:
+ *  - Layout 1: Stacked Full A4 (Top: ಕಛೇರಿ ಪ್ರತಿ | Bottom: ಶೇರುದಾರರ ಪ್ರತಿ) - 100% Page Utilization!
+ *  - Layout 2: Grid 2x2 (4 Receipts per A4 Sheet) - Duplicated or Batch
  *  - Official Factory Logo (Left) + National Sahakari Handshake Emblem (Right)
- *  - Full Google Anek Kannada Typography
+ *  - Full Google Anek Kannada Typography with enlarged, high-contrast text
+ *  - Dedicated Open Space (35px - 40px) for signatures and thumb impressions
  *  - High-DPI QR Verification with Verification Link
  *  - Security Seal Background Watermark
- *  - Statutory Receipt No, Current Date, Member Category & Share Quantity
- *  - Dual Executive Calculation Banners (Eligible Sugar + Payable Amount)
- *  - Tri-Signature Official Block (Member, Weighman, Issuer)
  *  - Precision Scissor Cut Line Guides (Horizontal & Vertical)
  */
 import QRCode from 'qrcode';
-import { getCompanyLogo, getHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
+import { getCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 
 // In-memory cache for QR codes
 const qrCache = new Map();
@@ -48,7 +46,7 @@ export async function getReceiptQRDataUrl(shareNo) {
   try {
     const payload = `https://avinash-ghiradi.github.io/sugar-cooperative-erp/?attn=${encodeURIComponent(cleanNo)}`;
     const url = await QRCode.toDataURL(payload, {
-      width: 220,
+      width: 240,
       margin: 1,
       errorCorrectionLevel: 'M',
       color: {
@@ -87,7 +85,6 @@ export async function prefetchReceiptQRCodes(shareholders, onProgress) {
       onProgress(Math.round((current / total) * 100), current, total);
     }
 
-    // Give time to event loop
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
@@ -95,11 +92,177 @@ export async function prefetchReceiptQRCodes(shareholders, onProgress) {
 }
 
 /**
- * Render single receipt card HTML (Professional Statutory Format with Google Anek Kannada & Dual Logos)
+ * 1. STACKED FULL-WIDTH CARD HTML (Top or Bottom Half of A4 Sheet: 196mm wide x 137mm tall)
+ * Utilizes 100% of the page width with large fonts and ample 38px signature space!
+ */
+export function renderStackedCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl = '', logos = {}) {
+  const isOffice = !!isOfficeCopy;
+  const copyLabel = isOffice ? '🏢 ಕಛೇರಿ ಪ್ರತಿ (Office Copy)' : '👤 ಶೇರುದಾರರ ಪ್ರತಿ (Member Copy)';
+  const copyBadgeClass = isOffice ? 'rc-copy-office' : 'rc-copy-member';
+
+  const shareNo = s.share_no || s.share_number || s.id || '—';
+  const name = s.shareholder_name || s.name || '—';
+  const place = (s.place || s.village_name || 'ಮರಗೂರ').trim();
+  const category = (s.schedule_cast || s.category || 'ಅ - ವರ್ಗ').trim();
+
+  // Calculations
+  const sharesCount = s.number_of_shares || s.shares || s.shares_count || (s.share_qty ? parseInt(s.share_qty, 10) : 1);
+  const kgPerShare = settings.kg_per_share || 25;
+  const ratePerKg = settings.sugar_rate_per_kg || 20;
+  const eligibleKg = sharesCount * kgPerShare;
+  const payableAmt = eligibleKg * ratePerKg;
+  const formattedAmt = payableAmt.toLocaleString('en-IN');
+
+  const yearCode = settings.receipt_year_code || '202627';
+  const receiptNo = `${place}/${yearCode}/${String(seq || 1).padStart(4, '0')}`;
+  const seasonYear = settings.season_year || settings.receipt_year || '2026-27';
+
+  const today = new Date();
+  const receiptDate = settings.receipt_date || `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+  // Logos resolution
+  const companyLogo = logos.companyLogo || getAbsoluteAssetUrl(getCompanyLogo()) || getAbsoluteAssetUrl(DEFAULT_LOGO_PATH);
+  const handshakeLogo = logos.handshakeLogo || COOP_HANDSHAKE_BASE64;
+  const sealLogo = logos.sealLogo || getAbsoluteAssetUrl('./id_assets/society_seal.png');
+
+  return `
+    <div class="rc-stacked-card">
+      <!-- Background Security Watermark -->
+      <div class="rc-watermark rc-stacked-watermark">
+        <img src="${sealLogo}" alt="Seal" onerror="this.style.display='none'" />
+      </div>
+
+      <!-- Header with Dual Logos -->
+      <div class="rc-header rc-stacked-header">
+        <div class="rc-logo-box rc-logo-left">
+          <img src="${companyLogo}" alt="BSSKN Logo" class="rc-logo-img" onerror="this.src='./id_assets/bsskn_logo.png'" />
+        </div>
+        <div class="rc-header-text">
+          <div class="rc-title" style="font-size: 15px;">ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ</div>
+          <div class="rc-subtitle" style="font-size: 10.5px;">ಮರಗೂರ - 586 204, ತಾ|| ಇಂಡಿ, ಜಿ|| ವಿಜಯಪುರ (ಕರ್ನಾಟಕ)</div>
+          <div class="rc-subdept" style="font-size: 9px;">ಸಕ್ಕರೆ ವಿತರಣಾ ವಿಭಾಗ • ಸೀಸನ್: ${seasonYear}</div>
+        </div>
+        <div class="rc-logo-box rc-logo-right">
+          <img src="${handshakeLogo}" alt="Sahakari Logo" class="rc-logo-img" />
+        </div>
+      </div>
+
+      <!-- Sub-Banner -->
+      <div class="rc-subbanner rc-stacked-subbanner">
+        <div class="rc-subbanner-title" style="font-size: 12px;">
+          <span class="rc-subbanner-bullet">✦</span>
+          <span>ಸಕ್ಕರೆ ವಿತರಣಾ ಅಧಿಕೃತ ರಶೀದಿ</span>
+        </div>
+        <div class="rc-copy-badge ${copyBadgeClass}" style="font-size: 10.5px; padding: 2px 14px;">
+          ${copyLabel}
+        </div>
+      </div>
+
+      <!-- Metadata Strip (Receipt No, Date, Share No, Category) -->
+      <div class="rc-meta-strip rc-stacked-meta">
+        <div class="rc-meta-item">
+          <span class="rc-meta-lbl">ರಶೀದಿ ಸಂಖ್ಯೆ :</span>
+          <strong class="rc-meta-val font-mono" style="font-size: 12px;">${receiptNo}</strong>
+        </div>
+        <div class="rc-meta-item">
+          <span class="rc-meta-lbl">ದಿನಾಂಕ :</span>
+          <strong class="rc-meta-val" style="font-size: 11.5px;">${receiptDate}</strong>
+        </div>
+        <div class="rc-meta-item rc-stacked-share-pill">
+          <span class="rc-meta-lbl">ಶೇರು ಸಂಖ್ಯೆ :</span>
+          <strong class="font-mono text-amber-300" style="font-size: 13.5px; font-weight: 900;">${shareNo}</strong>
+          <span class="rc-stacked-cat-badge">ವರ್ಗ: ${category}</span>
+        </div>
+      </div>
+
+      <!-- Body: Details Table on Left (65%), QR & Calculations on Right (35%) -->
+      <div class="rc-stacked-body">
+        <div class="rc-stacked-details">
+          <table class="rc-table">
+            <tbody>
+              <tr>
+                <td class="rc-tbl-lbl">ಸದಸ್ಯರ ಹೆಸರು</td>
+                <td class="rc-tbl-sep">:</td>
+                <td class="rc-tbl-val rc-tbl-name">${name}</td>
+              </tr>
+              <tr>
+                <td class="rc-tbl-lbl">ವಿಳಾಸ / ಗ್ರಾಮ</td>
+                <td class="rc-tbl-sep">:</td>
+                <td class="rc-tbl-val">${place}</td>
+              </tr>
+              <tr>
+                <td class="rc-tbl-lbl">ಶೇರು ವರ್ಗ</td>
+                <td class="rc-tbl-sep">:</td>
+                <td class="rc-tbl-val">${category}</td>
+              </tr>
+              <tr>
+                <td class="rc-tbl-lbl">ಒಟ್ಟು ಶೇರುಗಳು</td>
+                <td class="rc-tbl-sep">:</td>
+                <td class="rc-tbl-val"><strong>${sharesCount}</strong> (ಶೇರುಗಳು)</td>
+              </tr>
+              <tr>
+                <td class="rc-tbl-lbl">ಪ್ರತಿ ಕೆ.ಜಿ ದರ</td>
+                <td class="rc-tbl-sep">:</td>
+                <td class="rc-tbl-val">ರೂ. <strong>${ratePerKg}</strong> /- (ಪ್ರತಿ ಕಿ.ಗ್ರಾಂ)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="rc-stacked-right">
+          <div class="rc-stacked-calc-box">
+            <div class="rc-calc-card rc-calc-sugar" style="padding: 4px 10px;">
+              <div class="rc-calc-lbl" style="font-size: 11px;">ಒಟ್ಟು ಅರ್ಹ ಸಕ್ಕರೆ :</div>
+              <div class="rc-calc-val" style="font-size: 14.5px;">
+                <strong>${eligibleKg}</strong> <span class="rc-calc-unit">ಕಿ.ಗ್ರಾಂ</span>
+              </div>
+            </div>
+            <div class="rc-calc-card rc-calc-amt" style="padding: 4px 10px; margin-top: 3.5px;">
+              <div class="rc-calc-lbl" style="font-size: 11px;">ಪಾವತಿಸಬೇಕಾದ ಮೊತ್ತ :</div>
+              <div class="rc-calc-val" style="font-size: 14.5px;">
+                <span class="rc-currency">ರೂ.</span> <strong>${formattedAmt}</strong> <span class="rc-calc-unit">/-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rc-stacked-qr-box">
+            <div class="rc-qr-frame" style="padding: 2.5px;">
+              ${qrUrl ? `<img class="rc-qr-img" src="${qrUrl}" alt="QR" style="width: 58px; height: 58px;" />` : '<div class="rc-qr-placeholder" style="width: 58px; height: 58px;">QR</div>'}
+            </div>
+            <div class="rc-qr-caption" style="font-size: 7.5px;">ದೃಢೀಕರಣಕ್ಕಾಗಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signatures Block with 38px Physical Blank Space to Sign! -->
+      <div class="rc-stacked-signatures">
+        <div class="rc-sig-box">
+          <div class="rc-sig-space"></div>
+          <div class="rc-sig-line"></div>
+          <div class="rc-sig-lbl">ಶೇರುದಾರರ / ಸ್ವೀಕೃತಿದಾರರ ಸಹಿ ಅಥವಾ ಹೆಬ್ಬೆರಳು</div>
+        </div>
+        <div class="rc-sig-box">
+          <div class="rc-sig-space"></div>
+          <div class="rc-sig-line"></div>
+          <div class="rc-sig-lbl">ತೂಕಗಾರರ ಸಹಿ</div>
+        </div>
+        <div class="rc-sig-box">
+          <div class="rc-sig-space"></div>
+          <div class="rc-sig-line"></div>
+          <div class="rc-sig-lbl">ಸಕ್ಕರೆ ವಿತರಕರ / ಲೆಕ್ಕಾಧಿಕಾರಿಗಳ ಸಹಿ & ಮೊಹರು</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * 2. SIDE-BY-SIDE CARD HTML (96mm wide x 137mm tall)
+ * Optimized with bigger fonts and dedicated signature space
  */
 export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl = '', logos = {}) {
   const isOffice = !!isOfficeCopy;
-  const copyLabel = isOffice ? '🏢 ಕಛೇರಿ ಪ್ರತಿ (Office Copy)' : '👤 ಶೇರುದಾರರ ಪ್ರತಿ (Member Copy)';
+  const copyLabel = isOffice ? '🏢 ಕಛೇರಿ ಪ್ರತಿ' : '👤 ಶೇರುದಾರರ ಪ್ರತಿ';
   const copyBadgeClass = isOffice ? 'rc-copy-office' : 'rc-copy-member';
 
   const shareNo = s.share_no || s.share_number || s.id || '—';
@@ -134,7 +297,7 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
         <img src="${sealLogo}" alt="Seal" onerror="this.style.display='none'" />
       </div>
 
-      <!-- 1. Executive Header (Deep Saffron Gradient + Dual Logos) -->
+      <!-- 1. Header (Deep Saffron Gradient + Dual Logos) -->
       <div class="rc-header">
         <div class="rc-logo-box rc-logo-left">
           <img src="${companyLogo}" alt="BSSKN Logo" class="rc-logo-img" onerror="this.src='./id_assets/bsskn_logo.png'" />
@@ -149,18 +312,18 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
         </div>
       </div>
 
-      <!-- 2. Sub-Banner (Cooperative Emerald Green + Copy Badge) -->
+      <!-- 2. Sub-Banner -->
       <div class="rc-subbanner">
         <div class="rc-subbanner-title">
           <span class="rc-subbanner-bullet">✦</span>
-          <span>ಸಕ್ಕರೆ ವಿತರಣಾ ಅಧಿಕೃತ ರಶೀದಿ</span>
+          <span>ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿ</span>
         </div>
         <div class="rc-copy-badge ${copyBadgeClass}">
           ${copyLabel}
         </div>
       </div>
 
-      <!-- 3. Receipt No & Date Row (Clear Metadata Strip) -->
+      <!-- 3. Receipt No & Date Row -->
       <div class="rc-meta-strip">
         <div class="rc-meta-item">
           <span class="rc-meta-lbl">ರಶೀದಿ ಸಂ:</span>
@@ -172,7 +335,7 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
         </div>
       </div>
 
-      <!-- 4. Share Number Banner (Royal Cobalt Blue with Category Tag) -->
+      <!-- 4. Share Number Banner -->
       <div class="rc-shareno-banner">
         <div class="rc-share-left">
           <span class="rc-share-lbl">ಶೇರು ಸಂಖ್ಯೆ:</span>
@@ -183,7 +346,7 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
         </div>
       </div>
 
-      <!-- 5. Body: Member Details & High-DPI QR Verification Box -->
+      <!-- 5. Body: Details + QR -->
       <div class="rc-body">
         <div class="rc-details">
           <div class="rc-row">
@@ -221,7 +384,7 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
         </div>
       </div>
 
-      <!-- 6. Calculation Banners (Dual Executive Summary Cards) -->
+      <!-- 6. Calculations -->
       <div class="rc-calc-grid">
         <div class="rc-calc-card rc-calc-sugar">
           <div class="rc-calc-lbl">ಒಟ್ಟು ಅರ್ಹ ಸಕ್ಕರೆ :</div>
@@ -237,19 +400,22 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
         </div>
       </div>
 
-      <!-- 7. Official Statutory Tri-Signatures -->
+      <!-- 7. Signatures with 30px Physical Signing Space -->
       <div class="rc-signatures">
         <div class="rc-sig-item">
+          <div class="rc-sig-space" style="height: 28px;"></div>
           <div class="rc-sig-line"></div>
-          <div class="rc-sig-lbl">ಶೇರುದಾರರ / ಸ್ವೀಕೃತಿದಾರರ ಸಹಿ</div>
+          <div class="rc-sig-lbl">ಶೇರುದಾರರ ಸಹಿ</div>
         </div>
         <div class="rc-sig-item">
+          <div class="rc-sig-space" style="height: 28px;"></div>
           <div class="rc-sig-line"></div>
           <div class="rc-sig-lbl">ತೂಕಗಾರರ ಸಹಿ</div>
         </div>
         <div class="rc-sig-item">
+          <div class="rc-sig-space" style="height: 28px;"></div>
           <div class="rc-sig-line"></div>
-          <div class="rc-sig-lbl">ಸಕ್ಕರೆ ವಿತರಕರ ಸಹಿ</div>
+          <div class="rc-sig-lbl">ವಿತರಕರ ಸಹಿ</div>
         </div>
       </div>
     </div>
@@ -277,10 +443,12 @@ export function renderShareholderRowHtml(s, seq, settings = {}, qrMap = new Map(
 
 /**
  * Build the full A4 HTML document containing all pages
+ * Default layout is 'stacked' for 1 shareholder (Top: Office Copy, Bottom: Member Copy)
  */
 export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new Map(), docTitle = 'ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿಗಳು (A4 Sugar Receipts)', options = {}) {
   let pagesHtml = '';
   const total = shareholdersList.length;
+  const layout = options.layout || (total === 1 ? 'stacked' : 'grid');
 
   // Resolve logos for all pages
   const logos = {
@@ -289,31 +457,55 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     sealLogo: options.sealLogo || getAbsoluteAssetUrl('./id_assets/society_seal.png')
   };
 
-  for (let i = 0; i < total; i += 2) {
-    const s1 = shareholdersList[i];
-    const s2 = i + 1 < total ? shareholdersList[i + 1] : null;
+  if (layout === 'stacked') {
+    // STACKED FULL A4 LAYOUT (Top: Office Copy | Bottom: Member Copy)
+    // 1 Shareholder per Sheet = ZERO wasted space!
+    for (let i = 0; i < total; i++) {
+      const s = shareholdersList[i];
+      const sNo = String(s.share_no || s.share_number || s.id);
+      const qrUrl = qrMap.get(sNo) || '';
 
-    pagesHtml += `
-      <div class="a4-page">
-        ${renderShareholderRowHtml(s1, i + 1, settings, qrMap, logos)}
-        
-        <div class="horizontal-cut-line">
-          <div class="scissor-icon">✂</div>
-          <span class="horizontal-cut-text">ಇಲ್ಲಿ ಕತ್ತರಿಸಿ (Cut Here)</span>
-        </div>
-
-        ${s2 ? renderShareholderRowHtml(s2, i + 2, settings, qrMap, logos) : `
-          <div class="shareholder-row single-paper-reuse-notice">
-            <div class="paper-reuse-box">
-              <div class="paper-reuse-badge">📄 ಕಾಗದ ಮರುಬಳಕೆ ಸೂಚನೆ (Paper Reuse Notice)</div>
-              <div class="paper-reuse-text">
-                ಮೇಲಿನ ರಶೀದಿಯನ್ನು ಕತ್ತರಿಸಿ ಪಡೆದ ನಂತರ, ಉಳಿದ ಈ ಅರ್ಧ ಹಾಳೆಯನ್ನು ಮುಂದಿನ ಶೇರುದಾರರ ರಶೀದಿ ಮುದ್ರಣಕ್ಕೆ ಮರುಬಳಕೆ ಮಾಡಬಹುದು.
-              </div>
-            </div>
+      pagesHtml += `
+        <div class="a4-page a4-stacked-page">
+          <!-- TOP HALF: Office Copy -->
+          <div class="stacked-receipt-half">
+            ${renderStackedCardHtml(s, i + 1, true, settings, qrUrl, logos)}
           </div>
-        `}
-      </div>
-    `;
+
+          <!-- PERFORATION CUT LINE -->
+          <div class="horizontal-cut-line horizontal-cut-stacked">
+            <div class="scissor-icon">✂</div>
+            <span class="horizontal-cut-text">ಇಲ್ಲಿ ಕತ್ತರಿಸಿ • ಕಛೇರಿ ಪ್ರತಿ ಮತ್ತು ಶೇರುದಾರರ ಪ್ರತಿಯನ್ನು ಪ್ರತ್ಯೇಕಿಸಿ (Cut Here)</span>
+            <div class="scissor-icon">✂</div>
+          </div>
+
+          <!-- BOTTOM HALF: Shareholder Copy -->
+          <div class="stacked-receipt-half">
+            ${renderStackedCardHtml(s, i + 1, false, settings, qrUrl, logos)}
+          </div>
+        </div>
+      `;
+    }
+  } else {
+    // GRID 2x2 LAYOUT (Side-by-Side)
+    for (let i = 0; i < total; i += 2) {
+      const s1 = shareholdersList[i];
+      // If single shareholder in grid mode, duplicate to fill lower row!
+      const s2 = (i + 1 < total) ? shareholdersList[i + 1] : (total === 1 ? s1 : null);
+
+      pagesHtml += `
+        <div class="a4-page">
+          ${renderShareholderRowHtml(s1, i + 1, settings, qrMap, logos)}
+          
+          <div class="horizontal-cut-line">
+            <div class="scissor-icon">✂</div>
+            <span class="horizontal-cut-text">ಇಲ್ಲಿ ಕತ್ತರಿಸಿ (Cut Here)</span>
+          </div>
+
+          ${s2 ? renderShareholderRowHtml(s2, i + 2, settings, qrMap, logos) : '<div class="shareholder-row"></div>'}
+        </div>
+      `;
+    }
   }
 
   return `<!DOCTYPE html>
@@ -330,7 +522,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
 
     @page {
       size: A4 portrait;
-      margin: 4.5mm 5.5mm;
+      margin: 4mm 5mm;
     }
     * {
       box-sizing: border-box;
@@ -359,7 +551,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     .a4-page {
       width: 198mm;
       height: 287mm;
-      margin: 6mm auto;
+      margin: 5mm auto;
       background: #ffffff;
       box-sizing: border-box;
       display: flex;
@@ -372,50 +564,164 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     .a4-page:last-child {
       page-break-after: avoid;
     }
+
+    /* ========================================================================= */
+    /* 1. STACKED FULL A4 STYLES (Top & Bottom Half) */
+    /* ========================================================================= */
+    .a4-stacked-page {
+      padding: 2mm 0;
+    }
+    .stacked-receipt-half {
+      width: 100%;
+      height: 137mm;
+      display: flex;
+    }
+    .rc-stacked-card {
+      width: 100%;
+      height: 100%;
+      border: 2px solid #c2410c;
+      border-radius: 9px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-sizing: border-box;
+      position: relative;
+    }
+    .rc-stacked-watermark {
+      width: 90mm !important;
+      top: 55% !important;
+      left: 45% !important;
+    }
+    .rc-stacked-header {
+      padding: 4px 12px !important;
+    }
+    .rc-stacked-header .rc-logo-box {
+      width: 40px !important;
+      height: 40px !important;
+      padding: 2px !important;
+    }
+    .rc-stacked-subbanner {
+      padding: 3.5px 12px !important;
+    }
+    .rc-stacked-meta {
+      padding: 4px 12px !important;
+      font-size: 11px !important;
+    }
+    .rc-stacked-share-pill {
+      background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+      color: #ffffff;
+      padding: 2px 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rc-stacked-share-pill .rc-meta-lbl {
+      color: #bfdbfe !important;
+    }
+    .rc-stacked-cat-badge {
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.4);
+      padding: 1px 8px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 800;
+    }
+    .rc-stacked-body {
+      padding: 6px 14px 4px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      position: relative;
+      z-index: 1;
+    }
+    .rc-stacked-details {
+      width: 63%;
+    }
+    .rc-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .rc-table tr {
+      border-bottom: 1px dashed #cbd5e1;
+    }
+    .rc-table tr:last-child {
+      border-bottom: none;
+    }
+    .rc-table td {
+      padding: 3px 0;
+      font-size: 11.5px;
+      vertical-align: baseline;
+    }
+    .rc-tbl-lbl {
+      width: 95px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .rc-tbl-sep {
+      width: 12px;
+      font-weight: bold;
+      color: #64748b;
+    }
+    .rc-tbl-val {
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .rc-tbl-name {
+      font-size: 13.5px !important;
+      font-weight: 900 !important;
+      color: #0f172a;
+    }
+    .rc-stacked-right {
+      width: 37%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .rc-stacked-calc-box {
+      flex: 1;
+    }
+    .rc-stacked-qr-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .rc-stacked-signatures {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 16px 8px 16px;
+      position: relative;
+      z-index: 1;
+    }
+    .rc-sig-box {
+      text-align: center;
+      width: 30%;
+    }
+    .rc-sig-space {
+      height: 38px; /* Dedicated, generous physical space to sign! */
+    }
+    .rc-horizontal-cut-stacked {
+      height: 6mm !important;
+    }
+
+    /* ========================================================================= */
+    /* 2. SIDE-BY-SIDE GRID ARCHITECTURE */
+    /* ========================================================================= */
     .shareholder-row {
       display: flex;
       width: 100%;
-      height: 139mm;
+      height: 138mm;
       align-items: stretch;
       justify-content: space-between;
       position: relative;
     }
-
-    /* Single Paper Reuse Notice */
-    .single-paper-reuse-notice {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #fafaf9;
-      border: 1.5px dashed #cbd5e1;
-      border-radius: 8px;
-    }
-    .paper-reuse-box {
-      text-align: center;
-      max-width: 140mm;
-      padding: 12px;
-      color: #64748b;
-    }
-    .paper-reuse-badge {
-      display: inline-block;
-      font-weight: 800;
-      font-size: 11px;
-      color: #475569;
-      background: #e2e8f0;
-      padding: 3px 12px;
-      border-radius: 9999px;
-      margin-bottom: 6px;
-    }
-    .paper-reuse-text {
-      font-size: 9.5px;
-      font-weight: 600;
-      line-height: 1.4;
-      color: #94a3b8;
-    }
-
-    /* ========================================================================= */
-    /* RECEIPT CARD ARCHITECTURE */
-    /* ========================================================================= */
     .receipt-card {
       width: 95.8mm;
       height: 100%;
@@ -428,8 +734,6 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       box-sizing: border-box;
       position: relative;
     }
-
-    /* Security Watermark */
     .rc-watermark {
       position: absolute;
       top: 54%;
@@ -484,7 +788,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     }
     .horizontal-cut-line {
       width: 100%;
-      height: 5mm;
+      height: 5.5mm;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -509,14 +813,14 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     .horizontal-cut-text {
       background: #ffffff;
       color: #64748b;
-      font-size: 7.5px;
+      font-size: 8px;
       font-weight: 800;
       z-index: 2;
-      padding: 0 6px;
+      padding: 0 8px;
       letter-spacing: 0.5px;
     }
 
-    /* 1. Header with Dual Logos */
+    /* Header Components */
     .rc-header {
       background: linear-gradient(135deg, #b91c1c 0%, #c2410c 35%, #ea580c 80%, #f97316 100%);
       color: #ffffff;
@@ -530,8 +834,8 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       z-index: 1;
     }
     .rc-logo-box {
-      width: 33px;
-      height: 33px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       background: #ffffff;
       display: flex;
@@ -553,18 +857,17 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       line-height: 1.15;
     }
     .rc-title {
-      font-size: 12.8px;
+      font-size: 13px;
       font-weight: 900;
       letter-spacing: -0.15px;
       color: #ffffff;
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     .rc-subtitle {
-      font-size: 9px;
+      font-size: 9.2px;
       font-weight: 600;
       color: #fef3c7;
       margin-top: 0.5px;
-      text-shadow: 0 1px 1px rgba(0,0,0,0.3);
     }
     .rc-subdept {
       font-size: 8px;
@@ -578,7 +881,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       border: 0.5px solid rgba(255,255,255,0.3);
     }
 
-    /* 2. Sub-Banner & Copy Badge */
+    /* Sub-Banner & Badges */
     .rc-subbanner {
       background: linear-gradient(90deg, #064e3b 0%, #065f46 60%, #047857 100%);
       color: #ffffff;
@@ -591,7 +894,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       z-index: 1;
     }
     .rc-subbanner-title {
-      font-size: 10.8px;
+      font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.2px;
       display: flex;
@@ -620,15 +923,15 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       color: #ffffff;
     }
 
-    /* 3. Metadata Strip (Receipt No & Date) */
+    /* Metadata Strip */
     .rc-meta-strip {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 3px 8px 2.5px 8px;
+      padding: 3px 8px;
       background: #f8fafc;
       border-bottom: 1px solid #e2e8f0;
-      font-size: 9.8px;
+      font-size: 10px;
       position: relative;
       z-index: 1;
     }
@@ -649,7 +952,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       color: #1e293b;
     }
 
-    /* 4. Share Number Banner (Royal Cobalt Ribbon) */
+    /* Share Number Banner */
     .rc-shareno-banner {
       background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
       color: #ffffff;
@@ -674,7 +977,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       opacity: 0.95;
     }
     .rc-share-num {
-      font-size: 12.5px;
+      font-size: 12.8px;
       font-weight: 900;
       letter-spacing: 0.5px;
       color: #fef08a;
@@ -689,7 +992,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       color: #ffffff;
     }
 
-    /* 5. Body: Details + QR */
+    /* Body & Details */
     .rc-body {
       padding: 3px 8px;
       display: flex;
@@ -704,22 +1007,23 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       width: 69%;
       display: flex;
       flex-direction: column;
-      justify-content: space-around;
+      justify-content: center;
+      gap: 2px;
       height: 100%;
     }
     .rc-row {
       display: flex;
       align-items: baseline;
       border-bottom: 1px dashed #cbd5e1;
-      padding: 2.2px 0;
-      font-size: 9.8px;
+      padding: 2px 0;
+      font-size: 10.2px;
       line-height: 1.25;
     }
     .rc-row:last-child {
       border-bottom: none;
     }
     .rc-lbl {
-      width: 68px;
+      width: 70px;
       flex-shrink: 0;
       color: #334155;
       font-weight: 700;
@@ -739,7 +1043,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     }
     .rc-val-bold {
       font-weight: 900;
-      font-size: 10.5px;
+      font-size: 11.5px;
       color: #0f172a;
     }
     .rc-qr-box {
@@ -758,14 +1062,14 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
     .rc-qr-img {
-      width: 66px;
-      height: 66px;
+      width: 65px;
+      height: 65px;
       object-fit: contain;
       display: block;
     }
     .rc-qr-placeholder {
-      width: 66px;
-      height: 66px;
+      width: 65px;
+      height: 65px;
       border: 1px dashed #cbd5e1;
       display: flex;
       align-items: center;
@@ -774,14 +1078,14 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       font-size: 10px;
     }
     .rc-qr-caption {
-      font-size: 7px;
+      font-size: 7.2px;
       font-weight: 800;
       color: #475569;
       margin-top: 2px;
       line-height: 1.1;
     }
 
-    /* 6. Calculation Banners (Orange & Green) */
+    /* Calculation Banners */
     .rc-calc-grid {
       padding: 2px 6px;
       display: flex;
@@ -807,12 +1111,12 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       color: #ffffff;
     }
     .rc-calc-lbl {
-      font-size: 10.5px;
+      font-size: 10.8px;
       font-weight: 800;
       letter-spacing: 0.1px;
     }
     .rc-calc-val {
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 900;
     }
     .rc-calc-val strong {
@@ -828,12 +1132,12 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       font-weight: 800;
     }
 
-    /* 7. Signatures Block */
+    /* Signatures Block */
     .rc-signatures {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      padding: 9px 8px 5px 8px;
+      padding: 0 8px 5px 8px;
       position: relative;
       z-index: 1;
     }
@@ -842,11 +1146,11 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       width: 31%;
     }
     .rc-sig-line {
-      border-top: 1px dotted #64748b;
+      border-top: 1.2px dotted #475569;
       margin-bottom: 2.5px;
     }
     .rc-sig-lbl {
-      font-size: 8px;
+      font-size: 8.5px;
       font-weight: 800;
       color: #1e293b;
       line-height: 1.15;
@@ -870,7 +1174,6 @@ export function openPrintDialog(html) {
     win.document.close();
     win.focus();
 
-    // Trigger print safely after font and logo assets have loaded
     const triggerPrint = () => {
       try {
         win.focus();
