@@ -33,7 +33,7 @@ import {
   Eye
 } from 'lucide-react';
 import { ApiService, getShareholderSharesCount } from '../../services/api';
-import { getCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
+import { useCompanyLogo, getCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import {
