@@ -5,15 +5,15 @@ const AuthContext = createContext(null);
 export const ROLE_PERMISSIONS = {
   Admin: [
     'dashboard', 'shareholders', 'enrollment', 'transactions', 'attendance',
-    'sugar_allotment', 'varasa', 'vargavane', 'merge_shares', 'villages',
+    'sugar_dispense', 'sugar_allotment', 'varasa', 'vargavane', 'merge_shares', 'villages',
     'circles', 'reports', 'id_cards', 'employees', 'users', 'password_manager', 'audit_logs',
     'notices', 'settings', 'import_export', 'backup'
   ],
   Cashier: [
-    'dashboard', 'shareholders', 'enrollment', 'transactions', 'reports', 'merge_shares'
+    'dashboard', 'shareholders', 'enrollment', 'transactions', 'sugar_dispense', 'reports', 'merge_shares'
   ],
   'Computer Operator': [
-    'dashboard', 'shareholders', 'enrollment', 'attendance', 'sugar_allotment',
+    'dashboard', 'shareholders', 'enrollment', 'attendance', 'sugar_dispense', 'sugar_allotment',
     'varasa', 'vargavane', 'merge_shares', 'reports', 'id_cards', 'villages',
     'circles', 'notices', 'import_export'
   ],
@@ -21,7 +21,7 @@ export const ROLE_PERMISSIONS = {
     'dashboard', 'attendance', 'reports'
   ],
   'Sugar Operator': [
-    'dashboard', 'sugar_allotment', 'reports'
+    'dashboard', 'sugar_dispense', 'sugar_allotment', 'reports'
   ],
   Employee: [
     'dashboard', 'attendance', 'reports'

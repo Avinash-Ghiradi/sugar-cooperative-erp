@@ -11,6 +11,7 @@ import ShareholderList from './components/Shareholders/ShareholderList';
 import TransactionsModule from './components/Transactions/TransactionsModule';
 import AttendanceModule from './components/Attendance/AttendanceModule';
 import SugarAllotmentModule from './components/SugarAllotment/SugarAllotmentModule';
+import SugarDispenseModule from './components/SugarAllotment/SugarDispenseModule';
 import VarasaTransferModule from './components/Varasa/VarasaTransferModule';
 import VargavaneTransferModule from './components/Vargavane/VargavaneTransferModule';
 import NewShareholderModule from './components/Enrollment/NewShareholderModule';
@@ -164,6 +165,7 @@ function AppContent() {
       case 'enrollment': return <NewShareholderModule />;
       case 'transactions': return <TransactionsModule />;
       case 'attendance': return <AttendanceModule />;
+      case 'sugar_dispense': return <SugarDispenseModule />;
       case 'sugar_allotment': return <SugarAllotmentModule />;
       case 'varasa': return <VarasaTransferModule />;
       case 'vargavane': return <VargavaneTransferModule />;

@@ -6,7 +6,7 @@ import { useCompanyLogo, DEFAULT_LOGO_PATH } from '../services/organizationServi
 import {
   Download,
   KeyRound,
-  LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet,
+  LayoutDashboard, Users, CreditCard, CalendarCheck, PackageCheck, FileSpreadsheet, Award,
   Building2, MapPin, BarChart3, Contact, Briefcase, UserCog, History, ShieldAlert, Megaphone,
   Settings, LogOut, Upload, ArrowRightLeft, UserPlus, ChevronDown, ChevronRight, GitMerge, X
 } from 'lucide-react';
@@ -16,7 +16,8 @@ const MENU_ITEMS = [
   { id: 'shareholders', label: 'Shareholders', icon: Users },
   { id: 'transactions', label: 'Transactions', icon: CreditCard },
   { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
-  { id: 'sugar_allotment', label: 'AGM Utilities', icon: PackageCheck },
+  { id: 'sugar_dispense', label: 'Sugar Allotment & Payment', icon: PackageCheck },
+  { id: 'sugar_allotment', label: 'AGM Utilities', icon: Award },
   { id: 'villages', label: 'Village Master', icon: Building2 },
   { id: 'circles', label: 'Circle Master', icon: MapPin },
   { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
@@ -60,6 +61,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       case 'shareholders': return isEnglish ? 'Shareholders' : 'ಶೇರುದಾರರು';
       case 'transactions': return isEnglish ? 'Transactions' : 'ವಹಿವಾಟುಗಳು';
       case 'attendance': return isEnglish ? 'Attendance' : 'ಹಾಜರಾತಿ';
+      case 'sugar_dispense': return isEnglish ? 'Sugar Allotment & Payment' : 'ಸಕ್ಕರೆ ವಿತರಣೆ & ಪಾವತಿ';
       case 'sugar_allotment': return isEnglish ? 'AGM Utilities' : 'ಮಹಾಸಭೆ ಸೌಲಭ್ಯಗಳು';
       case 'villages': return isEnglish ? 'Village Master' : 'ಗ್ರಾಮಗಳ ಪಟ್ಟಿ';
       case 'circles': return isEnglish ? 'Circle Master' : 'ವಲಯಗಳ ಪಟ್ಟಿ';
