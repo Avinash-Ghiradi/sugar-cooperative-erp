@@ -308,7 +308,7 @@ export default function IDCardGenerator() {
         @media print {
           @page {
             ${printLayout === 'a4'
-              ? `size: A4 portrait; margin: ${isJumbo ? '8mm 10mm' : '10mm 12mm'};`
+              ? `size: A4 portrait; margin: ${isJumbo ? '3.5mm 6mm 2.5mm 6mm' : '6mm 10mm'};`
               : `size: ${cardWidth} ${cardHeight}; margin: 0;`
             }
           }
@@ -421,7 +421,7 @@ export default function IDCardGenerator() {
           .id-card-a4-pairs-container {
             display: flex !important;
             flex-direction: column !important;
-            gap: 4mm !important;
+            gap: ${isJumbo ? '1.5mm' : '3mm'} !important;
             align-items: center !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
@@ -447,6 +447,8 @@ export default function IDCardGenerator() {
             break-inside: avoid !important;
             border: 1px dashed #334155 !important; /* Outer Cutting Line */
             width: ${pairWidth} !important;
+            height: ${cardHeight} !important;
+            max-height: ${cardHeight} !important;
             box-sizing: border-box !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
@@ -469,11 +471,11 @@ export default function IDCardGenerator() {
             justify-content: space-between !important;
             align-items: center !important;
             width: ${pairWidth} !important;
-            font-size: 7px !important;
+            font-size: ${isJumbo ? '5.5px' : '6.8px'} !important;
             font-weight: 700 !important;
             color: #475569 !important;
             line-height: 1 !important;
-            padding: 1.5px 1mm !important;
+            padding: ${isJumbo ? '0.5px 1mm' : '1.5px 1mm'} !important;
             user-select: none !important;
             box-sizing: border-box !important;
             background: #ffffff !important;
@@ -510,7 +512,7 @@ export default function IDCardGenerator() {
           .id-card-a4-grid {
             display: grid !important;
             grid-template-columns: repeat(2, ${cardWidth}) !important;
-            gap: 4mm !important;
+            gap: ${isJumbo ? '1.5mm 3mm' : '3mm 4mm'} !important;
             justify-content: center !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
@@ -524,41 +526,22 @@ export default function IDCardGenerator() {
             background: #ffffff !important;
             background-color: #ffffff !important;
           }
-          ${isJumbo ? `
-            .id-card-a4-pairs-container > .id-card-a4-foldable-unit:nth-child(3n) {
-              page-break-after: always !important;
-              break-after: page !important;
-            }
-            .id-card-a4-pairs-container > .id-card-a4-foldable-unit:last-child {
-              page-break-after: auto !important;
-              break-after: auto !important;
-            }
-            .id-card-a4-grid > .id-card-a4-single-unit:nth-child(6n) {
-              page-break-after: always !important;
-              break-after: page !important;
-            }
-            .id-card-a4-grid > .id-card-a4-single-unit:last-child {
-              page-break-after: auto !important;
-              break-after: auto !important;
-            }
-          ` : `
-            .id-card-a4-pairs-container > .id-card-a4-foldable-unit:nth-child(4n) {
-              page-break-after: always !important;
-              break-after: page !important;
-            }
-            .id-card-a4-pairs-container > .id-card-a4-foldable-unit:last-child {
-              page-break-after: auto !important;
-              break-after: auto !important;
-            }
-            .id-card-a4-grid > .id-card-a4-single-unit:nth-child(8n) {
-              page-break-after: always !important;
-              break-after: page !important;
-            }
-            .id-card-a4-grid > .id-card-a4-single-unit:last-child {
-              page-break-after: auto !important;
-              break-after: auto !important;
-            }
-          `}
+          .id-card-a4-pairs-container > .id-card-a4-foldable-unit:nth-child(4n) {
+            page-break-after: always !important;
+            break-after: page !important;
+          }
+          .id-card-a4-pairs-container > .id-card-a4-foldable-unit:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+          .id-card-a4-grid > .id-card-a4-single-unit:nth-child(8n) {
+            page-break-after: always !important;
+            break-after: page !important;
+          }
+          .id-card-a4-grid > .id-card-a4-single-unit:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
         }
       `}</style>
 
