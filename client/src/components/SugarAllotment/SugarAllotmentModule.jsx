@@ -1960,20 +1960,6 @@ export default function SugarAllotmentModule() {
             ಉಳಿಸಿ
           </button>
 
-          {/* Sugar Dispense & Payment Counter (QR / ID / Manual Scan) */}
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedShareholderForDispense(null);
-              setShowDispensingModal(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-black shadow-lg shadow-emerald-950/40 transition-all cursor-pointer ring-1 ring-emerald-400/40 hover:scale-[1.02] active:scale-[0.98]"
-            title="ಶೇರುದಾರರ ರಶೀದಿ / ID ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಅಥವಾ ಷೇರು ನಂ ನಮೂದಿಸಿ ಸಕ್ಕರೆ ವಿತರಿಸಿ & ಪಾವತಿ ದಾಖಲಿಸಿ"
-          >
-            <PackageCheck className="w-4 h-4 text-emerald-200" />
-            <span>ಸಕ್ಕರೆ ವಿತರಣೆ & ಪಾವತಿ</span>
-          </button>
-
           {/* Print Button */}
           <button
             type="button"
