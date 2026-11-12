@@ -49,70 +49,55 @@ export default function NewShareholderModule() {
   const [officeNoteRecord, setOfficeNoteRecord] = useState(null);
   // Multi-Selection & List Print states
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectedHoldersMap, setSelectedHoldersMap] = useState(new Map());
+  const [selectedPrintRecords, setSelectedPrintRecords] = useState([]);
   const [listPrintModalOpen, setListPrintModalOpen] = useState(false);
   const [listPrintInitialScope, setListPrintInitialScope] = useState('filtered');
   const [docxModalOpen, setDocxModalOpen] = useState(false);
   const [docxInitialScope, setDocxInitialScope] = useState('filtered');
   const [isPreparingDocx, setIsPreparingDocx] = useState(false);
 
-  const handleOpenDocxExport = async (targetScope = 'filtered') => {
-    if (targetScope === 'selected' && selectedIds.size === 0) {
-      showToast('ದಯವಿಟ್ಟು ಮೊದಲು ಶೇರುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Please select holders first)', 'warning');
-      return;
-    }
-    setDocxInitialScope(targetScope);
-
-    if (totalRecords > enrollments.length) {
-      try {
-        setIsPreparingDocx(true);
-        const res = await ApiService.getEnrollments({
-          search: searchTerm,
-          category: categoryFilter,
-          status: statusFilter,
-          page: 1,
-          limit: 99999
-        });
-        if (res && res.success && res.data) {
-          setAllPrintRecords(res.data);
-        } else {
-          setAllPrintRecords(enrollments);
-        }
-      } catch (e) {
-        setAllPrintRecords(enrollments);
-      } finally {
-        setIsPreparingDocx(false);
-      }
-    } else {
-      setAllPrintRecords(enrollments);
-    }
-
-    setDocxModalOpen(true);
-  };
-
   const toggleSelectAllCurrentPage = () => {
-    const pageIds = enrollments.map(e => e.id);
-    const allSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.has(id));
+    const allSelected = enrollments.length > 0 && enrollments.every(e => selectedIds.has(e.id));
     const newSet = new Set(selectedIds);
+    const newMap = new Map(selectedHoldersMap);
     if (allSelected) {
-      pageIds.forEach(id => newSet.delete(id));
+      enrollments.forEach(e => {
+        newSet.delete(e.id);
+        newMap.delete(e.id);
+      });
     } else {
-      pageIds.forEach(id => newSet.add(id));
+      enrollments.forEach(e => {
+        newSet.add(e.id);
+        newMap.set(e.id, e);
+      });
     }
     setSelectedIds(newSet);
+    setSelectedHoldersMap(newMap);
   };
 
-  const toggleSelectRow = (id) => {
+  const toggleSelectRow = (itemOrId) => {
+    const id = typeof itemOrId === 'object' && itemOrId !== null ? itemOrId.id : itemOrId;
+    const item = typeof itemOrId === 'object' && itemOrId !== null ? itemOrId : enrollments.find(e => e.id === id);
+
     const newSet = new Set(selectedIds);
+    const newMap = new Map(selectedHoldersMap);
+
     if (newSet.has(id)) {
       newSet.delete(id);
+      newMap.delete(id);
     } else {
       newSet.add(id);
+      if (item) newMap.set(id, item);
     }
     setSelectedIds(newSet);
+    setSelectedHoldersMap(newMap);
   };
 
   const clearSelection = () => {
     setSelectedIds(new Set());
+    setSelectedHoldersMap(new Map());
+    setSelectedPrintRecords([]);
   };
 
   const selectAllFiltered = async () => {
@@ -124,8 +109,12 @@ export default function NewShareholderModule() {
         page: 1,
         limit: 99999
       });
-      if (res && res.success && res.data) {
-        setSelectedIds(new Set(res.data.map(e => e.id)));
+      if (res && res.success && Array.isArray(res.data)) {
+        const newSet = new Set(res.data.map(e => e.id));
+        const newMap = new Map();
+        res.data.forEach(e => newMap.set(e.id, e));
+        setSelectedIds(newSet);
+        setSelectedHoldersMap(newMap);
         showToast(`ಎಲ್ಲಾ ${res.data.length} ಶೋಧಿತ ಸದಸ್ಯರನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ`);
       }
     } catch (err) {
@@ -136,38 +125,113 @@ export default function NewShareholderModule() {
   const [allPrintRecords, setAllPrintRecords] = useState([]);
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
 
-  const handleOpenListPrint = async (targetScope = 'filtered') => {
-    if (targetScope === 'selected' && selectedIds.size === 0) {
-      showToast('ದಯವಿಟ್ಟು ಮೊದಲು ಮುದ್ರಿಸಲು ಶೇರುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Please select holders first)', 'warning');
-      return;
+  // Helper to ensure both filtered list and full selected records are loaded
+  const prepareRecordsForExport = async () => {
+    let fullList = [];
+    try {
+      const allRes = await ApiService.getEnrollments({ page: 1, limit: 99999 });
+      if (allRes && allRes.success && Array.isArray(allRes.data)) {
+        fullList = allRes.data;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch full enrollments:', e);
     }
-    setListPrintInitialScope(targetScope);
+    if (fullList.length === 0) {
+      fullList = enrollments;
+    }
 
-    if (totalRecords > enrollments.length) {
+    let filteredList = fullList;
+    const hasFilter = Boolean(searchTerm || (categoryFilter && categoryFilter !== 'All') || (statusFilter && statusFilter !== 'All'));
+    if (hasFilter) {
       try {
-        setIsPreparingPrint(true);
-        const res = await ApiService.getEnrollments({
+        const filteredRes = await ApiService.getEnrollments({
           search: searchTerm,
           category: categoryFilter,
           status: statusFilter,
           page: 1,
           limit: 99999
         });
-        if (res && res.success && res.data) {
-          setAllPrintRecords(res.data);
-        } else {
-          setAllPrintRecords(enrollments);
+        if (filteredRes && filteredRes.success && Array.isArray(filteredRes.data)) {
+          filteredList = filteredRes.data;
         }
       } catch (e) {
-        setAllPrintRecords(enrollments);
-      } finally {
-        setIsPreparingPrint(false);
+        console.warn('Failed to fetch filtered enrollments:', e);
       }
-    } else {
-      setAllPrintRecords(enrollments);
     }
 
-    setListPrintModalOpen(true);
+    const isIdSelected = (r) => {
+      if (!selectedIds || selectedIds.size === 0) return false;
+      const rawId = r.id !== undefined ? r.id : r.enrollment_id;
+      const strId = String(rawId);
+      const numId = Number(rawId);
+      const enrId = r.enrollment_id ? String(r.enrollment_id) : '';
+      return selectedIds.has(rawId) ||
+             selectedIds.has(strId) ||
+             (!isNaN(numId) && selectedIds.has(numId)) ||
+             (enrId && selectedIds.has(enrId));
+    };
+
+    let selectedList = fullList.filter(isIdSelected);
+
+    if (selectedHoldersMap && selectedHoldersMap.size > 0) {
+      selectedHoldersMap.forEach((holder, id) => {
+        if (!selectedList.some(r => r.id === id || r.enrollment_id === id)) {
+          selectedList.push(holder);
+        }
+      });
+    }
+
+    enrollments.forEach(e => {
+      if (isIdSelected(e) && !selectedList.some(r => r.id === e.id || r.enrollment_id === e.enrollment_id)) {
+        selectedList.push(e);
+      }
+    });
+
+    return { filteredList, selectedList };
+  };
+
+  const handleOpenListPrint = async (targetScope = 'filtered') => {
+    if (targetScope === 'selected' && selectedIds.size === 0) {
+      showToast('ದಯವಿಟ್ಟು ಮೊದಲು ಮುದ್ರಿಸಲು ಶೇರುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Please select holders first)', 'warning');
+      return;
+    }
+    setListPrintInitialScope(targetScope);
+    setIsPreparingPrint(true);
+    try {
+      const { filteredList, selectedList } = await prepareRecordsForExport();
+      setAllPrintRecords(filteredList);
+      setSelectedPrintRecords(selectedList);
+      setListPrintModalOpen(true);
+    } catch (e) {
+      console.error(e);
+      setAllPrintRecords(enrollments);
+      setSelectedPrintRecords(enrollments.filter(e => selectedIds.has(e.id)));
+      setListPrintModalOpen(true);
+    } finally {
+      setIsPreparingPrint(false);
+    }
+  };
+
+  const handleOpenDocxExport = async (targetScope = 'filtered') => {
+    if (targetScope === 'selected' && selectedIds.size === 0) {
+      showToast('ದಯವಿಟ್ಟು ಮೊದಲು ಶೇರುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Please select holders first)', 'warning');
+      return;
+    }
+    setDocxInitialScope(targetScope);
+    setIsPreparingDocx(true);
+    try {
+      const { filteredList, selectedList } = await prepareRecordsForExport();
+      setAllPrintRecords(filteredList);
+      setSelectedPrintRecords(selectedList);
+      setDocxModalOpen(true);
+    } catch (e) {
+      console.error(e);
+      setAllPrintRecords(enrollments);
+      setSelectedPrintRecords(enrollments.filter(e => selectedIds.has(e.id)));
+      setDocxModalOpen(true);
+    } finally {
+      setIsPreparingDocx(false);
+    }
   };
 
 
@@ -651,7 +715,7 @@ export default function NewShareholderModule() {
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => toggleSelectRow(item.id)}
+                        onChange={() => toggleSelectRow(item)}
                         className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                       />
                     </td>
@@ -880,6 +944,7 @@ export default function NewShareholderModule() {
         type="enrollment"
         allRecords={allPrintRecords.length > 0 ? allPrintRecords : enrollments}
         selectedIds={selectedIds}
+        selectedRecords={selectedPrintRecords}
         initialScope={listPrintInitialScope}
         filterSummary={{
           search: searchTerm,
@@ -895,6 +960,7 @@ export default function NewShareholderModule() {
         onClose={() => setDocxModalOpen(false)}
         allFilteredRecords={allPrintRecords.length > 0 ? allPrintRecords : enrollments}
         selectedIds={selectedIds}
+        selectedRecords={selectedPrintRecords}
         initialScope={docxInitialScope}
         filterSummary={{
           search: searchTerm,

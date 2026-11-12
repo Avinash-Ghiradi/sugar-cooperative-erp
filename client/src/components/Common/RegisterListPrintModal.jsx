@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer, X, CheckSquare, Square, Layers, Filter, CheckCircle2, FileText, ChevronDown } from 'lucide-react';
 import { useCompanyLogo, useHandshakeLogo, DEFAULT_LOGO_PATH, DEFAULT_HANDSHAKE_PATH } from '../../services/organizationService';
@@ -71,6 +71,7 @@ export default function RegisterListPrintModal({
   type = 'enrollment', // 'enrollment' | 'varasa' | 'vargavane'
   allRecords = [],
   selectedIds = new Set(),
+  selectedRecords = [],
   initialScope = 'filtered', // 'filtered' | 'selected'
   filterSummary = {},
   onClearSelection
@@ -125,18 +126,21 @@ export default function RegisterListPrintModal({
     }
   };
 
+  const selectedCount = (selectedRecords && selectedRecords.length > 0)
+    ? selectedRecords.length
+    : (selectedIds ? selectedIds.size : 0);
+
   useEffect(() => {
     if (isOpen) {
-      // Default scope to 'selected' if records were selected, otherwise 'filtered'
-      if (initialScope === 'selected' && selectedIds.size > 0) {
+      if (initialScope === 'selected' && selectedCount > 0) {
         setScope('selected');
-      } else if (selectedIds.size > 0 && selectedIds.size < allRecords.length) {
+      } else if (selectedCount > 0 && selectedCount < allRecords.length) {
         setScope('selected');
       } else {
         setScope('filtered');
       }
     }
-  }, [isOpen, initialScope, selectedIds.size, allRecords.length]);
+  }, [isOpen, initialScope, selectedCount, allRecords.length]);
 
   useEffect(() => {
     const handleAfterPrint = () => {
@@ -151,10 +155,33 @@ export default function RegisterListPrintModal({
 
   if (!isOpen) return null;
 
+  const isRecordSelected = (r) => {
+    if (!selectedIds || selectedIds.size === 0) return false;
+    const rawId = r.id !== undefined ? r.id : (r.transfer_id !== undefined ? r.transfer_id : r.enrollment_id);
+    const strId = String(rawId);
+    const numId = Number(rawId);
+    const enrId = r.enrollment_id ? String(r.enrollment_id) : '';
+    const transId = r.transfer_id ? String(r.transfer_id) : '';
+    return selectedIds.has(rawId) ||
+           selectedIds.has(strId) ||
+           (!isNaN(numId) && selectedIds.has(numId)) ||
+           (enrId && selectedIds.has(enrId)) ||
+           (transId && selectedIds.has(transId));
+  };
+
   // Filter records based on scope
-  const recordsToPrint = scope === 'selected' && selectedIds.size > 0
-    ? allRecords.filter(r => selectedIds.has(r.id || r.transfer_id || r.enrollment_id))
-    : allRecords;
+  const recordsToPrint = useMemo(() => {
+    if (scope === 'selected') {
+      if (selectedRecords && selectedRecords.length > 0) {
+        return selectedRecords;
+      }
+      if (selectedIds && selectedIds.size > 0) {
+        return allRecords.filter(isRecordSelected);
+      }
+      return [];
+    }
+    return allRecords;
+  }, [scope, selectedRecords, selectedIds, allRecords]);
 
   // Department and Register Header Title configuration
   let registerTitleKn = '';
@@ -282,9 +309,14 @@ export default function RegisterListPrintModal({
               {scope === 'selected' ? `ಆಯ್ದ ಸದಸ್ಯರ ಪಟ್ಟಿ (${recordsToPrint.length} ಜನ)` : `ಶೋಧಿತ ಎಲ್ಲಾ ದಾಖಲೆಗಳು (${recordsToPrint.length} ಜನ)`}
             </span>
           </div>
-          {activeFilters.length > 0 && (
+          {scope === 'filtered' && activeFilters.length > 0 && (
             <div className="text-slate-700">
               <strong>ಅನ್ವಯಿಸಿದ ಫಿಲ್ಟರ್‌ಗಳು:</strong> {activeFilters.join(' • ')}
+            </div>
+          )}
+          {scope === 'selected' && (
+            <div className="text-emerald-800 font-semibold">
+              (ಕೈಯಾರೆ ಆಯ್ಕೆ ಮಾಡಿದ ${recordsToPrint.length} ಶೇರುದಾರರು)
             </div>
           )}
         </div>
@@ -718,19 +750,19 @@ export default function RegisterListPrintModal({
                 </button>
                 <button
                   type="button"
-                  disabled={selectedIds.size === 0}
+                  disabled={selectedCount === 0}
                   onClick={() => setScope('selected')}
                   className={`px-3 py-1.5 rounded-lg transition-all font-bold flex items-center gap-1.5 cursor-pointer ${
-                    selectedIds.size === 0
+                    selectedCount === 0
                       ? 'opacity-40 cursor-not-allowed text-slate-600'
                       : scope === 'selected'
                       ? 'bg-emerald-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
-                  title={selectedIds.size === 0 ? 'ಯಾವುದೇ ಸದಸ್ಯರನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿಲ್ಲ' : 'ಆಯ್ದ ಸದಸ್ಯರ ಮುದ್ರಣ'}
+                  title={selectedCount === 0 ? 'ಯಾವುದೇ ಸದಸ್ಯರನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿಲ್ಲ' : 'ಆಯ್ದ ಸದಸ್ಯರ ಮುದ್ರಣ'}
                 >
                   <CheckSquare className="w-3.5 h-3.5" />
-                  <span>ಆಯ್ದ ಸದಸ್ಯರು ({selectedIds.size})</span>
+                  <span>ಆಯ್ದ ಸದಸ್ಯರು ({selectedCount})</span>
                 </button>
               </div>
 

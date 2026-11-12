@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, FileText, Download, CheckSquare, Square, Calendar, Sparkles } from 'lucide-react';
 import { downloadEnrollmentDocx, formatDocxDate } from '../../services/enrollmentDocxService';
@@ -8,6 +8,7 @@ export default function EnrollmentDocxExportModal({
   onClose,
   allFilteredRecords = [],
   selectedIds = new Set(),
+  selectedRecords = [],
   initialScope = 'filtered',
   filterSummary = {}
 }) {
@@ -19,11 +20,15 @@ export default function EnrollmentDocxExportModal({
   });
   const [isExporting, setIsExporting] = useState(false);
 
+  const selectedCount = (selectedRecords && selectedRecords.length > 0)
+    ? selectedRecords.length
+    : (selectedIds ? selectedIds.size : 0);
+
   useEffect(() => {
     if (isOpen) {
-      if (initialScope === 'selected' && selectedIds.size > 0) {
+      if (initialScope === 'selected' && selectedCount > 0) {
         setScope('selected');
-      } else if (selectedIds.size > 0 && selectedIds.size < allFilteredRecords.length) {
+      } else if (selectedCount > 0 && selectedCount < allFilteredRecords.length) {
         setScope('selected');
       } else {
         setScope('filtered');
@@ -44,9 +49,27 @@ export default function EnrollmentDocxExportModal({
 
   if (!isOpen) return null;
 
-  const recordsToExport = scope === 'selected' && selectedIds.size > 0
-    ? allFilteredRecords.filter(r => selectedIds.has(r.id || r.enrollment_id))
-    : allFilteredRecords;
+  const recordsToExport = useMemo(() => {
+    if (scope === 'selected') {
+      if (selectedRecords && selectedRecords.length > 0) {
+        return selectedRecords;
+      }
+      if (selectedIds && selectedIds.size > 0) {
+        return allFilteredRecords.filter(r => {
+          const rawId = r.id !== undefined ? r.id : r.enrollment_id;
+          const strId = String(rawId);
+          const numId = Number(rawId);
+          const enrId = r.enrollment_id ? String(r.enrollment_id) : '';
+          return selectedIds.has(rawId) ||
+                 selectedIds.has(strId) ||
+                 (!isNaN(numId) && selectedIds.has(numId)) ||
+                 (enrId && selectedIds.has(enrId));
+        });
+      }
+      return [];
+    }
+    return allFilteredRecords;
+  }, [scope, selectedRecords, selectedIds, allFilteredRecords]);
 
   const totalShares = recordsToExport.reduce((sum, r) => sum + (parseInt(r.no_shares || r.number_of_shares || 1, 10) || 1), 0);
 
@@ -188,7 +211,7 @@ export default function EnrollmentDocxExportModal({
 
               <button
                 type="button"
-                disabled={selectedIds.size === 0}
+                disabled={selectedCount === 0}
                 onClick={() => setScope('selected')}
                 className={`p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 ${
                   selectedIds.size === 0
@@ -208,7 +231,7 @@ export default function EnrollmentDocxExportModal({
                 <div>
                   <div className="font-bold text-xs text-slate-200">ಆಯ್ದ ಶೇರುದಾರರು ಮಾತ್ರ</div>
                   <div className="text-[11px] text-slate-400 mt-0.5">
-                    {selectedIds.size > 0 ? `${selectedIds.size} ಸದಸ್ಯರು ಆಯ್ಕೆಯಾಗಿದ್ದಾರೆ` : 'ಯಾವುದನ್ನೂ ಆಯ್ಕೆಮಾಡಿಲ್ಲ'}
+                    {selectedCount > 0 ? `${selectedCount} ಸದಸ್ಯರು ಆಯ್ಕೆಯಾಗಿದ್ದಾರೆ` : 'ಯಾವುದನ್ನೂ ಆಯ್ಕೆಮಾಡಿಲ್ಲ'}
                   </div>
                 </div>
               </button>
