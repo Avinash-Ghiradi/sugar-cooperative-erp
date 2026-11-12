@@ -2356,6 +2356,69 @@ export const ApiService = {
     const apiRes = await fetchApi(`/shareholders?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&village_id=${village_id}&circle_id=${circle_id}&status=${status}&book_no=${book_no}&schedule_cast=${encodeURIComponent(schedule_cast)}&amount=${amount}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
     if (apiRes && apiRes.success) return apiRes;
 
+    const cleanSearch = (search || '').trim();
+    const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+    const hasDelimiter = /[,;]/.test(cleanSearch);
+    const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
+    const isMultiShareQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && rawTokens[0].startsWith('#'));
+
+    if (isMultiShareQuery) {
+      const matchedRecords = [];
+      const matchedIds = new Set();
+
+      for (const token of rawTokens) {
+        const rawT = token.trim();
+        const cleanT = rawT.replace(/^#/, '');
+
+        // Priority 1: Exact match with raw token (e.g. '12' === '12', '#2659' === '#2659')
+        let found = mockShareholders.find(r => !matchedIds.has(r.id) && String(r.share_no || r.share_number || '').trim() === rawT);
+
+        // Priority 2: Fallback to match stripped token
+        if (!found) {
+          found = mockShareholders.find(r => !matchedIds.has(r.id) && String(r.share_no || r.share_number || '').trim().replace(/^#/, '') === cleanT);
+        }
+
+        // Priority 3: Check all_share_numbers or primary_share_no
+        if (!found) {
+          found = mockShareholders.find(r => !matchedIds.has(r.id) && (
+            (Array.isArray(r.all_share_numbers) && (r.all_share_numbers.map(s => String(s).trim()).includes(rawT) || r.all_share_numbers.map(s => String(s).trim().replace(/^#/, '')).includes(cleanT))) ||
+            String(r.primary_share_no || '').trim() === rawT ||
+            String(r.primary_share_no || '').trim() === cleanT
+          ));
+        }
+
+        if (found) {
+          matchedIds.add(found.id);
+          matchedRecords.push(found);
+        }
+      }
+
+      const paginated = matchedRecords.map(s => {
+        const own = getShareholderOwnership(s);
+        return {
+          ...s,
+          ownership: own,
+          relationship: own,
+          member_type: getMemberTypeByCategory(s.schedule_cast, s.member_type)
+        };
+      });
+
+      return {
+        success: true,
+        data: paginated,
+        isMultiShareMatch: true,
+        matchedCount: paginated.length,
+        requestedCount: rawTokens.length,
+        tokens: rawTokens,
+        pagination: {
+          total: paginated.length,
+          page: 1,
+          limit: Math.max(limit, paginated.length),
+          totalPages: 1
+        }
+      };
+    }
+
     let filtered = mockShareholders;
     if (search) {
       const q = search.trim().toLowerCase();

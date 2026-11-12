@@ -173,6 +173,91 @@ export const CloudDbService = {
         'Content-Type': 'application/json'
       };
 
+      // Multi-token or exact share numbers detection (e.g. "12, #2659, 12569" or "12 #2659 12569" or "12," or "#2659")
+      const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+      const hasDelimiter = /[,;]/.test(cleanSearch);
+      const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
+      const isMultiShareQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && rawTokens[0].startsWith('#'));
+
+      if (isMultiShareQuery) {
+        const candidateSet = new Set();
+        rawTokens.forEach(t => {
+          candidateSet.add(t);
+          if (t.startsWith('#')) candidateSet.add(t.substring(1));
+          else candidateSet.add('#' + t);
+        });
+
+        const inClause = Array.from(candidateSet).map(s => encodeURIComponent(s)).join(',');
+        const filterStr = filterParams.length > 0 ? `&${filterParams.join('&')}` : '';
+        const url = `${cleanUrl}/rest/v1/shareholders?share_no=in.(${inClause})${filterStr}&order=id.asc&limit=${Math.max(100, rawTokens.length * 5)}`;
+
+        const res = await fetch(url, { headers: authHeaders });
+        if (res.ok) {
+          const rawData = await res.json();
+          let records = (rawData || []).map(r => this.fixShiftedShareholder(r));
+
+          // If some requested tokens were not found, retry without extra filters (to avoid village/circle filters hiding exact numbers)
+          if (records.length < rawTokens.length && filterParams.length > 0) {
+            const fallbackUrl = `${cleanUrl}/rest/v1/shareholders?share_no=in.(${inClause})&order=id.asc&limit=${Math.max(100, rawTokens.length * 5)}`;
+            const fbRes = await fetch(fallbackUrl, { headers: authHeaders });
+            if (fbRes.ok) {
+              const fbRaw = await fbRes.json();
+              const fbRecords = (fbRaw || []).map(r => this.fixShiftedShareholder(r));
+              const existingIds = new Set(records.map(r => r.id));
+              fbRecords.forEach(r => {
+                if (!existingIds.has(r.id)) records.push(r);
+              });
+            }
+          }
+
+          // Sort and resolve matches strictly according to the order of tokens entered by the user
+          const matchedRecords = [];
+          const matchedIds = new Set();
+
+          for (const token of rawTokens) {
+            const rawT = token.trim();
+            const cleanT = rawT.replace(/^#/, '');
+
+            // Priority 1: Exact match with raw token (e.g. '12' === '12', '#2659' === '#2659')
+            let found = records.find(r => !matchedIds.has(r.id) && String(r.share_no || '').trim() === rawT);
+
+            // Priority 2: Fallback to match stripped token (if user omitted '#' or included '#')
+            if (!found) {
+              found = records.find(r => !matchedIds.has(r.id) && String(r.share_no || '').trim().replace(/^#/, '') === cleanT);
+            }
+
+            // Priority 3: Check all_share_numbers or primary_share_no
+            if (!found) {
+              found = records.find(r => !matchedIds.has(r.id) && (
+                (Array.isArray(r.all_share_numbers) && (r.all_share_numbers.includes(rawT) || r.all_share_numbers.includes(cleanT))) ||
+                String(r.primary_share_no || '').trim() === rawT ||
+                String(r.primary_share_no || '').trim() === cleanT
+              ));
+            }
+
+            if (found) {
+              matchedIds.add(found.id);
+              matchedRecords.push(found);
+            }
+          }
+
+          return {
+            success: true,
+            data: matchedRecords,
+            isMultiShareMatch: true,
+            matchedCount: matchedRecords.length,
+            requestedCount: rawTokens.length,
+            tokens: rawTokens,
+            pagination: {
+              total: matchedRecords.length,
+              page: 1,
+              limit: Math.max(limit, matchedRecords.length),
+              totalPages: 1
+            }
+          };
+        }
+      }
+
       let data = [];
       let total = 0;
 

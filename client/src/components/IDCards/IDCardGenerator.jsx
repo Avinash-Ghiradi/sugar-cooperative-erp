@@ -34,6 +34,7 @@ export default function IDCardGenerator() {
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const loadReqIdRef = useRef(0);
+  const [multiMatchStats, setMultiMatchStats] = useState(null);
   const [previewCard, setPreviewCard] = useState(null);
   const [showReferenceSample, setShowReferenceSample] = useState(false);
   const [printLayout, setPrintLayout] = useState(() => {
@@ -132,19 +133,51 @@ export default function IDCardGenerator() {
   const loadShareholders = async () => {
     const curId = ++loadReqIdRef.current;
     setLoading(true);
+
+    const cleanSearch = (search || '').trim();
+    const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+    const hasDelimiter = /[,;]/.test(cleanSearch);
+    const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
+    const isMultiShareQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && rawTokens[0].startsWith('#'));
+
     const res = await ApiService.getShareholders({
       page: 1,
-      limit: 24,
+      limit: isMultiShareQuery ? Math.max(24, rawTokens.length * 2) : 24,
       search,
-      circle: circleFilter,
-      place: placeFilter,
+      circle: isMultiShareQuery ? '' : circleFilter,
+      place: isMultiShareQuery ? '' : placeFilter,
       status: 'Active'
     });
+
     if (curId === loadReqIdRef.current) {
       if (res && res.data) {
         setShareholders(res.data);
-        if (selectedCards.length === 0 && res.data.length > 0) {
-          setSelectedCards([res.data[0]]); // Default to 1 selected member
+        if (isMultiShareQuery) {
+          // Auto-select ALL exact matching cards for instant printing!
+          setSelectedCards(res.data);
+
+          // Compute matched and missing tokens
+          const matchedTokensSet = new Set();
+          res.data.forEach(r => {
+            const s = String(r.share_no || r.share_number || '').trim();
+            matchedTokensSet.add(s);
+            matchedTokensSet.add(s.replace(/^#/, ''));
+          });
+          const missingTokens = rawTokens.filter(t => 
+            !matchedTokensSet.has(t) && !matchedTokensSet.has(t.replace(/^#/, ''))
+          );
+
+          setMultiMatchStats({
+            matched: res.data.length,
+            requested: rawTokens.length,
+            tokens: rawTokens,
+            missingTokens
+          });
+        } else {
+          setMultiMatchStats(null);
+          if (selectedCards.length === 0 && res.data.length > 0) {
+            setSelectedCards([res.data[0]]); // Default to 1 selected member
+          }
         }
       }
       setLoading(false);
@@ -941,11 +974,21 @@ export default function IDCardGenerator() {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search by Name (ಕನ್ನಡ/English), Share No, Book No..."
+              placeholder="ಷೇರು ಸಂಖ್ಯೆಗಳು (ಉದಾ: 12, #2659, 12569...) ಅಥವಾ ಹೆಸರು, ಗ್ರಾಮ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 outline-none focus:border-emerald-500"
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-200 outline-none focus:border-emerald-500"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200 p-0.5 rounded cursor-pointer"
+                title="Clear search (ಹುಡುಕಾಟ ತೆರವುಗೊಳಿಸಿ)"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <div>
@@ -974,6 +1017,45 @@ export default function IDCardGenerator() {
             </select>
           </div>
         </div>
+
+        {/* Multi-Share Exact Match Notification Banner */}
+        {multiMatchStats && (
+          <div className="bg-emerald-950/40 border border-emerald-500/60 rounded-2xl p-3 text-xs text-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg animate-fadeIn">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 font-bold text-emerald-300">
+                <span className="text-base">🎯</span>
+                <span>
+                  ನಿಖರ ಷೇರು ಸಂಖ್ಯೆ ಹೊಂದಾಣಿಕೆ (Exact Share Numbers Match):{' '}
+                  <span className="font-mono text-emerald-400 text-sm">{shareholders.length}</span> / {multiMatchStats.requested} ಕಾರ್ಡ್‌ಗಳು ಕಂಡುಬಂದಿವೆ
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300">
+                ನಮೂದಿಸಿದ ಷೇರು ಸಂಖ್ಯೆಗಳ ಕಾರ್ಡ್‌ಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಮುದ್ರಣಕ್ಕೆ ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ ({selectedCards.length} Cards Selected for Print).
+                {multiMatchStats.missingTokens && multiMatchStats.missingTokens.length > 0 && (
+                  <span className="text-amber-300 ml-1 font-semibold">
+                    • ⚠️ ಕಂಡುಬರದ ಸಂಖ್ಯೆಗಳು (Not found): {multiMatchStats.missingTokens.join(', ')}
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedCards(shareholders)}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-sm cursor-pointer text-xs"
+              >
+                ✓ ಎಲ್ಲವನ್ನೂ ಆಯ್ಕೆಮಾಡಿ ({shareholders.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCards([])}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all cursor-pointer text-xs"
+              >
+                ✕ ತೆರವುಗೊಳಿಸಿ
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Cards Workbench Grid (ON-SCREEN ONLY - Hidden in Print) */}
