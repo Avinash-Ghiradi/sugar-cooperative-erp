@@ -1,10 +1,13 @@
 import React from 'react';
 import { getShareholderSharesCount } from '../../services/api';
+import { getCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
+import { COOP_HANDSHAKE_BASE64, getAbsoluteAssetUrl } from './sugarReceiptPrint';
 
 /**
  * SugarReceiptCard
  * Exact React representation of the Statutory Sugar Allotment Receipt Card
- * Matching official layout in media_1794224123638_936a8535.jpg
+ * Enhanced with Dual Logos, Google Anek Kannada fonts, Security Watermark,
+ * Statutory Signatures, and High-DPI QR Code.
  */
 export default function SugarReceiptCard({
   shareholder,
@@ -15,119 +18,182 @@ export default function SugarReceiptCard({
 }) {
   if (!shareholder) return null;
 
-  const copyLabel = isOfficeCopy ? 'ಕಛೇರಿ ಪ್ರತಿ' : 'ಶೇರುದಾರರ ಪ್ರತಿ';
-  const copyBadgeBg = isOfficeCopy ? '#2563eb' : '#15803d';
+  const isOffice = !!isOfficeCopy;
+  const copyLabel = isOffice ? '🏢 ಕಛೇರಿ ಪ್ರತಿ (Office Copy)' : '👤 ಶೇರುದಾರರ ಪ್ರತಿ (Member Copy)';
+  const copyBadgeClass = isOffice ? 'bg-gradient-to-r from-blue-900 to-blue-600 text-white' : 'bg-gradient-to-r from-emerald-900 to-emerald-600 text-white';
 
   const shareNo = shareholder.share_no || shareholder.share_number || shareholder.id || '—';
   const name = shareholder.shareholder_name || shareholder.name || '—';
   const place = (shareholder.place || shareholder.village_name || 'ಮರಗೂರ').trim();
-  const category = (shareholder.schedule_cast || shareholder.category || 'ದ - ವರ್ಗ').trim();
+  const category = (shareholder.schedule_cast || shareholder.category || 'ಅ - ವರ್ಗ').trim();
 
   const shares = getShareholderSharesCount(shareholder);
   const kg = shares * (settings.kg_per_share || 25);
   const rate = settings.sugar_rate_per_kg || 20;
   const amt = kg * rate;
   const formattedAmt = amt.toLocaleString('en-IN');
-  const receiptNo = `${place}/${settings.receipt_year_code || '202627'}${String(seq).padStart(4, '0')}`;
+
+  const yearCode = settings.receipt_year_code || '202627';
+  const receiptNo = `${place}/${yearCode}/${String(seq).padStart(4, '0')}`;
+  const seasonYear = settings.season_year || settings.receipt_year || '2026-27';
+
+  const today = new Date();
+  const receiptDate = settings.receipt_date || `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+  // Logos
+  const companyLogo = getAbsoluteAssetUrl(getCompanyLogo()) || getAbsoluteAssetUrl(DEFAULT_LOGO_PATH);
+  const handshakeLogo = COOP_HANDSHAKE_BASE64;
+  const sealLogo = getAbsoluteAssetUrl('./id_assets/society_seal.png');
 
   return (
-    <div className="border-[1.8px] border-[#ea580c] rounded-lg bg-white text-slate-900 shadow-md flex flex-col overflow-hidden w-full select-none text-[10px] h-full justify-between">
-      {/* 1. Header (Orange) */}
-      <div className="bg-[#ea580c] text-white text-center py-1.5 px-2">
-        <div className="font-extrabold text-[12px] leading-tight tracking-tight">
-          ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿ.
+    <div className="border-[1.8px] border-[#c2410c] rounded-xl bg-white text-slate-900 shadow-md flex flex-col overflow-hidden w-full select-none text-[10px] h-full justify-between relative font-['Anek_Kannada',sans-serif]">
+      {/* Background Security Seal Watermark */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 opacity-[0.045] pointer-events-none z-0">
+        <img src={sealLogo} alt="Seal Watermark" className="w-full h-auto grayscale" onError={(e) => { e.target.style.display = 'none'; }} />
+      </div>
+
+      {/* 1. Header (Deep Saffron Gradient + Dual Logos) */}
+      <div className="bg-gradient-to-r from-red-700 via-orange-600 to-amber-500 text-white py-1 px-2 flex items-center justify-between gap-1.5 border-b-2 border-amber-600 relative z-10">
+        {/* Factory Logo on Left */}
+        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center p-0.5 shrink-0 shadow-sm border border-yellow-200">
+          <img
+            src={companyLogo}
+            alt="BSSKN"
+            className="w-full h-full object-contain"
+            onError={(e) => { e.target.src = './id_assets/bsskn_logo.png'; }}
+          />
         </div>
-        <div className="text-[9px] font-medium opacity-95 leading-tight mt-0.5">
-          ಮರಗೂರ 586 204 ತಾ|| ಇಂಡಿ ಜಿ|| ವಿಜಯಪುರ
+
+        {/* Center Title & Subtitle in Google Anek Kannada */}
+        <div className="flex-1 text-center leading-tight">
+          <div className="font-black text-[12.5px] leading-tight text-white drop-shadow-sm">
+            ಶ್ರೀ ಭೀಮಾಶಂಕರ ಸಹಕಾರಿ ಸಕ್ಕರೆ ಕಾರ್ಖಾನೆ ನಿಯಮಿತ
+          </div>
+          <div className="text-[8.5px] font-medium text-amber-100 leading-tight mt-0.5">
+            ಮರಗೂರ - 586 204, ತಾ|| ಇಂಡಿ, ಜಿ|| ವಿಜಯಪುರ (ಕರ್ನಾಟಕ)
+          </div>
+          <div className="text-[7.5px] font-bold text-white bg-black/20 inline-block px-2 py-0.2 rounded-full mt-0.5 border border-white/30">
+            ಸಕ್ಕರೆ ವಿತರಣಾ ವಿಭಾಗ • ಸೀಸನ್: {seasonYear}
+          </div>
+        </div>
+
+        {/* National Cooperative Handshake Logo on Right */}
+        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center p-0.5 shrink-0 shadow-sm border border-yellow-200">
+          <img
+            src={handshakeLogo}
+            alt="Sahakari"
+            className="w-full h-full object-contain"
+          />
         </div>
       </div>
 
-      {/* 2. Sub-Banner (Green) */}
-      <div className="bg-[#047857] text-white flex justify-between items-center px-2 py-1">
-        <span className="font-bold text-[10.5px] tracking-wide">ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿ</span>
-        <span
-          className="text-[8.5px] font-bold px-2 py-0.5 rounded-full text-white tracking-wide"
-          style={{ backgroundColor: copyBadgeBg }}
-        >
+      {/* 2. Sub-Banner (Emerald Green) */}
+      <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 text-white flex justify-between items-center px-2.5 py-0.8 relative z-10 border-b border-emerald-600">
+        <span className="font-extrabold text-[10.5px] tracking-wide flex items-center gap-1">
+          <span className="text-yellow-300 text-[8px]">✦</span>
+          <span>ಸಕ್ಕರೆ ವಿತರಣಾ ಅಧಿಕೃತ ರಶೀದಿ</span>
+        </span>
+        <span className={`text-[8px] font-extrabold px-2 py-0.5 rounded-full tracking-wide border border-white/30 shadow-xs ${copyBadgeClass}`}>
           {copyLabel}
         </span>
       </div>
 
-      {/* 3. Receipt No */}
-      <div className="px-2 pt-1 pb-0.5 text-[#047857] font-semibold text-[10px] flex items-center">
-        <span>ರಶೀದಿ ಸಂಖ್ಯೆ</span>
-        <span className="mx-1">:</span>
-        <strong className="font-bold font-mono text-[10.5px] text-[#047857]">{receiptNo}</strong>
+      {/* 3. Receipt No & Date Row */}
+      <div className="px-2.5 py-0.5 bg-slate-50 border-b border-slate-200 text-[9.5px] flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-1">
+          <span className="text-slate-600 font-bold">ರಶೀದಿ ಸಂ:</span>
+          <strong className="font-mono text-[10px] text-emerald-800 font-black">{receiptNo}</strong>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-slate-600 font-bold">ದಿನಾಂಕ:</span>
+          <strong className="text-[10px] text-slate-800 font-black">{receiptDate}</strong>
+        </div>
       </div>
 
-      {/* 4. Share No Banner (Deep Blue Pill) */}
-      <div className="bg-[#1d4ed8] text-white font-bold text-[10.5px] px-2 py-1 mx-2 rounded flex items-center shadow-xs">
-        <span>ಶೇರು ಸಂಖ್ಯೆ</span>
-        <span className="mx-1">:</span>
-        <strong className="font-mono text-[11px] tracking-wider">{shareNo}</strong>
+      {/* 4. Share No Banner (Royal Cobalt Blue Ribbon) */}
+      <div className="bg-gradient-to-r from-blue-900 via-blue-700 to-blue-600 text-white font-bold text-[10.5px] px-2.5 py-1 mx-1.5 my-0.5 rounded flex items-center justify-between shadow-xs relative z-10">
+        <div className="flex items-baseline gap-1">
+          <span className="text-blue-100 font-bold text-[9.5px]">ಶೇರು ಸಂಖ್ಯೆ:</span>
+          <strong className="font-mono text-[12px] font-black text-amber-300 tracking-wider">{shareNo}</strong>
+        </div>
+        <div className="bg-white/20 border border-white/40 px-2 py-0.2 rounded-full text-[8.5px] font-extrabold">
+          ವರ್ಗ: {category}
+        </div>
       </div>
 
       {/* 5. Body: Details + QR */}
-      <div className="p-2 flex justify-between items-center gap-2 flex-1">
-        <div className="w-[68%] flex flex-col justify-around space-y-1">
-          <div className="flex border-b border-dotted border-slate-300 pb-0.5 text-[9.5px]">
-            <span className="w-18 font-semibold text-slate-700 flex-shrink-0">ಸದಸ್ಯರ ಹೆಸರು</span>
-            <span className="mr-1">:</span>
-            <span className="font-extrabold text-slate-950 truncate">{name}</span>
+      <div className="px-2 py-1 flex justify-between items-center gap-2 flex-1 relative z-10">
+        <div className="w-[69%] flex flex-col justify-around space-y-0.8">
+          <div className="flex items-baseline border-b border-dashed border-slate-300 pb-0.5 text-[9.5px]">
+            <span className="w-19 font-bold text-slate-700 shrink-0">ಸದಸ್ಯರ ಹೆಸರು</span>
+            <span className="mx-0.5 font-bold text-slate-500">:</span>
+            <span className="font-black text-slate-950 truncate text-[10.5px]">{name}</span>
           </div>
-          <div className="flex border-b border-dotted border-slate-300 pb-0.5 text-[9.5px]">
-            <span className="w-18 font-semibold text-slate-700 flex-shrink-0">ವಿಳಾಸ</span>
-            <span className="mr-1">:</span>
-            <span className="font-semibold text-slate-800 truncate">{place}</span>
+          <div className="flex items-baseline border-b border-dashed border-slate-300 pb-0.5 text-[9.5px]">
+            <span className="w-19 font-bold text-slate-700 shrink-0">ವಿಳಾಸ / ಗ್ರಾಮ</span>
+            <span className="mx-0.5 font-bold text-slate-500">:</span>
+            <span className="font-bold text-slate-800 truncate">{place}</span>
           </div>
-          <div className="flex border-b border-dotted border-slate-300 pb-0.5 text-[9.5px]">
-            <span className="w-18 font-semibold text-slate-700 flex-shrink-0">ಶೇರು ವರ್ಗ</span>
-            <span className="mr-1">:</span>
-            <span className="font-semibold text-slate-800 truncate">{category}</span>
+          <div className="flex items-baseline border-b border-dashed border-slate-300 pb-0.5 text-[9.5px]">
+            <span className="w-19 font-bold text-slate-700 shrink-0">ಶೇರು ವರ್ಗ</span>
+            <span className="mx-0.5 font-bold text-slate-500">:</span>
+            <span className="font-bold text-slate-800 truncate">{category}</span>
           </div>
-          <div className="flex border-b border-dotted border-slate-300 pb-0.5 text-[9.5px]">
-            <span className="w-18 font-semibold text-slate-700 flex-shrink-0">ಒಟ್ಟು ಶೇರುಗಳು</span>
-            <span className="mr-1">:</span>
-            <span className="font-bold text-slate-900">{shares}</span>
+          <div className="flex items-baseline border-b border-dashed border-slate-300 pb-0.5 text-[9.5px]">
+            <span className="w-19 font-bold text-slate-700 shrink-0">ಒಟ್ಟು ಶೇರುಗಳು</span>
+            <span className="mx-0.5 font-bold text-slate-500">:</span>
+            <span className="font-black text-slate-900">{shares}</span>
           </div>
-          <div className="flex text-[9.5px]">
-            <span className="w-18 font-semibold text-slate-700 flex-shrink-0">ಪ್ರತಿ ಕೆ.ಜಿ ದರ</span>
-            <span className="mr-1">:</span>
-            <span className="font-semibold text-slate-800">ರೂ. {rate} /ಕೆ.ಜಿ</span>
+          <div className="flex items-baseline text-[9.5px]">
+            <span className="w-19 font-bold text-slate-700 shrink-0">ಪ್ರತಿ ಕೆ.ಜಿ ದರ</span>
+            <span className="mx-0.5 font-bold text-slate-500">:</span>
+            <span className="font-bold text-slate-800">ರೂ. {rate} /- (ಪ್ರತಿ ಕಿ.ಗ್ರಾಂ)</span>
           </div>
         </div>
 
         {/* QR Box */}
-        <div className="w-[30%] flex flex-col items-center justify-center text-center">
-          {qrUrl ? (
-            <img src={qrUrl} alt="QR" className="w-16 h-16 object-contain shadow-xs border border-slate-100" />
-          ) : (
-            <div className="w-16 h-16 border border-dashed border-slate-300 rounded flex items-center justify-center text-slate-400 text-[9px]">
-              QR
-            </div>
-          )}
-          <span className="text-[6.5px] font-bold text-slate-500 mt-1 leading-none tracking-tight">
-            ಪರಿಶೀಲನೆಗಾಗಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ
+        <div className="w-[29%] flex flex-col items-center justify-center text-center">
+          <div className="bg-white border border-slate-300 rounded-md p-1 shadow-xs">
+            {qrUrl ? (
+              <img src={qrUrl} alt="QR" className="w-15 h-15 object-contain" />
+            ) : (
+              <div className="w-15 h-15 border border-dashed border-slate-300 rounded flex items-center justify-center text-slate-400 text-[9px]">
+                QR
+              </div>
+            )}
+          </div>
+          <span className="text-[6.5px] font-extrabold text-slate-600 mt-0.5 leading-tight tracking-tight">
+            ದೃಢೀಕರಣಕ್ಕಾಗಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ
           </span>
         </div>
       </div>
 
-      {/* 6. Calculations (Orange & Green Banners) */}
-      <div className="px-2 space-y-1 pb-1">
-        <div className="bg-[#ea580c] text-white flex justify-between items-center px-2.5 py-1 rounded text-[10px] font-bold shadow-xs">
-          <span>ಅರ್ಹ ಸಕ್ಕರೆ</span>
-          <span className="font-extrabold text-[11.5px]">{kg} ಕೆ.ಜಿ</span>
+      {/* 6. Calculations (Dual Executive Banners) */}
+      <div className="px-2 space-y-0.8 pb-0.5 relative z-10">
+        <div className="bg-gradient-to-r from-orange-700 to-orange-500 text-white flex justify-between items-center px-2.5 py-0.8 rounded text-[10px] font-extrabold shadow-xs">
+          <span>ಒಟ್ಟು ಅರ್ಹ ಸಕ್ಕರೆ :</span>
+          <span className="font-black text-[12px]">{kg} <span className="text-[9px] font-bold">ಕಿ.ಗ್ರಾಂ</span></span>
         </div>
-        <div className="bg-[#047857] text-white flex justify-between items-center px-2.5 py-1 rounded text-[10px] font-bold shadow-xs">
-          <span>ಪಾವತಿಸಬೇಕಾದ ಮೊತ್ತ</span>
-          <span className="font-extrabold text-[11.5px]">ರೂ. {formattedAmt}</span>
+        <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 text-white flex justify-between items-center px-2.5 py-0.8 rounded text-[10px] font-extrabold shadow-xs">
+          <span>ಪಾವತಿಸಬೇಕಾದ ಮೊತ್ತ :</span>
+          <span className="font-black text-[12px]">ರೂ. {formattedAmt} <span className="text-[9px] font-bold">/-</span></span>
         </div>
       </div>
 
-      {/* 7. Signatures */}
-      <div className="flex justify-between items-center px-3 py-1.5 text-[9px] font-bold text-slate-800 border-t border-slate-100">
-        <div>ಸದಸ್ಯರ ಸಹಿ</div>
-        <div>ವಿತರಣಾಧಿಕಾರಿಗಳ ಸಹಿ</div>
+      {/* 7. Official Tri-Signatures */}
+      <div className="flex justify-between items-end px-2 pt-2 pb-1 text-[7.5px] font-black text-slate-800 border-t border-slate-100 relative z-10 text-center">
+        <div className="w-[31%]">
+          <div className="border-t border-dotted border-slate-400 mb-0.5" />
+          <div>ಶೇರುದಾರರ ಸಹಿ</div>
+        </div>
+        <div className="w-[31%]">
+          <div className="border-t border-dotted border-slate-400 mb-0.5" />
+          <div>ತೂಕಗಾರರ ಸಹಿ</div>
+        </div>
+        <div className="w-[31%]">
+          <div className="border-t border-dotted border-slate-400 mb-0.5" />
+          <div>ಸಕ್ಕರೆ ವಿತರಕರ ಸಹಿ</div>
+        </div>
       </div>
     </div>
   );

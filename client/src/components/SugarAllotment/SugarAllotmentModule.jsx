@@ -166,6 +166,7 @@ export default function SugarAllotmentModule() {
   const [isPrintingReceipts, setIsPrintingReceipts] = useState(false);
   const [receiptProgress, setReceiptProgress] = useState(0);
   const [singleReceiptQr, setSingleReceiptQr] = useState('');
+  const [singleReceiptDuplicate, setSingleReceiptDuplicate] = useState(false);
   const [previewQrMap, setPreviewQrMap] = useState(new Map());
   const [pinInput, setPinInput] = useState('');
   const [pinVerified, setPinVerified] = useState(false);
@@ -1227,7 +1228,8 @@ export default function SugarAllotmentModule() {
     const qrMap = new Map();
     qrMap.set(sNo, qrUrl);
     const docTitle = `A4_Sugar_Receipt_${activeReceiptModal.share_no || activeReceiptModal.id}`;
-    const html = buildA4ReceiptsHtml([activeReceiptModal], settings, qrMap, docTitle);
+    const listToPrint = singleReceiptDuplicate ? [activeReceiptModal, activeReceiptModal] : [activeReceiptModal];
+    const html = buildA4ReceiptsHtml(listToPrint, settings, qrMap, docTitle);
     openPrintDialog(html);
   };
 
@@ -2693,9 +2695,24 @@ export default function SugarAllotmentModule() {
 
             {/* Modal Footer Actions */}
             <div className="p-4 border-t border-slate-800 bg-slate-950 flex flex-wrap items-center justify-between gap-3">
-              <div className="text-[11px] text-slate-400">
-                ಶೇರು ನಂ: <strong className="text-white font-mono">{activeReceiptModal.share_no || activeReceiptModal.id}</strong> • {activeReceiptModal.shareholder_name || activeReceiptModal.name}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="text-[11px] text-slate-400">
+                  ಶೇರು ನಂ: <strong className="text-white font-mono">{activeReceiptModal.share_no || activeReceiptModal.id}</strong> • {activeReceiptModal.shareholder_name || activeReceiptModal.name}
+                </div>
+
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer bg-slate-900 px-3 py-1 rounded-xl border border-slate-800 hover:border-slate-700 select-none">
+                  <input
+                    type="checkbox"
+                    checked={singleReceiptDuplicate}
+                    onChange={(e) => setSingleReceiptDuplicate(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-emerald-500 bg-slate-800 border-slate-700 cursor-pointer accent-emerald-500"
+                  />
+                  <span className="font-semibold text-slate-200 text-[11px]">
+                    ಕೆಳಗಿನ ಅರ್ಧದಲ್ಲೂ ನಕಲು ಮುದ್ರಿಸಿ (Duplicate on lower half - 4 receipts)
+                  </span>
+                </label>
               </div>
+
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
