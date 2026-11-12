@@ -257,12 +257,12 @@ export function renderStackedCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl
 }
 
 /**
- * 2. SIDE-BY-SIDE CARD HTML (96mm wide x 137mm tall)
- * Optimized with bigger fonts and dedicated signature space
+ * 2. SIDE-BY-SIDE CARD HTML (96mm wide x 138mm tall)
+ * Optimized with Google Anek Kannada fonts, large high-contrast text, dual logos, and 38px physical signing space
  */
 export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl = '', logos = {}) {
   const isOffice = !!isOfficeCopy;
-  const copyLabel = isOffice ? '🏢 ಕಛೇರಿ ಪ್ರತಿ' : '👤 ಶೇರುದಾರರ ಪ್ರತಿ';
+  const copyLabel = isOffice ? '🏢 ಕಛೇರಿ ಪ್ರತಿ (Office Copy)' : '👤 ಶೇರುದಾರರ ಪ್ರತಿ (Member Copy)';
   const copyBadgeClass = isOffice ? 'rc-copy-office' : 'rc-copy-member';
 
   const shareNo = s.share_no || s.share_number || s.id || '—';
@@ -316,7 +316,7 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
       <div class="rc-subbanner">
         <div class="rc-subbanner-title">
           <span class="rc-subbanner-bullet">✦</span>
-          <span>ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿ</span>
+          <span>ಸಕ್ಕರೆ ವಿತರಣಾ ಅಧಿಕೃತ ರಶೀದಿ</span>
         </div>
         <div class="rc-copy-badge ${copyBadgeClass}">
           ${copyLabel}
@@ -352,7 +352,7 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
           <div class="rc-row">
             <span class="rc-lbl">ಸದಸ್ಯರ ಹೆಸರು</span>
             <span class="rc-sep">:</span>
-            <span class="rc-val rc-val-bold">${name}</span>
+            <span class="rc-val rc-val-bold rc-val-name">${name}</span>
           </div>
           <div class="rc-row">
             <span class="rc-lbl">ವಿಳಾಸ / ಗ್ರಾಮ</span>
@@ -367,7 +367,7 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
           <div class="rc-row">
             <span class="rc-lbl">ಒಟ್ಟು ಶೇರುಗಳು</span>
             <span class="rc-sep">:</span>
-            <span class="rc-val font-bold">${sharesCount}</span>
+            <span class="rc-val font-bold">${sharesCount} (ಶೇರುಗಳು)</span>
           </div>
           <div class="rc-row">
             <span class="rc-lbl">ಪ್ರತಿ ಕೆ.ಜಿ ದರ</span>
@@ -400,22 +400,22 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
         </div>
       </div>
 
-      <!-- 7. Signatures with 30px Physical Signing Space -->
+      <!-- 7. Signatures with 38px Dedicated Physical Signing Space -->
       <div class="rc-signatures">
         <div class="rc-sig-item">
-          <div class="rc-sig-space" style="height: 28px;"></div>
+          <div class="rc-sig-space"></div>
           <div class="rc-sig-line"></div>
-          <div class="rc-sig-lbl">ಶೇರುದಾರರ ಸಹಿ</div>
+          <div class="rc-sig-lbl">ಶೇರುದಾರರ ಸಹಿ / ಹೆಬ್ಬೆರಳು</div>
         </div>
         <div class="rc-sig-item">
-          <div class="rc-sig-space" style="height: 28px;"></div>
+          <div class="rc-sig-space"></div>
           <div class="rc-sig-line"></div>
           <div class="rc-sig-lbl">ತೂಕಗಾರರ ಸಹಿ</div>
         </div>
         <div class="rc-sig-item">
-          <div class="rc-sig-space" style="height: 28px;"></div>
+          <div class="rc-sig-space"></div>
           <div class="rc-sig-line"></div>
-          <div class="rc-sig-lbl">ವಿತರಕರ ಸಹಿ</div>
+          <div class="rc-sig-lbl">ಸಕ್ಕರೆ ವಿತರಕರ ಸಹಿ & ಮೊಹರು</div>
         </div>
       </div>
     </div>
@@ -443,12 +443,13 @@ export function renderShareholderRowHtml(s, seq, settings = {}, qrMap = new Map(
 
 /**
  * Build the full A4 HTML document containing all pages
- * Default layout is 'stacked' for 1 shareholder (Top: Office Copy, Bottom: Member Copy)
+ * Default layout is 'grid' (Side-by-Side: 2 Shareholders per A4 Page)
  */
 export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new Map(), docTitle = 'ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿಗಳು (A4 Sugar Receipts)', options = {}) {
   let pagesHtml = '';
   const total = shareholdersList.length;
-  const layout = options.layout || (total === 1 ? 'stacked' : 'grid');
+  // Default is 'grid' (Side-by-Side: 2 shareholders / 4 receipts per A4 sheet)
+  const layout = options.layout || 'grid';
 
   // Resolve logos for all pages
   const logos = {
@@ -459,7 +460,6 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
 
   if (layout === 'stacked') {
     // STACKED FULL A4 LAYOUT (Top: Office Copy | Bottom: Member Copy)
-    // 1 Shareholder per Sheet = ZERO wasted space!
     for (let i = 0; i < total; i++) {
       const s = shareholdersList[i];
       const sNo = String(s.share_no || s.share_number || s.id);
@@ -487,22 +487,28 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       `;
     }
   } else {
-    // GRID 2x2 LAYOUT (Side-by-Side)
+    // GRID 2x2 LAYOUT (Side-by-Side: 2 Shareholders per A4 Page)
     for (let i = 0; i < total; i += 2) {
       const s1 = shareholdersList[i];
-      // If single shareholder in grid mode, duplicate to fill lower row!
-      const s2 = (i + 1 < total) ? shareholdersList[i + 1] : (total === 1 ? s1 : null);
+      // If single shareholder in grid mode, duplicate to fill lower row or use provided options
+      const s2 = (i + 1 < total) 
+        ? shareholdersList[i + 1] 
+        : (options.fillSecondWithDuplicate !== false && total === 1 ? s1 : null);
 
       pagesHtml += `
         <div class="a4-page">
+          <!-- ROW 1: Shareholder 1 (Office Copy + Member Copy) -->
           ${renderShareholderRowHtml(s1, i + 1, settings, qrMap, logos)}
           
+          <!-- HORIZONTAL PERFORATION CUT LINE (Separate Shareholder 1 and Shareholder 2) -->
           <div class="horizontal-cut-line">
             <div class="scissor-icon">✂</div>
-            <span class="horizontal-cut-text">ಇಲ್ಲಿ ಕತ್ತರಿಸಿ (Cut Here)</span>
+            <span class="horizontal-cut-text">ಇಲ್ಲಿ ಕತ್ತರಿಸಿ • ೨ ಶೇರುದಾರರನ್ನು ಪ್ರತ್ಯೇಕಿಸಿ (Cut Here to separate shareholders)</span>
+            <div class="scissor-icon">✂</div>
           </div>
 
-          ${s2 ? renderShareholderRowHtml(s2, i + 2, settings, qrMap, logos) : '<div class="shareholder-row"></div>'}
+          <!-- ROW 2: Shareholder 2 (Office Copy + Member Copy) -->
+          ${s2 ? renderShareholderRowHtml(s2, s2 === s1 ? (i + 1) : (i + 2), settings, qrMap, logos) : '<div class="shareholder-row"></div>'}
         </div>
       `;
     }
@@ -730,6 +736,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       background: #ffffff;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
       overflow: hidden;
       box-sizing: border-box;
       position: relative;
@@ -788,7 +795,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     }
     .horizontal-cut-line {
       width: 100%;
-      height: 5.5mm;
+      height: 6mm;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -824,18 +831,18 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     .rc-header {
       background: linear-gradient(135deg, #b91c1c 0%, #c2410c 35%, #ea580c 80%, #f97316 100%);
       color: #ffffff;
-      padding: 3.5px 6px;
+      padding: 4px 8px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 5px;
+      gap: 6px;
       border-bottom: 2px solid #ca8a04;
       position: relative;
       z-index: 1;
     }
     .rc-logo-box {
-      width: 34px;
-      height: 34px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       background: #ffffff;
       display: flex;
@@ -857,25 +864,25 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       line-height: 1.15;
     }
     .rc-title {
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 900;
       letter-spacing: -0.15px;
       color: #ffffff;
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     .rc-subtitle {
-      font-size: 9.2px;
+      font-size: 9.5px;
       font-weight: 600;
       color: #fef3c7;
       margin-top: 0.5px;
     }
     .rc-subdept {
-      font-size: 8px;
+      font-size: 8.5px;
       font-weight: 800;
       color: #ffffff;
       background: rgba(0,0,0,0.22);
       display: inline-block;
-      padding: 0.5px 7px;
+      padding: 1px 8px;
       border-radius: 9999px;
       margin-top: 1px;
       border: 0.5px solid rgba(255,255,255,0.3);
@@ -888,13 +895,13 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 2.5px 8px;
+      padding: 3px 10px;
       border-bottom: 1.2px solid #047857;
       position: relative;
       z-index: 1;
     }
     .rc-subbanner-title {
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 800;
       letter-spacing: 0.2px;
       display: flex;
@@ -906,7 +913,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       font-size: 9px;
     }
     .rc-copy-badge {
-      font-size: 8.5px;
+      font-size: 9px;
       font-weight: 800;
       padding: 1.5px 8px;
       border-radius: 9999px;
@@ -928,10 +935,10 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 3px 8px;
+      padding: 3.5px 10px;
       background: #f8fafc;
       border-bottom: 1px solid #e2e8f0;
-      font-size: 10px;
+      font-size: 11px;
       position: relative;
       z-index: 1;
     }
@@ -947,6 +954,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     .rc-meta-val {
       color: #065f46;
       font-weight: 800;
+      font-size: 11.5px;
     }
     .rc-meta-date .rc-meta-val {
       color: #1e293b;
@@ -959,8 +967,8 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 3px 8px;
-      margin: 2px 5px;
+      padding: 3.5px 10px;
+      margin: 2px 6px;
       border-radius: 5px;
       box-shadow: 0 1px 3px rgba(30, 58, 138, 0.25);
       position: relative;
@@ -972,12 +980,12 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       gap: 4px;
     }
     .rc-share-lbl {
-      font-size: 10.5px;
+      font-size: 11.5px;
       font-weight: 700;
-      opacity: 0.95;
+      color: #bfdbfe;
     }
     .rc-share-num {
-      font-size: 12.8px;
+      font-size: 15px;
       font-weight: 900;
       letter-spacing: 0.5px;
       color: #fef08a;
@@ -985,45 +993,44 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     .rc-category-tag {
       background: rgba(255,255,255,0.2);
       border: 1px solid rgba(255,255,255,0.4);
-      padding: 1px 7px;
+      padding: 1.5px 8px;
       border-radius: 9999px;
-      font-size: 9px;
+      font-size: 9.5px;
       font-weight: 800;
       color: #ffffff;
     }
 
     /* Body & Details */
     .rc-body {
-      padding: 3px 8px;
+      padding: 4px 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       flex: 1;
       position: relative;
       z-index: 1;
     }
     .rc-details {
-      width: 69%;
+      width: 70%;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 2px;
-      height: 100%;
+      gap: 3px;
     }
     .rc-row {
       display: flex;
       align-items: baseline;
       border-bottom: 1px dashed #cbd5e1;
-      padding: 2px 0;
-      font-size: 10.2px;
-      line-height: 1.25;
+      padding: 3.5px 0;
+      font-size: 11px;
+      line-height: 1.3;
     }
     .rc-row:last-child {
       border-bottom: none;
     }
     .rc-lbl {
-      width: 70px;
+      width: 76px;
       flex-shrink: 0;
       color: #334155;
       font-weight: 700;
@@ -1043,11 +1050,15 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
     }
     .rc-val-bold {
       font-weight: 900;
-      font-size: 11.5px;
+      color: #0f172a;
+    }
+    .rc-val-name {
+      font-size: 13px !important;
+      font-weight: 900 !important;
       color: #0f172a;
     }
     .rc-qr-box {
-      width: 29%;
+      width: 28%;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1062,14 +1073,14 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
     .rc-qr-img {
-      width: 65px;
-      height: 65px;
+      width: 64px;
+      height: 64px;
       object-fit: contain;
       display: block;
     }
     .rc-qr-placeholder {
-      width: 65px;
-      height: 65px;
+      width: 64px;
+      height: 64px;
       border: 1px dashed #cbd5e1;
       display: flex;
       align-items: center;
@@ -1078,7 +1089,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       font-size: 10px;
     }
     .rc-qr-caption {
-      font-size: 7.2px;
+      font-size: 7.5px;
       font-weight: 800;
       color: #475569;
       margin-top: 2px;
@@ -1087,10 +1098,10 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
 
     /* Calculation Banners */
     .rc-calc-grid {
-      padding: 2px 6px;
+      padding: 2px 8px;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 3.5px;
       position: relative;
       z-index: 1;
     }
@@ -1098,7 +1109,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 3.5px 10px;
+      padding: 4.5px 12px;
       border-radius: 5px;
       box-shadow: 0 1px 2px rgba(0,0,0,0.12);
     }
@@ -1111,33 +1122,33 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       color: #ffffff;
     }
     .rc-calc-lbl {
-      font-size: 10.8px;
+      font-size: 11.5px;
       font-weight: 800;
       letter-spacing: 0.1px;
     }
     .rc-calc-val {
-      font-size: 13px;
+      font-size: 14.5px;
       font-weight: 900;
     }
     .rc-calc-val strong {
       font-family: 'Anek Kannada', 'Segoe UI', monospace;
     }
     .rc-calc-unit {
-      font-size: 9.5px;
+      font-size: 10px;
       font-weight: 700;
       opacity: 0.95;
     }
     .rc-currency {
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 800;
     }
 
-    /* Signatures Block */
+    /* Signatures Block with 38px Dedicated Blank Space */
     .rc-signatures {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      padding: 0 8px 5px 8px;
+      padding: 0 10px 6px 10px;
       position: relative;
       z-index: 1;
     }
@@ -1145,9 +1156,12 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
       text-align: center;
       width: 31%;
     }
+    .rc-sig-space {
+      height: 38px; /* Dedicated, generous physical space to sign or thumb impression! */
+    }
     .rc-sig-line {
-      border-top: 1.2px dotted #475569;
-      margin-bottom: 2.5px;
+      border-top: 1.5px dotted #475569;
+      margin-bottom: 3px;
     }
     .rc-sig-lbl {
       font-size: 8.5px;
