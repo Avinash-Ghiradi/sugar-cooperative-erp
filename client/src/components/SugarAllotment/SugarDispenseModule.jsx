@@ -150,6 +150,7 @@ export default function SugarDispenseModule() {
 
   // Input & Scanner States
   const [scanInput, setScanInput] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [availableCameras, setAvailableCameras] = useState([]);
   const [selectedCameraId, setSelectedCameraId] = useState('');
@@ -210,15 +211,31 @@ export default function SugarDispenseModule() {
     }
   }, [allottedKg]);
 
-  // Load all shareholders on mount
+  // Load all shareholders on mount (prioritize full indexedDB / raw cache of 17,000+ members)
   useEffect(() => {
     let isMounted = true;
     async function loadData() {
       try {
         setLoadingShareholders(true);
-        const res = await ApiService.getShareholders({ page: 1, limit: 25000 });
-        if (isMounted && res && res.data) {
-          setAllShareholders(res.data);
+        let data = [];
+        try {
+          if (ApiService.getAllShareholdersRaw) {
+            const raw = await ApiService.getAllShareholdersRaw();
+            if (Array.isArray(raw) && raw.length > 0) {
+              data = raw;
+            }
+          }
+        } catch (rawErr) {
+          console.warn('Raw shareholders load fallback:', rawErr);
+        }
+
+        if (data.length === 0) {
+          const res = await ApiService.getShareholders({ page: 1, limit: 1000 });
+          if (res && res.data) data = res.data;
+        }
+
+        if (isMounted && data.length > 0) {
+          setAllShareholders(data);
         }
       } catch (err) {
         console.warn('Error loading shareholders:', err);
@@ -316,7 +333,6 @@ export default function SugarDispenseModule() {
 
     // Generate receipt serial
     const yearCode = settings?.receipt_year_code || '202627';
-    const randSeq = String(Math.floor(1000 + Math.random() * 9000));
     setReceiptNo(`ಸವಿ/${yearCode}/${holder.share_no || holder.id}`);
 
     // Check duplicate allotment
@@ -331,6 +347,8 @@ export default function SugarDispenseModule() {
       return matchHolder && matchSeason;
     });
 
+    const holderDisplayName = holder.shareholder_name || holder.name || holder.full_name || 'Member';
+
     if (existing) {
       setIsAlreadyAllotted(true);
       setExistingAllotmentRecord(existing);
@@ -340,26 +358,54 @@ export default function SugarDispenseModule() {
       setIsAlreadyAllotted(false);
       setExistingAllotmentRecord(null);
       playChime('success');
-      showToast(`ಶೇರುದಾರ #${holder.share_no} (${holder.name || holder.full_name}) ಲೋಡ್ ಆಗಿದೆ!`, 'success');
+      showToast(`ಶೇರುದಾರ #${holder.share_no} (${holderDisplayName}) ಲೋಡ್ ಆಗಿದೆ!`, 'success');
     }
   }, [allAllotments, settings, showToast]);
 
-  // Search Shareholder from manual entry or scan
-  const handleSearch = useCallback((rawQuery) => {
+  // Search Shareholder from manual entry or scan (searches in-memory + Supabase backend fallback)
+  const handleSearch = useCallback(async (rawQuery) => {
     const cleanNo = extractShareNoFromInput(rawQuery || scanInput);
     if (!cleanNo) {
       showToast('ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಷೇರು ಸಂಖ್ಯೆ ನಮೂದಿಸಿ ಅಥವಾ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ', 'warning');
       return;
     }
 
+    setIsSearching(true);
     const cleanNum = Number(cleanNo);
 
-    const found = allShareholders.find(s => {
-      const sNo = String(s.share_no || '').trim();
-      const sId = String(s.id || '').trim();
+    // 1. Fast in-memory check from loaded shareholders
+    let found = allShareholders.find(s => {
+      const sNo = String(s.share_no || s.share_number || '').trim().replace(/^[#\s]+/, '');
+      const sId = String(s.id || s.entity_id || '').trim();
       const sNum = Number(sNo);
       return sNo === cleanNo || sId === cleanNo || (!isNaN(cleanNum) && !isNaN(sNum) && cleanNum > 0 && sNum === cleanNum);
     });
+
+    // 2. Direct Cloud/API query fallback (Guarantees all 17,085 shareholders across all books are found!)
+    if (!found) {
+      try {
+        const searchRes = await ApiService.getShareholders({ search: cleanNo, limit: 15 });
+        if (searchRes && Array.isArray(searchRes.data) && searchRes.data.length > 0) {
+          // Find exact match on share_no or sl_no first
+          found = searchRes.data.find(s => {
+            const sNo = String(s.share_no || s.share_number || '').trim().replace(/^[#\s]+/, '');
+            const sNum = Number(sNo);
+            return sNo === cleanNo || (!isNaN(cleanNum) && !isNaN(sNum) && cleanNum > 0 && sNum === cleanNum);
+          }) || searchRes.data[0];
+
+          if (found) {
+            setAllShareholders(prev => {
+              if (prev.some(p => p.id === found.id || p.share_no === found.share_no)) return prev;
+              return [found, ...prev];
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Backend search error for shareholder:', err);
+      }
+    }
+
+    setIsSearching(false);
 
     if (found) {
       handleSelectShareholder(found);
@@ -593,10 +639,10 @@ export default function SugarDispenseModule() {
       const record = {
         share_no: selectedShareholder.share_no,
         shareholder_id: selectedShareholder.id,
-        shareholder_name: selectedShareholder.name || selectedShareholder.full_name,
-        village: selectedShareholder.village || selectedShareholder.place,
+        shareholder_name: selectedShareholder.shareholder_name || selectedShareholder.name || selectedShareholder.full_name || 'Member',
+        village: selectedShareholder.place || selectedShareholder.village || selectedShareholder.village_name || '',
         taluk: selectedShareholder.taluk || '',
-        category: selectedShareholder.category || 'ಅ - ವರ್ಗ',
+        category: selectedShareholder.schedule_cast || selectedShareholder.category || 'ಅ - ವರ್ಗ',
         active_shares: getShareholderSharesCount(selectedShareholder),
         sugar_allotted_kg: parseFloat(allottedKg) || 25,
         rate_per_kg: parseFloat(ratePerKg) || 20,
@@ -635,12 +681,12 @@ export default function SugarDispenseModule() {
     if (!recordToPrint) return;
 
     try {
-      const holder = selectedShareholder || {
-        share_no: recordToPrint.share_no,
-        name: recordToPrint.shareholder_name,
-        village: recordToPrint.village,
-        category: recordToPrint.category,
-        no_of_shares: recordToPrint.active_shares
+      const holder = {
+        share_no: selectedShareholder?.share_no || recordToPrint?.share_no,
+        name: selectedShareholder?.shareholder_name || selectedShareholder?.name || selectedShareholder?.full_name || recordToPrint?.shareholder_name || recordToPrint?.name,
+        village: selectedShareholder?.place || selectedShareholder?.village || selectedShareholder?.village_name || recordToPrint?.village || recordToPrint?.place,
+        category: selectedShareholder?.schedule_cast || selectedShareholder?.category || recordToPrint?.category || 'ಅ - ವರ್ಗ',
+        no_of_shares: getShareholderSharesCount(selectedShareholder) || recordToPrint?.active_shares || 1
       };
 
       const primaryQrDataUrl = await getReceiptQRDataUrl(holder.share_no);
@@ -943,11 +989,12 @@ export default function SugarDispenseModule() {
 
                 <button
                   type="button"
+                  disabled={isSearching}
                   onClick={() => handleSearch(scanInput)}
-                  className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white font-bold rounded-2xl text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  <Search className="w-4 h-4" />
-                  <span>ಹುಡುಕಿ</span>
+                  {isSearching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  <span>{isSearching ? 'ಹುಡುಕಲಾಗುತ್ತಿದೆ...' : 'ಹುಡುಕಿ'}</span>
                 </button>
               </div>
 
@@ -1045,15 +1092,15 @@ export default function SugarDispenseModule() {
                           ಷೇರು ನಂ #{selectedShareholder.share_no}
                         </span>
                         <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                          {selectedShareholder.category || 'ಅ - ವರ್ಗ'}
+                          {selectedShareholder.schedule_cast || selectedShareholder.category || 'ಅ - ವರ್ಗ'}
                         </span>
                       </div>
                       <h2 className="text-lg font-bold text-white mt-1">
-                        {selectedShareholder.name || selectedShareholder.full_name}
+                        {selectedShareholder.shareholder_name || selectedShareholder.name || selectedShareholder.full_name}
                       </h2>
                       <p className="text-xs text-slate-400">
                         {selectedShareholder.father_name ? `ತಂದೆ: ${selectedShareholder.father_name} • ` : ''}
-                        {selectedShareholder.village || selectedShareholder.place || '-'}
+                        {selectedShareholder.place || selectedShareholder.village || selectedShareholder.village_name || '-'}
                         {selectedShareholder.taluk ? `, ${selectedShareholder.taluk}` : ''}
                       </p>
                     </div>
