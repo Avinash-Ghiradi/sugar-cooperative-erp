@@ -99,6 +99,35 @@ export default function VargavaneTransferModule() {
     }
   };
 
+  // Immediate optimistic update when a record is saved or updated
+  const handleSaveSuccess = (savedRec) => {
+    if (savedRec) {
+      setTransfers(prev => {
+        const targetId = String(savedRec.transfer_id || savedRec.id || savedRec.sl_no || '');
+        const targetSh = String(savedRec.share_no || '').trim().replace(/^#/, '');
+        let updated = false;
+        const next = prev.map(item => {
+          const itemSh = String(item.share_no || '').trim().replace(/^#/, '');
+          const matches =
+            (item.transfer_id && String(item.transfer_id) === targetId) ||
+            (item.id && String(item.id) === targetId) ||
+            (item.sl_no && String(item.sl_no) === targetId) ||
+            (targetSh && itemSh && targetSh === itemSh);
+          if (matches) {
+            updated = true;
+            return { ...item, ...savedRec, updated_at: new Date().toISOString() };
+          }
+          return item;
+        });
+        if (!updated) {
+          return [{ ...savedRec, updated_at: new Date().toISOString() }, ...next];
+        }
+        return next;
+      });
+    }
+    loadTransfers(true);
+  };
+
   // Instant in-memory filtering (0ms latency, zero lag on keystroke)
   const filteredTransfers = useMemo(() => {
     let list = transfers;
@@ -1216,7 +1245,7 @@ export default function VargavaneTransferModule() {
             setEditingTransfer(null);
           }}
           initialData={editingTransfer}
-          onSaveSuccess={loadTransfers}
+          onSaveSuccess={handleSaveSuccess}
           showToast={showToast}
         />
       )}

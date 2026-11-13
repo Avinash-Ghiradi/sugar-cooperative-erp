@@ -1936,7 +1936,7 @@ function deduplicateVarasaList(list) {
       const existing = map.get(existingKey);
       const existingTime = existing.updated_at ? new Date(existing.updated_at).getTime() : 0;
       const itemTime = item.updated_at ? new Date(item.updated_at).getTime() : 0;
-      const isItemNewer = itemTime > existingTime;
+      const isItemNewer = itemTime >= existingTime;
       const newer = isItemNewer ? item : existing;
       const older = isItemNewer ? existing : item;
 
@@ -1990,7 +1990,7 @@ function deduplicateVargavaneList(list) {
       const existing = map.get(existingKey);
       const existingTime = existing.updated_at ? new Date(existing.updated_at).getTime() : 0;
       const itemTime = item.updated_at ? new Date(item.updated_at).getTime() : 0;
-      const isItemNewer = itemTime > existingTime;
+      const isItemNewer = itemTime >= existingTime;
       const newer = isItemNewer ? item : existing;
       const older = isItemNewer ? existing : item;
 
@@ -4700,26 +4700,42 @@ const newSh = {
   async updateVargavaneTransfer(idOrTransferId, data) {
     await ensureDBReady();
     const targetIdentifier = idOrTransferId || data?.transfer_id || data?.id;
-    const idx = mockVargavaneTransfers.findIndex(v =>
-      (v.transfer_id && String(v.transfer_id) === String(targetIdentifier)) ||
-      (v.id && String(v.id) === String(targetIdentifier)) ||
-      (data?.transfer_id && String(v.transfer_id) === String(data.transfer_id)) ||
-      (data?.id && String(v.id) === String(data.id)) ||
-      (data?.sl_no && String(v.sl_no) === String(data.sl_no))
-    );
+    const targetCleanShNo = String(data?.share_no || '').trim().replace(/^#/, '');
+    const targetCleanTee = (data?.transferee_name || '').trim().toLowerCase().normalize('NFC');
+
+    let idx = mockVargavaneTransfers.findIndex(v => {
+      if (targetIdentifier && (String(v.id) === String(targetIdentifier) || String(v.transfer_id) === String(targetIdentifier))) return true;
+      if (data?.transfer_id && String(v.transfer_id) === String(data.transfer_id)) return true;
+      if (data?.id && String(v.id) === String(data.id)) return true;
+      if (data?.sl_no && parseInt(v.sl_no) === parseInt(data.sl_no)) return true;
+      const vShNo = String(v.share_no || '').trim().replace(/^#/, '');
+      const vTee = (v.transferee_name || '').trim().toLowerCase().normalize('NFC');
+      if (targetCleanShNo && targetCleanTee && vShNo === targetCleanShNo && vTee === targetCleanTee) return true;
+      return false;
+    });
+
     if (idx !== -1) {
       const existing = mockVargavaneTransfers[idx];
-      mockVargavaneTransfers[idx] = { ...existing, ...data };
+      const updated = {
+        ...existing,
+        ...data,
+        id: existing.id || data?.id,
+        transfer_id: existing.transfer_id || data?.transfer_id || `VGN-${new Date().getFullYear()}-${String(existing.id || 1).padStart(3, '0')}`,
+        sl_no: existing.sl_no || data?.sl_no,
+        updated_at: new Date().toISOString()
+      };
+      mockVargavaneTransfers[idx] = updated;
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
       if (CloudDbService.isEnabled()) {
-        CloudDbService.saveCollectionItem('vargavane', mockVargavaneTransfers[idx].transfer_id || String(mockVargavaneTransfers[idx].id), mockVargavaneTransfers[idx])
+        const cloudKey = updated.transfer_id || String(updated.id);
+        CloudDbService.saveCollectionItem('vargavane', cloudKey, updated)
           .catch(err => console.warn('Cloud DB updateVargavane error:', err));
       }
-      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(mockVargavaneTransfers[idx].approval_status)) {
+      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(updated.approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
-      return { success: true, data: mockVargavaneTransfers[idx] };
+      return { success: true, data: updated };
     }
     return { success: false, message: 'Record not found' };
   },

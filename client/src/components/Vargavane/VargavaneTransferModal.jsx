@@ -287,13 +287,14 @@ export default function VargavaneTransferModal({
         const targetId = initialData.transfer_id || initialData.id || initialData.sl_no;
         const res = await ApiService.updateVargavaneTransfer(targetId, {
           ...initialData,
-          ...form
+          ...form,
+          updated_at: new Date().toISOString()
         });
         if (res.success) {
-          if (showToast) showToast('Vargavane transfer application updated successfully!');
-          if (onSaveSuccess) onSaveSuccess();
-          const savedRec = res.data || { ...initialData, ...form };
-          setPrintRecord(savedRec);
+          const savedRec = res.data || { ...initialData, ...form, updated_at: new Date().toISOString() };
+          if (showToast) showToast('ವರ್ಗಾವಣೆ ದಾಖಲೆ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ! (Vargavane updated successfully)', 'success');
+          if (onSaveSuccess) onSaveSuccess(savedRec);
+          onClose();
         } else {
           if (showToast) showToast(res.message || 'Update failed', 'error');
         }
@@ -301,8 +302,8 @@ export default function VargavaneTransferModal({
         const res = await ApiService.addVargavaneTransfer(form);
         if (res.success) {
           if (showToast) showToast(`Vargavane transfer ${res.transfer_id || ''} registered successfully!`);
-          if (onSaveSuccess) onSaveSuccess();
-          const savedRec = res.data || { ...form, transfer_id: res.transfer_id || form.transfer_id };
+          const savedRec = res.data || { ...form, transfer_id: res.transfer_id || form.transfer_id, updated_at: new Date().toISOString() };
+          if (onSaveSuccess) onSaveSuccess(savedRec);
           setPrintRecord(savedRec);
         } else {
           if (showToast) showToast(res.message || 'Creation failed', 'error');
