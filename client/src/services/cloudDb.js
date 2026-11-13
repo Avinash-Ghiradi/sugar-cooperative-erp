@@ -841,18 +841,42 @@ export const CloudDbService = {
       const res = await this.request(`audit_logs?module=eq.${encodeURIComponent(moduleName)}&order=id.desc`);
       if (Array.isArray(res)) {
         const seen = new Set();
+        const seenBizKeys = new Set();
         const unique = [];
         for (const r of res) {
           const item = r.new_value;
           if (!item) continue;
           const key = String(r.record_id || (typeof item === 'object' && (item.enrollment_id || item.transfer_id || item.request_id || item.id || item.record_id)) || '').trim();
+
+          let bizKey = null;
+          if (typeof item === 'object' && item !== null) {
+            if (moduleName === 'varasa') {
+              const sh = String(item.share_no || item.existing_share_number || '').trim().replace(/^#/, '');
+              const m = (item.varasa_member || item.heir_name || '').trim().toLowerCase().normalize('NFC');
+              if (sh && m) bizKey = `SH_${sh}_${m}`;
+            } else if (moduleName === 'vargavane') {
+              const sh = String(item.share_no || '').trim().replace(/^#/, '');
+              const m = (item.transferee_name || '').trim().toLowerCase().normalize('NFC');
+              if (sh && m) bizKey = `SH_${sh}_${m}`;
+            }
+          }
+
+          if (bizKey && seenBizKeys.has(bizKey)) {
+            // Newer audit log for this member/share was already picked up
+            continue;
+          }
+
           if (key && !seen.has(key)) {
             seen.add(key);
+            if (bizKey) seenBizKeys.add(bizKey);
             if (typeof item === 'object' && item !== null) {
               unique.push({
                 ...item,
                 record_id: r.record_id || item.record_id || key,
-                id: item.id || r.record_id || key
+                id: item.id || r.record_id || key,
+                _audit_id: r.id,
+                _audit_timestamp: r.timestamp,
+                updated_at: item.updated_at || r.timestamp || new Date().toISOString()
               });
             } else {
               unique.push(item);
@@ -870,11 +894,19 @@ export const CloudDbService = {
   async saveCollectionItem(moduleName, recordId, data) {
     if (!this.isEnabled()) return false;
     try {
-      const recKey = String(recordId || data.id || data.enrollment_id || data.transfer_id || Date.now());
-      // Clean previous entry with same recordId
-      await this.request(`audit_logs?module=eq.${encodeURIComponent(moduleName)}&record_id=eq.${encodeURIComponent(recKey)}`, {
-        method: 'DELETE'
-      }).catch(() => {});
+      const recKey = String(recordId || (data && (data.id || data.enrollment_id || data.transfer_id)) || Date.now());
+      // Clean previous entries matching any key variants for this record
+      const delKeys = new Set([recKey]);
+      if (data && typeof data === 'object') {
+        if (data.transfer_id) delKeys.add(String(data.transfer_id));
+        if (data.id) delKeys.add(String(data.id));
+        if (data.record_id) delKeys.add(String(data.record_id));
+      }
+      for (const k of delKeys) {
+        await this.request(`audit_logs?module=eq.${encodeURIComponent(moduleName)}&record_id=eq.${encodeURIComponent(k)}`, {
+          method: 'DELETE'
+        }).catch(() => {});
+      }
 
       const payload = (typeof data === 'object' && data !== null)
         ? { ...data, record_id: recKey, id: data.id || recKey }
@@ -895,6 +927,39 @@ export const CloudDbService = {
       return true;
     } catch (err) {
       console.warn(`Cloud DB saveCollectionItem(${moduleName}) failed:`, err.message);
+      return false;
+    }
+  },
+
+  async saveCollectionItems(moduleName, items, idField = 'transfer_id') {
+    if (!this.isEnabled() || !Array.isArray(items) || items.length === 0) return false;
+    try {
+      const keys = items.map(item => String(item[idField] || item.id || item.record_id)).filter(Boolean);
+      for (const k of keys) {
+        await this.request(`audit_logs?module=eq.${encodeURIComponent(moduleName)}&record_id=eq.${encodeURIComponent(k)}`, {
+          method: 'DELETE'
+        }).catch(() => {});
+      }
+      const rows = items.map(item => {
+        const recKey = String(item[idField] || item.id || item.record_id);
+        return {
+          username: 'System Administrator',
+          role: 'Admin',
+          module: moduleName,
+          action: 'BULK_UPDATE',
+          record_id: recKey,
+          new_value: { ...item, record_id: recKey }
+        };
+      });
+      for (let i = 0; i < rows.length; i += 50) {
+        await this.request('audit_logs', {
+          method: 'POST',
+          body: JSON.stringify(rows.slice(i, i + 50))
+        });
+      }
+      return true;
+    } catch (err) {
+      console.warn(`Cloud DB saveCollectionItems(${moduleName}) failed:`, err.message);
       return false;
     }
   },

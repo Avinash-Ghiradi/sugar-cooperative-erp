@@ -1225,12 +1225,12 @@ export async function syncAllCloudWorkflows() {
     }
 
     if (Array.isArray(varasa)) {
-      mockVarasaTransfers = varasa;
+      mockVarasaTransfers = deduplicateVarasaList(varasa);
       saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
     }
 
     if (Array.isArray(varg)) {
-      mockVargavaneTransfers = varg;
+      mockVargavaneTransfers = deduplicateVargavaneList(varg);
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
     }
 
@@ -1907,7 +1907,7 @@ async function fetchApi(endpoint, options = {}) {
   return null;
 }
 
-// Deduplicates Varasa list by transfer_id and (share_no + varasa_member)
+// Deduplicates Varasa list by transfer_id and (share_no + varasa_member), prioritizing newer status
 function deduplicateVarasaList(list) {
   if (!Array.isArray(list)) return [];
   const map = new Map();
@@ -1934,17 +1934,76 @@ function deduplicateVarasaList(list) {
 
     if (existingKey) {
       const existing = map.get(existingKey);
+      const existingTime = existing.updated_at ? new Date(existing.updated_at).getTime() : 0;
+      const itemTime = item.updated_at ? new Date(item.updated_at).getTime() : 0;
+      const isItemNewer = itemTime > existingTime;
+      const newer = isItemNewer ? item : existing;
+      const older = isItemNewer ? existing : item;
+
       const merged = {
-        ...existing,
-        ...item,
+        ...older,
+        ...newer,
         id: existing.id || item.id,
         sl_no: existing.sl_no || item.sl_no,
         transfer_id: (existing.transfer_id && !existing.transfer_id.startsWith('ID_') && !existing.transfer_id.startsWith('SH_'))
           ? existing.transfer_id
           : (item.transfer_id || existing.transfer_id),
-        heir_photo: existing.heir_photo || item.heir_photo || '',
-        shareholder_photo: existing.shareholder_photo || item.shareholder_photo || '',
-        approval_status: item.approval_status || existing.approval_status || 'Application Received'
+        heir_photo: newer.heir_photo || older.heir_photo || '',
+        shareholder_photo: newer.shareholder_photo || older.shareholder_photo || '',
+        approval_status: newer.approval_status || older.approval_status || 'Application Received',
+        updated_at: newer.updated_at || older.updated_at
+      };
+      map.set(existingKey, merged);
+    } else {
+      map.set(primaryKey, item);
+    }
+  }
+  return Array.from(map.values());
+}
+
+// Deduplicates Vargavane list by transfer_id and (share_no + transferee_name), prioritizing newer status
+function deduplicateVargavaneList(list) {
+  if (!Array.isArray(list)) return [];
+  const map = new Map();
+  for (const item of list) {
+    if (!item) continue;
+    const cleanShNo = String(item.share_no || '').trim().replace(/^#/, '');
+    const cleanTee = (item.transferee_name || '').trim().toLowerCase().normalize('NFC');
+    const tId = (item.transfer_id || '').trim();
+    const primaryKey = tId || (cleanShNo && cleanTee ? `SH_${cleanShNo}_${cleanTee}` : `ID_${item.id || item.sl_no}`);
+
+    let existingKey = null;
+    if (map.has(primaryKey)) {
+      existingKey = primaryKey;
+    } else if (cleanShNo && cleanTee) {
+      for (const [k, v] of map.entries()) {
+        const vShNo = String(v.share_no || '').trim().replace(/^#/, '');
+        const vTee = (v.transferee_name || '').trim().toLowerCase().normalize('NFC');
+        if (vShNo === cleanShNo && vTee === cleanTee) {
+          existingKey = k;
+          break;
+        }
+      }
+    }
+
+    if (existingKey) {
+      const existing = map.get(existingKey);
+      const existingTime = existing.updated_at ? new Date(existing.updated_at).getTime() : 0;
+      const itemTime = item.updated_at ? new Date(item.updated_at).getTime() : 0;
+      const isItemNewer = itemTime > existingTime;
+      const newer = isItemNewer ? item : existing;
+      const older = isItemNewer ? existing : item;
+
+      const merged = {
+        ...older,
+        ...newer,
+        id: existing.id || item.id,
+        sl_no: existing.sl_no || item.sl_no,
+        transfer_id: (existing.transfer_id && !existing.transfer_id.startsWith('ID_') && !existing.transfer_id.startsWith('SH_'))
+          ? existing.transfer_id
+          : (item.transfer_id || existing.transfer_id),
+        approval_status: newer.approval_status || older.approval_status || 'Application Received',
+        updated_at: newer.updated_at || older.updated_at
       };
       map.set(existingKey, merged);
     } else {
@@ -4196,22 +4255,84 @@ const newSh = {
     const apiRes = await fetchApi(`/varasa/${transfer_id}/status`, { method: 'PUT', body: JSON.stringify({ approval_status }) });
     if (apiRes && apiRes.success) return apiRes;
 
-    const item = mockVarasaTransfers.find(v => String(v.transfer_id) === String(transfer_id) || String(v.id) === String(transfer_id));
-    if (item) {
-      item.approval_status = approval_status;
-      item.updated_at = new Date().toISOString();
+    const now = new Date().toISOString();
+    let updatedItem = null;
+    const target = mockVarasaTransfers.find(v => String(v.transfer_id) === String(transfer_id) || String(v.id) === String(transfer_id));
+    const targetShNo = target ? String(target.share_no || target.existing_share_number || '').trim().replace(/^#/, '') : '';
+    const targetMember = target ? (target.varasa_member || target.heir_name || '').trim().toLowerCase().normalize('NFC') : '';
+
+    mockVarasaTransfers.forEach(v => {
+      const vShNo = String(v.share_no || v.existing_share_number || '').trim().replace(/^#/, '');
+      const vMember = (v.varasa_member || v.heir_name || '').trim().toLowerCase().normalize('NFC');
+      const isMatch = (String(v.transfer_id) === String(transfer_id)) ||
+                      (String(v.id) === String(transfer_id)) ||
+                      (targetShNo && targetMember && vShNo === targetShNo && vMember === targetMember);
+      if (isMatch) {
+        v.approval_status = approval_status;
+        v.updated_at = now;
+        if (!updatedItem) updatedItem = v;
+      }
+    });
+
+    if (updatedItem) {
       saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
       if (CloudDbService.isEnabled()) {
-        const cloudKey = item.transfer_id || String(item.id);
-        await CloudDbService.saveCollectionItem('varasa', cloudKey, item).catch(() => {});
+        const cloudKey = updatedItem.transfer_id || String(updatedItem.id);
+        await CloudDbService.saveCollectionItem('varasa', cloudKey, updatedItem).catch(() => {});
       }
       if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
-      return { success: true, item };
+      return { success: true, item: updatedItem };
     }
     return { success: true };
+  },
+
+  async updateVarasaStatusBulk(transferIds, approval_status) {
+    await ensureDBReady();
+    if (!Array.isArray(transferIds) || transferIds.length === 0) return { success: true, count: 0 };
+    const now = new Date().toISOString();
+    const idSet = new Set(transferIds.map(id => String(id)));
+    const updatedItems = [];
+
+    const targets = mockVarasaTransfers.filter(v => idSet.has(String(v.transfer_id)) || idSet.has(String(v.id)));
+    const targetBizKeys = new Set(targets.map(v => {
+      const sh = String(v.share_no || v.existing_share_number || '').trim().replace(/^#/, '');
+      const m = (v.varasa_member || v.heir_name || '').trim().toLowerCase().normalize('NFC');
+      return sh && m ? `${sh}_${m}` : null;
+    }).filter(Boolean));
+
+    mockVarasaTransfers.forEach(v => {
+      const sh = String(v.share_no || v.existing_share_number || '').trim().replace(/^#/, '');
+      const m = (v.varasa_member || v.heir_name || '').trim().toLowerCase().normalize('NFC');
+      const bKey = sh && m ? `${sh}_${m}` : null;
+      if (idSet.has(String(v.transfer_id)) || idSet.has(String(v.id)) || (bKey && targetBizKeys.has(bKey))) {
+        v.approval_status = approval_status;
+        v.updated_at = now;
+        updatedItems.push(v);
+      }
+    });
+
+    saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
+
+    if (CloudDbService.isEnabled() && updatedItems.length > 0) {
+      if (typeof CloudDbService.saveCollectionItems === 'function') {
+        await CloudDbService.saveCollectionItems('varasa', updatedItems, 'transfer_id').catch(() => {});
+      } else {
+        for (const item of updatedItems) {
+          const cloudKey = item.transfer_id || String(item.id);
+          await CloudDbService.saveCollectionItem('varasa', cloudKey, item).catch(() => {});
+        }
+      }
+    }
+
+    if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
+      reconcileApprovedTransfersIntoMaster(mockShareholders);
+      saveToIndexedDB(mockShareholders).catch(() => {});
+    }
+
+    return { success: true, count: updatedItems.length };
   },
 
   async addVarasaTransfersBulk(records) {
@@ -4405,29 +4526,16 @@ const newSh = {
       try {
         const cloudData = await CloudDbService.getCollection('vargavane');
         if (Array.isArray(cloudData)) {
-          const map = new Map();
-          cloudData.forEach(item => {
-            const key = String(item.transfer_id || item.id || '').trim();
-            if (key) map.set(key, item);
-          });
-          mockVargavaneTransfers.forEach(item => {
-            const key = String(item.transfer_id || item.id || '').trim();
-            if (key) {
-              if (map.has(key)) {
-                const cloudItem = map.get(key);
-                map.set(key, { ...cloudItem, ...item });
-              } else {
-                map.set(key, item);
-                CloudDbService.saveCollectionItem('vargavane', key, item).catch(() => {});
-              }
-            }
-          });
-          mockVargavaneTransfers = Array.from(map.values());
+          const combined = [...cloudData, ...mockVargavaneTransfers];
+          mockVargavaneTransfers = deduplicateVargavaneList(combined);
           saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
         }
       } catch (e) {
         console.warn('Cloud DB vargavane sync warning:', e);
       }
+    } else {
+      mockVargavaneTransfers = deduplicateVargavaneList(mockVargavaneTransfers);
+      saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
     }
     const apiRes = await fetchApi('/vargavane');
     if (apiRes && apiRes.success) return apiRes;
@@ -4626,22 +4734,84 @@ const newSh = {
 
   async updateVargavaneStatus(transfer_id, approval_status) {
     await ensureDBReady();
-    const item = mockVargavaneTransfers.find(v => String(v.transfer_id) === String(transfer_id) || String(v.id) === String(transfer_id));
-    if (item) {
-      item.approval_status = approval_status;
-      item.updated_at = new Date().toISOString();
+    const now = new Date().toISOString();
+    let updatedItem = null;
+    const target = mockVargavaneTransfers.find(v => String(v.transfer_id) === String(transfer_id) || String(v.id) === String(transfer_id));
+    const targetShNo = target ? String(target.share_no || '').trim().replace(/^#/, '') : '';
+    const targetTee = target ? (target.transferee_name || '').trim().toLowerCase().normalize('NFC') : '';
+
+    mockVargavaneTransfers.forEach(v => {
+      const vShNo = String(v.share_no || '').trim().replace(/^#/, '');
+      const vTee = (v.transferee_name || '').trim().toLowerCase().normalize('NFC');
+      const isMatch = (String(v.transfer_id) === String(transfer_id)) ||
+                      (String(v.id) === String(transfer_id)) ||
+                      (targetShNo && targetTee && vShNo === targetShNo && vTee === targetTee);
+      if (isMatch) {
+        v.approval_status = approval_status;
+        v.updated_at = now;
+        if (!updatedItem) updatedItem = v;
+      }
+    });
+
+    if (updatedItem) {
       saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
       if (CloudDbService.isEnabled()) {
-        const cloudKey = item.transfer_id || String(item.id);
-        await CloudDbService.saveCollectionItem('vargavane', cloudKey, item).catch(() => {});
+        const cloudKey = updatedItem.transfer_id || String(updatedItem.id);
+        await CloudDbService.saveCollectionItem('vargavane', cloudKey, updatedItem).catch(() => {});
       }
       if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
-      return { success: true, item };
+      return { success: true, item: updatedItem };
     }
     return { success: false };
+  },
+
+  async updateVargavaneStatusBulk(transferIds, approval_status) {
+    await ensureDBReady();
+    if (!Array.isArray(transferIds) || transferIds.length === 0) return { success: true, count: 0 };
+    const now = new Date().toISOString();
+    const idSet = new Set(transferIds.map(id => String(id)));
+    const updatedItems = [];
+
+    const targets = mockVargavaneTransfers.filter(v => idSet.has(String(v.transfer_id)) || idSet.has(String(v.id)));
+    const targetBizKeys = new Set(targets.map(v => {
+      const sh = String(v.share_no || '').trim().replace(/^#/, '');
+      const m = (v.transferee_name || '').trim().toLowerCase().normalize('NFC');
+      return sh && m ? `${sh}_${m}` : null;
+    }).filter(Boolean));
+
+    mockVargavaneTransfers.forEach(v => {
+      const sh = String(v.share_no || '').trim().replace(/^#/, '');
+      const m = (v.transferee_name || '').trim().toLowerCase().normalize('NFC');
+      const bKey = sh && m ? `${sh}_${m}` : null;
+      if (idSet.has(String(v.transfer_id)) || idSet.has(String(v.id)) || (bKey && targetBizKeys.has(bKey))) {
+        v.approval_status = approval_status;
+        v.updated_at = now;
+        updatedItems.push(v);
+      }
+    });
+
+    saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
+
+    if (CloudDbService.isEnabled() && updatedItems.length > 0) {
+      if (typeof CloudDbService.saveCollectionItems === 'function') {
+        await CloudDbService.saveCollectionItems('vargavane', updatedItems, 'transfer_id').catch(() => {});
+      } else {
+        for (const item of updatedItems) {
+          const cloudKey = item.transfer_id || String(item.id);
+          await CloudDbService.saveCollectionItem('vargavane', cloudKey, item).catch(() => {});
+        }
+      }
+    }
+
+    if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
+      reconcileApprovedTransfersIntoMaster(mockShareholders);
+      saveToIndexedDB(mockShareholders).catch(() => {});
+    }
+
+    return { success: true, count: updatedItems.length };
   },
 
   async addVargavaneTransfersBulk(records) {

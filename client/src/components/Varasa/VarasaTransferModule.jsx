@@ -12,7 +12,7 @@ import {
   FileSpreadsheet, Search, Plus, CheckCircle2, Clock, X, Lock, Save,
   Download, Upload, Filter, Printer, Trash2, Edit3, User, MapPin,
   Phone, CreditCard, ShieldCheck, Check, AlertCircle, RefreshCw, Eye, FileText,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Tag
 } from 'lucide-react';
 
 const isTransferApproved = (t) => {
@@ -45,6 +45,8 @@ export default function VarasaTransferModule() {
   const [listPrintScope, setListPrintScope] = useState('filtered');
   const [docxModalOpen, setDocxModalOpen] = useState(false);
   const [docxScope, setDocxScope] = useState('filtered');
+  const [bulkStatus, setBulkStatus] = useState('Under Verification');
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   const handleOpenDocxExport = (scope = 'filtered') => {
     if (scope === 'selected' && selectedIds.size === 0) {
@@ -243,10 +245,11 @@ export default function VarasaTransferModule() {
       return;
     }
 
+    const now = new Date().toISOString();
     // 1. Optimistic UI update instantly
     setTransfers(prev => prev.map(t => {
       if (String(t.transfer_id) === String(transferId) || String(t.id) === String(transferId)) {
-        return { ...t, approval_status: newStatus, updated_at: new Date().toISOString() };
+        return { ...t, approval_status: newStatus, updated_at: now };
       }
       return t;
     }));
@@ -263,6 +266,41 @@ export default function VarasaTransferModule() {
     } catch (err) {
       showToast('ದೋಷ: ' + err.message, 'error');
       loadTransfers(true);
+    }
+  };
+
+  const handleBulkStatusUpdate = async () => {
+    if (selectedIds.size === 0) {
+      showToast('ದಯವಿಟ್ಟು ಮೊದಲು ಕನಿಷ್ಠ ಒಬ್ಬ ವಾರಸುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ (Please select at least one record)', 'warning');
+      return;
+    }
+
+    setIsBulkUpdating(true);
+    const targetIds = Array.from(selectedIds);
+    const now = new Date().toISOString();
+
+    // 1. Optimistic UI update instantly
+    setTransfers(prev => prev.map(t => {
+      const rowId = t.id || t.transfer_id;
+      if (selectedIds.has(rowId) || selectedIds.has(t.transfer_id) || selectedIds.has(t.id)) {
+        return { ...t, approval_status: bulkStatus, updated_at: now };
+      }
+      return t;
+    }));
+
+    try {
+      const res = await ApiService.updateVarasaStatusBulk(targetIds, bulkStatus);
+      if (res && res.success) {
+        showToast(`✅ ${res.count || targetIds.length} ವಾರಸು ಅರ್ಜಿಗಳ ಸ್ಥಿತಿಯನ್ನು '${bulkStatus}' ಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ!`);
+      } else {
+        showToast(res?.message || 'ಬಲ್ಕ್ ಸ್ಥಿತಿ ಬದಲಾವಣೆ ವಿಫಲವಾಗಿದೆ', 'error');
+        loadTransfers(true);
+      }
+    } catch (err) {
+      showToast('ದೋಷ: ' + err.message, 'error');
+      loadTransfers(true);
+    } finally {
+      setIsBulkUpdating(false);
     }
   };
 
@@ -733,6 +771,31 @@ export default function VarasaTransferModule() {
             <span className="text-xs font-bold text-emerald-200">
               {selectedIds.size} ವಾರಸುದಾರರನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ ({selectedIds.size} Holders Selected)
             </span>
+          </div>
+
+          {/* Bulk Status Controls */}
+          <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-1 shadow-inner">
+            <Tag className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">ಬಲ್ಕ್ ಸ್ಥಿತಿ:</span>
+            <select
+              value={bulkStatus}
+              onChange={(e) => setBulkStatus(e.target.value)}
+              className="bg-slate-800 text-slate-100 text-xs font-bold px-2 py-1 rounded-lg border border-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+            >
+              <option value="Application Received">Application Received</option>
+              <option value="Application Received & Sent for Sign">Application Received & Sent for Sign</option>
+              <option value="Under Verification">Under Verification</option>
+              <option value="Approved">Approved</option>
+            </select>
+            <button
+              onClick={handleBulkStatusUpdate}
+              disabled={isBulkUpdating}
+              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow cursor-pointer disabled:opacity-50"
+              title="ಆಯ್ದ ಎಲ್ಲಾ ವಾರಸುದಾರರ ಸ್ಥಿತಿ ಬದಲಾಯಿಸಿ (Apply status to selected)"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{isBulkUpdating ? 'ಬದಲಾಯಿಸಲಾಗುತ್ತಿದೆ...' : '✓ ಬದಲಾಯಿಸಿ (Apply)'}</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
