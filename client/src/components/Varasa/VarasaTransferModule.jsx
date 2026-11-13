@@ -25,6 +25,7 @@ export default function VarasaTransferModule() {
   const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [talukFilter, setTalukFilter] = useState('');
 
@@ -104,6 +105,56 @@ export default function VarasaTransferModule() {
   // Instant in-memory filtering (0ms latency, zero lag on keystroke)
   const filteredTransfers = useMemo(() => {
     let list = transfers;
+    const cleanSearch = (search || '').trim();
+    const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+    const hasDelimiter = /[,;]/.test(cleanSearch);
+    const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
+    const isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
+
+    if (isMultiQuery) {
+      const matched = [];
+      const matchedIds = new Set();
+      for (const token of rawTokens) {
+        const rawT = token.trim();
+        const cleanT = rawT.replace(/^#/, '');
+
+        // 1. Exact share_no match
+        let found = list.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+          String(v.share_no || v.existing_share_number || '').trim() === rawT ||
+          String(v.share_no || v.existing_share_number || '').trim().replace(/^#/, '') === cleanT
+        ));
+
+        // 2. Exact receipt_no match
+        if (!found) {
+          found = list.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+            String(v.receipt_no || '').trim() === cleanT ||
+            String(v.receipt_no || '').trim() === rawT
+          ));
+        }
+
+        // 3. Exact sl_no match
+        if (!found) {
+          found = list.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+            String(v.sl_no || '').trim() === cleanT
+          ));
+        }
+
+        // 4. Transfer ID or Application No match
+        if (!found) {
+          found = list.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+            String(v.transfer_id || '').toLowerCase().includes(cleanT.toLowerCase()) ||
+            String(v.application_no || '').toLowerCase().includes(cleanT.toLowerCase())
+          ));
+        }
+
+        if (found) {
+          matchedIds.add(found.id || found.transfer_id);
+          matched.push(found);
+        }
+      }
+      return matched;
+    }
+
     if (search.trim()) {
       const q = search.trim().toLowerCase().normalize('NFC');
       list = list.filter(v => {
@@ -122,26 +173,47 @@ export default function VarasaTransferModule() {
           hPlace.includes(q) || sPlace.includes(q) || tId.includes(q);
       });
     }
-    if (statusFilter) {
-      if (statusFilter === 'Approved') {
-        list = list.filter(v => ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status));
-      } else if (statusFilter === 'Completed') {
-        list = list.filter(v => ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status));
-      } else if (statusFilter === 'Application Received & Sent for Sign') {
-        list = list.filter(v => ['Application Received & Sent for Sign', 'ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ'].includes(v.approval_status));
-      } else {
-        list = list.filter(v => v.approval_status === statusFilter);
+
+    if (!isMultiQuery) {
+      if (categoryFilter && categoryFilter !== 'All') {
+        const catKey = categoryFilter.trim().normalize('NFC');
+        list = list.filter(v => (v.category || '').normalize('NFC').includes(catKey));
+      }
+      if (statusFilter) {
+        if (statusFilter === 'Approved') {
+          list = list.filter(v => ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status));
+        } else if (statusFilter === 'Completed') {
+          list = list.filter(v => ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status));
+        } else if (statusFilter === 'Application Received & Sent for Sign') {
+          list = list.filter(v => ['Application Received & Sent for Sign', 'ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ'].includes(v.approval_status));
+        } else {
+          list = list.filter(v => v.approval_status === statusFilter);
+        }
+      }
+      if (talukFilter) {
+        const tq = talukFilter.trim().toLowerCase().normalize('NFC');
+        list = list.filter(v => 
+          (v.heir_taluk && v.heir_taluk.toLowerCase().normalize('NFC').includes(tq)) ||
+          (v.shareholder_taluk && v.shareholder_taluk.toLowerCase().normalize('NFC').includes(tq))
+        );
       }
     }
-    if (talukFilter) {
-      const tq = talukFilter.trim().toLowerCase().normalize('NFC');
-      list = list.filter(v => 
-        (v.heir_taluk && v.heir_taluk.toLowerCase().normalize('NFC').includes(tq)) ||
-        (v.shareholder_taluk && v.shareholder_taluk.toLowerCase().normalize('NFC').includes(tq))
-      );
-    }
     return list;
-  }, [transfers, search, statusFilter, talukFilter]);
+  }, [transfers, search, categoryFilter, statusFilter, talukFilter]);
+
+  // Auto-select matched items on multi-number query search
+  useEffect(() => {
+    const cleanSearch = (search || '').trim();
+    const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+    const hasDelimiter = /[,;]/.test(cleanSearch);
+    const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
+    const isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
+
+    if (isMultiQuery && filteredTransfers.length > 0) {
+      const newSet = new Set(filteredTransfers.map(t => t.id || t.transfer_id));
+      setSelectedIds(newSet);
+    }
+  }, [search, filteredTransfers]);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -150,7 +222,7 @@ export default function VarasaTransferModule() {
   // Reset page when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, statusFilter, talukFilter]);
+  }, [search, categoryFilter, statusFilter, talukFilter]);
 
   const totalPages = pageSize === 'all' ? 1 : Math.ceil(filteredTransfers.length / pageSize) || 1;
   const paginatedTransfers = useMemo(() => {
@@ -598,6 +670,18 @@ export default function VarasaTransferModule() {
 
         <div className="flex items-center gap-2.5 w-full md:w-auto">
           <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-300 outline-none w-full md:w-auto"
+          >
+            <option value="">All Categories (ಎಲ್ಲಾ ವರ್ಗಗಳು)</option>
+            <option value="ಅ">ಅ - ವರ್ಗ : ಕಬ್ಬು ಬೆಳೆಗಾರ (Class A)</option>
+            <option value="ಬ">ಬ - ವರ್ಗ : ಸಹಕಾರ ಸಂಘ (Class B)</option>
+            <option value="ಕ">ಕ - ವರ್ಗ (Class C)</option>
+            <option value="ಡ">ಡ - ವರ್ಗ (Class D)</option>
+          </select>
+
+          <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-300 outline-none w-full md:w-auto"
@@ -623,10 +707,11 @@ export default function VarasaTransferModule() {
             <option value="ವಿಜಯಪುರ">ವಿಜಯಪುರ</option>
           </select>
 
-          {(search || statusFilter || talukFilter) && (
+          {(search || categoryFilter || statusFilter || talukFilter) && (
             <button
               onClick={() => {
                 setSearch('');
+                setCategoryFilter('');
                 setStatusFilter('');
                 setTalukFilter('');
               }}
@@ -675,6 +760,49 @@ export default function VarasaTransferModule() {
           </div>
         </div>
       )}
+
+      {/* Multi-Receipt / Share Search Notification Banner */}
+      {(() => {
+        const cleanSearch = (search || '').trim();
+        const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+        if (rawTokens.length <= 1) return null;
+
+        return (
+          <div className="bg-emerald-950/40 border border-emerald-500/60 rounded-2xl p-3 text-xs text-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg animate-fadeIn mb-3">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 font-bold text-emerald-300">
+                <span className="text-base">🎯</span>
+                <span>
+                  ನಿಖರ ರಶೀದಿ / ಷೇರು ಸಂಖ್ಯೆ ಹೊಂದಾಣಿಕೆ (Exact Receipt / Share Match):{' '}
+                  <span className="font-mono text-emerald-400 text-sm">{filteredTransfers.length}</span> / {rawTokens.length} ಸದಸ್ಯರು ಕಂಡುಬಂದಿದ್ದಾರೆ
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300">
+                ನಮೂದಿಸಿದ ಸಂಖ್ಯೆಗಳ ({rawTokens.join(', ')}) ಎಲ್ಲಾ ಸದಸ್ಯರನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ ({selectedIds.size} Holders Selected).
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const newSet = new Set(filteredTransfers.map(t => t.id || t.transfer_id));
+                  setSelectedIds(newSet);
+                }}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs cursor-pointer transition-all shadow-sm"
+              >
+                ✓ ಎಲ್ಲರನ್ನೂ ಆಯ್ಕೆಮಾಡಿ ({filteredTransfers.length})
+              </button>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs cursor-pointer transition-all"
+              >
+                ✕ ತೆರವುಗೊಳಿಸಿ
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       
       {/* Main Varasa Records Table */}

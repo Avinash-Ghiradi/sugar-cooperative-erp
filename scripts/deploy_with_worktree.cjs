@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "fix(api): fix isMultiQuery scope in getEnrollments"');
+    run('git commit -m "feat(transfers): add multi-query search, category bypass, auto-selection, and exact match banner to Varasa and Vargavane transfer modules"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }

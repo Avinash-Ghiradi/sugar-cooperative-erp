@@ -3920,7 +3920,7 @@ const newSh = {
     return { success: true, allotment_id: newSa.allotment_id, id: newSa.id, data: newSa };
   },
 
-  async getVarasaTransfers({ search = '', status = '', taluk = '' } = {}) {
+  async getVarasaTransfers({ search = '', status = '', taluk = '', category = '' } = {}) {
     await ensureDBReady();
     if (CloudDbService.isEnabled()) {
       try {
@@ -3941,12 +3941,14 @@ const newSh = {
     if (apiRes && apiRes.success) return apiRes;
 
     let filtered = mockVarasaTransfers;
+    let isMultiQuery = false;
+
     if (search) {
       const cleanSearch = (search || '').trim();
       const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
       const hasDelimiter = /[,;]/.test(cleanSearch);
       const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
-      const isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
+      isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
 
       if (isMultiQuery) {
         const matched = [];
@@ -3955,17 +3957,32 @@ const newSh = {
           const rawT = token.trim();
           const cleanT = rawT.replace(/^#/, '');
 
-          // Exact share_no match
+          // 1. Exact share_no match
           let found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
             String(v.share_no || v.existing_share_number || '').trim() === rawT ||
             String(v.share_no || v.existing_share_number || '').trim().replace(/^#/, '') === cleanT
           ));
 
-          // Exact receipt_no match
+          // 2. Exact receipt_no match
           if (!found) {
             found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
               String(v.receipt_no || '').trim() === cleanT ||
               String(v.receipt_no || '').trim() === rawT
+            ));
+          }
+
+          // 3. Exact sl_no match
+          if (!found) {
+            found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+              String(v.sl_no || '').trim() === cleanT
+            ));
+          }
+
+          // 4. Transfer ID or Application No match
+          if (!found) {
+            found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+              String(v.transfer_id || '').toLowerCase().includes(cleanT.toLowerCase()) ||
+              String(v.application_no || '').toLowerCase().includes(cleanT.toLowerCase())
             ));
           }
 
@@ -3994,15 +4011,22 @@ const newSh = {
         });
       }
     }
-    if (status) {
-      filtered = filtered.filter(v => v.approval_status === status);
-    }
-    if (taluk) {
-      const tq = taluk.trim().toLowerCase().normalize('NFC');
-      filtered = filtered.filter(v => 
-        (v.heir_taluk && v.heir_taluk.toLowerCase().normalize('NFC').includes(tq)) ||
-        (v.shareholder_taluk && v.shareholder_taluk.toLowerCase().normalize('NFC').includes(tq))
-      );
+
+    if (!isMultiQuery) {
+      if (category && category !== 'All') {
+        const catKey = category.trim().normalize('NFC');
+        filtered = filtered.filter(v => (v.category || '').normalize('NFC').includes(catKey));
+      }
+      if (status) {
+        filtered = filtered.filter(v => v.approval_status === status);
+      }
+      if (taluk) {
+        const tq = taluk.trim().toLowerCase().normalize('NFC');
+        filtered = filtered.filter(v => 
+          (v.heir_taluk && v.heir_taluk.toLowerCase().normalize('NFC').includes(tq)) ||
+          (v.shareholder_taluk && v.shareholder_taluk.toLowerCase().normalize('NFC').includes(tq))
+        );
+      }
     }
 
     return { success: true, data: filtered };
@@ -4375,7 +4399,7 @@ const newSh = {
     return merged.slice(0, 15);
   },
 
-  async getVargavaneTransfers({ search = '', status = '', taluk = '' } = {}) {
+  async getVargavaneTransfers({ search = '', status = '', taluk = '', category = '' } = {}) {
     await ensureDBReady();
     if (CloudDbService.isEnabled()) {
       try {
@@ -4409,12 +4433,14 @@ const newSh = {
     if (apiRes && apiRes.success) return apiRes;
 
     let filtered = mockVargavaneTransfers;
+    let isMultiQuery = false;
+
     if (search) {
       const cleanSearch = (search || '').trim();
       const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
       const hasDelimiter = /[,;]/.test(cleanSearch);
       const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
-      const isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
+      isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
 
       if (isMultiQuery) {
         const matched = [];
@@ -4423,17 +4449,32 @@ const newSh = {
           const rawT = token.trim();
           const cleanT = rawT.replace(/^#/, '');
 
-          // Exact share_no match
+          // 1. Exact share_no match
           let found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
             String(v.share_no || '').trim() === rawT ||
             String(v.share_no || '').trim().replace(/^#/, '') === cleanT
           ));
 
-          // Exact receipt_no match
+          // 2. Exact receipt_no match
           if (!found) {
             found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
               String(v.receipt_no || '').trim() === cleanT ||
               String(v.receipt_no || '').trim() === rawT
+            ));
+          }
+
+          // 3. Exact sl_no match
+          if (!found) {
+            found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+              String(v.sl_no || '').trim() === cleanT
+            ));
+          }
+
+          // 4. Transfer ID or Application No match
+          if (!found) {
+            found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+              String(v.transfer_id || '').toLowerCase().includes(cleanT.toLowerCase()) ||
+              String(v.application_no || '').toLowerCase().includes(cleanT.toLowerCase())
             ));
           }
 
@@ -4464,15 +4505,22 @@ const newSh = {
         });
       }
     }
-    if (status) {
-      filtered = filtered.filter(v => v.approval_status === status);
-    }
-    if (taluk) {
-      const tq = taluk.trim().toLowerCase().normalize('NFC');
-      filtered = filtered.filter(v =>
-        (v.transferor_taluk && v.transferor_taluk.toLowerCase().normalize('NFC').includes(tq)) ||
-        (v.transferee_taluk && v.transferee_taluk.toLowerCase().normalize('NFC').includes(tq))
-      );
+
+    if (!isMultiQuery) {
+      if (category && category !== 'All') {
+        const catKey = category.trim().normalize('NFC');
+        filtered = filtered.filter(v => (v.category || '').normalize('NFC').includes(catKey));
+      }
+      if (status) {
+        filtered = filtered.filter(v => v.approval_status === status);
+      }
+      if (taluk) {
+        const tq = taluk.trim().toLowerCase().normalize('NFC');
+        filtered = filtered.filter(v =>
+          (v.transferor_taluk && v.transferor_taluk.toLowerCase().normalize('NFC').includes(tq)) ||
+          (v.transferee_taluk && v.transferee_taluk.toLowerCase().normalize('NFC').includes(tq))
+        );
+      }
     }
 
     return { success: true, data: filtered };
