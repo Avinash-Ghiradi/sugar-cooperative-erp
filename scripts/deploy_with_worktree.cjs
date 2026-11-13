@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "fix(enrollment): fix multi-query search and auto-selection for exact receipt and share numbers (429, 2165, 2840)"');
+    run('git commit -m "fix(api): fix isMultiQuery scope in getEnrollments"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }

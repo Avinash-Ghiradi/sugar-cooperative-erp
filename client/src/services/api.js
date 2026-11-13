@@ -4713,13 +4713,14 @@ const newSh = {
       }
     }
     let filtered = mockEnrollments;
+    let isMultiQuery = false;
 
     if (search) {
       const cleanSearch = (search || '').trim();
       const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
       const hasDelimiter = /[,;]/.test(cleanSearch);
       const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
-      const isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
+      isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
 
       if (isMultiQuery) {
         const matched = [];
