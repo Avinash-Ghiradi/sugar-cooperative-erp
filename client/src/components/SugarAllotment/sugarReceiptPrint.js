@@ -101,24 +101,24 @@ export function renderStackedCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl
   const copyBadgeClass = isOffice ? 'rc-copy-office' : 'rc-copy-member';
 
   const shareNo = s.share_no || s.share_number || s.id || '—';
-  const name = s.shareholder_name || s.name || '—';
-  const place = (s.place || s.village_name || 'ಮರಗೂರ').trim();
-  const category = (s.schedule_cast || s.category || 'ಅ - ವರ್ಗ').trim();
+  const name = s.shareholder_name || s.name || s.full_name || '—';
+  const place = (s.village || s.place || s.village_name || 'ಮರಗೂರ').trim();
+  const category = (s.category || s.schedule_cast || 'ಅ - ವರ್ಗ').trim();
 
   // Calculations
-  const sharesCount = s.number_of_shares || s.shares || s.shares_count || (s.share_qty ? parseInt(s.share_qty, 10) : 1);
-  const kgPerShare = settings.kg_per_share || 25;
-  const ratePerKg = settings.sugar_rate_per_kg || 20;
-  const eligibleKg = sharesCount * kgPerShare;
-  const payableAmt = eligibleKg * ratePerKg;
+  const sharesCount = s.active_shares || s.no_of_shares || s.number_of_shares || s.shares || s.shares_count || (s.share_qty ? parseInt(s.share_qty, 10) : 1);
+  const kgPerShare = s.kg_per_share || settings.kg_per_share || 30;
+  const ratePerKg = s.rate_per_kg || settings.sugar_rate_per_kg || 30;
+  const eligibleKg = s.sugar_allotted_kg || s.allotted_kg || (sharesCount * kgPerShare);
+  const payableAmt = s.total_amount != null ? Number(s.total_amount) : (eligibleKg * ratePerKg);
   const formattedAmt = payableAmt.toLocaleString('en-IN');
 
   const yearCode = settings.receipt_year_code || '202627';
-  const receiptNo = `${place}/${yearCode}/${String(seq || 1).padStart(4, '0')}`;
-  const seasonYear = settings.season_year || settings.receipt_year || '2026-27';
+  const receiptNo = s.receipt_no || `${place}/${yearCode}/${String(seq || 1).padStart(4, '0')}`;
+  const seasonYear = s.season || settings.season_year || settings.receipt_year || '2026-27';
 
   const today = new Date();
-  const receiptDate = settings.receipt_date || `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+  const receiptDate = s.allotment_date || (s.created_at ? new Date(s.created_at).toLocaleDateString('en-GB') : (settings.receipt_date || `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`));
 
   // Logos resolution
   const companyLogo = logos.companyLogo || getAbsoluteAssetUrl(getCompanyLogo()) || getAbsoluteAssetUrl(DEFAULT_LOGO_PATH);
@@ -164,6 +164,10 @@ export function renderStackedCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl
           <span class="rc-meta-lbl">ರಶೀದಿ ಸಂಖ್ಯೆ :</span>
           <strong class="rc-meta-val font-mono" style="font-size: 12px;">${receiptNo}</strong>
         </div>
+        ${s.payment_mode ? `
+        <div class="rc-meta-item" style="background:#ecfdf5;color:#047857;padding:1px 8px;border-radius:4px;font-size:10px;font-weight:700;">
+          <span>${s.payment_mode}</span>
+        </div>` : ''}
         <div class="rc-meta-item">
           <span class="rc-meta-lbl">ದಿನಾಂಕ :</span>
           <strong class="rc-meta-val" style="font-size: 11.5px;">${receiptDate}</strong>
@@ -266,24 +270,24 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
   const copyBadgeClass = isOffice ? 'rc-copy-office' : 'rc-copy-member';
 
   const shareNo = s.share_no || s.share_number || s.id || '—';
-  const name = s.shareholder_name || s.name || '—';
-  const place = (s.place || s.village_name || 'ಮರಗೂರ').trim();
-  const category = (s.schedule_cast || s.category || 'ಅ - ವರ್ಗ').trim();
+  const name = s.shareholder_name || s.name || s.full_name || '—';
+  const place = (s.village || s.place || s.village_name || 'ಮರಗೂರ').trim();
+  const category = (s.category || s.schedule_cast || 'ಅ - ವರ್ಗ').trim();
 
   // Calculation
-  const sharesCount = s.number_of_shares || s.shares || s.shares_count || (s.share_qty ? parseInt(s.share_qty, 10) : 1);
-  const kgPerShare = settings.kg_per_share || 25;
-  const ratePerKg = settings.sugar_rate_per_kg || 20;
-  const eligibleKg = sharesCount * kgPerShare;
-  const payableAmt = eligibleKg * ratePerKg;
+  const sharesCount = s.active_shares || s.no_of_shares || s.number_of_shares || s.shares || s.shares_count || (s.share_qty ? parseInt(s.share_qty, 10) : 1);
+  const kgPerShare = s.kg_per_share || settings.kg_per_share || 30;
+  const ratePerKg = s.rate_per_kg || settings.sugar_rate_per_kg || 30;
+  const eligibleKg = s.sugar_allotted_kg || s.allotted_kg || (sharesCount * kgPerShare);
+  const payableAmt = s.total_amount != null ? Number(s.total_amount) : (eligibleKg * ratePerKg);
   const formattedAmt = payableAmt.toLocaleString('en-IN');
 
   const yearCode = settings.receipt_year_code || '202627';
-  const receiptNo = `${place}/${yearCode}/${String(seq || 1).padStart(4, '0')}`;
-  const seasonYear = settings.season_year || settings.receipt_year || '2026-27';
+  const receiptNo = s.receipt_no || `${place}/${yearCode}/${String(seq || 1).padStart(4, '0')}`;
+  const seasonYear = s.season || settings.season_year || settings.receipt_year || '2026-27';
 
   const today = new Date();
-  const receiptDate = settings.receipt_date || `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+  const receiptDate = s.allotment_date || (s.created_at ? new Date(s.created_at).toLocaleDateString('en-GB') : (settings.receipt_date || `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`));
 
   // Logos resolution
   const companyLogo = logos.companyLogo || getAbsoluteAssetUrl(getCompanyLogo()) || getAbsoluteAssetUrl(DEFAULT_LOGO_PATH);
@@ -329,6 +333,10 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
           <span class="rc-meta-lbl">ರಶೀದಿ ಸಂ:</span>
           <strong class="rc-meta-val font-mono">${receiptNo}</strong>
         </div>
+        ${s.payment_mode ? `
+        <div class="rc-meta-item" style="background:#ecfdf5;color:#047857;padding:1px 6px;border-radius:4px;font-size:8.5px;font-weight:700;">
+          <span>${s.payment_mode}</span>
+        </div>` : ''}
         <div class="rc-meta-item rc-meta-date">
           <span class="rc-meta-lbl">ದಿನಾಂಕ:</span>
           <strong class="rc-meta-val">${receiptDate}</strong>
@@ -408,7 +416,7 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
           <div class="rc-sig-lbl">ಶೇರುದಾರರ ಸಹಿ / ಹೆಬ್ಬೆರಳು</div>
         </div>
         <div class="rc-sig-item">
-          <div class="rc-sig-space"></div>
+          <div class="rc-sig-space">${s.weighman_name ? `<div style="font-size:9.5px;font-weight:700;color:#0f172a;line-height:36px;text-align:center;">${s.weighman_name}</div>` : ''}</div>
           <div class="rc-sig-line"></div>
           <div class="rc-sig-lbl">ತೂಕಗಾರರ ಸಹಿ</div>
         </div>
@@ -427,7 +435,7 @@ export function renderSingleCardHtml(s, seq, isOfficeCopy, settings = {}, qrUrl 
  */
 export function renderShareholderRowHtml(s, seq, settings = {}, qrMap = new Map(), logos = {}) {
   const sNo = String(s.share_no || s.share_number || s.id);
-  const qrUrl = qrMap.get(sNo) || '';
+  const qrUrl = qrMap.get(sNo) || qrMap.get(sNo.replace(/^#/, '')) || qrMap.get(String(s.share_no)) || '';
 
   return `
     <div class="shareholder-row">
@@ -446,30 +454,70 @@ export function renderShareholderRowHtml(s, seq, settings = {}, qrMap = new Map(
  * Default layout is 'grid' (Side-by-Side: 2 Shareholders per A4 Page)
  */
 export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new Map(), docTitle = 'ಸಕ್ಕರೆ ವಿತರಣಾ ರಶೀದಿಗಳು (A4 Sugar Receipts)', options = {}) {
+  // Support both array and object-style options invocation
+  let list = [];
+  let effectiveSettings = { ...settings };
+  let effectiveQrMap = qrMap instanceof Map ? new Map(qrMap) : new Map();
+  let effectiveOptions = { ...options };
+
+  if (shareholdersList && !Array.isArray(shareholdersList)) {
+    if (shareholdersList.firstHolder || shareholdersList.secondHolder) {
+      if (shareholdersList.firstHolder) list.push(shareholdersList.firstHolder);
+      if (shareholdersList.secondHolder && shareholdersList.secondHolder !== shareholdersList.firstHolder) {
+        list.push(shareholdersList.secondHolder);
+      }
+      effectiveSettings = {
+        receipt_year_code: shareholdersList.receiptYear || '202627',
+        sugar_rate_per_kg: shareholdersList.ratePerKg || 30,
+        kg_per_share: shareholdersList.kgPerShare || 30,
+        ...settings
+      };
+      if (shareholdersList.firstHolder && shareholdersList.firstQrDataUrl) {
+        const sNo = String(shareholdersList.firstHolder.share_no || shareholdersList.firstHolder.share_number || shareholdersList.firstHolder.id);
+        effectiveQrMap.set(sNo, shareholdersList.firstQrDataUrl);
+      }
+      if (shareholdersList.secondHolder && shareholdersList.secondQrDataUrl) {
+        const sNo = String(shareholdersList.secondHolder.share_no || shareholdersList.secondHolder.share_number || shareholdersList.secondHolder.id);
+        effectiveQrMap.set(sNo, shareholdersList.secondQrDataUrl);
+      }
+      effectiveOptions = {
+        layout: 'grid',
+        fillSecondWithDuplicate: shareholdersList.secondMode === 'duplicate',
+        companyLogo: shareholdersList.factoryLogoUrl,
+        handshakeLogo: shareholdersList.handshakeLogoUrl,
+        ...options
+      };
+    } else if (shareholdersList.share_no || shareholdersList.shareholder_name || shareholdersList.name) {
+      list = [shareholdersList];
+    }
+  } else if (Array.isArray(shareholdersList)) {
+    list = shareholdersList;
+  }
+
   let pagesHtml = '';
-  const total = shareholdersList.length;
+  const total = list.length;
   // Default is 'grid' (Side-by-Side: 2 shareholders / 4 receipts per A4 sheet)
-  const layout = options.layout || 'grid';
+  const layout = effectiveOptions.layout || 'grid';
 
   // Resolve logos for all pages
   const logos = {
-    companyLogo: options.companyLogo || getAbsoluteAssetUrl(getCompanyLogo()) || getAbsoluteAssetUrl(DEFAULT_LOGO_PATH),
-    handshakeLogo: options.handshakeLogo || COOP_HANDSHAKE_BASE64,
-    sealLogo: options.sealLogo || getAbsoluteAssetUrl('./id_assets/society_seal.png')
+    companyLogo: effectiveOptions.companyLogo || getAbsoluteAssetUrl(getCompanyLogo()) || getAbsoluteAssetUrl(DEFAULT_LOGO_PATH),
+    handshakeLogo: effectiveOptions.handshakeLogo || COOP_HANDSHAKE_BASE64,
+    sealLogo: effectiveOptions.sealLogo || getAbsoluteAssetUrl('./id_assets/society_seal.png')
   };
 
   if (layout === 'stacked') {
     // STACKED FULL A4 LAYOUT (Top: Office Copy | Bottom: Member Copy)
     for (let i = 0; i < total; i++) {
-      const s = shareholdersList[i];
+      const s = list[i];
       const sNo = String(s.share_no || s.share_number || s.id);
-      const qrUrl = qrMap.get(sNo) || '';
+      const qrUrl = effectiveQrMap.get(sNo) || effectiveQrMap.get(sNo.replace(/^#/, '')) || '';
 
       pagesHtml += `
         <div class="a4-page a4-stacked-page">
           <!-- TOP HALF: Office Copy -->
           <div class="stacked-receipt-half">
-            ${renderStackedCardHtml(s, i + 1, true, settings, qrUrl, logos)}
+            ${renderStackedCardHtml(s, i + 1, true, effectiveSettings, qrUrl, logos)}
           </div>
 
           <!-- PERFORATION CUT LINE -->
@@ -481,7 +529,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
 
           <!-- BOTTOM HALF: Shareholder Copy -->
           <div class="stacked-receipt-half">
-            ${renderStackedCardHtml(s, i + 1, false, settings, qrUrl, logos)}
+            ${renderStackedCardHtml(s, i + 1, false, effectiveSettings, qrUrl, logos)}
           </div>
         </div>
       `;
@@ -489,16 +537,16 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
   } else {
     // GRID 2x2 LAYOUT (Side-by-Side: 2 Shareholders per A4 Page)
     for (let i = 0; i < total; i += 2) {
-      const s1 = shareholdersList[i];
+      const s1 = list[i];
       // If single shareholder in grid mode, duplicate to fill lower row or use provided options
       const s2 = (i + 1 < total) 
-        ? shareholdersList[i + 1] 
-        : (options.fillSecondWithDuplicate !== false && total === 1 ? s1 : null);
+        ? list[i + 1] 
+        : (effectiveOptions.fillSecondWithDuplicate !== false && total === 1 ? s1 : null);
 
       pagesHtml += `
         <div class="a4-page">
           <!-- ROW 1: Shareholder 1 (Office Copy + Member Copy) -->
-          ${renderShareholderRowHtml(s1, i + 1, settings, qrMap, logos)}
+          ${renderShareholderRowHtml(s1, i + 1, effectiveSettings, effectiveQrMap, logos)}
           
           <!-- HORIZONTAL PERFORATION CUT LINE (Separate Shareholder 1 and Shareholder 2) -->
           <div class="horizontal-cut-line">
@@ -508,7 +556,7 @@ export function buildA4ReceiptsHtml(shareholdersList, settings = {}, qrMap = new
           </div>
 
           <!-- ROW 2: Shareholder 2 (Office Copy + Member Copy) -->
-          ${s2 ? renderShareholderRowHtml(s2, s2 === s1 ? (i + 1) : (i + 2), settings, qrMap, logos) : '<div class="shareholder-row"></div>'}
+          ${s2 ? renderShareholderRowHtml(s2, s2 === s1 ? (i + 1) : (i + 2), effectiveSettings, effectiveQrMap, logos) : '<div class="shareholder-row"></div>'}
         </div>
       `;
     }
@@ -1197,7 +1245,13 @@ export function openPrintDialog(html) {
       }
     };
 
-    if (win.document.readyState === 'complete') {
+    if (win.document.fonts && win.document.fonts.ready) {
+      win.document.fonts.ready.then(() => {
+        setTimeout(triggerPrint, 350);
+      }).catch(() => {
+        setTimeout(triggerPrint, 600);
+      });
+    } else if (win.document.readyState === 'complete') {
       setTimeout(triggerPrint, 500);
     } else {
       win.onload = () => setTimeout(triggerPrint, 500);

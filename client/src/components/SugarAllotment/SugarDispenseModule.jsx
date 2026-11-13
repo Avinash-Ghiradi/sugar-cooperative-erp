@@ -977,33 +977,66 @@ export default function SugarDispenseModule() {
     if (!recordToPrint) return;
 
     try {
+      const sNoRaw = recordToPrint?.share_no || selectedShareholder?.share_no || '';
+      const cleanShareNo = String(sNoRaw).replace(/^#/, '').trim();
+
       const holder = {
-        share_no: selectedShareholder?.share_no || recordToPrint?.share_no,
-        name: selectedShareholder?.shareholder_name || selectedShareholder?.name || selectedShareholder?.full_name || recordToPrint?.shareholder_name || recordToPrint?.name,
-        village: selectedShareholder?.place || selectedShareholder?.village || selectedShareholder?.village_name || recordToPrint?.village || recordToPrint?.place,
-        category: selectedShareholder?.schedule_cast || selectedShareholder?.category || recordToPrint?.category || 'ಅ - ವರ್ಗ',
-        no_of_shares: getShareholderSharesCount(selectedShareholder) || recordToPrint?.active_shares || 1
+        ...selectedShareholder,
+        ...recordToPrint,
+        share_no: cleanShareNo || String(sNoRaw),
+        shareholder_name: recordToPrint?.shareholder_name || selectedShareholder?.shareholder_name || selectedShareholder?.name || selectedShareholder?.full_name || 'Member',
+        name: recordToPrint?.shareholder_name || selectedShareholder?.shareholder_name || selectedShareholder?.name || selectedShareholder?.full_name || 'Member',
+        village: recordToPrint?.village || selectedShareholder?.place || selectedShareholder?.village || selectedShareholder?.village_name || '',
+        place: recordToPrint?.village || selectedShareholder?.place || selectedShareholder?.village || selectedShareholder?.village_name || '',
+        category: recordToPrint?.category || selectedShareholder?.category || selectedShareholder?.schedule_cast || 'ಅ - ವರ್ಗ',
+        active_shares: recordToPrint?.active_shares || (selectedShareholder ? getShareholderSharesCount(selectedShareholder) : 1),
+        number_of_shares: recordToPrint?.active_shares || (selectedShareholder ? getShareholderSharesCount(selectedShareholder) : 1),
+        no_of_shares: recordToPrint?.active_shares || (selectedShareholder ? getShareholderSharesCount(selectedShareholder) : 1),
+        sugar_allotted_kg: recordToPrint?.sugar_allotted_kg || allottedKg || (parseFloat(settings?.kg_per_share) || 30),
+        rate_per_kg: recordToPrint?.rate_per_kg || ratePerKg || (parseFloat(settings?.sugar_rate_per_kg) || 30),
+        total_amount: recordToPrint?.total_amount != null ? recordToPrint.total_amount : totalAmount,
+        receipt_no: recordToPrint?.receipt_no || receiptNo,
+        payment_mode: recordToPrint?.payment_mode || paymentMode,
+        payment_status: recordToPrint?.payment_status || paymentStatus,
+        weighman_name: recordToPrint?.weighman_name || weighmanName || currentUserDisplayName,
+        season: recordToPrint?.season || '2026-27',
+        allotment_date: recordToPrint?.allotment_date || new Date().toLocaleDateString('en-GB')
       };
 
       const primaryQrDataUrl = await getReceiptQRDataUrl(holder.share_no);
+      const qrMap = new Map();
+      qrMap.set(String(holder.share_no), primaryQrDataUrl);
+      if (sNoRaw && String(sNoRaw) !== String(holder.share_no)) {
+        qrMap.set(String(sNoRaw), primaryQrDataUrl);
+      }
+
       const factoryLogoUrl = companyLogo || DEFAULT_LOGO_PATH;
+      const printSettings = {
+        ...settings,
+        receipt_year_code: holder.receipt_no ? (holder.receipt_no.split('/')[1] || settings?.receipt_year_code || '202627') : (settings?.receipt_year_code || '202627'),
+        sugar_rate_per_kg: holder.rate_per_kg,
+        kg_per_share: settings?.kg_per_share || 30,
+        season_year: holder.season || settings?.season_year || '2026-27'
+      };
 
-      const html = buildA4ReceiptsHtml({
-        firstHolder: holder,
-        secondHolder: holder,
-        firstQrDataUrl: primaryQrDataUrl,
-        secondQrDataUrl: primaryQrDataUrl,
-        receiptYear: settings?.receipt_year_code || '202627',
-        ratePerKg: recordToPrint.rate_per_kg || ratePerKg,
-        kgPerShare: settings?.kg_per_share || 25,
-        secondMode: 'duplicate',
-        factoryLogoUrl,
-        handshakeLogoUrl: COOP_HANDSHAKE_BASE64,
-        includeZeroShares: false
-      });
+      const docTitle = `A4_Sugar_Receipt_${holder.share_no}`;
 
-      openPrintDialog(html, `A4_Sugar_Receipt_${holder.share_no}`);
+      const html = buildA4ReceiptsHtml(
+        [holder],
+        printSettings,
+        qrMap,
+        docTitle,
+        {
+          layout: 'grid',
+          fillSecondWithDuplicate: true,
+          companyLogo: factoryLogoUrl,
+          handshakeLogo: COOP_HANDSHAKE_BASE64
+        }
+      );
+
+      openPrintDialog(html);
     } catch (err) {
+      console.error('Receipt print error:', err);
       showToast('ರಶೀದಿ ಮುದ್ರಣದಲ್ಲಿ ದೋಷ: ' + err.message, 'error');
     }
   };
