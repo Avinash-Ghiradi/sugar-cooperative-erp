@@ -30,8 +30,10 @@ import {
   BookOpen,
   Filter,
   Check,
-  Eye
+  Eye,
+  Settings
 } from 'lucide-react';
+import { CloudDbService } from '../../services/cloudDb';
 import { ApiService, getShareholderSharesCount } from '../../services/api';
 import { useCompanyLogo, getCompanyLogo, DEFAULT_LOGO_PATH } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
@@ -143,11 +145,13 @@ export default function SugarDispenseModule() {
     } catch (e) {}
     return {
       org_name: 'Shree Bheemashankar Sahakari Sakkare Karkhane Ni., Margur',
-      kg_per_share: 25,
-      sugar_rate_per_kg: 20,
+      kg_per_share: 30,
+      sugar_rate_per_kg: 30,
       receipt_year_code: '202627'
     };
   });
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [tempSettings, setTempSettings] = useState(settings);
 
   // Input & Scanner States
   const [scanInput, setScanInput] = useState('');
@@ -165,9 +169,27 @@ export default function SugarDispenseModule() {
   const [isAlreadyAllotted, setIsAlreadyAllotted] = useState(false);
   const [existingAllotmentRecord, setExistingAllotmentRecord] = useState(null);
 
-  // Form Fields
-  const [allottedKg, setAllottedKg] = useState(25);
-  const [ratePerKg, setRatePerKg] = useState(20);
+  // Form Fields (Initialized from saved settings, default: 30 kg @ ₹30/kg)
+  const [allottedKg, setAllottedKg] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sugar_allotment_custom_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.kg_per_share !== undefined) return parseFloat(parsed.kg_per_share) || 30;
+      }
+    } catch (e) {}
+    return 30;
+  });
+  const [ratePerKg, setRatePerKg] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sugar_allotment_custom_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.sugar_rate_per_kg !== undefined) return parseFloat(parsed.sugar_rate_per_kg) || 30;
+      }
+    } catch (e) {}
+    return 30;
+  });
   const [paymentMode, setPaymentMode] = useState('Cash'); // 'Cash' | 'UPI' | 'Bank' | 'Free'
   const [paymentStatus, setPaymentStatus] = useState('Paid'); // 'Paid' | 'Pending'
   const [receiptNo, setReceiptNo] = useState('');
@@ -211,6 +233,82 @@ export default function SugarDispenseModule() {
       return `${remainder} ಕೆಜಿ ಬಿಡಿ`;
     }
   }, [allottedKg]);
+
+  // Sync settings dynamically from Cloud and Event Listeners
+  useEffect(() => {
+    const applyNewSettings = (newSet) => {
+      if (!newSet) return;
+      setSettings(prev => ({ ...prev, ...newSet }));
+      setTempSettings(prev => ({ ...prev, ...newSet }));
+
+      setSelectedShareholder(current => {
+        if (!current) {
+          if (newSet.kg_per_share !== undefined) setAllottedKg(parseFloat(newSet.kg_per_share) || 30);
+          if (newSet.sugar_rate_per_kg !== undefined) setRatePerKg(parseFloat(newSet.sugar_rate_per_kg) || 30);
+        } else {
+          const shares = getShareholderSharesCount(current);
+          const kg = Math.max(1, shares) * (parseFloat(newSet.kg_per_share) || 30);
+          setAllottedKg(kg);
+          if (newSet.sugar_rate_per_kg !== undefined) setRatePerKg(parseFloat(newSet.sugar_rate_per_kg) || 30);
+        }
+        return current;
+      });
+    };
+
+    // 1. Fetch latest settings from Supabase Cloud
+    const fetchCloudSettings = async () => {
+      try {
+        if (CloudDbService.isEnabled()) {
+          const list = await CloudDbService.getCollection('system_settings');
+          if (Array.isArray(list)) {
+            const cloudSet = list.find(x => x.record_id === 'sugar_allotment_custom_settings' || x.id === 'sugar_allotment_custom_settings');
+            if (cloudSet) {
+              localStorage.setItem('sugar_allotment_custom_settings', JSON.stringify(cloudSet));
+              applyNewSettings(cloudSet);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Error loading cloud settings in dispense terminal:', err);
+      }
+    };
+    fetchCloudSettings();
+
+    // 2. Listen to custom event and storage event across tabs and components
+    const handleSettingsEvent = (e) => {
+      try {
+        const data = e?.detail || JSON.parse(localStorage.getItem('sugar_allotment_custom_settings') || '{}');
+        applyNewSettings(data);
+      } catch (err) {}
+    };
+
+    window.addEventListener('sugar_settings_updated', handleSettingsEvent);
+    window.addEventListener('storage', handleSettingsEvent);
+    return () => {
+      window.removeEventListener('sugar_settings_updated', handleSettingsEvent);
+      window.removeEventListener('storage', handleSettingsEvent);
+    };
+  }, []);
+
+  // Save Settings directly from Dispense Terminal
+  const handleSaveSettings = () => {
+    setSettings(tempSettings);
+    localStorage.setItem('sugar_allotment_custom_settings', JSON.stringify(tempSettings));
+    window.dispatchEvent(new CustomEvent('sugar_settings_updated', { detail: tempSettings }));
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionItem('system_settings', 'sugar_allotment_custom_settings', tempSettings).catch(() => {});
+    }
+    if (!selectedShareholder) {
+      setAllottedKg(parseFloat(tempSettings.kg_per_share) || 30);
+      setRatePerKg(parseFloat(tempSettings.sugar_rate_per_kg) || 30);
+    } else {
+      const shares = getShareholderSharesCount(selectedShareholder);
+      setAllottedKg(Math.max(1, shares) * (parseFloat(tempSettings.kg_per_share) || 30));
+      setRatePerKg(parseFloat(tempSettings.sugar_rate_per_kg) || 30);
+    }
+    setShowSettingsModal(false);
+    showToast('ಸಕ್ಕರೆ ಹಂಚಿಕೆ ಸಂರಚನೆ ಉಳಿಸಲಾಗಿದೆ (Settings updated)!');
+  };
 
   // Load all shareholders on mount (prioritize full indexedDB / raw cache of 17,000+ members)
   useEffect(() => {
@@ -382,10 +480,15 @@ export default function SugarDispenseModule() {
 
   // Set default values when shareholder is selected
   const handleSelectShareholder = useCallback((holder) => {
+    const activeKgPerShare = parseFloat(settings?.kg_per_share) || 30;
+    const activeSugarRate = parseFloat(settings?.sugar_rate_per_kg) || 30;
+
     if (!holder) {
       setSelectedShareholder(null);
       setIsAlreadyAllotted(false);
       setExistingAllotmentRecord(null);
+      setAllottedKg(activeKgPerShare);
+      setRatePerKg(activeSugarRate);
       return;
     }
 
@@ -393,12 +496,9 @@ export default function SugarDispenseModule() {
 
     // Compute active shares
     const sharesCount = getShareholderSharesCount(holder);
-    const kgPerShare = parseFloat(settings?.kg_per_share) || 25;
-    const calculatedKg = Math.max(1, sharesCount) * kgPerShare;
+    const calculatedKg = Math.max(1, sharesCount) * activeKgPerShare;
     setAllottedKg(calculatedKg);
-
-    const defaultRate = parseFloat(settings?.sugar_rate_per_kg) || 20;
-    setRatePerKg(defaultRate);
+    setRatePerKg(activeSugarRate);
 
     // Generate receipt serial
     const yearCode = settings?.receipt_year_code || '202627';
@@ -735,8 +835,8 @@ export default function SugarDispenseModule() {
         taluk: selectedShareholder.taluk || '',
         category: selectedShareholder.schedule_cast || selectedShareholder.category || 'ಅ - ವರ್ಗ',
         active_shares: getShareholderSharesCount(selectedShareholder),
-        sugar_allotted_kg: parseFloat(allottedKg) || 25,
-        rate_per_kg: parseFloat(ratePerKg) || 20,
+        sugar_allotted_kg: parseFloat(allottedKg) || (parseFloat(settings?.kg_per_share) || 30),
+        rate_per_kg: parseFloat(ratePerKg) || (parseFloat(settings?.sugar_rate_per_kg) || 30),
         total_amount: totalAmount,
         payment_mode: paymentMode,
         payment_status: paymentStatus,
@@ -819,6 +919,8 @@ export default function SugarDispenseModule() {
     setScanInput('');
     setShowSuccessDialog(false);
     setLastSavedRecord(null);
+    setAllottedKg(parseFloat(settings?.kg_per_share) || 30);
+    setRatePerKg(parseFloat(settings?.sugar_rate_per_kg) || 30);
     if (searchInputRef.current) {
       searchInputRef.current.focus();
     }
@@ -915,6 +1017,19 @@ export default function SugarDispenseModule() {
               <option key={i} value={c}>{c}</option>
             ))}
           </select>
+
+          <button
+            type="button"
+            onClick={() => {
+              setTempSettings(settings);
+              setShowSettingsModal(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl transition-all cursor-pointer text-xs font-semibold shadow-sm"
+            title="ಸಕ್ಕರೆ ಹಂಚಿಕೆ ಸಂರಚನೆ (Settings)"
+          >
+            <Settings className="w-4 h-4 text-amber-400" />
+            <span>ಸೆಟ್ಟಿಂಗ್ಸ್</span>
+          </button>
 
           <button
             type="button"
@@ -1696,6 +1811,96 @@ export default function SugarDispenseModule() {
               >
                 <span>ಮುಂದಿನವರು</span>
                 <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK SETTINGS MODAL */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl animate-scaleUp">
+            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-100 text-sm">ಸಕ್ಕರೆ ಹಂಚಿಕೆ ಸಂರಚನೆ (Sugar Settings)</h3>
+                  <p className="text-[11px] text-slate-400">ದರ & ಹಂಚಿಕೆ ಪ್ರಮಾಣ ಸಂರಚಿಸಿ</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-slate-300 font-bold text-xs mb-1.5">
+                  ಪ್ರತಿ ಶೇರ್‌ಗೆ ಕೆಜಿ (Kg Per Share)
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={tempSettings.kg_per_share}
+                  onChange={(e) => setTempSettings({ ...tempSettings, kg_per_share: parseFloat(e.target.value) || 0 })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-100 outline-none focus:border-emerald-500 font-bold text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold text-xs mb-1.5">
+                  ಸಕ್ಕರೆ ದರ (Rs / ಕೆಜಿ) (Sugar Rate)
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={tempSettings.sugar_rate_per_kg}
+                  onChange={(e) => setTempSettings({ ...tempSettings, sugar_rate_per_kg: parseFloat(e.target.value) || 0 })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-emerald-400 outline-none focus:border-emerald-500 font-bold text-sm font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold text-xs mb-1.5">
+                  ರಶೀದಿ ವರ್ಷ ಕೋಡ್ (Receipt Year Code)
+                </label>
+                <input
+                  type="text"
+                  value={tempSettings.receipt_year_code}
+                  onChange={(e) => setTempSettings({ ...tempSettings, receipt_year_code: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-100 outline-none focus:border-emerald-500 font-mono text-sm"
+                />
+              </div>
+
+              <div className="p-3 bg-emerald-950/40 border border-emerald-700/50 rounded-2xl flex items-center justify-between text-xs">
+                <span className="text-slate-300 font-medium">ಅಂದಾಜು ಒಟ್ಟು (1 ಶೇರ್‌ಗೆ):</span>
+                <span className="font-bold text-emerald-300 font-mono text-sm">
+                  {tempSettings.kg_per_share} ಕೆಜಿ × ₹{tempSettings.sugar_rate_per_kg} = ₹{(parseFloat(tempSettings.kg_per_share) || 0) * (parseFloat(tempSettings.sugar_rate_per_kg) || 0)}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                ರದ್ದುಮಾಡಿ
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSettings}
+                className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+              >
+                ಉಳಿಸಿ (Save)
               </button>
             </div>
           </div>

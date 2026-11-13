@@ -206,8 +206,8 @@ export default function SugarAllotmentModule() {
       page_orientation: 'landscape',
 
       // Sugar allotment configuration
-      kg_per_share: 25,
-      sugar_rate_per_kg: 20,
+      kg_per_share: 30,
+      sugar_rate_per_kg: 30,
       receipt_year_code: '202627',
 
       // Receipt generation filters
@@ -242,6 +242,27 @@ export default function SugarAllotmentModule() {
   // Load Shareholders & Circles on Mount
   useEffect(() => {
     loadInitialData();
+    // Load persisted sugar settings from cloud
+    const loadCloudSettings = async () => {
+      try {
+        if (CloudDbService.isEnabled()) {
+          const list = await CloudDbService.getCollection('system_settings');
+          if (Array.isArray(list)) {
+            const cloudSet = list.find(x => x.record_id === 'sugar_allotment_custom_settings' || x.id === 'sugar_allotment_custom_settings');
+            if (cloudSet) {
+              setSettings(prev => {
+                const merged = { ...prev, ...cloudSet };
+                localStorage.setItem('sugar_allotment_custom_settings', JSON.stringify(merged));
+                return merged;
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Cloud settings fetch warning:', e);
+      }
+    };
+    loadCloudSettings();
   }, []);
 
   const loadInitialData = async (forceRefresh = false) => {
@@ -747,6 +768,10 @@ export default function SugarAllotmentModule() {
   const handleSaveSettings = () => {
     setSettings(tempSettings);
     localStorage.setItem('sugar_allotment_custom_settings', JSON.stringify(tempSettings));
+    window.dispatchEvent(new CustomEvent('sugar_settings_updated', { detail: tempSettings }));
+    if (CloudDbService.isEnabled()) {
+      CloudDbService.saveCollectionItem('system_settings', 'sugar_allotment_custom_settings', tempSettings).catch(() => {});
+    }
     setShowSettingsModal(false);
     showToast('ಸಕ್ಕರೆ ಹಂಚಿಕೆ ಮತ್ತು ಮುದ್ರಣ ಸಂರಚನೆ ಉಳಿಸಲಾಗಿದೆ!');
   };
