@@ -2,6 +2,7 @@ import LoadingAnimation from '../Common/LoadingAnimation';
 import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ApiService } from '../../services/api';
+import { RealtimeSyncService } from '../../services/realtimeSync';
 import { useAuth } from '../../context/AuthContext';
 import * as XLSX from 'xlsx';
 import VarasaTransferModal from './VarasaTransferModal';
@@ -85,10 +86,35 @@ export default function VarasaTransferModule() {
   };
 
 
-  // Load all transfers once on mount
+  // Load all transfers once on mount & subscribe to realtime changes across browsers/tabs
   useEffect(() => {
     loadTransfers();
+
+    const unsubscribe = RealtimeSyncService.subscribe('varasa', () => {
+      loadTransfers(true);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
+
+  const handleSaveSuccess = (savedRec) => {
+    if (savedRec) {
+      setTransfers(prev => {
+        const id = savedRec.transfer_id || savedRec.id;
+        const idx = prev.findIndex(t => (t.transfer_id && t.transfer_id === id) || (t.id && t.id === id));
+        if (idx !== -1) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...savedRec };
+          return next;
+        } else {
+          return [savedRec, ...prev];
+        }
+      });
+    }
+    loadTransfers(true);
+  };
 
   const loadTransfers = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -1219,7 +1245,7 @@ export default function VarasaTransferModule() {
             setEditingTransfer(null);
           }}
           initialData={editingTransfer}
-          onSaveSuccess={loadTransfers}
+          onSaveSuccess={handleSaveSuccess}
           showToast={showToast}
         />
       )}

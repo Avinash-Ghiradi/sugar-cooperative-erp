@@ -298,8 +298,8 @@ export default function VarasaTransferModal({
         });
         if (res.success) {
           if (showToast) showToast('Varasa transfer application updated successfully!');
-          onSaveSuccess();
           const rec = res.data || { ...form, transfer_id: initialData.transfer_id || initialData.id };
+          onSaveSuccess(rec);
           setPrintRecord(rec);
         } else {
           if (showToast) showToast(res.message || 'Update failed', 'error');
@@ -308,8 +308,8 @@ export default function VarasaTransferModal({
         const res = await ApiService.addVarasaTransfer(form);
         if (res.success) {
           if (showToast) showToast(`Varasa application ${res.transfer_id} registered successfully!`);
-          onSaveSuccess();
           const rec = res.data || { ...form, transfer_id: res.transfer_id };
+          onSaveSuccess(rec);
           setPrintRecord(rec);
         } else {
           if (showToast) showToast(res.message || 'Creation failed', 'error');

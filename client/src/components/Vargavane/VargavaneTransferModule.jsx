@@ -2,6 +2,7 @@ import LoadingAnimation from '../Common/LoadingAnimation';
 import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ApiService } from '../../services/api';
+import { RealtimeSyncService } from '../../services/realtimeSync';
 import { useAuth } from '../../context/AuthContext';
 import * as XLSX from 'xlsx';
 import VargavaneTransferModal from './VargavaneTransferModal';
@@ -80,9 +81,17 @@ export default function VargavaneTransferModule() {
   };
 
 
-  // Load all transfers once on mount
+  // Load all transfers once on mount & subscribe to realtime changes across browsers/tabs
   useEffect(() => {
     loadTransfers();
+
+    const unsubscribe = RealtimeSyncService.subscribe('vargavane', () => {
+      loadTransfers(true);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const loadTransfers = async (silent = false) => {

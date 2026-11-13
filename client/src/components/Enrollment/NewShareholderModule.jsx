@@ -2,6 +2,7 @@ import LoadingAnimation from '../Common/LoadingAnimation';
 import TableScrollerContainer from '../Common/TableScrollerContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService } from '../../services/api';
+import { RealtimeSyncService } from '../../services/realtimeSync';
 import { useAuth } from '../../context/AuthContext';
 import NewShareholderModal from './NewShareholderModal';
 import OfficeNotePrintModal from './OfficeNotePrintModal';
@@ -239,8 +240,18 @@ export default function NewShareholderModule() {
     loadEnrollments();
   }, [page, searchTerm, categoryFilter, statusFilter]);
 
-  const loadEnrollments = async () => {
-    setLoading(true);
+  // Real-time synchronization across all tabs, windows, and browsers
+  useEffect(() => {
+    const unsubscribe = RealtimeSyncService.subscribe('enrollments', () => {
+      loadEnrollments(true);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [page, searchTerm, categoryFilter, statusFilter]);
+
+  const loadEnrollments = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const cleanSearch = (searchTerm || '').trim();
       const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
@@ -271,9 +282,9 @@ export default function NewShareholderModule() {
         }
       }
     } catch (err) {
-      showToast('Error loading enrollments: ' + err.message, 'error');
+      if (!silent) showToast('Error loading enrollments: ' + err.message, 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

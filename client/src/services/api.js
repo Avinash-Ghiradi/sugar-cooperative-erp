@@ -28,6 +28,7 @@ export function cleanPlaceName(p) {
 import officialCircleData from './officialCircleData.json';
 import officialFilterOptions from './officialFilterOptions.json';
 import { CloudDbService } from './cloudDb';
+import { RealtimeSyncService } from './realtimeSync';
 
 const API_BASE = '/api';
 
@@ -1934,9 +1935,9 @@ function deduplicateVarasaList(list) {
 
     if (existingKey) {
       const existing = map.get(existingKey);
-      const existingTime = existing.updated_at ? new Date(existing.updated_at).getTime() : 0;
-      const itemTime = item.updated_at ? new Date(item.updated_at).getTime() : 0;
-      const isItemNewer = itemTime >= existingTime;
+      const existingTime = existing.updated_at ? new Date(existing.updated_at).getTime() : (existing.created_at ? new Date(existing.created_at).getTime() : 0);
+      const itemTime = item.updated_at ? new Date(item.updated_at).getTime() : (item.created_at ? new Date(item.created_at).getTime() : 0);
+      const isItemNewer = itemTime > existingTime;
       const newer = isItemNewer ? item : existing;
       const older = isItemNewer ? existing : item;
 
@@ -1988,9 +1989,9 @@ function deduplicateVargavaneList(list) {
 
     if (existingKey) {
       const existing = map.get(existingKey);
-      const existingTime = existing.updated_at ? new Date(existing.updated_at).getTime() : 0;
-      const itemTime = item.updated_at ? new Date(item.updated_at).getTime() : 0;
-      const isItemNewer = itemTime >= existingTime;
+      const existingTime = existing.updated_at ? new Date(existing.updated_at).getTime() : (existing.created_at ? new Date(existing.created_at).getTime() : 0);
+      const itemTime = item.updated_at ? new Date(item.updated_at).getTime() : (item.created_at ? new Date(item.created_at).getTime() : 0);
+      const isItemNewer = itemTime > existingTime;
       const newer = isItemNewer ? item : existing;
       const older = isItemNewer ? existing : item;
 
@@ -4072,8 +4073,7 @@ const newSh = {
       try {
         const cloudData = await CloudDbService.getCollection('varasa');
         if (Array.isArray(cloudData)) {
-          const combined = [...cloudData, ...mockVarasaTransfers];
-          mockVarasaTransfers = deduplicateVarasaList(combined);
+          mockVarasaTransfers = deduplicateVarasaList(cloudData);
           saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
         }
       } catch (e) {
@@ -4242,7 +4242,8 @@ const newSh = {
       approval_status: data.approval_status || 'Application Received',
       documents_verified: data.documents_verified || 'Pending',
       remarks: data.remarks || '',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     mockVarasaTransfers.unshift(newV);
     saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
@@ -4250,6 +4251,7 @@ const newSh = {
       CloudDbService.saveCollectionItem('varasa', newV.transfer_id, newV)
         .catch(err => console.warn('Cloud DB addVarasa error:', err));
     }
+    RealtimeSyncService.notifyChange('varasa', 'CREATE', newV.transfer_id, newV);
 
     // If linked to existing shareholder, update ownership to ವಾರಸದಾರರು (ಸಂಬಂಧ)
     const targetShareNo = String(data.share_no || data.existing_share_number || '').trim();
@@ -4309,6 +4311,7 @@ const newSh = {
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
 
+      RealtimeSyncService.notifyChange('varasa', 'UPDATE', updated.transfer_id, updated);
       return { success: true, data: updated };
     }
     return { success: false, message: 'Transfer record not found' };
@@ -4332,6 +4335,7 @@ const newSh = {
         const delKey = removed.transfer_id || String(removed.id || idOrTransferId);
         CloudDbService.deleteCollectionItem('varasa', delKey).catch(() => {});
       }
+      RealtimeSyncService.notifyChange('varasa', 'DELETE', idOrTransferId);
       return { success: true };
     }
     return { success: false, message: 'Transfer record not found' };
@@ -4371,8 +4375,10 @@ const newSh = {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
+      RealtimeSyncService.notifyChange('varasa', 'STATUS_UPDATE', transfer_id);
       return { success: true, item: updatedItem };
     }
+    RealtimeSyncService.notifyChange('varasa', 'STATUS_UPDATE', transfer_id);
     return { success: true };
   },
 
@@ -4419,6 +4425,7 @@ const newSh = {
       saveToIndexedDB(mockShareholders).catch(() => {});
     }
 
+    RealtimeSyncService.notifyChange('varasa', 'STATUS_UPDATE_BULK');
     return { success: true, count: updatedItems.length };
   },
 
@@ -4465,7 +4472,8 @@ const newSh = {
         approval_status: r.approval_status || 'Application Received',
         documents_verified: r.documents_verified || 'Pending',
         remarks: r.remarks || '',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
     });
 
@@ -4495,6 +4503,7 @@ const newSh = {
     });
     saveToIndexedDB(mockShareholders).catch(() => {});
 
+    RealtimeSyncService.notifyChange('varasa', 'BULK_CREATE');
     return { success: true, count: items.length };
   },
 
@@ -4613,8 +4622,7 @@ const newSh = {
       try {
         const cloudData = await CloudDbService.getCollection('vargavane');
         if (Array.isArray(cloudData)) {
-          const combined = [...cloudData, ...mockVargavaneTransfers];
-          mockVargavaneTransfers = deduplicateVargavaneList(combined);
+          mockVargavaneTransfers = deduplicateVargavaneList(cloudData);
           saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
         }
       } catch (e) {
@@ -4761,7 +4769,8 @@ const newSh = {
       approval_status: data.approval_status || 'Application Received',
       documents_verified: data.documents_verified || 'Pending',
       remarks: data.remarks || '',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     mockVargavaneTransfers.unshift(newV);
     saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
@@ -4769,6 +4778,7 @@ const newSh = {
       CloudDbService.saveCollectionItem('vargavane', newV.transfer_id, newV)
         .catch(err => console.warn('Cloud DB addVargavane error:', err));
     }
+    RealtimeSyncService.notifyChange('vargavane', 'CREATE', newV.transfer_id, newV);
 
     // If linked to existing shareholder, update ownership to ವಾರಸದಾರರು (ಸಂಬಂಧ)
     const targetShareNo = String(data.share_no || '').trim();
@@ -4822,6 +4832,7 @@ const newSh = {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
+      RealtimeSyncService.notifyChange('vargavane', 'UPDATE', updated.transfer_id, updated);
       return { success: true, data: updated };
     }
     return { success: false, message: 'Record not found' };
@@ -4837,6 +4848,7 @@ const newSh = {
         CloudDbService.deleteCollectionItem('vargavane', removed.transfer_id || String(removed.id))
           .catch(err => console.warn('Cloud DB deleteVargavane error:', err));
       }
+      RealtimeSyncService.notifyChange('vargavane', 'DELETE', idOrTransferId);
       return { success: true };
     }
     return { success: false, message: 'Record not found' };
@@ -4873,6 +4885,7 @@ const newSh = {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
+      RealtimeSyncService.notifyChange('vargavane', 'STATUS_UPDATE', transfer_id);
       return { success: true, item: updatedItem };
     }
     return { success: false };
@@ -4921,6 +4934,7 @@ const newSh = {
       saveToIndexedDB(mockShareholders).catch(() => {});
     }
 
+    RealtimeSyncService.notifyChange('vargavane', 'STATUS_UPDATE_BULK');
     return { success: true, count: updatedItems.length };
   },
 
@@ -4964,7 +4978,8 @@ const newSh = {
         approval_status: r.approval_status || 'Application Received',
         documents_verified: r.documents_verified || 'Pending',
         remarks: r.remarks || '',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
     });
 
@@ -4994,6 +5009,7 @@ const newSh = {
     });
     saveToIndexedDB(mockShareholders).catch(() => {});
 
+    RealtimeSyncService.notifyChange('vargavane', 'BULK_CREATE');
     return { success: true, count: items.length };
   },
 
@@ -5018,7 +5034,12 @@ const newSh = {
               CloudDbService.saveCollectionItem('enrollments', key, item).catch(() => {});
             }
           });
-          mockEnrollments = Array.from(map.values());
+          mockEnrollments = Array.from(map.values()).sort((a, b) => {
+            const timeA = a.updated_at ? new Date(a.updated_at).getTime() : (a.created_at ? new Date(a.created_at).getTime() : 0);
+            const timeB = b.updated_at ? new Date(b.updated_at).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0);
+            if (timeB !== timeA) return timeB - timeA;
+            return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
+          });
           saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
 
           // Auto-sync any approved enrollments to Supabase shareholders table if missing
@@ -5197,7 +5218,8 @@ const newSh = {
       ifsc_code: data.ifsc_code || '',
       approval_status: data.approval_status || 'Application Submitted (ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ)',
       remarks: data.remarks || '',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     mockEnrollments.unshift(newE);
@@ -5206,6 +5228,8 @@ const newSh = {
       CloudDbService.saveCollectionItem('enrollments', newE.enrollment_id, newE)
         .catch(err => console.warn('Cloud DB addEnrollment error:', err));
     }
+    RealtimeSyncService.notifyChange('enrollments', 'CREATE', newE.enrollment_id, newE);
+
     // Only promote to Master Sheet if explicitly approved/issued WITH a valid assigned share_no!
     const isIssuedOrApprovedNew = ((newE.approval_status || '').includes('Approved') ||
                                   (newE.approval_status || '').includes('Issued') ||
@@ -5235,13 +5259,15 @@ const newSh = {
         no_shares: noShares,
         share_amount: shareAmount,
         admission_fee: admissionFee,
-        total_amount: totalAmount
+        total_amount: totalAmount,
+        updated_at: new Date().toISOString()
       };
       saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
       if (CloudDbService.isEnabled()) {
         CloudDbService.saveCollectionItem('enrollments', mockEnrollments[idx].enrollment_id || idOrEnrollmentId, mockEnrollments[idx])
           .catch(err => console.warn('Cloud DB updateEnrollment error:', err));
       }
+      RealtimeSyncService.notifyChange('enrollments', 'UPDATE', mockEnrollments[idx].enrollment_id || idOrEnrollmentId, mockEnrollments[idx]);
 
       // If enrollment is approved or share certificate issued, ensure added to Master Sheet!
       const isIssuedOrApproved = (mockEnrollments[idx].approval_status || '').includes('Approved') ||
@@ -5271,6 +5297,7 @@ const newSh = {
         CloudDbService.deleteCollectionItem('enrollments', removed?.enrollment_id || idOrEnrollmentId)
           .catch(err => console.warn('Cloud DB deleteEnrollment error:', err));
       }
+      RealtimeSyncService.notifyChange('enrollments', 'DELETE', idOrEnrollmentId);
       return { success: true };
     }
     return { success: false, message: 'Record not found' };
@@ -5284,11 +5311,13 @@ const newSh = {
       if (extra.share_no !== undefined) item.share_no = String(extra.share_no);
       if (extra.tharava_no !== undefined) item.tharava_no = extra.tharava_no;
       if (extra.tharava_date !== undefined) item.tharava_date = extra.tharava_date;
+      item.updated_at = new Date().toISOString();
       saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
       if (CloudDbService.isEnabled()) {
         CloudDbService.saveCollectionItem('enrollments', item.enrollment_id || idOrEnrollmentId, item)
           .catch(err => console.warn('Cloud DB status sync error:', err));
       }
+      RealtimeSyncService.notifyChange('enrollments', 'STATUS_UPDATE', item.enrollment_id || idOrEnrollmentId, item);
 
       // If approved or share certificate issued, ensure added to Master Sheet!
       const isIssuedOrApproved = (approval_status || '').includes('Approved') ||
@@ -5604,6 +5633,7 @@ const newSh = {
     item.approval_status = 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)';
     item.approved_by = adminUser;
     item.approved_at = new Date().toISOString();
+    item.updated_at = new Date().toISOString();
     if (remarks) item.remarks = remarks;
     saveStoredData(STORAGE_KEY_ENROLLMENT, mockEnrollments);
 
@@ -5618,6 +5648,9 @@ const newSh = {
 
     // Direct, bulletproof add/upsert to Master Sheet (PostgreSQL public.shareholders & local cache)!
     const masterMember = await this.ensureEnrollmentInMaster(item, adminUser);
+
+    RealtimeSyncService.notifyChange('enrollments', 'APPROVE', item.enrollment_id, item);
+    RealtimeSyncService.notifyChange('shareholders', 'UPDATE', assignedShareNo);
 
     return { success: true, share_no: assignedShareNo, shareholder: masterMember || newMember };
   },
@@ -6042,7 +6075,8 @@ const newSh = {
         signature: r.signature || '',
         thumb_impression: r.thumb_impression || '',
         approval_status: r.approval_status || (r.share_no ? 'Share Issued (ಶೇರು ವಿತರಿಸಲಾಗಿದೆ)' : 'Application Submitted (ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ)'),
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
     });
 
@@ -6052,6 +6086,7 @@ const newSh = {
       CloudDbService.saveCollectionBulk('enrollments', mockEnrollments, 'enrollment_id')
         .catch(err => console.warn('Cloud DB bulk enrollment error:', err));
     }
+    RealtimeSyncService.notifyChange('enrollments', 'BULK_CREATE');
     return { success: true, count: items.length };
   },
 
