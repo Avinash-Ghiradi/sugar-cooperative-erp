@@ -964,6 +964,17 @@ export const CloudDbService = {
     }
   },
 
+  async clearCollection(moduleName) {
+    if (!this.isEnabled()) return false;
+    try {
+      await this.request(`audit_logs?module=eq.${encodeURIComponent(moduleName)}`, { method: 'DELETE' });
+      return true;
+    } catch (err) {
+      console.warn(`Cloud DB clearCollection(${moduleName}) failed:`, err.message);
+      return false;
+    }
+  },
+
   async deleteCollectionWhere(moduleName, filterQuery) {
     if (!this.isEnabled()) return false;
     try {

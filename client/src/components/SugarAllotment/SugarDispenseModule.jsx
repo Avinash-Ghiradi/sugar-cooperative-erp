@@ -32,7 +32,9 @@ import {
   Check,
   Eye,
   Settings,
-  Users
+  Users,
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 import { CloudDbService } from '../../services/cloudDb';
 import { ApiService, getShareholderSharesCount } from '../../services/api';
@@ -220,6 +222,7 @@ export default function SugarDispenseModule() {
   const [allAllotments, setAllAllotments] = useState([]);
   const [loadingAllotments, setLoadingAllotments] = useState(false);
   const [registerSearch, setRegisterSearch] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
 
   // Scanner Refs
   const html5QrCodeRef = useRef(null);
@@ -322,6 +325,36 @@ export default function SugarDispenseModule() {
     }
     setShowSettingsModal(false);
     showToast('ಸಕ್ಕರೆ ಹಂಚಿಕೆ ಸಂರಚನೆ ಉಳಿಸಲಾಗಿದೆ (Settings updated)!');
+  };
+
+  // Complete Reset of All Sugar Dispense & Payment Counter Entries
+  const handleResetAllEntries = async () => {
+    const totalCount = allAllotments.length;
+    const confirmPrompt = window.confirm(
+      `ಎಚ್ಚರಿಕೆ (Warning):\n\nಖಂಡಿತವಾಗಿಯೂ ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್‌ನ ಎಲ್ಲಾ ${totalCount} ದಾಖಲೆಗಳನ್ನು ಸಂಪೂರ್ಣವಾಗಿ ಅಳಿಸಲು ಬಯಸುವಿರಾ?\n\n• ಇಂದಿನ ಹಾಗೂ ಪ್ರಸಕ್ತ ಸೀಸನ್‌ನ ಎಲ್ಲಾ ವಿತರಣಾ ಮತ್ತು ನಗದು/UPI ಪಾವತಿ ನಮೂದುಗಳು ಶೂನ್ಯವಾಗುತ್ತವೆ.\n• ಈ ಕ್ರಿಯೆಯನ್ನು ಹಿಂಪಡೆಯಲಾಗುವುದಿಲ್ಲ (This action cannot be undone)!\n\nಮುಂದುವರಿಯಲು 'OK' ಕ್ಲಿಕ್ ಮಾಡಿ.`
+    );
+    if (!confirmPrompt) return;
+
+    setIsResetting(true);
+    try {
+      await ApiService.resetAllSugarAllotments();
+      setAllAllotments([]);
+      setSelectedShareholder(null);
+      setIsAlreadyAllotted(false);
+      setExistingAllotmentRecord(null);
+      setLastSavedRecord(null);
+      setScanInput('');
+      setShowSuccessDialog(false);
+      setShowSettingsModal(false);
+      playChime('success');
+      showToast('ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್‌ನ ಎಲ್ಲಾ ದಾಖಲೆಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಅಳಿಸಲಾಗಿದೆ (All entries erased)!', 'success');
+      loadAllotments();
+    } catch (err) {
+      console.error('Reset allotments error:', err);
+      showToast('ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಲು ವಿಫಲವಾಗಿದೆ: ' + err.message, 'error');
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   // Load employees list on mount for Admin filtering
@@ -2062,6 +2095,33 @@ export default function SugarDispenseModule() {
                 <span className="font-bold text-emerald-300 font-mono text-sm">
                   {tempSettings.kg_per_share} ಕೆಜಿ × ₹{tempSettings.sugar_rate_per_kg} = ₹{(parseFloat(tempSettings.kg_per_share) || 0) * (parseFloat(tempSettings.sugar_rate_per_kg) || 0)}
                 </span>
+              </div>
+
+              {/* DANGER ZONE: Complete Reset of All Counter Entries */}
+              <div className="pt-4 border-t border-slate-800/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                    <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    <span>ಕೌಂಟರ್ ನಮೂದುಗಳ ಸಂಪೂರ್ಣ ರೀಸೆಟ್ (Complete Reset)</span>
+                  </label>
+                  {allAllotments.length > 0 && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800">
+                      {allAllotments.length} ದಾಖಲೆಗಳು
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  ಇಂದಿನ ಹಾಗೂ ಸೀಸನ್‌ನ ಎಲ್ಲಾ ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ನಗದು/UPI ಪಾವತಿ ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಿ, ಕೌಂಟರ್ ಅಂಕಿಅಂಶಗಳನ್ನು ಶೂನ್ಯಕ್ಕೆ (0) ರೀಸೆಟ್ ಮಾಡುತ್ತದೆ.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResetAllEntries}
+                  disabled={isResetting}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-rose-950/80 to-rose-900/80 hover:from-rose-900 hover:to-rose-800 text-rose-200 hover:text-white border border-rose-700/80 hover:border-rose-500 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCcw className={`w-4 h-4 text-rose-400 ${isResetting ? 'animate-spin' : ''}`} />
+                  <span>{isResetting ? 'ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಲಾಗುತ್ತಿದೆ...' : 'ಎಲ್ಲಾ ವಿತರಣಾ & ಪಾವತಿ ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಿ (Complete Reset)'}</span>
+                </button>
               </div>
             </div>
 

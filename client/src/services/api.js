@@ -3979,6 +3979,37 @@ const newSh = {
     return { success: true, allotment_id: newSa.allotment_id, id: newSa.id, data: newSa };
   },
 
+  async resetAllSugarAllotments() {
+    await ensureDBReady();
+    mockSugarAllotments = [];
+    saveStoredData(STORAGE_KEY_SA, []);
+    if (CloudDbService.isEnabled()) {
+      try {
+        await CloudDbService.clearCollection('sugar_allotments');
+      } catch (err) {
+        console.warn('Cloud DB clearCollection sugar_allotments error:', err);
+      }
+    }
+    try {
+      await fetchApi('/sugar-allotment/reset', { method: 'POST' }).catch(() => {});
+    } catch (e) {}
+
+    try {
+      await this.addAuditLog({
+        id: `LOG-SUGAR-RESET-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        username: 'Admin',
+        performed_by: 'Admin',
+        role: 'Admin',
+        module: 'Sugar Dispense & Payment Counter (ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್)',
+        action: 'SUGAR_ENTRIES_RESET_ALL',
+        description: 'ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್‌ನ ಎಲ್ಲಾ ದಾಖಲೆಗಳನ್ನು ಸಂಪೂರ್ಣವಾಗಿ ಅಳಿಸಿ ರೀಸೆಟ್ ಮಾಡಲಾಗಿದೆ (Complete reset performed).'
+      });
+    } catch (e) {}
+
+    return { success: true, message: 'All sugar allotment entries erased successfully' };
+  },
+
   async getVarasaTransfers({ search = '', status = '', taluk = '', category = '' } = {}) {
     await ensureDBReady();
     if (CloudDbService.isEnabled()) {
