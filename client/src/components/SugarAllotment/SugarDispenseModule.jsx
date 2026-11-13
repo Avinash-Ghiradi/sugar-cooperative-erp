@@ -34,7 +34,9 @@ import {
   Settings,
   Users,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  ShieldAlert,
+  KeyRound
 } from 'lucide-react';
 import { CloudDbService } from '../../services/cloudDb';
 import { ApiService, getShareholderSharesCount } from '../../services/api';
@@ -224,6 +226,13 @@ export default function SugarDispenseModule() {
   const [registerSearch, setRegisterSearch] = useState('');
   const [isResetting, setIsResetting] = useState(false);
 
+  // Reset Security Modal State
+  const REQUIRED_RESET_CODE = 'RESET12071990';
+  const [showResetSecurityModal, setShowResetSecurityModal] = useState(false);
+  const [resetTargetSeason, setResetTargetSeason] = useState('ALL');
+  const [resetSecurityCodeInput, setResetSecurityCodeInput] = useState('');
+  const [resetErrorMessage, setResetErrorMessage] = useState('');
+
   // Scanner Refs
   const html5QrCodeRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -327,30 +336,76 @@ export default function SugarDispenseModule() {
     showToast('ಸಕ್ಕರೆ ಹಂಚಿಕೆ ಸಂರಚನೆ ಉಳಿಸಲಾಗಿದೆ (Settings updated)!');
   };
 
-  // Complete Reset of All Sugar Dispense & Payment Counter Entries
-  const handleResetAllEntries = async () => {
-    const totalCount = allAllotments.length;
-    const confirmPrompt = window.confirm(
-      `ಎಚ್ಚರಿಕೆ (Warning):\n\nಖಂಡಿತವಾಗಿಯೂ ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್‌ನ ಎಲ್ಲಾ ${totalCount} ದಾಖಲೆಗಳನ್ನು ಸಂಪೂರ್ಣವಾಗಿ ಅಳಿಸಲು ಬಯಸುವಿರಾ?\n\n• ಇಂದಿನ ಹಾಗೂ ಪ್ರಸಕ್ತ ಸೀಸನ್‌ನ ಎಲ್ಲಾ ವಿತರಣಾ ಮತ್ತು ನಗದು/UPI ಪಾವತಿ ನಮೂದುಗಳು ಶೂನ್ಯವಾಗುತ್ತವೆ.\n• ಈ ಕ್ರಿಯೆಯನ್ನು ಹಿಂಪಡೆಯಲಾಗುವುದಿಲ್ಲ (This action cannot be undone)!\n\nಮುಂದುವರಿಯಲು 'OK' ಕ್ಲಿಕ್ ಮಾಡಿ.`
-    );
-    if (!confirmPrompt) return;
+  // Available seasons detected from database and standard seasons
+  const availableSeasons = useMemo(() => {
+    const seasonsSet = new Set();
+    seasonsSet.add('2026-27');
+    for (const a of allAllotments) {
+      const s = String(a.season || a.crushing_season || '').trim();
+      if (s) seasonsSet.add(s);
+    }
+    ['2025-26', '2024-25', '2023-24'].forEach(s => seasonsSet.add(s));
+    return Array.from(seasonsSet).sort().reverse();
+  }, [allAllotments]);
+
+  const getSeasonRecordsCount = useCallback((season) => {
+    if (season === 'ALL') return allAllotments.length;
+    return allAllotments.filter(a => {
+      const s = String(a.season || a.crushing_season || '2026-27').trim();
+      return s === season || (season.includes(s) && s.length >= 4);
+    }).length;
+  }, [allAllotments]);
+
+  // Open Reset Security Modal
+  const handleOpenResetModal = (initialSeason = 'ALL') => {
+    setResetTargetSeason(initialSeason);
+    setResetSecurityCodeInput('');
+    setResetErrorMessage('');
+    setShowResetSecurityModal(true);
+  };
+
+  // Execute Reset with Code Authentication & Season Filtering
+  const handleExecuteReset = async () => {
+    setResetErrorMessage('');
+    const inputCode = (resetSecurityCodeInput || '').trim().toUpperCase();
+    if (inputCode !== REQUIRED_RESET_CODE) {
+      setResetErrorMessage('ತಪ್ಪಾದ ಭದ್ರತಾ ಕೋಡ್! ದಯವಿಟ್ಟು RESET12071990 ಎಂದು ನಮೂದಿಸಿ (Incorrect Security Code).');
+      playChime('warning');
+      return;
+    }
 
     setIsResetting(true);
     try {
-      await ApiService.resetAllSugarAllotments();
-      setAllAllotments([]);
-      setSelectedShareholder(null);
-      setIsAlreadyAllotted(false);
-      setExistingAllotmentRecord(null);
-      setLastSavedRecord(null);
-      setScanInput('');
-      setShowSuccessDialog(false);
+      await ApiService.resetAllSugarAllotments(resetTargetSeason);
+      if (resetTargetSeason === 'ALL') {
+        setAllAllotments([]);
+        setSelectedShareholder(null);
+        setIsAlreadyAllotted(false);
+        setExistingAllotmentRecord(null);
+        setLastSavedRecord(null);
+        setScanInput('');
+        setShowSuccessDialog(false);
+      } else {
+        setAllAllotments(prev => prev.filter(a => {
+          const s = String(a.season || a.crushing_season || '2026-27').trim();
+          return !(s === resetTargetSeason || (resetTargetSeason.includes(s) && s.length >= 4));
+        }));
+      }
+
+      setShowResetSecurityModal(false);
       setShowSettingsModal(false);
+      setResetSecurityCodeInput('');
       playChime('success');
-      showToast('ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್‌ನ ಎಲ್ಲಾ ದಾಖಲೆಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಅಳಿಸಲಾಗಿದೆ (All entries erased)!', 'success');
+      showToast(
+        resetTargetSeason === 'ALL'
+          ? 'ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್‌ನ ಎಲ್ಲಾ ಸೀಸನ್‌ಗಳ ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಲಾಗಿದೆ (All entries erased)!'
+          : `ಸೀಸನ್ ${resetTargetSeason} ರ ದಾಖಲೆಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಅಳಿಸಲಾಗಿದೆ (Season ${resetTargetSeason} erased)!`,
+        'success'
+      );
       loadAllotments();
     } catch (err) {
       console.error('Reset allotments error:', err);
+      setResetErrorMessage('ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಲು ವಿಫಲವಾಗಿದೆ: ' + err.message);
       showToast('ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಲು ವಿಫಲವಾಗಿದೆ: ' + err.message, 'error');
     } finally {
       setIsResetting(false);
@@ -1904,6 +1959,16 @@ export default function SugarDispenseModule() {
                 <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
                 <span>ಎಕ್ಸೆಲ್ ರಫ್ತು (.xlsx)</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenResetModal('2026-27')}
+                className="flex items-center gap-1.5 px-3 py-2 bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-800 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer shrink-0"
+                title="ಸೀಸನ್ ದಾಖಲೆಗಳ ರೀಸೆಟ್ (Code Protected)"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                <span>ರೀಸೆಟ್ (Reset)</span>
+              </button>
             </div>
           </div>
 
@@ -2101,8 +2166,8 @@ export default function SugarDispenseModule() {
               <div className="pt-4 border-t border-slate-800/80 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
-                    <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                    <span>ಕೌಂಟರ್ ನಮೂದುಗಳ ಸಂಪೂರ್ಣ ರೀಸೆಟ್ (Complete Reset)</span>
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                    <span>ಕೌಂಟರ್ ನಮೂದುಗಳ ರೀಸೆಟ್ (Security Code Reset)</span>
                   </label>
                   {allAllotments.length > 0 && (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800">
@@ -2111,16 +2176,15 @@ export default function SugarDispenseModule() {
                   )}
                 </div>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  ಇಂದಿನ ಹಾಗೂ ಸೀಸನ್‌ನ ಎಲ್ಲಾ ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ನಗದು/UPI ಪಾವತಿ ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಿ, ಕೌಂಟರ್ ಅಂಕಿಅಂಶಗಳನ್ನು ಶೂನ್ಯಕ್ಕೆ (0) ರೀಸೆಟ್ ಮಾಡುತ್ತದೆ.
+                  ಸೀಸನ್‌ವಾರು ಅಥವಾ ಎಲ್ಲಾ ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ನಗದು/UPI ಪಾವತಿ ದಾಖಲೆಗಳನ್ನು ಭದ್ರತಾ ಕೋಡ್ ಮೂಲಕ ಸುರಕ್ಷಿತವಾಗಿ ರೀಸೆಟ್ ಮಾಡುತ್ತದೆ.
                 </p>
                 <button
                   type="button"
-                  onClick={handleResetAllEntries}
-                  disabled={isResetting}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-rose-950/80 to-rose-900/80 hover:from-rose-900 hover:to-rose-800 text-rose-200 hover:text-white border border-rose-700/80 hover:border-rose-500 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                  onClick={() => handleOpenResetModal('ALL')}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-rose-950/90 to-rose-900/90 hover:from-rose-900 hover:to-rose-800 text-rose-200 hover:text-white border border-rose-700/80 hover:border-rose-500 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
                 >
-                  <RotateCcw className={`w-4 h-4 text-rose-400 ${isResetting ? 'animate-spin' : ''}`} />
-                  <span>{isResetting ? 'ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಲಾಗುತ್ತಿದೆ...' : 'ಎಲ್ಲಾ ವಿತರಣಾ & ಪಾವತಿ ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಿ (Complete Reset)'}</span>
+                  <KeyRound className="w-4 h-4 text-amber-400" />
+                  <span>ದಾಖಲೆಗಳ ರೀಸೆಟ್ (Code "RESET12071990" ಅಗತ್ಯವಿದೆ)</span>
                 </button>
               </div>
             </div>
@@ -2139,6 +2203,183 @@ export default function SugarDispenseModule() {
                 className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
               >
                 ಉಳಿಸಿ (Save)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESET SECURITY AUTHORIZATION MODAL */}
+      {showResetSecurityModal && (
+        <div className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-slate-900 border border-rose-500/50 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl shadow-rose-950/60 animate-scaleUp">
+            {/* Header */}
+            <div className="p-5 border-b border-rose-900/40 flex items-center justify-between bg-gradient-to-r from-rose-950/90 via-slate-950 to-slate-900">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-black text-rose-100 text-sm sm:text-base flex items-center gap-2">
+                    <span>ಕೌಂಟರ್ ದಾಖಲೆಗಳ ರೀಸೆಟ್ ಅಧಿಕಾರೀಕರಣ</span>
+                  </h3>
+                  <p className="text-[11px] text-rose-300/80 font-mono">Protected Counter Reset • Code Verification</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetSecurityModal(false);
+                  setResetSecurityCodeInput('');
+                  setResetErrorMessage('');
+                }}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 sm:p-6 space-y-4">
+              {/* Warning Notice */}
+              <div className="p-3.5 bg-rose-950/50 border border-rose-700/60 rounded-2xl flex items-start gap-3 text-xs text-rose-200 leading-relaxed">
+                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block text-rose-300 font-bold mb-0.5">ಎಚ್ಚರಿಕೆ (Warning):</strong>
+                  ಆಯ್ದ ಸೀಸನ್‌ನ ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ನಗದು/UPI ಪಾವತಿ ದಾಖಲೆಗಳನ್ನು ಶಾಶ್ವತವಾಗಿ ಅಳಿಸಲಾಗುತ್ತದೆ. ಈ ಕ್ರಿಯೆಯನ್ನು ಹಿಂಪಡೆಯಲಾಗುವುದಿಲ್ಲ (Cannot be undone).
+                </div>
+              </div>
+
+              {/* 1. Season Selection */}
+              <div>
+                <label className="block text-slate-200 font-bold text-xs mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>1. ರೀಸೆಟ್ ಮಾಡಬೇಕಾದ ಸೀಸನ್ ಆಯ್ಕೆಮಾಡಿ (Select Season)</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    ಒಟ್ಟು {allAllotments.length} ದಾಖಲೆಗಳು
+                  </span>
+                </label>
+                <select
+                  value={resetTargetSeason}
+                  onChange={(e) => setResetTargetSeason(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-100 font-bold text-xs outline-none focus:border-rose-500 cursor-pointer"
+                >
+                  <option value="ALL">
+                    ⚡ ಎಲ್ಲಾ ಸೀಸನ್‌ಗಳು (All Seasons - Complete Wipe) — [{allAllotments.length} ದಾಖಲೆಗಳು]
+                  </option>
+                  {availableSeasons.map((s) => {
+                    const count = getSeasonRecordsCount(s);
+                    return (
+                      <option key={s} value={s}>
+                        📅 ಸೀಸನ್ {s} — [{count} ದಾಖಲೆಗಳು]
+                      </option>
+                    );
+                  })}
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1.5 pl-1">
+                  {resetTargetSeason === 'ALL'
+                    ? `ಇಡೀ ಕೌಂಟರ್‌ನ ಎಲ್ಲಾ (${allAllotments.length}) ದಾಖಲೆಗಳು ಅಳಿಸಿ ಶೂನ್ಯವಾಗುತ್ತವೆ.`
+                    : `ಕೇವಲ ಸೀಸನ್ ${resetTargetSeason} ರ (${getSeasonRecordsCount(resetTargetSeason)}) ದಾಖಲೆಗಳನ್ನು ಮಾತ್ರ ಅಳಿಸಲಾಗುತ್ತದೆ. ಉಳಿದ ಸೀಸನ್‌ಗಳ ದಾಖಲೆಗಳು ಸುರಕ್ಷಿತವಾಗಿರುತ್ತವೆ.`}
+                </p>
+              </div>
+
+              {/* 2. Security Code Requirement */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-slate-200 font-bold text-xs flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                    <span>2. ಭದ್ರತಾ ಕೋಡ್ ನಮೂದಿಸಿ (Enter Security Code)</span>
+                  </label>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700">
+                    RESET12071990
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={resetSecurityCodeInput}
+                    onChange={(e) => {
+                      setResetSecurityCodeInput(e.target.value.toUpperCase());
+                      setResetErrorMessage('');
+                    }}
+                    placeholder="RESET12071990"
+                    className={`w-full bg-slate-950 border ${
+                      resetSecurityCodeInput.trim().toUpperCase() === REQUIRED_RESET_CODE
+                        ? 'border-emerald-500 text-emerald-400'
+                        : resetErrorMessage
+                        ? 'border-rose-500 text-rose-300'
+                        : 'border-slate-700 text-slate-100'
+                    } rounded-xl px-3.5 py-3 font-mono font-bold text-sm tracking-wider uppercase outline-none focus:border-rose-500 transition-colors`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetSecurityCodeInput(REQUIRED_RESET_CODE);
+                      setResetErrorMessage('');
+                    }}
+                    className="absolute right-2 top-2 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-[10px] text-amber-300 font-semibold rounded-lg border border-slate-700 transition-all cursor-pointer"
+                  >
+                    ಕೋಡ್ ಭರ್ತಿ (Auto-fill)
+                  </button>
+                </div>
+
+                {/* Validation Feedback */}
+                {resetSecurityCodeInput.trim().toUpperCase() === REQUIRED_RESET_CODE ? (
+                  <p className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1 mt-1.5 pl-1">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>ಭದ್ರತಾ ಕೋಡ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ ✓ (Code Validated)</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-400 mt-1.5 pl-1">
+                    ಮುಂದುವರಿಯಲು ಕಡ್ಡಾಯವಾಗಿ <span className="font-mono text-amber-400 font-bold">RESET12071990</span> ಎಂದು ಟೈಪ್ ಮಾಡಿ.
+                  </p>
+                )}
+
+                {resetErrorMessage && (
+                  <div className="p-2.5 mt-2 bg-rose-950/80 border border-rose-600 rounded-xl text-rose-300 text-xs font-bold flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>{resetErrorMessage}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetSecurityModal(false);
+                  setResetSecurityCodeInput('');
+                  setResetErrorMessage('');
+                }}
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                ರದ್ದುಮಾಡಿ (Cancel)
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExecuteReset}
+                disabled={isResetting || resetSecurityCodeInput.trim().toUpperCase() !== REQUIRED_RESET_CODE}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg cursor-pointer ${
+                  resetSecurityCodeInput.trim().toUpperCase() === REQUIRED_RESET_CODE
+                    ? 'bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white shadow-rose-950/60'
+                    : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <RotateCcw className={`w-4 h-4 ${isResetting ? 'animate-spin' : ''}`} />
+                <span>
+                  {isResetting
+                    ? 'ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಲಾಗುತ್ತಿದೆ...'
+                    : resetTargetSeason === 'ALL'
+                    ? 'ಎಲ್ಲಾ ಸೀಸನ್‌ಗಳ ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಿ (Complete Reset)'
+                    : `ಸೀಸನ್ ${resetTargetSeason} ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಿ (Reset Season)`}
+                </span>
               </button>
             </div>
           </div>

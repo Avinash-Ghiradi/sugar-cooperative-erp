@@ -3979,19 +3979,68 @@ const newSh = {
     return { success: true, allotment_id: newSa.allotment_id, id: newSa.id, data: newSa };
   },
 
-  async resetAllSugarAllotments() {
+  async resetAllSugarAllotments(targetSeason = 'ALL') {
     await ensureDBReady();
-    mockSugarAllotments = [];
-    saveStoredData(STORAGE_KEY_SA, []);
-    if (CloudDbService.isEnabled()) {
-      try {
-        await CloudDbService.clearCollection('sugar_allotments');
-      } catch (err) {
-        console.warn('Cloud DB clearCollection sugar_allotments error:', err);
+    const isAll = !targetSeason || targetSeason === 'ALL';
+
+    if (isAll) {
+      mockSugarAllotments = [];
+      saveStoredData(STORAGE_KEY_SA, []);
+      if (CloudDbService.isEnabled()) {
+        try {
+          await CloudDbService.clearCollection('sugar_allotments');
+        } catch (err) {
+          console.warn('Cloud DB clearCollection sugar_allotments error:', err);
+        }
+      }
+    } else {
+      const existing = loadStoredData(STORAGE_KEY_SA, []);
+      const toKeep = [];
+      const toDeleteKeys = [];
+
+      for (const item of (Array.isArray(existing) ? existing : [])) {
+        const itemSeason = String(item.season || item.crushing_season || '2026-27').trim();
+        const matches = (itemSeason === targetSeason) || (itemSeason.includes(targetSeason) && targetSeason.length >= 4);
+        if (matches) {
+          const k = String(item.record_id || item.allotment_id || item.receipt_no || item.id || '');
+          if (k) toDeleteKeys.push(k);
+        } else {
+          toKeep.push(item);
+        }
+      }
+
+      mockSugarAllotments = toKeep;
+      saveStoredData(STORAGE_KEY_SA, toKeep);
+
+      if (CloudDbService.isEnabled()) {
+        try {
+          const cloudData = await CloudDbService.getCollection('sugar_allotments');
+          if (Array.isArray(cloudData)) {
+            for (const item of cloudData) {
+              const itemSeason = String(item.season || item.crushing_season || '2026-27').trim();
+              const matches = (itemSeason === targetSeason) || (itemSeason.includes(targetSeason) && targetSeason.length >= 4);
+              if (matches) {
+                const k = String(item.record_id || item.allotment_id || item.receipt_no || item.id || '');
+                if (k) toDeleteKeys.push(k);
+              }
+            }
+          }
+          const uniqueDeleteKeys = Array.from(new Set(toDeleteKeys));
+          for (const key of uniqueDeleteKeys) {
+            await CloudDbService.deleteCollectionItem('sugar_allotments', key).catch(() => {});
+          }
+        } catch (err) {
+          console.warn('Cloud DB partial delete sugar_allotments error:', err);
+        }
       }
     }
+
     try {
-      await fetchApi('/sugar-allotment/reset', { method: 'POST' }).catch(() => {});
+      await fetchApi('/sugar-allotment/reset', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ season: targetSeason })
+      }).catch(() => {});
     } catch (e) {}
 
     try {
@@ -4002,12 +4051,19 @@ const newSh = {
         performed_by: 'Admin',
         role: 'Admin',
         module: 'Sugar Dispense & Payment Counter (ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್)',
-        action: 'SUGAR_ENTRIES_RESET_ALL',
-        description: 'ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್‌ನ ಎಲ್ಲಾ ದಾಖಲೆಗಳನ್ನು ಸಂಪೂರ್ಣವಾಗಿ ಅಳಿಸಿ ರೀಸೆಟ್ ಮಾಡಲಾಗಿದೆ (Complete reset performed).'
+        action: isAll ? 'SUGAR_ENTRIES_RESET_ALL' : `SUGAR_ENTRIES_RESET_${targetSeason}`,
+        description: isAll 
+          ? 'ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್‌ನ ಎಲ್ಲಾ ಸೀಸನ್‌ಗಳ ದಾಖಲೆಗಳನ್ನು ಸಂಪೂರ್ಣವಾಗಿ ಅಳಿಸಿ ರೀಸೆಟ್ ಮಾಡಲಾಗಿದೆ (Complete reset for ALL seasons).'
+          : `ಸಕ್ಕರೆ ವಿತರಣೆ ಮತ್ತು ಪಾವತಿ ಕೌಂಟರ್‌ನ ಸೀಸನ್ ${targetSeason} ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಿ ರೀಸೆಟ್ ಮಾಡಲಾಗಿದೆ (Season ${targetSeason} reset).`
       });
     } catch (e) {}
 
-    return { success: true, message: 'All sugar allotment entries erased successfully' };
+    return { 
+      success: true, 
+      message: isAll 
+        ? 'All sugar allotment entries erased successfully' 
+        : `Season ${targetSeason} entries erased successfully` 
+    };
   },
 
   async getVarasaTransfers({ search = '', status = '', taluk = '', category = '' } = {}) {
