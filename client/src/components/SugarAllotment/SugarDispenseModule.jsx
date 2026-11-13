@@ -31,7 +31,8 @@ import {
   Filter,
   Check,
   Eye,
-  Settings
+  Settings,
+  Users
 } from 'lucide-react';
 import { CloudDbService } from '../../services/cloudDb';
 import { ApiService, getShareholderSharesCount } from '../../services/api';
@@ -119,13 +120,7 @@ function playChime(type = 'success') {
   } catch (e) {}
 }
 
-const COUNTER_OPTIONS = [
-  'ಕೌಂಟರ್ 1 (ಮುಖ್ಯ ಪ್ರವೇಶದ್ವಾರ - Gate 1)',
-  'ಕೌಂಟರ್ 2 (ಸಕ್ಕರೆ ಗೋದಾಮು - Godown 1)',
-  'ಕೌಂಟರ್ 3 (ವಿಶೇಷ ಕೌಂಟರ್ - Special)',
-  'ಮೊಬೈಲ್ ಕೌಂಟರ್ 1 (Mobile Terminal 1)',
-  'ಕಚೇರಿ ಕೌಂಟರ್ (Office Terminal)'
-];
+// Dynamic counter name bound to logged-in user
 
 export default function SugarDispenseModule() {
   const { user, showToast } = useAuth();
@@ -193,10 +188,29 @@ export default function SugarDispenseModule() {
   const [paymentMode, setPaymentMode] = useState('Cash'); // 'Cash' | 'UPI' | 'Bank' | 'Free'
   const [paymentStatus, setPaymentStatus] = useState('Paid'); // 'Paid' | 'Pending'
   const [receiptNo, setReceiptNo] = useState('');
+  // User identification & Admin filter states
+  const currentUserDisplayName = useMemo(() => {
+    return user?.name || user?.username || 'Avinash Ghiradimath';
+  }, [user]);
+
+  const isAdmin = useMemo(() => {
+    return user?.role === 'Admin' || user?.username?.toLowerCase() === 'admin';
+  }, [user]);
+
+  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState('all');
+  const [employeesList, setEmployeesList] = useState([]);
+
   const [weighmanName, setWeighmanName] = useState(user?.name || user?.username || 'Avinash Ghiradimath');
-  const [counterNo, setCounterNo] = useState(COUNTER_OPTIONS[0]);
+  const [counterNo, setCounterNo] = useState(`ಕೌಂಟರ್: ${user?.name || user?.username || 'Avinash Ghiradimath'}`);
   const [remarks, setRemarks] = useState('ಸ್ವತಃ ಸ್ವೀಕರಿಸಿದ್ದಾರೆ');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Keep weighmanName and counterNo synced with logged in user
+  useEffect(() => {
+    const name = user?.name || user?.username || 'Avinash Ghiradimath';
+    setWeighmanName(name);
+    setCounterNo(`ಕೌಂಟರ್: ${name}`);
+  }, [user]);
 
   // Success Dialog State
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -309,6 +323,58 @@ export default function SugarDispenseModule() {
     setShowSettingsModal(false);
     showToast('ಸಕ್ಕರೆ ಹಂಚಿಕೆ ಸಂರಚನೆ ಉಳಿಸಲಾಗಿದೆ (Settings updated)!');
   };
+
+  // Load employees list on mount for Admin filtering
+  useEffect(() => {
+    async function fetchEmployees() {
+      try {
+        const res = await ApiService.getEmployees();
+        if (res && Array.isArray(res.data)) {
+          setEmployeesList(res.data);
+        }
+      } catch (err) {
+        console.warn('Error fetching employees in SugarDispenseModule:', err);
+      }
+    }
+    fetchEmployees();
+  }, []);
+
+  // Compute list of available employees/operators for Admin filter
+  const availableEmployees = useMemo(() => {
+    const map = new Map();
+    // Current user first
+    const curName = (user?.name || user?.username || '').trim();
+    if (curName) {
+      map.set(curName, {
+        name: curName,
+        role: user?.role || 'Admin',
+        employee_id: user?.employee_id || ''
+      });
+    }
+    // From employee master
+    (employeesList || []).forEach(emp => {
+      const name = (emp.name || emp.username || '').trim();
+      if (name && !map.has(name)) {
+        map.set(name, {
+          name,
+          role: emp.role || 'Employee',
+          employee_id: emp.employee_id || ''
+        });
+      }
+    });
+    // From existing transaction records
+    (allAllotments || []).forEach(a => {
+      const wName = (a.weighman_name || a.created_by || a.operator_name || '').trim();
+      if (wName && !map.has(wName)) {
+        map.set(wName, {
+          name: wName,
+          role: 'Operator',
+          employee_id: ''
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [employeesList, allAllotments, user]);
 
   // Load all shareholders on mount (prioritize full indexedDB / raw cache of 17,000+ members)
   useEffect(() => {
@@ -433,9 +499,38 @@ export default function SugarDispenseModule() {
     return false;
   }, []);
 
+  // Employee-filtered allotments:
+  // Non-admin sees ONLY their own payments/allotments
+  // Admin sees all payments, or filters by chosen employee
+  const employeeFilteredAllotments = useMemo(() => {
+    if (!isAdmin) {
+      const myName = (user?.name || user?.username || '').trim().toLowerCase();
+      const myEmpId = String(user?.employee_id || '').trim();
+      return allAllotmentsEnriched.filter(a => {
+        const wName = String(a.weighman_name || a.created_by || a.operator_name || '').trim().toLowerCase();
+        const aCounter = String(a.counter_no || '').toLowerCase();
+        const aEmpId = String(a.employee_id || '').trim();
+
+        return (myName && (wName.includes(myName) || myName.includes(wName) || aCounter.includes(myName))) ||
+               (myEmpId && aEmpId === myEmpId);
+      });
+    }
+
+    if (selectedEmployeeFilter === 'all') {
+      return allAllotmentsEnriched;
+    }
+
+    const target = selectedEmployeeFilter.trim().toLowerCase();
+    return allAllotmentsEnriched.filter(a => {
+      const wName = String(a.weighman_name || a.created_by || a.operator_name || '').trim().toLowerCase();
+      const aCounter = String(a.counter_no || '').toLowerCase();
+      return wName.includes(target) || target.includes(wName) || aCounter.includes(target);
+    });
+  }, [allAllotmentsEnriched, isAdmin, selectedEmployeeFilter, user]);
+
   const todayAllotments = useMemo(() => {
-    return allAllotmentsEnriched.filter(isRecordToday);
-  }, [allAllotmentsEnriched, isRecordToday]);
+    return employeeFilteredAllotments.filter(isRecordToday);
+  }, [employeeFilteredAllotments, isRecordToday]);
 
   // Today's Statistics
   const todayStats = useMemo(() => {
@@ -464,9 +559,9 @@ export default function SugarDispenseModule() {
     };
   }, [todayAllotments]);
 
-  // Overall Season Statistics
+  // Overall Season Statistics (Respects employee filter)
   const seasonStats = useMemo(() => {
-    const seasonList = allAllotmentsEnriched.filter(a => String(a.season || a.crushing_season || '2026-27').includes('2026'));
+    const seasonList = employeeFilteredAllotments.filter(a => String(a.season || a.crushing_season || '2026-27').includes('2026'));
     const totalMembers = seasonList.length;
     const totalKg = seasonList.reduce((sum, a) => sum + (parseFloat(a.sugar_allotted_kg) || 0), 0);
     const totalAmt = seasonList.reduce((sum, a) => sum + (parseFloat(a.total_amount) || 0), 0);
@@ -476,7 +571,7 @@ export default function SugarDispenseModule() {
       totalQuintals: (totalKg / 100).toFixed(2),
       totalAmt
     };
-  }, [allAllotmentsEnriched]);
+  }, [employeeFilteredAllotments]);
 
   // Set default values when shareholder is selected
   const handleSelectShareholder = useCallback((holder) => {
@@ -841,8 +936,10 @@ export default function SugarDispenseModule() {
         payment_mode: paymentMode,
         payment_status: paymentStatus,
         receipt_no: receiptNo,
-        weighman_name: weighmanName,
-        counter_no: counterNo,
+        weighman_name: weighmanName || currentUserDisplayName,
+        counter_no: `ಕೌಂಟರ್: ${weighmanName || currentUserDisplayName}`,
+        created_by: user?.username || currentUserDisplayName,
+        employee_id: user?.employee_id || '',
         remarks: remarks,
         season: '2026-27',
         allotment_date: new Date().toLocaleDateString('en-GB'),
@@ -959,19 +1056,21 @@ export default function SugarDispenseModule() {
     showToast('ಎಕ್ಸೆಲ್ ವಹಿ ಯಶಸ್ವಿಯಾಗಿ ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ!', 'success');
   };
 
-  // Filtered Register Records
+  // Filtered Register Records (Respects employee filter)
   const filteredAllAllotments = useMemo(() => {
-    if (!registerSearch.trim()) return allAllotments;
+    const base = employeeFilteredAllotments;
+    if (!registerSearch.trim()) return base;
     const q = registerSearch.trim().toLowerCase();
-    return allAllotments.filter(a => {
+    return base.filter(a => {
       const name = String(a.shareholder_name || a.name || '').toLowerCase();
       const shareNo = String(a.share_no || '');
       const rcpt = String(a.receipt_no || '').toLowerCase();
       const village = String(a.village || '').toLowerCase();
       const counter = String(a.counter_no || '').toLowerCase();
-      return name.includes(q) || shareNo.includes(q) || rcpt.includes(q) || village.includes(q) || counter.includes(q);
+      const weighman = String(a.weighman_name || '').toLowerCase();
+      return name.includes(q) || shareNo.includes(q) || rcpt.includes(q) || village.includes(q) || counter.includes(q) || weighman.includes(q);
     });
-  }, [allAllotments, registerSearch]);
+  }, [employeeFilteredAllotments, registerSearch]);
 
   return (
     <div className="space-y-4 pb-12 animate-fadeIn font-kannada">
@@ -1008,15 +1107,35 @@ export default function SugarDispenseModule() {
             <span className="font-mono text-emerald-300 font-bold">{todayStr}</span>
           </div>
 
-          <select
-            value={counterNo}
-            onChange={(e) => setCounterNo(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-1.5 outline-none focus:border-emerald-500"
-          >
-            {COUNTER_OPTIONS.map((c, i) => (
-              <option key={i} value={c}>{c}</option>
-            ))}
-          </select>
+          {/* Counter Name & Employee Filter */}
+          {isAdmin ? (
+            <div className="flex items-center gap-1.5 bg-slate-950 border border-emerald-600/70 rounded-xl px-2.5 py-1 text-xs shadow-inner">
+              <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="text-[11px] text-slate-400 whitespace-nowrap">ಕೌಂಟರ್ / ಸಿಬ್ಬಂದಿ:</span>
+              <select
+                value={selectedEmployeeFilter}
+                onChange={(e) => setSelectedEmployeeFilter(e.target.value)}
+                className="bg-slate-900 text-emerald-300 font-bold text-xs rounded-lg px-2 py-1 outline-none border border-slate-700 focus:border-emerald-500 cursor-pointer max-w-[210px]"
+                title="ಸಿಬ್ಬಂದಿವಾರು ಪಾವತಿ ವಿವರಗಳ ಫಿಲ್ಟರ್ (Admin Employee Filter)"
+              >
+                <option value="all">🌐 ಎಲ್ಲಾ ಸಿಬ್ಬಂದಿ (All Employees)</option>
+                {availableEmployees.map((emp, i) => (
+                  <option key={i} value={emp.name}>
+                    👤 {emp.name} {emp.role ? `(${emp.role})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-emerald-950/80 border border-emerald-600/80 rounded-xl px-3 py-1.5 text-xs text-emerald-200 shadow-sm">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-slate-400">ಕೌಂಟರ್:</span>
+              <span className="font-bold text-emerald-300">{currentUserDisplayName}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-300 border border-emerald-700/60 font-semibold">
+                {user?.role || 'Operator'}
+              </span>
+            </div>
+          )}
 
           <button
             type="button"
@@ -1041,6 +1160,32 @@ export default function SugarDispenseModule() {
           </button>
         </div>
       </div>
+
+      {/* Counter Owner & Active Filter Notification Banner */}
+      {isAdmin && selectedEmployeeFilter !== 'all' ? (
+        <div className="flex items-center justify-between bg-emerald-950/60 border border-emerald-600/70 rounded-2xl px-4 py-2.5 text-xs text-emerald-200 animate-fadeIn shadow-md">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>
+              ಫಿಲ್ಟರ್: <strong>{selectedEmployeeFilter}</strong> ರವರ ಕೌಂಟರ್ ಪಾವತಿ ಮತ್ತು ವಿತರಣಾ ವಿವರಗಳನ್ನು ಮಾತ್ರ ತೋರಿಸಲಾಗುತ್ತಿದೆ.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedEmployeeFilter('all')}
+            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-300 hover:text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
+          >
+            ✕ ಎಲ್ಲಾ ಸಿಬ್ಬಂದಿ (Show All)
+          </button>
+        </div>
+      ) : !isAdmin ? (
+        <div className="flex items-center gap-2 bg-emerald-950/40 border border-emerald-800/60 rounded-2xl px-4 py-2 text-xs text-emerald-300">
+          <User className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span>
+            ಲಾಗಿನ್ ಆಗಿರುವ ಕೌಂಟರ್: <strong>{currentUserDisplayName}</strong> ({user?.role || 'Operator'}) — ನಿಮ್ಮ ಕೌಂಟರ್‌ನ ಪಾವತಿ ಮತ್ತು ಸಂಗ್ರಹ ವಿವರಗಳು ಮಾತ್ರ ಕೆಳಗೆ ಕಾಣಿಸುತ್ತಿವೆ.
+          </span>
+        </div>
+      ) : null}
 
       {/* TOP LIVE KPI STATS CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
