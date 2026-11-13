@@ -36,7 +36,9 @@ import {
   Trash2,
   RotateCcw,
   ShieldAlert,
-  KeyRound
+  KeyRound,
+  EyeOff,
+  Lock
 } from 'lucide-react';
 import { CloudDbService } from '../../services/cloudDb';
 import { ApiService, getShareholderSharesCount } from '../../services/api';
@@ -231,6 +233,7 @@ export default function SugarDispenseModule() {
   const [showResetSecurityModal, setShowResetSecurityModal] = useState(false);
   const [resetTargetSeason, setResetTargetSeason] = useState('ALL');
   const [resetSecurityCodeInput, setResetSecurityCodeInput] = useState('');
+  const [showSecretCode, setShowSecretCode] = useState(false);
   const [resetErrorMessage, setResetErrorMessage] = useState('');
 
   // Scanner Refs
@@ -360,6 +363,7 @@ export default function SugarDispenseModule() {
   const handleOpenResetModal = (initialSeason = 'ALL') => {
     setResetTargetSeason(initialSeason);
     setResetSecurityCodeInput('');
+    setShowSecretCode(false);
     setResetErrorMessage('');
     setShowResetSecurityModal(true);
   };
@@ -369,7 +373,7 @@ export default function SugarDispenseModule() {
     setResetErrorMessage('');
     const inputCode = (resetSecurityCodeInput || '').trim().toUpperCase();
     if (inputCode !== REQUIRED_RESET_CODE) {
-      setResetErrorMessage('ತಪ್ಪಾದ ಭದ್ರತಾ ಕೋಡ್! ದಯವಿಟ್ಟು RESET12071990 ಎಂದು ನಮೂದಿಸಿ (Incorrect Security Code).');
+      setResetErrorMessage('ತಪ್ಪಾದ ಭದ್ರತಾ ಕೋಡ್! ದಯವಿಟ್ಟು ಸರಿಯಾದ ರಹಸ್ಯ ಕೋಡ್ ನಮೂದಿಸಿ (Incorrect Secret Code).');
       playChime('warning');
       return;
     }
@@ -2184,7 +2188,7 @@ export default function SugarDispenseModule() {
                   className="w-full py-2.5 px-4 bg-gradient-to-r from-rose-950/90 to-rose-900/90 hover:from-rose-900 hover:to-rose-800 text-rose-200 hover:text-white border border-rose-700/80 hover:border-rose-500 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
                 >
                   <KeyRound className="w-4 h-4 text-amber-400" />
-                  <span>ದಾಖಲೆಗಳ ರೀಸೆಟ್ (Code "RESET12071990" ಅಗತ್ಯವಿದೆ)</span>
+                  <span>ಕೌಂಟರ್ ದಾಖಲೆಗಳ ರೀಸೆಟ್ (Security Code Reset)</span>
                 </button>
               </div>
             </div>
@@ -2289,41 +2293,40 @@ export default function SugarDispenseModule() {
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-slate-200 font-bold text-xs flex items-center gap-1.5">
                     <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                    <span>2. ಭದ್ರತಾ ಕೋಡ್ ನಮೂದಿಸಿ (Enter Security Code)</span>
+                    <span>2. ನಿರ್ವಾಹಕ ರಹಸ್ಯ ಕೋಡ್ ನಮೂದಿಸಿ (Enter Admin Secret Code)</span>
                   </label>
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700">
-                    RESET12071990
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-amber-400" />
+                    <span>ರಹಸ್ಯ ಕೋಡ್ ರಕ್ಷಿತ</span>
                   </span>
                 </div>
 
                 <div className="relative">
                   <input
-                    type="text"
+                    type={showSecretCode ? 'text' : 'password'}
                     autoFocus
                     value={resetSecurityCodeInput}
                     onChange={(e) => {
                       setResetSecurityCodeInput(e.target.value.toUpperCase());
                       setResetErrorMessage('');
                     }}
-                    placeholder="RESET12071990"
+                    placeholder="ರಹಸ್ಯ ಭದ್ರತಾ ಕೋಡ್ ನಮೂದಿಸಿ..."
                     className={`w-full bg-slate-950 border ${
                       resetSecurityCodeInput.trim().toUpperCase() === REQUIRED_RESET_CODE
                         ? 'border-emerald-500 text-emerald-400'
                         : resetErrorMessage
                         ? 'border-rose-500 text-rose-300'
                         : 'border-slate-700 text-slate-100'
-                    } rounded-xl px-3.5 py-3 font-mono font-bold text-sm tracking-wider uppercase outline-none focus:border-rose-500 transition-colors`}
+                    } rounded-xl pl-3.5 pr-10 py-3 font-mono font-bold text-sm tracking-wider outline-none focus:border-rose-500 transition-colors`}
                   />
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setResetSecurityCodeInput(REQUIRED_RESET_CODE);
-                      setResetErrorMessage('');
-                    }}
-                    className="absolute right-2 top-2 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-[10px] text-amber-300 font-semibold rounded-lg border border-slate-700 transition-all cursor-pointer"
+                    onClick={() => setShowSecretCode(prev => !prev)}
+                    className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-200 cursor-pointer transition-colors"
+                    title={showSecretCode ? 'ಕೋಡ್ ಮರೆಮಾಡಿ (Hide code)' : 'ಕೋಡ್ ವೀಕ್ಷಿಸಿ (Show code)'}
                   >
-                    ಕೋಡ್ ಭರ್ತಿ (Auto-fill)
+                    {showSecretCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
 
@@ -2331,11 +2334,11 @@ export default function SugarDispenseModule() {
                 {resetSecurityCodeInput.trim().toUpperCase() === REQUIRED_RESET_CODE ? (
                   <p className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1 mt-1.5 pl-1">
                     <Check className="w-3.5 h-3.5" />
-                    <span>ಭದ್ರತಾ ಕೋಡ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ ✓ (Code Validated)</span>
+                    <span>ರಹಸ್ಯ ಭದ್ರತಾ ಕೋಡ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ ✓ (Code Validated)</span>
                   </p>
                 ) : (
                   <p className="text-[11px] text-slate-400 mt-1.5 pl-1">
-                    ಮುಂದುವರಿಯಲು ಕಡ್ಡಾಯವಾಗಿ <span className="font-mono text-amber-400 font-bold">RESET12071990</span> ಎಂದು ಟೈಪ್ ಮಾಡಿ.
+                    ರೀಸೆಟ್ ಮಾಡಲು ನಿರ್ವಾಹಕ ರಹಸ್ಯ ಭದ್ರತಾ ಕೋಡ್ ನಮೂದಿಸಿ (Enter secret authorization code).
                   </p>
                 )}
 
