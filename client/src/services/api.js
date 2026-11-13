@@ -2370,15 +2370,27 @@ export const ApiService = {
         const rawT = token.trim();
         const cleanT = rawT.replace(/^#/, '');
 
-        // Priority 1: Exact match with raw token (e.g. '12' === '12', '#2659' === '#2659')
+        // Priority 1: Exact Share No match with raw token (e.g. '12' === '12', '#2659' === '#2659')
         let found = mockShareholders.find(r => !matchedIds.has(r.id) && String(r.share_no || r.share_number || '').trim() === rawT);
 
-        // Priority 2: Fallback to match stripped token
+        // Priority 2: Fallback to match stripped share number (if user omitted '#' or included '#')
         if (!found) {
           found = mockShareholders.find(r => !matchedIds.has(r.id) && String(r.share_no || r.share_number || '').trim().replace(/^#/, '') === cleanT);
         }
 
-        // Priority 3: Check all_share_numbers or primary_share_no
+        // Priority 3: Exact Receipt Number match (receipt_no, reciept, original_receipt_no)
+        if (!found) {
+          found = mockShareholders.find(r => !matchedIds.has(r.id) && (
+            String(r.receipt_no || '').trim() === cleanT ||
+            String(r.receipt_no || '').trim() === rawT ||
+            String(r.reciept || '').trim() === cleanT ||
+            String(r.reciept || '').trim() === rawT ||
+            String(r.original_receipt_no || '').trim() === cleanT ||
+            String(r.original_receipt_no || '').trim() === rawT
+          ));
+        }
+
+        // Priority 4: Check all_share_numbers or primary_share_no
         if (!found) {
           found = mockShareholders.find(r => !matchedIds.has(r.id) && (
             (Array.isArray(r.all_share_numbers) && (r.all_share_numbers.map(s => String(s).trim()).includes(rawT) || r.all_share_numbers.map(s => String(s).trim().replace(/^#/, '')).includes(cleanT))) ||
@@ -3930,22 +3942,57 @@ const newSh = {
 
     let filtered = mockVarasaTransfers;
     if (search) {
-      const q = search.trim().toLowerCase().normalize('NFC');
-      filtered = filtered.filter(v => {
-        const vMember = (v.varasa_member || v.heir_name || '').toLowerCase().normalize('NFC');
-        const shName = (v.shareholder_name || v.existing_shareholder_name || '').toLowerCase().normalize('NFC');
-        const shNo = String(v.share_no || v.existing_share_number || '').toLowerCase();
-        const mob = String(v.heir_mobile || '').toLowerCase();
-        const aadh = String(v.heir_aadhaar || '').toLowerCase();
-        const rNo = String(v.receipt_no || '').toLowerCase();
-        const hPlace = (v.heir_place || '').toLowerCase().normalize('NFC');
-        const sPlace = (v.shareholder_place || '').toLowerCase().normalize('NFC');
-        const tId = (v.transfer_id || '').toLowerCase();
+      const cleanSearch = (search || '').trim();
+      const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+      const hasDelimiter = /[,;]/.test(cleanSearch);
+      const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
+      const isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
 
-        return vMember.includes(q) || shName.includes(q) || shNo.includes(q) ||
-          mob.includes(q) || aadh.includes(q) || rNo.includes(q) ||
-          hPlace.includes(q) || sPlace.includes(q) || tId.includes(q);
-      });
+      if (isMultiQuery) {
+        const matched = [];
+        const matchedIds = new Set();
+        for (const token of rawTokens) {
+          const rawT = token.trim();
+          const cleanT = rawT.replace(/^#/, '');
+
+          // Exact share_no match
+          let found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+            String(v.share_no || v.existing_share_number || '').trim() === rawT ||
+            String(v.share_no || v.existing_share_number || '').trim().replace(/^#/, '') === cleanT
+          ));
+
+          // Exact receipt_no match
+          if (!found) {
+            found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+              String(v.receipt_no || '').trim() === cleanT ||
+              String(v.receipt_no || '').trim() === rawT
+            ));
+          }
+
+          if (found) {
+            matchedIds.add(found.id || found.transfer_id);
+            matched.push(found);
+          }
+        }
+        filtered = matched;
+      } else {
+        const q = cleanSearch.toLowerCase().normalize('NFC');
+        filtered = filtered.filter(v => {
+          const vMember = (v.varasa_member || v.heir_name || '').toLowerCase().normalize('NFC');
+          const shName = (v.shareholder_name || v.existing_shareholder_name || '').toLowerCase().normalize('NFC');
+          const shNo = String(v.share_no || v.existing_share_number || '').toLowerCase();
+          const mob = String(v.heir_mobile || '').toLowerCase();
+          const aadh = String(v.heir_aadhaar || '').toLowerCase();
+          const rNo = String(v.receipt_no || '').toLowerCase();
+          const hPlace = (v.heir_place || '').toLowerCase().normalize('NFC');
+          const sPlace = (v.shareholder_place || '').toLowerCase().normalize('NFC');
+          const tId = (v.transfer_id || '').toLowerCase();
+
+          return vMember.includes(q) || shName.includes(q) || shNo.includes(q) ||
+            mob.includes(q) || aadh.includes(q) || rNo.includes(q) ||
+            hPlace.includes(q) || sPlace.includes(q) || tId.includes(q);
+        });
+      }
     }
     if (status) {
       filtered = filtered.filter(v => v.approval_status === status);
@@ -4363,24 +4410,59 @@ const newSh = {
 
     let filtered = mockVargavaneTransfers;
     if (search) {
-      const q = search.trim().toLowerCase().normalize('NFC');
-      filtered = filtered.filter(v => {
-        const torName = (v.transferor_name || v.shareholder_name || '').toLowerCase().normalize('NFC');
-        const teeName = (v.transferee_name || '').toLowerCase().normalize('NFC');
-        const shNo = String(v.share_no || '').toLowerCase();
-        const torMob = String(v.transferor_mobile || '').toLowerCase();
-        const teeMob = String(v.transferee_mobile || '').toLowerCase();
-        const torAadh = String(v.transferor_aadhaar || '').toLowerCase();
-        const teeAadh = String(v.transferee_aadhaar || '').toLowerCase();
-        const rNo = String(v.receipt_no || '').toLowerCase();
-        const torPlace = (v.transferor_place || '').toLowerCase().normalize('NFC');
-        const teePlace = (v.transferee_place || '').toLowerCase().normalize('NFC');
-        const tId = (v.transfer_id || '').toLowerCase();
+      const cleanSearch = (search || '').trim();
+      const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+      const hasDelimiter = /[,;]/.test(cleanSearch);
+      const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
+      const isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
 
-        return torName.includes(q) || teeName.includes(q) || shNo.includes(q) ||
-          torMob.includes(q) || teeMob.includes(q) || torAadh.includes(q) || teeAadh.includes(q) ||
-          rNo.includes(q) || torPlace.includes(q) || teePlace.includes(q) || tId.includes(q);
-      });
+      if (isMultiQuery) {
+        const matched = [];
+        const matchedIds = new Set();
+        for (const token of rawTokens) {
+          const rawT = token.trim();
+          const cleanT = rawT.replace(/^#/, '');
+
+          // Exact share_no match
+          let found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+            String(v.share_no || '').trim() === rawT ||
+            String(v.share_no || '').trim().replace(/^#/, '') === cleanT
+          ));
+
+          // Exact receipt_no match
+          if (!found) {
+            found = filtered.find(v => !matchedIds.has(v.id || v.transfer_id) && (
+              String(v.receipt_no || '').trim() === cleanT ||
+              String(v.receipt_no || '').trim() === rawT
+            ));
+          }
+
+          if (found) {
+            matchedIds.add(found.id || found.transfer_id);
+            matched.push(found);
+          }
+        }
+        filtered = matched;
+      } else {
+        const q = cleanSearch.toLowerCase().normalize('NFC');
+        filtered = filtered.filter(v => {
+          const torName = (v.transferor_name || v.shareholder_name || '').toLowerCase().normalize('NFC');
+          const teeName = (v.transferee_name || '').toLowerCase().normalize('NFC');
+          const shNo = String(v.share_no || '').toLowerCase();
+          const torMob = String(v.transferor_mobile || '').toLowerCase();
+          const teeMob = String(v.transferee_mobile || '').toLowerCase();
+          const torAadh = String(v.transferor_aadhaar || '').toLowerCase();
+          const teeAadh = String(v.transferee_aadhaar || '').toLowerCase();
+          const rNo = String(v.receipt_no || '').toLowerCase();
+          const torPlace = (v.transferor_place || '').toLowerCase().normalize('NFC');
+          const teePlace = (v.transferee_place || '').toLowerCase().normalize('NFC');
+          const tId = (v.transfer_id || '').toLowerCase();
+
+          return torName.includes(q) || teeName.includes(q) || shNo.includes(q) ||
+            torMob.includes(q) || teeMob.includes(q) || torAadh.includes(q) || teeAadh.includes(q) ||
+            rNo.includes(q) || torPlace.includes(q) || teePlace.includes(q) || tId.includes(q);
+        });
+      }
     }
     if (status) {
       filtered = filtered.filter(v => v.approval_status === status);
@@ -4633,29 +4715,69 @@ const newSh = {
     let filtered = mockEnrollments;
 
     if (search) {
-      const q = search.trim().toLowerCase().normalize('NFC');
-      filtered = filtered.filter(item => {
-        const name = (item.full_name || '').toLowerCase().normalize('NFC');
-        const place = (item.place || '').toLowerCase().normalize('NFC');
-        const taluk = (item.taluk || '').toLowerCase().normalize('NFC');
-        const dist = (item.dist || '').toLowerCase().normalize('NFC');
-        const shareNo = String(item.share_no || '');
-        const rcpt = String(item.receipt_no || '');
-        const tharavaNo = String(item.tharava_no || '').toLowerCase();
-        const aadh = (item.aadhaar_no || '').replace(/\s/g, '');
-        const mob = (item.mobile_no || '');
-        const cleanQ = q.replace(/\s/g, '');
+      const cleanSearch = (search || '').trim();
+      const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+      const hasDelimiter = /[,;]/.test(cleanSearch);
+      const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
+      const isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
 
-        return name.includes(q) ||
-          place.includes(q) ||
-          taluk.includes(q) ||
-          dist.includes(q) ||
-          shareNo.includes(q) ||
-          rcpt.includes(q) ||
-          tharavaNo.includes(q) ||
-          (cleanQ.length > 2 && aadh.includes(cleanQ)) ||
-          mob.includes(q);
-      });
+      if (isMultiQuery) {
+        const matched = [];
+        const matchedIds = new Set();
+        for (const token of rawTokens) {
+          const rawT = token.trim();
+          const cleanT = rawT.replace(/^#/, '');
+
+          // Exact share_no match
+          let found = filtered.find(item => !matchedIds.has(item.id) && (
+            String(item.share_no || '').trim() === rawT ||
+            String(item.share_no || '').trim().replace(/^#/, '') === cleanT
+          ));
+
+          // Exact receipt_no match
+          if (!found) {
+            found = filtered.find(item => !matchedIds.has(item.id) && (
+              String(item.receipt_no || '').trim() === cleanT ||
+              String(item.receipt_no || '').trim() === rawT
+            ));
+          }
+
+          // Enrollment ID match (e.g. ENR-18009)
+          if (!found) {
+            found = filtered.find(item => !matchedIds.has(item.id) && String(item.enrollment_id || '').toLowerCase().includes(cleanT.toLowerCase()));
+          }
+
+          if (found) {
+            matchedIds.add(item.id);
+            matched.push(found);
+          }
+        }
+        filtered = matched;
+      } else {
+        const q = cleanSearch.toLowerCase().normalize('NFC');
+        filtered = filtered.filter(item => {
+          const name = (item.full_name || '').toLowerCase().normalize('NFC');
+          const place = (item.place || '').toLowerCase().normalize('NFC');
+          const taluk = (item.taluk || '').toLowerCase().normalize('NFC');
+          const dist = (item.dist || '').toLowerCase().normalize('NFC');
+          const shareNo = String(item.share_no || '');
+          const rcpt = String(item.receipt_no || '');
+          const tharavaNo = String(item.tharava_no || '').toLowerCase();
+          const aadh = (item.aadhaar_no || '').replace(/\s/g, '');
+          const mob = (item.mobile_no || '');
+          const cleanQ = q.replace(/\s/g, '');
+
+          return name.includes(q) ||
+            place.includes(q) ||
+            taluk.includes(q) ||
+            dist.includes(q) ||
+            shareNo.includes(q) ||
+            rcpt.includes(q) ||
+            tharavaNo.includes(q) ||
+            (cleanQ.length > 2 && aadh.includes(cleanQ)) ||
+            mob.includes(q);
+        });
+      }
     }
 
     if (category && category !== 'All') {

@@ -156,12 +156,16 @@ export default function IDCardGenerator() {
           // Auto-select ALL exact matching cards for instant printing!
           setSelectedCards(res.data);
 
-          // Compute matched and missing tokens
+          // Compute matched and missing tokens (supporting both share numbers and receipt numbers)
           const matchedTokensSet = new Set();
           res.data.forEach(r => {
             const s = String(r.share_no || r.share_number || '').trim();
             matchedTokensSet.add(s);
             matchedTokensSet.add(s.replace(/^#/, ''));
+            const rec = String(r.receipt_no || '').trim();
+            if (rec) matchedTokensSet.add(rec);
+            const rec2 = String(r.reciept || '').trim();
+            if (rec2) matchedTokensSet.add(rec2);
           });
           const missingTokens = rawTokens.filter(t => 
             !matchedTokensSet.has(t) && !matchedTokensSet.has(t.replace(/^#/, ''))
@@ -974,7 +978,7 @@ export default function IDCardGenerator() {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="ಷೇರು ಸಂಖ್ಯೆಗಳು (ಉದಾ: 12, #2659, 12569...) ಅಥವಾ ಹೆಸರು, ಗ್ರಾಮ..."
+              placeholder="ಷೇರು ಸಂಖ್ಯೆ ಅಥವಾ ರಶೀದಿ ನಂ (ಉದಾ: 12, #2659, 12569, 18383...) / Share No or Receipt No..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-200 outline-none focus:border-emerald-500"
@@ -1018,19 +1022,19 @@ export default function IDCardGenerator() {
           </div>
         </div>
 
-        {/* Multi-Share Exact Match Notification Banner */}
+        {/* Multi-Share / Receipt Exact Match Notification Banner */}
         {multiMatchStats && (
           <div className="bg-emerald-950/40 border border-emerald-500/60 rounded-2xl p-3 text-xs text-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg animate-fadeIn">
             <div className="space-y-1">
               <div className="flex items-center gap-2 font-bold text-emerald-300">
                 <span className="text-base">🎯</span>
                 <span>
-                  ನಿಖರ ಷೇರು ಸಂಖ್ಯೆ ಹೊಂದಾಣಿಕೆ (Exact Share Numbers Match):{' '}
+                  ನಿಖರ ಷೇರು / ರಶೀದಿ ಸಂಖ್ಯೆ ಹೊಂದಾಣಿಕೆ (Exact Share / Receipt Match):{' '}
                   <span className="font-mono text-emerald-400 text-sm">{shareholders.length}</span> / {multiMatchStats.requested} ಕಾರ್ಡ್‌ಗಳು ಕಂಡುಬಂದಿವೆ
                 </span>
               </div>
               <p className="text-[11px] text-slate-300">
-                ನಮೂದಿಸಿದ ಷೇರು ಸಂಖ್ಯೆಗಳ ಕಾರ್ಡ್‌ಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಮುದ್ರಣಕ್ಕೆ ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ ({selectedCards.length} Cards Selected for Print).
+                ನಮೂದಿಸಿದ ಷೇರು ಅಥವಾ ರಶೀದಿ ಸಂಖ್ಯೆಗಳ ಕಾರ್ಡ್‌ಗಳನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಮುದ್ರಣಕ್ಕೆ ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ ({selectedCards.length} Cards Selected for Print).
                 {multiMatchStats.missingTokens && multiMatchStats.missingTokens.length > 0 && (
                   <span className="text-amber-300 ml-1 font-semibold">
                     • ⚠️ ಕಂಡುಬರದ ಸಂಖ್ಯೆಗಳು (Not found): {multiMatchStats.missingTokens.join(', ')}
@@ -1095,6 +1099,11 @@ export default function IDCardGenerator() {
                       />
                       <span className={`font-semibold ${selected ? 'text-emerald-400' : 'text-slate-400'}`}>
                         Share #{sh.share_no || sh.share_number}
+                        {(sh.receipt_no || sh.reciept) && (
+                          <span className="text-[10px] text-slate-400 font-normal ml-1">
+                            (ರಶೀದಿ: {sh.receipt_no || sh.reciept})
+                          </span>
+                        )}
                       </span>
                     </label>
 

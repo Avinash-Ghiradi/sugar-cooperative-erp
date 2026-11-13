@@ -189,7 +189,8 @@ export const CloudDbService = {
 
         const inClause = Array.from(candidateSet).map(s => encodeURIComponent(s)).join(',');
         const filterStr = filterParams.length > 0 ? `&${filterParams.join('&')}` : '';
-        const url = `${cleanUrl}/rest/v1/shareholders?share_no=in.(${inClause})${filterStr}&order=id.asc&limit=${Math.max(100, rawTokens.length * 5)}`;
+        const orClause = `or=(share_no.in.(${inClause}),receipt_no.in.(${inClause}),reciept.in.(${inClause}))`;
+        const url = `${cleanUrl}/rest/v1/shareholders?${orClause}${filterStr}&order=id.asc&limit=${Math.max(100, rawTokens.length * 5)}`;
 
         const res = await fetch(url, { headers: authHeaders });
         if (res.ok) {
@@ -198,7 +199,7 @@ export const CloudDbService = {
 
           // If some requested tokens were not found, retry without extra filters (to avoid village/circle filters hiding exact numbers)
           if (records.length < rawTokens.length && filterParams.length > 0) {
-            const fallbackUrl = `${cleanUrl}/rest/v1/shareholders?share_no=in.(${inClause})&order=id.asc&limit=${Math.max(100, rawTokens.length * 5)}`;
+            const fallbackUrl = `${cleanUrl}/rest/v1/shareholders?${orClause}&order=id.asc&limit=${Math.max(100, rawTokens.length * 5)}`;
             const fbRes = await fetch(fallbackUrl, { headers: authHeaders });
             if (fbRes.ok) {
               const fbRaw = await fbRes.json();
@@ -211,6 +212,7 @@ export const CloudDbService = {
           }
 
           // Sort and resolve matches strictly according to the order of tokens entered by the user
+          // Matching Priority: Exact Share Number -> Stripped Share Number -> Exact Receipt Number -> All Shares
           const matchedRecords = [];
           const matchedIds = new Set();
 
@@ -218,15 +220,27 @@ export const CloudDbService = {
             const rawT = token.trim();
             const cleanT = rawT.replace(/^#/, '');
 
-            // Priority 1: Exact match with raw token (e.g. '12' === '12', '#2659' === '#2659')
+            // Priority 1: Exact Share No match with raw token (e.g. '12' === '12', '#2659' === '#2659')
             let found = records.find(r => !matchedIds.has(r.id) && String(r.share_no || '').trim() === rawT);
 
-            // Priority 2: Fallback to match stripped token (if user omitted '#' or included '#')
+            // Priority 2: Fallback to match stripped share number (if user omitted '#' or included '#')
             if (!found) {
               found = records.find(r => !matchedIds.has(r.id) && String(r.share_no || '').trim().replace(/^#/, '') === cleanT);
             }
 
-            // Priority 3: Check all_share_numbers or primary_share_no
+            // Priority 3: Exact Receipt Number match (receipt_no, reciept, original_receipt_no)
+            if (!found) {
+              found = records.find(r => !matchedIds.has(r.id) && (
+                String(r.receipt_no || '').trim() === cleanT ||
+                String(r.receipt_no || '').trim() === rawT ||
+                String(r.reciept || '').trim() === cleanT ||
+                String(r.reciept || '').trim() === rawT ||
+                String(r.original_receipt_no || '').trim() === cleanT ||
+                String(r.original_receipt_no || '').trim() === rawT
+              ));
+            }
+
+            // Priority 4: Check all_share_numbers or primary_share_no
             if (!found) {
               found = records.find(r => !matchedIds.has(r.id) && (
                 (Array.isArray(r.all_share_numbers) && (r.all_share_numbers.includes(rawT) || r.all_share_numbers.includes(cleanT))) ||

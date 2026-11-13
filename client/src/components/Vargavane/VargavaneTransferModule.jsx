@@ -578,11 +578,21 @@ export default function VargavaneTransferModule() {
           <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
           <input
             type="text"
-            placeholder="Search by Transferor, Transferee, Share No, Mobile, Place..."
+            placeholder="ಹುಡುಕಿ (ಷೇರು ನಂ, ರಶೀದಿ: 12, #2659, 12569... ಅಥವಾ ಹೆಸರು, ಊರು)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 focus:border-sky-500 rounded-xl pl-9 pr-3.5 py-2.5 text-slate-100 placeholder-slate-500 outline-none"
+            className="w-full bg-slate-900 border border-slate-800 focus:border-sky-500 rounded-xl pl-9 pr-8 py-2.5 text-slate-100 placeholder-slate-500 outline-none"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-0.5 rounded cursor-pointer"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2.5 w-full md:w-auto">

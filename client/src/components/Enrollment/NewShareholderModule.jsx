@@ -539,7 +539,7 @@ export default function NewShareholderModule() {
       {/* Search & Filters Bar */}
       <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row gap-3 items-center justify-between">
         
-        {/* Search */}
+        {/* Search with exact share/receipt match */}
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -549,9 +549,22 @@ export default function NewShareholderModule() {
               setSearchTerm(e.target.value);
               setPage(1);
             }}
-            placeholder="ಹುಡುಕಿ (ಹೆಸರು, ಊರು, ರಶೀದಿ, ಠರಾವು ನಂ, ಶೇರು ನಂ)..."
-            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:border-emerald-500 outline-none"
+            placeholder="ಹುಡುಕಿ (ಷೇರು ನಂ, ರಶೀದಿ: 12, #2659, 18009... ಅಥವಾ ಹೆಸರು, ಊರು)..."
+            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-200 placeholder-slate-500 focus:border-emerald-500 outline-none"
           />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setPage(1);
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-0.5 rounded cursor-pointer"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Category & Status Filter Tabs */}
