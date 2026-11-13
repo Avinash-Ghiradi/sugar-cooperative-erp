@@ -4728,27 +4728,34 @@ const newSh = {
           const rawT = token.trim();
           const cleanT = rawT.replace(/^#/, '');
 
-          // Exact share_no match
-          let found = filtered.find(item => !matchedIds.has(item.id) && (
+          // 1. Exact share_no match
+          let found = filtered.find(item => !matchedIds.has(item.id || item.enrollment_id) && (
             String(item.share_no || '').trim() === rawT ||
             String(item.share_no || '').trim().replace(/^#/, '') === cleanT
           ));
 
-          // Exact receipt_no match
+          // 2. Exact receipt_no match
           if (!found) {
-            found = filtered.find(item => !matchedIds.has(item.id) && (
+            found = filtered.find(item => !matchedIds.has(item.id || item.enrollment_id) && (
               String(item.receipt_no || '').trim() === cleanT ||
               String(item.receipt_no || '').trim() === rawT
             ));
           }
 
-          // Enrollment ID match (e.g. ENR-18009)
+          // 3. Exact sl_no match
           if (!found) {
-            found = filtered.find(item => !matchedIds.has(item.id) && String(item.enrollment_id || '').toLowerCase().includes(cleanT.toLowerCase()));
+            found = filtered.find(item => !matchedIds.has(item.id || item.enrollment_id) && (
+              String(item.sl_no || '').trim() === cleanT
+            ));
+          }
+
+          // 4. Enrollment ID match (e.g. ENR-18009)
+          if (!found) {
+            found = filtered.find(item => !matchedIds.has(item.id || item.enrollment_id) && String(item.enrollment_id || '').toLowerCase().includes(cleanT.toLowerCase()));
           }
 
           if (found) {
-            matchedIds.add(item.id);
+            matchedIds.add(found.id || found.enrollment_id);
             matched.push(found);
           }
         }
@@ -4780,13 +4787,15 @@ const newSh = {
       }
     }
 
-    if (category && category !== 'All') {
-      const catKey = category.trim().normalize('NFC');
-      filtered = filtered.filter(item => (item.category || '').normalize('NFC') === catKey);
-    }
+    if (!isMultiQuery) {
+      if (category && category !== 'All') {
+        const catKey = category.trim().normalize('NFC');
+        filtered = filtered.filter(item => (item.category || '').normalize('NFC') === catKey);
+      }
 
-    if (status && status !== 'All') {
-      filtered = filtered.filter(item => (item.approval_status || '').toLowerCase().includes(status.toLowerCase()));
+      if (status && status !== 'All') {
+        filtered = filtered.filter(item => (item.approval_status || '').toLowerCase().includes(status.toLowerCase()));
+      }
     }
 
     const total = filtered.length;

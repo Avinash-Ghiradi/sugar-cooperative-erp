@@ -242,6 +242,12 @@ export default function NewShareholderModule() {
   const loadEnrollments = async () => {
     setLoading(true);
     try {
+      const cleanSearch = (searchTerm || '').trim();
+      const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+      const hasDelimiter = /[,;]/.test(cleanSearch);
+      const isAllShareTokens = rawTokens.length > 0 && rawTokens.every(t => /^[#\$\w\-\.]*\d+$/i.test(t));
+      const isMultiQuery = (hasDelimiter && isAllShareTokens) || (rawTokens.length > 1 && isAllShareTokens) || (rawTokens.length === 1 && (rawTokens[0].startsWith('#') || hasDelimiter));
+
       const res = await ApiService.getEnrollments({
         search: searchTerm,
         category: categoryFilter,
@@ -254,6 +260,15 @@ export default function NewShareholderModule() {
         setTotalPages(res.totalPages);
         setTotalRecords(res.total);
         if (res.stats) setStats(res.stats);
+
+        // If multi-number search, automatically select all matched records for instant printing / export!
+        if (isMultiQuery && res.data.length > 0) {
+          const newSet = new Set(res.data.map(e => e.id));
+          const newMap = new Map();
+          res.data.forEach(e => newMap.set(e.id, e));
+          setSelectedIds(newSet);
+          setSelectedHoldersMap(newMap);
+        }
       }
     } catch (err) {
       showToast('Error loading enrollments: ' + err.message, 'error');
@@ -666,6 +681,52 @@ export default function NewShareholderModule() {
           </div>
         </div>
       )}
+
+      {/* Multi-Receipt / Share Search Notification Banner */}
+      {(() => {
+        const cleanSearch = (searchTerm || '').trim();
+        const rawTokens = cleanSearch ? cleanSearch.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean) : [];
+        if (rawTokens.length <= 1) return null;
+
+        return (
+          <div className="bg-emerald-950/40 border border-emerald-500/60 rounded-2xl p-3 text-xs text-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg animate-fadeIn">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 font-bold text-emerald-300">
+                <span className="text-base">🎯</span>
+                <span>
+                  ನಿಖರ ರಶೀದಿ / ಷೇರು ಸಂಖ್ಯೆ ಹೊಂದಾಣಿಕೆ (Exact Receipt / Share Match):{' '}
+                  <span className="font-mono text-emerald-400 text-sm">{enrollments.length}</span> / {rawTokens.length} ಸದಸ್ಯರು ಕಂಡುಬಂದಿದ್ದಾರೆ
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300">
+                ನಮೂದಿಸಿದ ಸಂಖ್ಯೆಗಳ ({rawTokens.join(', ')}) ಎಲ್ಲಾ ಸದಸ್ಯರನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ ({selectedIds.size} Enrolled Members Selected).
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const newSet = new Set(enrollments.map(e => e.id));
+                  const newMap = new Map();
+                  enrollments.forEach(e => newMap.set(e.id, e));
+                  setSelectedIds(newSet);
+                  setSelectedHoldersMap(newMap);
+                }}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs cursor-pointer transition-all shadow-sm"
+              >
+                ✓ ಎಲ್ಲರನ್ನೂ ಆಯ್ಕೆಮಾಡಿ ({enrollments.length})
+              </button>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs cursor-pointer transition-all"
+              >
+                ✕ ತೆರವುಗೊಳಿಸಿ
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 15-Column Statutory Register Table */}
       <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">

@@ -16,7 +16,7 @@ try {
   console.log('=== Step 1: Commit and push main ===');
   run('git add -A');
   try {
-    run('git commit -m "feat: unified scan & manual entry for 2023-24 to 2026-27, removed register tab, kept modal"');
+    run('git commit -m "fix(enrollment): fix multi-query search and auto-selection for exact receipt and share numbers (429, 2165, 2840)"');
   } catch (e) {
     console.log('Commit note:', e.message);
   }
