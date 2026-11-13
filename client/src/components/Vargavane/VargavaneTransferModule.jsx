@@ -1207,16 +1207,19 @@ export default function VargavaneTransferModule() {
       </div>
 
       {/* Vargavane Form Modal (New / Edit) */}
-      <VargavaneTransferModal
-        isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setEditingTransfer(null);
-        }}
-        initialData={editingTransfer}
-        onSaveSuccess={loadTransfers}
-        showToast={showToast}
-      />
+      {showAddModal && (
+        <VargavaneTransferModal
+          key={editingTransfer ? `edit-${editingTransfer.transfer_id || editingTransfer.id || editingTransfer.sl_no || editingTransfer.share_no}` : 'new-vargavane'}
+          isOpen={showAddModal}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingTransfer(null);
+          }}
+          initialData={editingTransfer}
+          onSaveSuccess={loadTransfers}
+          showToast={showToast}
+        />
+      )}
 
       {/* Excel Upload Modal */}
       {showUploadModal && (

@@ -4699,7 +4699,14 @@ const newSh = {
 
   async updateVargavaneTransfer(idOrTransferId, data) {
     await ensureDBReady();
-    const idx = mockVargavaneTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
+    const targetIdentifier = idOrTransferId || data?.transfer_id || data?.id;
+    const idx = mockVargavaneTransfers.findIndex(v =>
+      (v.transfer_id && String(v.transfer_id) === String(targetIdentifier)) ||
+      (v.id && String(v.id) === String(targetIdentifier)) ||
+      (data?.transfer_id && String(v.transfer_id) === String(data.transfer_id)) ||
+      (data?.id && String(v.id) === String(data.id)) ||
+      (data?.sl_no && String(v.sl_no) === String(data.sl_no))
+    );
     if (idx !== -1) {
       const existing = mockVargavaneTransfers[idx];
       mockVargavaneTransfers[idx] = { ...existing, ...data };

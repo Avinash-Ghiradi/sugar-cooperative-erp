@@ -43,6 +43,95 @@ function compressImage(file, maxWidth = 500, maxHeight = 500, quality = 0.85) {
   });
 }
 
+// Helper to safely extract and build form state from initialData or blank defaults
+function buildVargavaneFormState(initialData) {
+  if (!initialData) {
+    return {
+      sl_no: '',
+      transfer_id: '',
+      transferor_name: '',
+      shareholder_name: '',
+      transferor_place: '',
+      transferor_taluk: 'ಇಂಡಿ',
+      transferor_district: 'ವಿಜಯಪುರ',
+      transferor_relationship: 'ಸ್ವಂತ',
+      transferor_age: '',
+      transferor_aadhaar: '',
+      transferor_mobile: '',
+
+      transferee_name: '',
+      transferee_place: '',
+      transferee_taluk: 'ಇಂಡಿ',
+      transferee_district: 'ವಿಜಯಪುರ',
+      transferee_relationship: 'ಮಗ',
+      transferee_aadhaar: '',
+      transferee_mobile: '',
+      transferee_photo: '',
+
+      share_no: '',
+      category: 'ಅ - ವರ್ಗ',
+      no_of_shares: 1,
+      fees: 570,
+      receipt_no: '',
+      receipt_date: new Date().toLocaleDateString('en-GB'),
+
+      approval_status: 'Application Received',
+      documents_verified: 'Pending',
+      transfer_form_attached: true,
+      aadhaar_attached: true,
+      consent_letter_attached: true,
+      remarks: 'ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ ನಮೂನೆ ಹಾಗೂ ಒಪ್ಪಿಗೆ ಪತ್ರ ಲಗತ್ತಿಸಲಾಗಿದೆ.'
+    };
+  }
+
+  const sNo = String(initialData.share_no || initialData.share_number || '').replace(/^#/, '').trim();
+  const torName = initialData.transferor_name || initialData.shareholder_name || initialData.name || '';
+  const teeName = initialData.transferee_name || initialData.heir_name || '';
+
+  return {
+    id: initialData.id,
+    sl_no: initialData.sl_no || '',
+    transfer_id: initialData.transfer_id || '',
+
+    // 1. Share Holder (ಮೂಲ ಶೇರುದಾರರ ವಿವರಗಳು - Transferor)
+    transferor_name: torName,
+    shareholder_name: torName,
+    transferor_place: initialData.transferor_place || initialData.place || initialData.village_name || initialData.village || '',
+    transferor_taluk: initialData.transferor_taluk || initialData.taluk || 'ಇಂಡಿ',
+    transferor_district: initialData.transferor_district || initialData.district || 'ವಿಜಯಪುರ',
+    transferor_relationship: initialData.transferor_relationship || 'ಸ್ವಂತ',
+    transferor_age: initialData.transferor_age || '',
+    transferor_aadhaar: initialData.transferor_aadhaar || initialData.aadhaar_card_no || initialData.aadhaar || '',
+    transferor_mobile: initialData.transferor_mobile || initialData.mobile_no || initialData.mobile || '',
+
+    // 2. Vargavane Madikolluvaru (ವರ್ಗಾವಣೆ ಮಾಡಿಸಿಕೊಳ್ಳುವವರು - Transferee)
+    transferee_name: teeName,
+    transferee_place: initialData.transferee_place || initialData.heir_place || initialData.transferor_place || initialData.place || '',
+    transferee_taluk: initialData.transferee_taluk || initialData.heir_taluk || initialData.transferor_taluk || initialData.taluk || 'ಇಂಡಿ',
+    transferee_district: initialData.transferee_district || initialData.heir_district || initialData.transferor_district || initialData.district || 'ವಿಜಯಪುರ',
+    transferee_relationship: initialData.transferee_relationship || initialData.heir_relationship || 'ಮಗ',
+    transferee_aadhaar: initialData.transferee_aadhaar || initialData.heir_aadhaar || '',
+    transferee_mobile: initialData.transferee_mobile || initialData.heir_mobile || '',
+    transferee_photo: initialData.transferee_photo || initialData.heir_photo || '',
+
+    // 3. Share & Fee Details (ಶೇರು ಮತ್ತು ಶುಲ್ಕ ರಶೀದಿ ವಿವರಗಳು)
+    share_no: sNo,
+    category: initialData.category || initialData.schedule_cast || 'ಅ - ವರ್ಗ',
+    no_of_shares: parseInt(initialData.no_of_shares || initialData.shares_count || initialData.shares, 10) || 1,
+    fees: initialData.fees !== undefined ? initialData.fees : (initialData.transfer_fee !== undefined ? initialData.transfer_fee : 570),
+    receipt_no: initialData.receipt_no || '',
+    receipt_date: initialData.receipt_date || initialData.application_date || new Date().toLocaleDateString('en-GB'),
+
+    // 4. Verification & Status
+    approval_status: initialData.approval_status || 'Application Received',
+    documents_verified: initialData.documents_verified || 'Pending',
+    transfer_form_attached: initialData.transfer_form_attached !== undefined ? initialData.transfer_form_attached : true,
+    aadhaar_attached: initialData.aadhaar_attached !== undefined ? initialData.aadhaar_attached : true,
+    consent_letter_attached: initialData.consent_letter_attached !== undefined ? initialData.consent_letter_attached : true,
+    remarks: initialData.remarks || 'ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ ನಮೂನೆ ಹಾಗೂ ಒಪ್ಪಿಗೆ ಪತ್ರ ಲಗತ್ತಿಸಲಾಗಿದೆ.'
+  };
+}
+
 export default function VargavaneTransferModal({
   isOpen,
   onClose,
@@ -67,47 +156,17 @@ export default function VargavaneTransferModal({
   );
 
   // 22 Official Statutory Cooperative Vargavane Ledger Fields
-  const [form, setForm] = useState({
-    sl_no: initialData?.sl_no || '',
-    transfer_id: initialData?.transfer_id || '',
+  const [form, setForm] = useState(() => buildVargavaneFormState(initialData));
 
-    // 1. Share Holder (ಮೂಲ ಶೇರುದಾರರ ವಿವರಗಳು - Transferor)
-    transferor_name: initialData?.transferor_name || initialData?.shareholder_name || '',
-    shareholder_name: initialData?.transferor_name || initialData?.shareholder_name || '',
-    transferor_place: initialData?.transferor_place || '',
-    transferor_taluk: initialData?.transferor_taluk || 'ಇಂಡಿ',
-    transferor_district: initialData?.transferor_district || 'ವಿಜಯಪುರ',
-    transferor_relationship: initialData?.transferor_relationship || 'ಸ್ವಂತ',
-    transferor_age: initialData?.transferor_age || '',
-    transferor_aadhaar: initialData?.transferor_aadhaar || '',
-    transferor_mobile: initialData?.transferor_mobile || '',
-
-    // 2. Vargavane Madikolluvaru (ವರ್ಗಾವಣೆ ಮಾಡಿಸಿಕೊಳ್ಳುವವರು - Transferee)
-    transferee_name: initialData?.transferee_name || '',
-    transferee_place: initialData?.transferee_place || '',
-    transferee_taluk: initialData?.transferee_taluk || 'ಇಂಡಿ',
-    transferee_district: initialData?.transferee_district || 'ವಿಜಯಪುರ',
-    transferee_relationship: initialData?.transferee_relationship || 'ಮಗ',
-    transferee_aadhaar: initialData?.transferee_aadhaar || '',
-    transferee_mobile: initialData?.transferee_mobile || '',
-    transferee_photo: initialData?.transferee_photo || '',
-
-    // 3. Share & Fee Details (ಶೇರು ಮತ್ತು ಶುಲ್ಕ ರಶೀದಿ ವಿವರಗಳು)
-    share_no: initialData?.share_no || '',
-    category: initialData?.category || 'ಅ - ವರ್ಗ', // 6. Category
-    no_of_shares: initialData?.no_of_shares || 1, // 7. No. of Shares
-    fees: initialData?.fees !== undefined ? initialData?.fees : 570, // 9. Fees
-    receipt_no: initialData?.receipt_no || '', // 10. Receipt No
-    receipt_date: initialData?.receipt_date || new Date().toLocaleDateString('en-GB'), // 11. Rp. Date
-
-    // 4. Verification & Status
-    approval_status: initialData?.approval_status || 'Application Received',
-    documents_verified: initialData?.documents_verified || 'Pending',
-    transfer_form_attached: initialData?.transfer_form_attached !== undefined ? initialData.transfer_form_attached : true,
-    aadhaar_attached: initialData?.aadhaar_attached !== undefined ? initialData.aadhaar_attached : true,
-    consent_letter_attached: initialData?.consent_letter_attached !== undefined ? initialData.consent_letter_attached : true,
-    remarks: initialData?.remarks || 'ಶೇರು ವರ್ಗಾವಣೆ ಅರ್ಜಿ ನಮೂನೆ ಹಾಗೂ ಒಪ್ಪಿಗೆ ಪತ್ರ ಲಗತ್ತಿಸಲಾಗಿದೆ.'
-  });
+  // Automatically synchronize form whenever initialData or isOpen changes
+  useEffect(() => {
+    if (isOpen) {
+      setForm(buildVargavaneFormState(initialData));
+      setActiveTab('transferor');
+      setSearchShareholderQuery('');
+      setShareholderSearchResults([]);
+    }
+  }, [initialData, isOpen]);
 
   useEffect(() => {
     loadVillages();
@@ -224,8 +283,12 @@ export default function VargavaneTransferModal({
     }
 
     try {
-      if (initialData?.id || initialData?.transfer_id) {
-        const res = await ApiService.updateVargavaneTransfer(initialData.id || initialData.transfer_id, form);
+      if (initialData?.id || initialData?.transfer_id || initialData?.sl_no) {
+        const targetId = initialData.transfer_id || initialData.id || initialData.sl_no;
+        const res = await ApiService.updateVargavaneTransfer(targetId, {
+          ...initialData,
+          ...form
+        });
         if (res.success) {
           if (showToast) showToast('Vargavane transfer application updated successfully!');
           if (onSaveSuccess) onSaveSuccess();
