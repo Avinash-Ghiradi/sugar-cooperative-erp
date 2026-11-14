@@ -232,6 +232,21 @@ export function detectSignature(sourceImage) {
     const rawW = origMaxX - origMinX;
     const rawH = origMaxY - origMinY;
 
+    // If detected ink spans almost the whole document page (e.g. form with printed rows),
+    // prevent full-page selection and provide a centered focused signature strip instead
+    if (rawH > origH * 0.65 && rawW > origW * 0.65) {
+      const defaultW = Math.round(origW * 0.80);
+      const defaultH = Math.round(defaultW / 2.8);
+      return {
+        x: Math.round((origW - defaultW) / 2),
+        y: Math.round((origH - defaultH) / 2),
+        width: defaultW,
+        height: Math.min(origH, defaultH),
+        type: 'signature',
+        confidence: 0.70
+      };
+    }
+
     // Add 15% breathing room around signature
     const padX = rawW * 0.15;
     const padY = rawH * 0.20;
@@ -344,6 +359,21 @@ export function detectThumbImpression(sourceImage) {
 
       const rawW = (maxX - minX) / scale;
       const rawH = (maxY - minY) / scale;
+
+      // If detected pixels span whole page, return a focused centered thumb box
+      if (rawH > origH * 0.65 && rawW > origW * 0.65) {
+        const defaultH = Math.round(origH * 0.60);
+        const defaultW = Math.round(defaultH * (4 / 5));
+        return {
+          x: Math.round((origW - defaultW) / 2),
+          y: Math.round((origH - defaultH) / 2),
+          width: Math.min(origW, defaultW),
+          height: Math.min(origH, defaultH),
+          type: 'thumb',
+          confidence: 0.70
+        };
+      }
+
       const pad = Math.max(rawW, rawH) * 0.20;
 
       const targetH = rawH + pad * 2;

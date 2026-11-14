@@ -32,11 +32,12 @@ export default function SmartBiometricCaptureModal({
   const config = {
     photo: {
       defaultTitle: 'ಭಾವಚಿತ್ರ (Shareholder Photo)',
-      guideText: 'ಶೇರುದಾರರ ಮುಖವನ್ನು ವೃತ್ತದಲ್ಲಿ ಸರಿಯಾಗಿ ಕಾಣುವಂತೆ ಇರಿಸಿ',
+      guideText: 'ಶೇರುದಾರರ ಭಾವಚಿತ್ರವನ್ನು ಚೌಕಟ್ಟಿನಲ್ಲಿ ಸರಿಯಾಗಿ ಕಾಣುವಂತೆ ಇರಿಸಿ',
       defaultFacing: 'environment', // Defaults to mobile BACK camera for photographing shareholder!
       defaultAspect: 3 / 4,
       aspectPresets: [
         { label: '3:4 ಪಾಸ್‌ಪೋರ್ಟ್', value: 3 / 4 },
+        { label: '4:5 ಭಾವಚಿತ್ರ', value: 4 / 5 },
         { label: '1:1 ಚೌಕ', value: 1 / 1 },
         { label: 'ಮುಕ್ತ (Free)', value: null }
       ],
@@ -103,6 +104,7 @@ export default function SmartBiometricCaptureModal({
   const containerRef = useRef(null);
   const fileInputRef = useRef(null);
   const nativeCameraInputRef = useRef(null);
+  const guideBoxRef = useRef(null);
 
   // Interaction tracking for touch & mouse drag
   const dragRef = useRef({
@@ -355,7 +357,7 @@ export default function SmartBiometricCaptureModal({
     switchFacing(nextFacing);
   };
 
-  // Capture Photo from Camera
+  // Capture Photo from Camera - Extracts focused guide box region directly
   const snapPhoto = () => {
     if (!videoRef.current || !isCameraActive) return;
 
@@ -364,20 +366,67 @@ export default function SmartBiometricCaptureModal({
     }
 
     const video = videoRef.current;
+    const vw = video.videoWidth || 1280;
+    const vh = video.videoHeight || 720;
+
+    let cropX = 0;
+    let cropY = 0;
+    let cropW = vw;
+    let cropH = vh;
+
+    if (guideBoxRef.current && video) {
+      const guideRect = guideBoxRef.current.getBoundingClientRect();
+      const videoRect = video.getBoundingClientRect();
+
+      const cw = videoRect.width;
+      const ch = videoRect.height;
+
+      if (cw > 0 && ch > 0 && guideRect.width > 0 && guideRect.height > 0) {
+        // Video uses CSS object-cover
+        const scale = Math.max(cw / vw, ch / vh);
+        const shiftX = (vw * scale - cw) / 2;
+        const shiftY = (vh * scale - ch) / 2;
+
+        const screenX = guideRect.left - videoRect.left;
+        const screenY = guideRect.top - videoRect.top;
+
+        let frameX = (screenX + shiftX) / scale;
+        let frameY = (screenY + shiftY) / scale;
+        let frameW = guideRect.width / scale;
+        let frameH = guideRect.height / scale;
+
+        // If front camera, mirrored horizontally
+        if (facingMode === 'user') {
+          frameX = vw - frameX - frameW;
+        }
+
+        // Add 6% safety margin so boundary ink is never clipped
+        const padX = frameW * 0.06;
+        const padY = frameH * 0.06;
+
+        cropX = Math.max(0, Math.floor(frameX - padX));
+        cropY = Math.max(0, Math.floor(frameY - padY));
+        cropW = Math.min(vw - cropX, Math.ceil(frameW + padX * 2));
+        cropH = Math.min(vh - cropY, Math.ceil(frameH + padY * 2));
+      }
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
+    canvas.width = Math.max(10, cropW);
+    canvas.height = Math.max(10, cropH);
     const ctx = canvas.getContext('2d');
 
-    // If front camera, mirror image for natural selfie feel
     if (facingMode === 'user') {
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
+      const mirrorX = vw - cropX - cropW;
+      ctx.drawImage(video, mirrorX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+    } else {
+      ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
     }
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     stopCamera();
-    processRawImageForCrop(canvas);
+    processRawImageForCrop(canvas, true);
   };
 
   // Handle File Upload from Disk / Gallery
@@ -398,27 +447,88 @@ export default function SmartBiometricCaptureModal({
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      processRawImageForCrop(img);
+      processRawImageForCrop(img, false);
     };
     img.src = src;
   };
 
   // Run AI Auto-Detection on raw image
-  const processRawImageForCrop = async (sourceImgOrCanvas) => {
+  const processRawImageForCrop = async (sourceImgOrCanvas, fromCameraFocused = false) => {
     setRawSource(sourceImgOrCanvas);
     setViewState('crop');
     setIsAiProcessing(true);
 
+    const imgW = sourceImgOrCanvas.width || sourceImgOrCanvas.naturalWidth || 800;
+    const imgH = sourceImgOrCanvas.height || sourceImgOrCanvas.naturalHeight || 600;
+
+    if (fromCameraFocused) {
+      // The image is ALREADY cropped to the focused guide box region!
+      const padX = imgW * 0.04;
+      const padY = imgH * 0.04;
+      setCropBox({
+        x: Math.round(padX),
+        y: Math.round(padY),
+        width: Math.round(imgW - padX * 2),
+        height: Math.round(imgH - padY * 2)
+      });
+      setAiConfidence(0.95);
+      setIsAiProcessing(false);
+      return;
+    }
+
     try {
       const detected = await config.aiDetector(sourceImgOrCanvas);
-      if (detected) {
-        setCropBox({
-          x: detected.x,
-          y: detected.y,
-          width: detected.width,
-          height: detected.height
-        });
+      if (detected && detected.width && detected.height) {
+        const isEntirePage = (detected.width > imgW * 0.85) && (detected.height > imgH * 0.80);
+        if (isEntirePage) {
+          let targetW, targetH;
+          if (type === 'signature') {
+            targetW = Math.round(imgW * 0.75);
+            targetH = Math.round(targetW / 2.8);
+          } else if (type === 'photo') {
+            targetH = Math.round(imgH * 0.65);
+            targetW = Math.round(targetH * (3 / 4));
+          } else {
+            targetH = Math.round(imgH * 0.60);
+            targetW = Math.round(targetH * (4 / 5));
+          }
+          targetW = Math.min(imgW, targetW);
+          targetH = Math.min(imgH, targetH);
+          setCropBox({
+            x: Math.round((imgW - targetW) / 2),
+            y: Math.round((imgH - targetH) / 2),
+            width: targetW,
+            height: targetH
+          });
+        } else {
+          setCropBox({
+            x: detected.x,
+            y: detected.y,
+            width: detected.width,
+            height: detected.height
+          });
+        }
         setAiConfidence(detected.confidence || 0.85);
+      } else {
+        let targetW, targetH;
+        if (type === 'signature') {
+          targetW = Math.round(imgW * 0.75);
+          targetH = Math.round(targetW / 2.8);
+        } else if (type === 'photo') {
+          targetH = Math.round(imgH * 0.65);
+          targetW = Math.round(targetH * (3 / 4));
+        } else {
+          targetH = Math.round(imgH * 0.60);
+          targetW = Math.round(targetH * (4 / 5));
+        }
+        targetW = Math.min(imgW, targetW);
+        targetH = Math.min(imgH, targetH);
+        setCropBox({
+          x: Math.round((imgW - targetW) / 2),
+          y: Math.round((imgH - targetH) / 2),
+          width: targetW,
+          height: targetH
+        });
       }
     } catch (err) {
       console.warn('AI Detection error:', err);
@@ -794,16 +904,22 @@ export default function SmartBiometricCaptureModal({
               {/* Guide Overlay */}
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                 {type === 'photo' && (
-                  <div className="w-52 h-68 border-2 border-dashed border-emerald-400/70 rounded-[50%] shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] flex flex-col items-center justify-between py-6">
-                    <div className="w-24 h-0.5 bg-emerald-400/40 rounded-full" />
+                  <div
+                    ref={guideBoxRef}
+                    className="w-52 h-68 border-2 border-dashed border-emerald-400/80 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-between py-5 pointer-events-none"
+                  >
+                    <div className="w-20 h-0.5 bg-emerald-400/40 rounded-full" />
                     <span className="text-[11px] font-medium text-emerald-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
-                      ಕಣ್ಣಿನ ಮಟ್ಟ (Eye Level)
+                      ಭಾವಚಿತ್ರ (Photo)
                     </span>
                     <div className="w-16 h-0.5 bg-emerald-400/40 rounded-full" />
                   </div>
                 )}
                 {type === 'signature' && (
-                  <div className="w-[84%] max-w-sm h-28 border-2 border-dashed border-sky-400/70 rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-2">
+                  <div
+                    ref={guideBoxRef}
+                    className="w-[84%] max-w-sm h-28 border-2 border-dashed border-sky-400/80 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-2 pointer-events-none"
+                  >
                     <span className="text-[11px] font-medium text-sky-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
                       ಕಾಗದದ ಮೇಲಿನ ಸಹಿ (Signature)
                     </span>
@@ -811,7 +927,10 @@ export default function SmartBiometricCaptureModal({
                   </div>
                 )}
                 {type === 'thumb' && (
-                  <div className="w-40 h-52 border-2 border-dashed border-amber-400/70 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-2">
+                  <div
+                    ref={guideBoxRef}
+                    className="w-44 h-56 border-2 border-dashed border-amber-400/80 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-2 pointer-events-none"
+                  >
                     <span className="text-[11px] font-medium text-amber-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
                       ಹೆಬ್ಬೆರಳು (Thumb)
                     </span>
