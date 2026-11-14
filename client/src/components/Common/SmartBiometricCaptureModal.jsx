@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Camera, Upload, X, Check, RefreshCw, RotateCw, Wand2,
   Sparkles, Sliders, AlertCircle, Sun, Image as ImageIcon,
-  Crop, Eye, ArrowLeft, ZoomIn, ZoomOut, CheckCircle2, FileText
+  Crop, Eye, ArrowLeft, ZoomIn, ZoomOut, CheckCircle2, FileText,
+  Smartphone, SwitchCamera
 } from 'lucide-react';
 import {
   detectFace,
@@ -27,12 +28,12 @@ export default function SmartBiometricCaptureModal({
   title = '',
   initialImage = null
 }) {
-  // Mode configuration
+  // Mode configuration - Back Camera ('environment') is default for all office operations
   const config = {
     photo: {
       defaultTitle: 'ಭಾವಚಿತ್ರ (Shareholder Photo)',
-      guideText: 'ಮುಖವನ್ನು ವೃತ್ತದಲ್ಲಿ ಸರಿಯಾಗಿ ಕಾಣುವಂತೆ ಇರಿಸಿ',
-      defaultFacing: 'user',
+      guideText: 'ಶೇರುದಾರರ ಮುಖವನ್ನು ವೃತ್ತದಲ್ಲಿ ಸರಿಯಾಗಿ ಕಾಣುವಂತೆ ಇರಿಸಿ',
+      defaultFacing: 'environment', // Defaults to mobile BACK camera for photographing shareholder!
       defaultAspect: 3 / 4,
       aspectPresets: [
         { label: '3:4 ಪಾಸ್‌ಪೋರ್ಟ್', value: 3 / 4 },
@@ -75,12 +76,14 @@ export default function SmartBiometricCaptureModal({
 
   // View state: 'camera' | 'upload' | 'crop'
   const [viewState, setViewState] = useState('camera');
-  const [facingMode, setFacingMode] = useState(config.defaultFacing);
-  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const [facingMode, setFacingMode] = useState('environment'); // Always default to back camera
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(true);
   const [cameraError, setCameraError] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [canTorch, setCanTorch] = useState(false);
+  const [availableCameras, setAvailableCameras] = useState([]);
+  const [activeCameraLabel, setActiveCameraLabel] = useState('');
 
   // Raw captured/uploaded image (HTMLImageElement or Canvas)
   const [rawSource, setRawSource] = useState(null);
@@ -99,6 +102,7 @@ export default function SmartBiometricCaptureModal({
   const canvasDisplayRef = useRef(null);
   const containerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const nativeCameraInputRef = useRef(null);
 
   // Interaction tracking for touch & mouse drag
   const dragRef = useRef({
@@ -109,19 +113,8 @@ export default function SmartBiometricCaptureModal({
     startCrop: null
   });
 
-  // Check multiple cameras on mount
-  useEffect(() => {
-    if (!isOpen) return;
-    if (navigator?.mediaDevices?.enumerateDevices) {
-      navigator.mediaDevices.enumerateDevices().then(devices => {
-        const videoInputs = devices.filter(d => d.kind === 'videoinput');
-        setHasMultipleCameras(videoInputs.length > 1);
-      }).catch(() => {});
-    }
-  }, [isOpen]);
-
-  // Start / Stop camera stream
-  const startCamera = useCallback(async (facing) => {
+  // Start / Stop camera stream with comprehensive mobile back camera fallback
+  const startCamera = useCallback(async (targetFacing = 'environment', targetDeviceId = null) => {
     setCameraError(null);
     setIsCameraActive(false);
     if (streamRef.current) {
@@ -131,36 +124,169 @@ export default function SmartBiometricCaptureModal({
 
     try {
       if (!navigator?.mediaDevices?.getUserMedia) {
-        throw new Error('Camera API is not supported in this browser environment.');
+        throw new Error('ಕ್ಯಾಮರಾ ಸೌಲಭ್ಯ ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಲಭ್ಯವಿಲ್ಲ.');
       }
 
-      const constraints = {
-        video: {
-          facingMode: facing ? { ideal: facing } : undefined,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        },
-        audio: false
-      };
+      let stream = null;
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      // 1. If explicit deviceId is provided
+      if (targetDeviceId) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: targetDeviceId } },
+            audio: false
+          });
+        } catch (e) {
+          console.warn('Direct deviceId failed, falling back:', e);
+        }
+      }
+
+      // 2. If environment (back camera) requested, attempt progressive fallbacks
+      if (!stream && targetFacing === 'environment') {
+        // Attempt A: exact environment with resolution
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { exact: 'environment' },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 }
+            },
+            audio: false
+          });
+        } catch (e) {
+          // Attempt B: exact environment without resolution constraints
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { exact: 'environment' } },
+              audio: false
+            });
+          } catch (e2) {
+            // Attempt C: ideal environment
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                  facingMode: { ideal: 'environment' },
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 }
+                },
+                audio: false
+              });
+            } catch (e3) {
+              console.warn('All environment facingMode attempts failed:', e3);
+            }
+          }
+        }
+      }
+
+      // 3. If user (front camera) requested
+      if (!stream && targetFacing === 'user') {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'user' } },
+            audio: false
+          });
+        } catch (e) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user' },
+              audio: false
+            });
+          } catch (e2) {}
+        }
+      }
+
+      // 4. Generic video stream fallback
+      if (!stream) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+      }
+
       streamRef.current = stream;
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        try {
+          await videoRef.current.play();
+        } catch (e) {
+          console.warn('video play error:', e);
+        }
         setIsCameraActive(true);
 
         // Check if torch/flashlight is supported
         const track = stream.getVideoTracks()[0];
-        if (track && track.getCapabilities) {
-          const caps = track.getCapabilities();
-          setCanTorch(Boolean(caps.torch));
+        if (track) {
+          const settings = track.getSettings?.() || {};
+          const label = track.label || '';
+          setActiveCameraLabel(label || (targetFacing === 'environment' ? 'ಹಿಂಬದಿ ಕ್ಯಾಮೆರಾ (Back)' : 'ಮುಂಭಾಗ (Front)'));
+
+          if (track.getCapabilities) {
+            try {
+              const caps = track.getCapabilities();
+              setCanTorch(Boolean(caps.torch));
+            } catch (e) {}
+          }
+        }
+      }
+
+      // Enumerate available cameras now that permission is active
+      if (navigator.mediaDevices.enumerateDevices) {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(d => d.kind === 'videoinput');
+          setAvailableCameras(videoDevices);
+          if (videoDevices.length > 1) {
+            setHasMultipleCameras(true);
+          }
+
+          // If environment was requested, verify if current track opened front camera by mistake
+          if (targetFacing === 'environment' && videoDevices.length > 1) {
+            const currentTrack = stream.getVideoTracks()[0];
+            const currentLabel = (currentTrack?.label || '').toLowerCase();
+            const currentSettings = currentTrack?.getSettings?.() || {};
+
+            const isFront = currentLabel.includes('front') ||
+                            currentLabel.includes('user') ||
+                            currentLabel.includes('selfie') ||
+                            currentSettings.facingMode === 'user';
+
+            if (isFront) {
+              // Find the rear camera device
+              const rearDevice = videoDevices.find(d => {
+                const lbl = (d.label || '').toLowerCase();
+                return lbl.includes('back') || lbl.includes('rear') || lbl.includes('environment') || lbl.includes('camera2 0');
+              }) || videoDevices.find(d => d.deviceId !== currentSettings.deviceId);
+
+              if (rearDevice && rearDevice.deviceId && rearDevice.deviceId !== targetDeviceId) {
+                console.log('Auto-switching to detected rear camera:', rearDevice.label);
+                const rearStream = await navigator.mediaDevices.getUserMedia({
+                  video: { deviceId: { exact: rearDevice.deviceId } },
+                  audio: false
+                });
+                stream.getTracks().forEach(t => t.stop());
+                streamRef.current = rearStream;
+                if (videoRef.current) {
+                  videoRef.current.srcObject = rearStream;
+                  await videoRef.current.play();
+                  const rearTrack = rearStream.getVideoTracks()[0];
+                  setActiveCameraLabel(rearTrack?.label || 'ಹಿಂಬದಿ ಕ್ಯಾಮೆರಾ (Back Camera)');
+                  if (rearTrack?.getCapabilities) {
+                    try {
+                      setCanTorch(Boolean(rearTrack.getCapabilities().torch));
+                    } catch (e) {}
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Enumerate devices error:', e);
         }
       }
     } catch (err) {
       console.warn('Camera start error:', err);
-      setCameraError('ಕ್ಯಾಮರಾ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ (ದಯವಿಟ್ಟು ಅನುಮತಿ ಪರಿಶೀಲಿಸಿ ಅಥವಾ ಫೈಲ್ ಅಪ್ಲೋಡ್ ಬಳಸಿ)');
+      setCameraError('ಕ್ಯಾಮರಾ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ (ದಯವಿಟ್ಟು ಅನುಮತಿ ಪರಿಶೀಲಿಸಿ ಅಥವಾ ಕೆಳಗಿನ "ಮೊಬೈಲ್ ಕ್ಯಾಮೆರಾ ಆಪ್" ಬಳಸಿ)');
       setIsCameraActive(false);
     }
   }, []);
@@ -188,7 +314,8 @@ export default function SmartBiometricCaptureModal({
         loadImageToCrop(initialImage);
       } else {
         setViewState('camera');
-        startCamera(facingMode);
+        setFacingMode('environment'); // Always start with Back Camera!
+        startCamera('environment');
       }
     } else {
       stopCamera();
@@ -216,11 +343,16 @@ export default function SmartBiometricCaptureModal({
     }
   };
 
+  // Switch Facing
+  const switchFacing = (newFacing) => {
+    setFacingMode(newFacing);
+    startCamera(newFacing);
+  };
+
   // Flip Camera
   const flipCamera = () => {
     const nextFacing = facingMode === 'user' ? 'environment' : 'user';
-    setFacingMode(nextFacing);
-    startCamera(nextFacing);
+    switchFacing(nextFacing);
   };
 
   // Capture Photo from Camera
@@ -687,28 +819,56 @@ export default function SmartBiometricCaptureModal({
                 )}
               </div>
 
-              {/* Torch & Flip Camera Overlays */}
-              <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+              {/* Camera Switcher Pills (Top Left) */}
+              <div className="absolute top-3 left-3 flex items-center bg-black/75 backdrop-blur-md rounded-2xl p-1 border border-slate-700/80 z-10 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => switchFacing('environment')}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    facingMode === 'environment'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                  }`}
+                  title="ಹಿಂಬದಿ ಕ್ಯಾಮೆರಾ ಆಯ್ಕೆಮಾಡಿ (Back Camera)"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>ಹಿಂಬದಿ (Back)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchFacing('user')}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    facingMode === 'user'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                  }`}
+                  title="ಮುಂಭಾಗದ ಸೆಲ್ಫಿ ಕ್ಯಾಮೆರಾ ಆಯ್ಕೆಮಾಡಿ (Front Camera)"
+                >
+                  <SwitchCamera className="w-3.5 h-3.5" />
+                  <span>ಮುಂಭಾಗ (Front)</span>
+                </button>
+              </div>
+
+              {/* Torch & Flip Camera Overlays (Top Right) */}
+              <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
                 {canTorch && (
                   <button
                     type="button"
                     onClick={toggleTorch}
-                    className={`p-2.5 rounded-full backdrop-blur-md transition-colors ${torchOn ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/30' : 'bg-black/60 text-white hover:bg-black/80'}`}
+                    className={`p-2.5 rounded-full backdrop-blur-md transition-colors cursor-pointer ${torchOn ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/30' : 'bg-black/60 text-white hover:bg-black/80'}`}
                     title="ಟಾರ್ಚ್ / ಫ್ಲ್ಯಾಶ್"
                   >
-                    <Sun className="w-5 h-5" />
+                    <Sun className="w-4 h-4" />
                   </button>
                 )}
-                {hasMultipleCameras && (
-                  <button
-                    type="button"
-                    onClick={flipCamera}
-                    className="p-2.5 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-md transition-colors"
-                    title="ಕ್ಯಾಮರಾ ಬದಲಾಯಿಸಿ (Flip Camera)"
-                  >
-                    <RefreshCw className="w-5 h-5" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={flipCamera}
+                  className="p-2.5 rounded-full bg-black/70 text-white hover:bg-black/90 backdrop-blur-md transition-colors cursor-pointer border border-slate-700/60 shadow-lg"
+                  title="ಕ್ಯಾಮರಾ ಬದಲಾಯಿಸಿ (Flip Camera Front/Back)"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Camera Error Message */}
@@ -716,20 +876,28 @@ export default function SmartBiometricCaptureModal({
                 <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center z-20 space-y-3">
                   <AlertCircle className="w-12 h-12 text-rose-500" />
                   <p className="text-sm text-slate-300 max-w-xs">{cameraError}</p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xs">
                     <button
                       type="button"
-                      onClick={() => startCamera(facingMode)}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold"
+                      onClick={() => nativeCameraInputRef.current?.click()}
+                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950 cursor-pointer"
                     >
-                      ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ
+                      <Smartphone className="w-4 h-4" />
+                      <span>ಫೋನ್ ಕ್ಯಾಮೆರಾ ಆಪ್ ಬಳಸಿ</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold"
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold cursor-pointer border border-slate-700"
                     >
-                      ಫೈಲ್ ಅಪ್ಲೋಡ್ ಮಾಡಿ
+                      ಗ್ಯಾಲರಿಯಿಂದ ಆರಿಸಿ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startCamera(facingMode)}
+                      className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded-xl text-xs cursor-pointer"
+                    >
+                      ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ
                     </button>
                   </div>
                 </div>
@@ -746,17 +914,18 @@ export default function SmartBiometricCaptureModal({
         {/* Bottom Toolbar & Controls */}
         <div className="p-3 sm:p-4 bg-slate-900 border-t border-slate-800 space-y-3">
           {viewState === 'camera' ? (
-            <div className="flex items-center justify-between max-w-md mx-auto gap-4">
-              {/* File Upload Option */}
+            <div className="flex items-center justify-around max-w-md mx-auto gap-3">
+              {/* Native Phone Camera Option */}
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors p-2"
+                onClick={() => nativeCameraInputRef.current?.click()}
+                className="flex flex-col items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors p-2 cursor-pointer"
+                title="ಮೊಬೈಲ್‌ನ ಸ್ವಂತ ಕ್ಯಾಮೆರಾ ಆಪ್‌ನಲ್ಲಿ ಫೋಟೋ ತೆಗೆಯಿರಿ"
               >
-                <div className="w-11 h-11 rounded-2xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-200 transition-colors border border-slate-700 shadow-md">
-                  <Upload className="w-5 h-5" />
+                <div className="w-12 h-12 rounded-2xl bg-emerald-950/80 hover:bg-emerald-900/80 flex items-center justify-center text-emerald-400 transition-colors border border-emerald-800/80 shadow-md">
+                  <Smartphone className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] font-medium">ಗ್ಯಾಲರಿ / ಫೈಲ್</span>
+                <span className="text-[10px] font-bold">ಫೋನ್ ಕ್ಯಾಮೆರಾ</span>
               </button>
 
               {/* Big Touch Shutter Button */}
@@ -769,23 +938,24 @@ export default function SmartBiometricCaptureModal({
                     ? 'border-emerald-500 bg-white hover:bg-emerald-50 text-emerald-600 cursor-pointer shadow-emerald-500/20'
                     : 'border-slate-700 bg-slate-800 text-slate-600 cursor-not-allowed opacity-60'
                 }`}
-                title="ಫೋಟೋ ತೆಗೆಯಿರಿ (Click Photo)"
+                title="ಲೈವ್ ಫೋಟೋ ಕ್ಲಿಕ್ ಮಾಡಿ (Click Photo)"
               >
                 <div className="w-12 h-12 sm:w-15 sm:h-15 rounded-full bg-emerald-500 flex items-center justify-center">
                   <Camera className="w-6 h-6 text-white" />
                 </div>
               </button>
 
-              {/* Close Button */}
+              {/* Gallery / File Upload Option */}
               <button
                 type="button"
-                onClick={onClose}
-                className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors p-2"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors p-2 cursor-pointer"
+                title="ಗ್ಯಾಲರಿ ಅಥವಾ ಫೈಲ್‌ನಿಂದ ಅಪ್ಲೋಡ್ ಮಾಡಿ"
               >
-                <div className="w-11 h-11 rounded-2xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-200 transition-colors border border-slate-700 shadow-md">
-                  <X className="w-5 h-5" />
+                <div className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-200 transition-colors border border-slate-700 shadow-md">
+                  <Upload className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] font-medium">ರದ್ದು (Close)</span>
+                <span className="text-[10px] font-medium">ಗ್ಯಾಲರಿ / ಫೈಲ್</span>
               </button>
             </div>
           ) : (
@@ -897,6 +1067,16 @@ export default function SmartBiometricCaptureModal({
             </div>
           )}
         </div>
+
+        {/* Hidden Native Phone Camera Input (Direct mobile back camera launcher) */}
+        <input
+          ref={nativeCameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
 
         {/* Hidden File Input for Gallery / Local Upload */}
         <input
