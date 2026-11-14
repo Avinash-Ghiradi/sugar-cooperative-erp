@@ -906,9 +906,9 @@ export default function SmartBiometricCaptureModal({
                 {type === 'photo' && (
                   <div
                     ref={guideBoxRef}
-                    className="w-56 h-76 sm:w-64 sm:h-84 border-2 border-dashed border-emerald-400/90 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-3 pointer-events-none"
+                    className="w-48 h-66 sm:w-56 sm:h-76 border-2 border-dashed border-amber-400 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-3 pointer-events-none"
                   >
-                    <span className="text-[11px] font-medium text-emerald-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
+                    <span className="text-[11px] font-medium text-amber-300 bg-black/60 px-3.5 py-1.5 rounded-full backdrop-blur-sm shadow">
                       ಭಾವಚಿತ್ರ (Photo)
                     </span>
                   </div>
@@ -918,7 +918,7 @@ export default function SmartBiometricCaptureModal({
                     ref={guideBoxRef}
                     className="w-[84%] max-w-sm h-28 border-2 border-dashed border-sky-400/80 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-2 pointer-events-none"
                   >
-                    <span className="text-[11px] font-medium text-sky-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
+                    <span className="text-[11px] font-medium text-sky-300 bg-black/60 px-3.5 py-1.5 rounded-full backdrop-blur-sm shadow">
                       ಕಾಗದದ ಮೇಲಿನ ಸಹಿ (Signature)
                     </span>
                     <div className="w-full border-b border-sky-400/30 mt-3" />
@@ -927,9 +927,9 @@ export default function SmartBiometricCaptureModal({
                 {type === 'thumb' && (
                   <div
                     ref={guideBoxRef}
-                    className="w-48 h-64 border-2 border-dashed border-amber-400/90 rounded-[50%] shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-3 pointer-events-none"
+                    className="w-44 h-60 sm:w-48 sm:h-64 border-2 border-dashed border-emerald-400/90 rounded-[50%] shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-3 pointer-events-none"
                   >
-                    <span className="text-[11px] font-medium text-amber-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
+                    <span className="text-[11px] font-medium text-emerald-300 bg-black/60 px-3.5 py-1.5 rounded-full backdrop-blur-sm shadow">
                       ಹೆಬ್ಬೆರಳು (Thumb)
                     </span>
                   </div>
