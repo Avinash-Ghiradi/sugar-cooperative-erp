@@ -61,7 +61,7 @@ export default function SmartBiometricCaptureModal({
     },
     thumb: {
       defaultTitle: 'ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು (Thumb Impression)',
-      guideText: 'ಹೆಬ್ಬೆರಳ ರೇಖೆಗಳು ಚೌಕಟ್ಟಿನ ಮಧ್ಯದಲ್ಲಿರಲಿ',
+      guideText: 'ಹೆಬ್ಬೆರಳಿನ ಗುರುತನ್ನು ಅಂಡಾಕಾರದ ಚೌಕಟ್ಟಿನಲ್ಲಿ ಇರಿಸಿ',
       defaultFacing: 'environment', // Rear camera pointing down at paper
       defaultAspect: 4 / 5,
       aspectPresets: [
@@ -906,13 +906,11 @@ export default function SmartBiometricCaptureModal({
                 {type === 'photo' && (
                   <div
                     ref={guideBoxRef}
-                    className="w-52 h-68 border-2 border-dashed border-emerald-400/80 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-between py-5 pointer-events-none"
+                    className="w-56 h-76 sm:w-64 sm:h-84 border-2 border-dashed border-emerald-400/90 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-3 pointer-events-none"
                   >
-                    <div className="w-20 h-0.5 bg-emerald-400/40 rounded-full" />
                     <span className="text-[11px] font-medium text-emerald-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
                       ಭಾವಚಿತ್ರ (Photo)
                     </span>
-                    <div className="w-16 h-0.5 bg-emerald-400/40 rounded-full" />
                   </div>
                 )}
                 {type === 'signature' && (
@@ -929,7 +927,7 @@ export default function SmartBiometricCaptureModal({
                 {type === 'thumb' && (
                   <div
                     ref={guideBoxRef}
-                    className="w-44 h-56 border-2 border-dashed border-amber-400/80 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-2 pointer-events-none"
+                    className="w-48 h-64 border-2 border-dashed border-amber-400/90 rounded-[50%] shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-3 pointer-events-none"
                   >
                     <span className="text-[11px] font-medium text-amber-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
                       ಹೆಬ್ಬೆರಳು (Thumb)
