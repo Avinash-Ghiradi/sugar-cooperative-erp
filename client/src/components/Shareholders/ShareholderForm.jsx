@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ApiService, hasSecondInstallment, getMemberTypeByCategory, getShareholderOwnership, isRegisteredOnOrBeforeCutoff, getShareRateConfig, calculateShareholdingDetails, isEligibleForSecondInstallment, getRequiredSecondInstallmentAmount } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import SmartBiometricCaptureModal from '../Common/SmartBiometricCaptureModal';
 import {
   X, Save, Plus, Printer, Contact, AlertTriangle, BookOpen, MapPin,
   FileText, Users2, Fingerprint, Camera, Upload, Trash2, FileSignature, User, CheckCircle2, RefreshCw,
-  History, Clock, ArrowRight, Coins
+  History, Clock, ArrowRight, Coins, Crop, Wand2, Sparkles
 } from 'lucide-react';
 
 // Client-side image compression to store optimized base64 data URLs in IndexedDB
@@ -193,6 +194,42 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
   };
 
   const [uploadingState, setUploadingState] = useState({ photo: false, signature: false, thumb: false });
+
+  // Smart Biometric Capture Modal State
+  const [captureModalConfig, setCaptureModalConfig] = useState({
+    open: false,
+    type: 'photo',
+    title: '',
+    initialImage: null
+  });
+
+  const handleOpenSmartCapture = (type, currentImage = null) => {
+    const titles = {
+      photo: 'ಶೇರುದಾರರ ಭಾವಚಿತ್ರ (Shareholder Photo)',
+      signature: 'ಶೇರುದಾರರ ಸಹಿ (Shareholder Signature)',
+      thumb: 'ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು (Thumb Impression)'
+    };
+    setCaptureModalConfig({
+      open: true,
+      type,
+      title: titles[type] || 'ಬಯೋಮೆಟ್ರಿಕ್ ಕ್ಯಾಪ್ಚರ್',
+      initialImage: currentImage || null
+    });
+  };
+
+  const handleCaptureComplete = (dataUrl) => {
+    const type = captureModalConfig.type;
+    if (type === 'photo') {
+      setFormData(prev => ({ ...prev, photo_url: dataUrl, photo_updated: 'Yes' }));
+      showToast('ಭಾವಚಿತ್ರ ಯಶಸ್ವಿಯಾಗಿ ಸೇವ್ ಆಗಿದೆ!');
+    } else if (type === 'signature') {
+      setFormData(prev => ({ ...prev, signature_url: dataUrl, signature_updated: 'Yes' }));
+      showToast('ಸಹಿ ಯಶಸ್ವಿಯಾಗಿ ಸೇವ್ ಆಗಿದೆ!');
+    } else if (type === 'thumb') {
+      setFormData(prev => ({ ...prev, thumb_url: dataUrl, thumb_updated: 'Yes' }));
+      showToast('ಹೆಬ್ಬೆಟ್ಟಿನ ಗುರುತು ಯಶಸ್ವಿಯಾಗಿ ಸೇವ್ ಆಗಿದೆ!');
+    }
+  };
 
   const handleFileUpload = async (type, file) => {
     if (!file) return;
@@ -1166,13 +1203,22 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                   </span>
                 </div>
 
-                <div className="w-32 h-36 rounded-xl border-2 border-dashed border-slate-700 overflow-hidden bg-slate-900 flex items-center justify-center relative mb-3 shadow-inner group-hover:border-emerald-500/50 transition-colors">
+                <div
+                  onClick={() => handleOpenSmartCapture('photo', formData.photo_url)}
+                  className="w-32 h-36 rounded-xl border-2 border-dashed border-slate-700 overflow-hidden bg-slate-900 flex items-center justify-center relative mb-3 shadow-inner group-hover:border-emerald-500/50 transition-colors cursor-pointer group"
+                  title="ಕ್ಲಿಕ್ ಮಾಡಿ - ಕ್ಯಾಮೆರಾ / ಎಡಿಟ್ & AI ಕ್ರಾಪ್"
+                >
                   {formData.photo_url ? (
-                    <img src={formData.photo_url} alt="Shareholder Photo" className="w-full h-full object-cover" />
+                    <>
+                      <img src={formData.photo_url} alt="Shareholder Photo" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <Crop className="w-5 h-5 text-white" />
+                      </div>
+                    </>
                   ) : (
-                    <div className="text-center p-2 text-slate-500">
+                    <div className="text-center p-2 text-slate-500 group-hover:text-emerald-400 transition-colors">
                       <User className="w-10 h-10 mx-auto mb-1 opacity-40 text-emerald-400" />
-                      <span className="text-[10px] font-medium">No Photo Selected</span>
+                      <span className="text-[10px] font-medium">ಕ್ಲಿಕ್ ಮಾಡಿ / ಕ್ಯಾಪ್ಚರ್</span>
                     </div>
                   )}
                   {uploadingState.photo && (
@@ -1182,27 +1228,47 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                   )}
                 </div>
 
-                <div className="w-full flex items-center gap-2">
-                  <label className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/50">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{formData.photo_url ? 'Change Photo' : 'Upload Photo'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => e.target.files?.[0] && handleFileUpload('photo', e.target.files[0])}
-                    />
-                  </label>
-                  {formData.photo_url && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFile('photo')}
-                      className="p-2 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl transition-colors cursor-pointer"
-                      title="Remove Photo"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                    </button>
-                  )}
+                <div className="w-full flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenSmartCapture('photo')}
+                    className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/50"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>ಕ್ಯಾಮರಾ & AI ಕ್ರಾಪ್</span>
+                  </button>
+
+                  <div className="w-full flex items-center gap-1.5">
+                    <label className="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-[11px] font-medium cursor-pointer transition-all flex items-center justify-center gap-1 border border-slate-700">
+                      <Upload className="w-3 h-3 text-emerald-400" />
+                      <span>ಫೈಲ್ ಅಪ್ಲೋಡ್</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            const r = new FileReader();
+                            r.onload = ev => handleOpenSmartCapture('photo', ev.target.result);
+                            r.readAsDataURL(f);
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+
+                    {formData.photo_url && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile('photo')}
+                        className="p-1.5 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl transition-colors cursor-pointer"
+                        title="Remove Photo"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1217,13 +1283,22 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                   </span>
                 </div>
 
-                <div className="w-full h-36 rounded-xl border-2 border-dashed border-slate-700 overflow-hidden bg-slate-900 flex items-center justify-center relative mb-3 shadow-inner p-2 group-hover:border-sky-500/50 transition-colors">
+                <div
+                  onClick={() => handleOpenSmartCapture('signature', formData.signature_url)}
+                  className="w-full h-36 rounded-xl border-2 border-dashed border-slate-700 overflow-hidden bg-slate-900 flex items-center justify-center relative mb-3 shadow-inner p-2 group-hover:border-sky-500/50 transition-colors cursor-pointer group"
+                  title="ಕ್ಲಿಕ್ ಮಾಡಿ - ಕ್ಯಾಮೆರಾ / ಎಡಿಟ್ & AI ಕ್ರಾಪ್"
+                >
                   {formData.signature_url ? (
-                    <img src={formData.signature_url} alt="Shareholder Signature" className="max-w-full max-h-full object-contain filter invert dark:invert-0 bg-white/5 rounded p-1" />
+                    <>
+                      <img src={formData.signature_url} alt="Shareholder Signature" className="max-w-full max-h-full object-contain filter invert dark:invert-0 bg-white/5 rounded p-1" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <Crop className="w-5 h-5 text-white" />
+                      </div>
+                    </>
                   ) : (
-                    <div className="text-center p-2 text-slate-500">
+                    <div className="text-center p-2 text-slate-500 group-hover:text-sky-400 transition-colors">
                       <FileSignature className="w-10 h-10 mx-auto mb-1 opacity-40 text-sky-400" />
-                      <span className="text-[10px] font-medium">No Signature Selected</span>
+                      <span className="text-[10px] font-medium">ಕ್ಲಿಕ್ ಮಾಡಿ / ಕ್ಯಾಪ್ಚರ್</span>
                     </div>
                   )}
                   {uploadingState.signature && (
@@ -1233,27 +1308,47 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                   )}
                 </div>
 
-                <div className="w-full flex items-center gap-2">
-                  <label className="flex-1 py-2 px-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md shadow-sky-950/50">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{formData.signature_url ? 'Change Sign' : 'Upload Signature'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => e.target.files?.[0] && handleFileUpload('signature', e.target.files[0])}
-                    />
-                  </label>
-                  {formData.signature_url && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFile('signature')}
-                      className="p-2 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl transition-colors cursor-pointer"
-                      title="Remove Signature"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                    </button>
-                  )}
+                <div className="w-full flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenSmartCapture('signature')}
+                    className="w-full py-2 px-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md shadow-sky-950/50"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>ಕ್ಯಾಮರಾ & AI ಸಹಿ</span>
+                  </button>
+
+                  <div className="w-full flex items-center gap-1.5">
+                    <label className="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-[11px] font-medium cursor-pointer transition-all flex items-center justify-center gap-1 border border-slate-700">
+                      <Upload className="w-3 h-3 text-sky-400" />
+                      <span>ಫೈಲ್ ಅಪ್ಲೋಡ್</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            const r = new FileReader();
+                            r.onload = ev => handleOpenSmartCapture('signature', ev.target.result);
+                            r.readAsDataURL(f);
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+
+                    {formData.signature_url && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile('signature')}
+                        className="p-1.5 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl transition-colors cursor-pointer"
+                        title="Remove Signature"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1268,13 +1363,22 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                   </span>
                 </div>
 
-                <div className="w-32 h-36 rounded-xl border-2 border-dashed border-slate-700 overflow-hidden bg-slate-900 flex items-center justify-center relative mb-3 shadow-inner p-2 group-hover:border-amber-500/50 transition-colors">
+                <div
+                  onClick={() => handleOpenSmartCapture('thumb', formData.thumb_url)}
+                  className="w-32 h-36 rounded-xl border-2 border-dashed border-slate-700 overflow-hidden bg-slate-900 flex items-center justify-center relative mb-3 shadow-inner p-2 group-hover:border-amber-500/50 transition-colors cursor-pointer group"
+                  title="ಕ್ಲಿಕ್ ಮಾಡಿ - ಕ್ಯಾಮೆರಾ / ಎಡಿಟ್ & AI ಕ್ರಾಪ್"
+                >
                   {formData.thumb_url ? (
-                    <img src={formData.thumb_url} alt="Thumb Impression" className="max-w-full max-h-full object-contain filter invert dark:invert-0 bg-white/5 rounded p-1" />
+                    <>
+                      <img src={formData.thumb_url} alt="Thumb Impression" className="max-w-full max-h-full object-contain filter invert dark:invert-0 bg-white/5 rounded p-1" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <Crop className="w-5 h-5 text-white" />
+                      </div>
+                    </>
                   ) : (
-                    <div className="text-center p-2 text-slate-500">
+                    <div className="text-center p-2 text-slate-500 group-hover:text-amber-400 transition-colors">
                       <Fingerprint className="w-10 h-10 mx-auto mb-1 opacity-40 text-amber-400" />
-                      <span className="text-[10px] font-medium">No Thumb Impression</span>
+                      <span className="text-[10px] font-medium">ಕ್ಲಿಕ್ ಮಾಡಿ / ಕ್ಯಾಪ್ಚರ್</span>
                     </div>
                   )}
                   {uploadingState.thumb && (
@@ -1284,27 +1388,47 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
                   )}
                 </div>
 
-                <div className="w-full flex items-center gap-2">
-                  <label className="flex-1 py-2 px-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/50">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{formData.thumb_url ? 'Change Thumb' : 'Upload Thumb'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => e.target.files?.[0] && handleFileUpload('thumb', e.target.files[0])}
-                    />
-                  </label>
-                  {formData.thumb_url && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFile('thumb')}
-                      className="p-2 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl transition-colors cursor-pointer"
-                      title="Remove Thumb"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                    </button>
-                  )}
+                <div className="w-full flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenSmartCapture('thumb')}
+                    className="w-full py-2 px-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/50"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>ಕ್ಯಾಮರಾ & AI ಹೆಬ್ಬೆರಳು</span>
+                  </button>
+
+                  <div className="w-full flex items-center gap-1.5">
+                    <label className="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-[11px] font-medium cursor-pointer transition-all flex items-center justify-center gap-1 border border-slate-700">
+                      <Upload className="w-3 h-3 text-amber-400" />
+                      <span>ಫೈಲ್ ಅಪ್ಲೋಡ್</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            const r = new FileReader();
+                            r.onload = ev => handleOpenSmartCapture('thumb', ev.target.result);
+                            r.readAsDataURL(f);
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+
+                    {formData.thumb_url && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile('thumb')}
+                        className="p-1.5 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl transition-colors cursor-pointer"
+                        title="Remove Thumb"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1445,6 +1569,16 @@ export default function ShareholderForm({ initialData, onClose, onSaveSuccess })
           </div>
         </form>
       </div>
+
+      {/* Smart Biometric Camera Capture, File Upload & AI Auto-Crop Modal */}
+      <SmartBiometricCaptureModal
+        isOpen={captureModalConfig.open}
+        onClose={() => setCaptureModalConfig(prev => ({ ...prev, open: false }))}
+        onCapture={handleCaptureComplete}
+        type={captureModalConfig.type}
+        title={captureModalConfig.title}
+        initialImage={captureModalConfig.initialImage}
+      />
     </div>
   );
 }

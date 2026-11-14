@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ApiService, isShareholderInactive } from '../../services/api';
+import SmartBiometricCaptureModal from '../Common/SmartBiometricCaptureModal';
 import {
   X, Save, User, Lock, MapPin, Phone, CreditCard, Calendar, Upload,
   Search, CheckCircle2, AlertCircle, FileText, Camera, Trash2,
-  Building2, Hash, Layers, ShieldCheck, DollarSign, Receipt, Printer
+  Building2, Hash, Layers, ShieldCheck, DollarSign, Receipt, Printer,
+  Crop, Wand2
 } from 'lucide-react';
 import VarasaPrintModal from './VarasaPrintModal';
 
@@ -60,6 +62,33 @@ export default function VarasaTransferModal({
   const fileInputRef = useRef(null);
   const shFileInputRef = useRef(null);
   const [uploadingShPhoto, setUploadingShPhoto] = useState(false);
+
+  // Smart Biometric Capture Modal State
+  const [captureModalConfig, setCaptureModalConfig] = useState({
+    open: false,
+    field: 'heir_photo',
+    title: '',
+    initialImage: null
+  });
+
+  const handleOpenSmartCapture = (field, currentImage = null) => {
+    const titles = {
+      heir_photo: 'ವಾರಸುದಾರರ ಭಾವಚಿತ್ರ (Legal Heir Photo)',
+      shareholder_photo: 'ದಿ. ಶೇರುದಾರರ ಭಾವಚಿತ್ರ (Shareholder Photo)'
+    };
+    setCaptureModalConfig({
+      open: true,
+      field,
+      title: titles[field] || 'ಭಾವಚಿತ್ರ ಕ್ಯಾಪ್ಚರ್',
+      initialImage: currentImage || null
+    });
+  };
+
+  const handleCaptureComplete = (dataUrl) => {
+    const field = captureModalConfig.field;
+    setForm(prev => ({ ...prev, [field]: dataUrl }));
+    if (showToast) showToast('ಭಾವಚಿತ್ರ ಯಶಸ್ವಿಯಾಗಿ ಸೇವ್ ಆಗಿದೆ!');
+  };
 
   // 22 Official Statutory Cooperative Varasa Ledger Fields
   const isApproved = Boolean(
@@ -437,46 +466,65 @@ export default function VarasaTransferModal({
               <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row gap-5 items-start">
                 {/* Heir Photo */}
                 <div className="flex flex-col items-center gap-2.5 shrink-0 self-center md:self-start">
-                  <div className="relative group w-24 h-28 rounded-2xl overflow-hidden border-2 border-dashed border-slate-700 bg-slate-900 flex items-center justify-center text-slate-500 shadow-inner">
+                  <div
+                    onClick={() => handleOpenSmartCapture('heir_photo', form.heir_photo)}
+                    className="relative group w-24 h-28 rounded-2xl overflow-hidden border-2 border-dashed border-slate-700 hover:border-emerald-500 bg-slate-900 flex items-center justify-center text-slate-500 shadow-inner cursor-pointer transition-all"
+                    title="ಕ್ಯಾಮರಾ / AI ಕ್ರಾಪ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ"
+                  >
                     {form.heir_photo ? (
-                      <img src={form.heir_photo} alt="Heir" className="w-full h-full object-cover" />
+                      <>
+                        <img src={form.heir_photo} alt="Heir" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <Crop className="w-5 h-5 text-white" />
+                        </div>
+                      </>
                     ) : (
-                      <div className="text-center p-2">
+                      <div className="text-center p-2 group-hover:text-emerald-400 transition-colors">
                         <User className="w-8 h-8 mx-auto text-slate-600 mb-1" />
                         <span className="text-[10px] text-slate-500 font-medium">Photo (ಭಾವಚಿತ್ರ)</span>
                       </div>
                     )}
-                    {uploadingPhoto && (
-                      <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center text-[10px] text-emerald-400 font-bold">
-                        Compressing...
-                      </div>
-                    )}
                   </div>
-                  <div className="flex gap-1.5">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handlePhotoUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
+                  <div className="flex flex-col w-full gap-1">
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer"
+                      onClick={() => handleOpenSmartCapture('heir_photo')}
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                     >
-                      <Camera className="w-3 h-3 text-emerald-400" /> Upload
+                      <Camera className="w-3 h-3" /> ಕ್ಯಾಮೆರಾ & AI
                     </button>
-                    {form.heir_photo && (
+                    <div className="flex gap-1 justify-center">
                       <button
                         type="button"
-                        onClick={() => setForm(prev => ({ ...prev, heir_photo: '' }))}
-                        className="p-1 bg-rose-950/60 hover:bg-rose-900 text-rose-300 rounded-lg text-[10px] cursor-pointer"
-                        title="Remove photo"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = e => {
+                            const f = e.target.files?.[0];
+                            if (f) {
+                              const r = new FileReader();
+                              r.onload = ev => handleOpenSmartCapture('heir_photo', ev.target.result);
+                              r.readAsDataURL(f);
+                            }
+                          };
+                          input.click();
+                        }}
+                        className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-medium flex items-center gap-1 cursor-pointer border border-slate-700"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Upload className="w-3 h-3 text-emerald-400" /> ಅಪ್ಲೋಡ್
                       </button>
-                    )}
+                      {form.heir_photo && (
+                        <button
+                          type="button"
+                          onClick={() => setForm(prev => ({ ...prev, heir_photo: '' }))}
+                          className="p-1 bg-rose-950/60 hover:bg-rose-900 text-rose-300 rounded-lg text-[10px] cursor-pointer"
+                          title="Remove photo"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -696,46 +744,65 @@ export default function VarasaTransferModal({
                 <div className="flex flex-col md:flex-row gap-5 items-start">
                   {/* Shareholder Photo */}
                   <div className="flex flex-col items-center gap-2.5 shrink-0 self-center md:self-start">
-                    <div className="relative group w-24 h-28 rounded-2xl overflow-hidden border-2 border-dashed border-slate-700 bg-slate-900 flex items-center justify-center text-slate-500 shadow-inner">
+                    <div
+                      onClick={() => handleOpenSmartCapture('shareholder_photo', form.shareholder_photo)}
+                      className="relative group w-24 h-28 rounded-2xl overflow-hidden border-2 border-dashed border-slate-700 hover:border-emerald-500 bg-slate-900 flex items-center justify-center text-slate-500 shadow-inner cursor-pointer transition-all"
+                      title="ಕ್ಯಾಮರಾ / AI ಕ್ರಾಪ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ"
+                    >
                       {form.shareholder_photo ? (
-                        <img src={form.shareholder_photo} alt="Shareholder" className="w-full h-full object-cover" />
+                        <>
+                          <img src={form.shareholder_photo} alt="Shareholder" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <Crop className="w-5 h-5 text-white" />
+                          </div>
+                        </>
                       ) : (
-                        <div className="text-center p-2">
+                        <div className="text-center p-2 group-hover:text-emerald-400 transition-colors">
                           <User className="w-8 h-8 mx-auto text-slate-600 mb-1" />
                           <span className="text-[10px] text-slate-500 font-medium">ದಿ. ಶೇರುದಾರರ ಭಾವಚಿತ್ರ</span>
                         </div>
                       )}
-                      {uploadingShPhoto && (
-                        <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center text-[10px] text-emerald-400 font-bold">
-                          Compressing...
-                        </div>
-                      )}
                     </div>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="file"
-                        ref={shFileInputRef}
-                        onChange={handleShPhotoUpload}
-                        accept="image/*"
-                        className="hidden"
-                      />
+                    <div className="flex flex-col w-full gap-1">
                       <button
                         type="button"
-                        onClick={() => shFileInputRef.current?.click()}
-                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer"
+                        onClick={() => handleOpenSmartCapture('shareholder_photo')}
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                       >
-                        <Camera className="w-3 h-3 text-emerald-400" /> Upload
+                        <Camera className="w-3 h-3" /> ಕ್ಯಾಮೆರಾ & AI
                       </button>
-                      {form.shareholder_photo && (
+                      <div className="flex gap-1 justify-center">
                         <button
                           type="button"
-                          onClick={() => setForm(prev => ({ ...prev, shareholder_photo: '' }))}
-                          className="p-1 bg-rose-950/60 hover:bg-rose-900 text-rose-300 rounded-lg text-[10px] cursor-pointer"
-                          title="Remove photo"
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = e => {
+                              const f = e.target.files?.[0];
+                              if (f) {
+                                const r = new FileReader();
+                                r.onload = ev => handleOpenSmartCapture('shareholder_photo', ev.target.result);
+                                r.readAsDataURL(f);
+                              }
+                            };
+                            input.click();
+                          }}
+                          className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-medium flex items-center gap-1 cursor-pointer border border-slate-700"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Upload className="w-3 h-3 text-emerald-400" /> ಅಪ್ಲೋಡ್
                         </button>
-                      )}
+                        {form.shareholder_photo && (
+                          <button
+                            type="button"
+                            onClick={() => setForm(prev => ({ ...prev, shareholder_photo: '' }))}
+                            className="p-1 bg-rose-950/60 hover:bg-rose-900 text-rose-300 rounded-lg text-[10px] cursor-pointer"
+                            title="Remove photo"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1081,6 +1148,16 @@ export default function VarasaTransferModal({
           isNewSubmission={false}
         />
       )}
+
+      {/* Smart Biometric Camera Capture, File Upload & AI Auto-Crop Modal */}
+      <SmartBiometricCaptureModal
+        isOpen={captureModalConfig.open}
+        onClose={() => setCaptureModalConfig(prev => ({ ...prev, open: false }))}
+        onCapture={handleCaptureComplete}
+        type="photo"
+        title={captureModalConfig.title}
+        initialImage={captureModalConfig.initialImage}
+      />
     </div>
   );
 }
