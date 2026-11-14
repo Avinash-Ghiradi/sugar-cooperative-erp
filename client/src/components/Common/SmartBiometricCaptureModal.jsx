@@ -906,7 +906,8 @@ export default function SmartBiometricCaptureModal({
                 {type === 'photo' && (
                   <div
                     ref={guideBoxRef}
-                    className="w-48 h-66 sm:w-56 sm:h-76 border-2 border-dashed border-amber-400 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-3 pointer-events-none"
+                    className="w-[216px] h-[288px] sm:w-[246px] sm:h-[328px] max-w-[82vw] max-h-[62vh] border-2 border-dashed border-amber-400 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-3 pointer-events-none"
+                    style={{ aspectRatio: '3 / 4' }}
                   >
                     <span className="text-[11px] font-medium text-amber-300 bg-black/60 px-3.5 py-1.5 rounded-full backdrop-blur-sm shadow">
                       ಭಾವಚಿತ್ರ (Photo)
@@ -927,7 +928,8 @@ export default function SmartBiometricCaptureModal({
                 {type === 'thumb' && (
                   <div
                     ref={guideBoxRef}
-                    className="w-44 h-60 sm:w-48 sm:h-64 border-2 border-dashed border-emerald-400/90 rounded-[50%] shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-3 pointer-events-none"
+                    className="w-[180px] h-[225px] sm:w-[200px] sm:h-[250px] max-w-[72vw] max-h-[52vh] border-2 border-dashed border-emerald-400/90 rounded-[50%] shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center p-3 pointer-events-none"
+                    style={{ aspectRatio: '4 / 5' }}
                   >
                     <span className="text-[11px] font-medium text-emerald-300 bg-black/60 px-3.5 py-1.5 rounded-full backdrop-blur-sm shadow">
                       ಹೆಬ್ಬೆರಳು (Thumb)
