@@ -1211,7 +1211,7 @@ export const CloudDbService = {
       const totalEnrollmentAmount = enrList.reduce((acc, e) => acc + (parseFloat(e.total_amount) || 0), 0);
       const isApprovedOrCompleted = (st) => {
         const s = String(st || '').toLowerCase();
-        return s.includes('approved') || s.includes('completed') || s.includes('issued') || s.includes('active') || s.includes('ಮಂಜೂರು') || s.includes('ಅನುಮೋದಿಸಲಾಗಿದೆ');
+        return s.includes('approved') || s.includes('completed') || s.includes('transfer') || s.includes('issued') || s.includes('active') || s.includes('ಮಂಜೂರು') || s.includes('ಅನುಮೋದಿಸಲಾಗಿದೆ') || s.includes('ವರ್ಗಾಯಿಸಲಾಗಿದೆ');
       };
 
       const approvedEnrollments = enrList.filter(e => isApprovedOrCompleted(e.approval_status)).length;

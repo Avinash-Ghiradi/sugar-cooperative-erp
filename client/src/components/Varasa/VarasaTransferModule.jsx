@@ -18,7 +18,7 @@ import {
 
 const isTransferApproved = (t) => {
   if (!t) return false;
-  return ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(t.approval_status);
+  return ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(t.approval_status);
 };
 
 export default function VarasaTransferModule() {
@@ -210,8 +210,8 @@ export default function VarasaTransferModule() {
       if (statusFilter) {
         if (statusFilter === 'Approved') {
           list = list.filter(v => ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status));
-        } else if (statusFilter === 'Completed') {
-          list = list.filter(v => ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status));
+        } else if (['Completed', 'Completed and Transferred'].includes(statusFilter)) {
+          list = list.filter(v => ['Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status));
         } else if (statusFilter === 'Application Received & Sent for Sign') {
           list = list.filter(v => ['Application Received & Sent for Sign', 'ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ'].includes(v.approval_status));
         } else {
@@ -261,14 +261,11 @@ export default function VarasaTransferModule() {
 
   // Instant optimistic status update (0ms latency, persists to cloud in background)
   const handleStatusUpdate = async (transferId, newStatus) => {
-    if (newStatus === 'Completed') {
+    if (['Completed', 'Completed and Transferred', 'Approved'].includes(newStatus)) {
       if (user?.role !== 'Admin') {
         showToast('ಕೇವಲ Admin ಗಳಿಗೆ ಮಾತ್ರ ವಾರಸು ವರ್ಗಾವಣೆ ಮಂಜೂರಿಸಿ ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ನವೀಕರಿಸಲು ಅನುಮತಿ ಇದೆ (Admin approval required)', 'error');
         return;
       }
-      const item = transfers.find(t => String(t.transfer_id) === String(transferId) || String(t.id) === String(transferId));
-      setAdminApproveModal({ open: true, transfer: item, remarks: '' });
-      return;
     }
 
     const now = new Date().toISOString();
@@ -365,8 +362,8 @@ export default function VarasaTransferModule() {
   const receivedApps = transfers.filter(t => t.approval_status === 'Application Received').length;
   const sentForSignApps = transfers.filter(t => t.approval_status === 'Application Received & Sent for Sign').length;
   const underVerification = transfers.filter(t => t.approval_status === 'Under Verification').length;
-  const approvedApps = transfers.filter(t => t.approval_status === 'Approved').length;
-  const completedApps = transfers.filter(t => t.approval_status === 'Completed').length;
+  const approvedApps = transfers.filter(t => ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(t.approval_status)).length;
+  const completedApps = transfers.filter(t => ['Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ', 'ಮಂಜೂರಾಗಿದೆ'].includes(t.approval_status)).length;
   const totalFees = transfers.reduce((acc, t) => acc + (parseFloat(t.fees) || 0), 0);
 
   // 22 Official Column Headers exactly matching the user's Excel sheet:
@@ -755,7 +752,7 @@ export default function VarasaTransferModule() {
             <option value="Application Received & Sent for Sign">Application Received & Sent for Sign</option>
             <option value="Under Verification">Under Verification</option>
             <option value="Approved">Approved</option>
-            <option value="Completed">Completed</option>
+            <option value="Completed and Transferred">Completed and Transferred</option>
           </select>
 
           <select
@@ -812,6 +809,7 @@ export default function VarasaTransferModule() {
               <option value="Application Received & Sent for Sign">Application Received & Sent for Sign</option>
               <option value="Under Verification">Under Verification</option>
               <option value="Approved">Approved</option>
+              <option value="Completed and Transferred">Completed and Transferred</option>
             </select>
             <button
               onClick={handleBulkStatusUpdate}
@@ -1066,8 +1064,8 @@ export default function VarasaTransferModule() {
                     <td className="py-3 px-3 text-center">
                       <select
                         value={
+                          ['Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಪೂರ್ಣಗೊಂಡಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Completed and Transferred' :
                           ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Approved' :
-                          ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status) ? 'Completed' :
                           ['Application Received & Sent for Sign', 'ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? 'Application Received & Sent for Sign' :
                           v.approval_status === 'Under Verification' ? 'Under Verification' :
                           v.approval_status || 'Application Received'
@@ -1075,10 +1073,10 @@ export default function VarasaTransferModule() {
                         onChange={(e) => handleStatusUpdate(v.transfer_id || v.id, e.target.value)}
                         title="ಸ್ಥಿತಿ ಬದಲಾಯಿಸಿ (Change Status)"
                         className={`text-[10px] font-bold px-2.5 py-1 rounded-full outline-none border cursor-pointer transition-all shadow-sm ${
-                          ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)
-                            ? 'bg-emerald-950/90 text-emerald-300 border-emerald-600 hover:border-emerald-400'
-                            : ['Completed', 'ಮಂಜೂರಾಗಿದೆ'].includes(v.approval_status)
-                            ? 'bg-emerald-950 text-emerald-300 border-emerald-700 hover:border-emerald-500'
+                          ['Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಪೂರ್ಣಗೊಂಡಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status)
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-500 hover:border-emerald-400 ring-1 ring-emerald-500/40'
+                            : ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)
+                            ? 'bg-teal-950/90 text-teal-300 border-teal-600 hover:border-teal-400'
                             : v.approval_status === 'Under Verification'
                             ? 'bg-amber-950/90 text-amber-300 border-amber-600 hover:border-amber-400'
                             : ['Application Received & Sent for Sign', 'ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ'].includes(v.approval_status)
@@ -1089,15 +1087,25 @@ export default function VarasaTransferModule() {
                         <option value="Application Received" className="bg-slate-900 text-slate-200">Application Received</option>
                         <option value="Application Received & Sent for Sign" className="bg-slate-900 text-cyan-300 font-semibold">Application Received & Sent for Sign</option>
                         <option value="Under Verification" className="bg-slate-900 text-amber-300">Under Verification</option>
-                        <option value="Approved" className="bg-slate-900 text-emerald-300">Approved</option>
-                        <option value="Completed" className="bg-slate-900 text-emerald-300">Completed & Transferred</option>
+                        <option value="Approved" className="bg-slate-900 text-teal-300 font-semibold">Approved</option>
+                        <option value="Completed and Transferred" className="bg-slate-900 text-emerald-300 font-bold">Completed & Transferred</option>
                       </select>
                     </td>
 
                     {/* Actions */}
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {v.approval_status !== 'Completed' ? (
+                        {['Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? (
+                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950/70 text-emerald-300 border border-emerald-700/70 text-[11px] font-bold shadow-sm" title="ವರ್ಗಾವಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ಮಾಸ್ಟರ್ ಪಟ್ಟಿಯಲ್ಲಿ ನವೀಕರಿಸಲಾಗಿದೆ">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>ವರ್ಗಾಯಿಸಲಾಗಿದೆ (Transferred)</span>
+                          </span>
+                        ) : ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) ? (
+                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-950/70 text-teal-300 border border-teal-700/70 text-[11px] font-bold shadow-sm" title="ಅನುಮೋದಿಸಲಾಗಿದೆ (Approved)">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
+                            <span>ಮಂಜೂರಾಗಿದೆ (Approved)</span>
+                          </span>
+                        ) : (
                           <button
                             type="button"
                             onClick={() => {
@@ -1113,11 +1121,6 @@ export default function VarasaTransferModule() {
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                             <span>ಮಂಜೂರಾತಿ</span>
                           </button>
-                        ) : (
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/40 text-emerald-400 text-[10px] font-medium border border-emerald-900/50">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                            <span>ಮಂಜೂರಾಗಿದೆ</span>
-                          </span>
                         )}
 
                         <button

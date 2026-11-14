@@ -780,7 +780,7 @@ export function reconcileApprovedTransfersIntoMaster(shareholdersList = mockShar
 
   // 1. Process all approved Vargavane transfers
   const approvedVarg = (mockVargavaneTransfers || []).filter(v =>
-    ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status) &&
+    ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status) &&
     v.transferee_name && String(v.transferee_name).trim()
   );
 
@@ -841,7 +841,7 @@ export function reconcileApprovedTransfersIntoMaster(shareholdersList = mockShar
 
   // 2. Process all approved Varasa transfers
   const approvedVar = (mockVarasaTransfers || []).filter(vt =>
-    ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(vt.approval_status) &&
+    ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(vt.approval_status) &&
     vt.heir_name && String(vt.heir_name).trim()
   );
 
@@ -2273,14 +2273,14 @@ export const ApiService = {
       varasaStatusBreakdown: [
         { status: 'Application Received', count: varasaList.filter(v => v.approval_status === 'Application Received').length },
         { status: 'Under Verification', count: varasaList.filter(v => v.approval_status === 'Under Verification').length },
-        { status: 'Approved', count: varasaList.filter(v => v.approval_status === 'Approved').length },
-        { status: 'Completed', count: varasaList.filter(v => v.approval_status === 'Completed').length }
+        { status: 'Approved', count: varasaList.filter(v => ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length },
+        { status: 'Completed', count: varasaList.filter(v => ['Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length }
       ],
       vargavaneStatusBreakdown: [
         { status: 'Application Received', count: vargList.filter(v => v.approval_status === 'Application Received').length },
         { status: 'Under Verification', count: vargList.filter(v => v.approval_status === 'Under Verification').length },
-        { status: 'Approved', count: vargList.filter(v => v.approval_status === 'Approved').length },
-        { status: 'Completed', count: vargList.filter(v => v.approval_status === 'Completed').length }
+        { status: 'Approved', count: vargList.filter(v => ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length },
+        { status: 'Completed', count: vargList.filter(v => ['Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length }
       ]
     };
   },
@@ -2355,11 +2355,11 @@ export const ApiService = {
         totalBooks: isReset ? 0 : 98,
         totalCategories: isReset ? 0 : charts.scheduleCastBreakdown.length,
         topCategory: isReset || charts.scheduleCastBreakdown.length === 0 ? '—' : `${charts.scheduleCastBreakdown[0].category} (${charts.scheduleCastBreakdown[0].count.toLocaleString()})`,
-        pendingVarasa: mockVarasaTransfers.filter(v => !['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length,
-        completedVarasa: mockVarasaTransfers.filter(v => ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length,
+        pendingVarasa: mockVarasaTransfers.filter(v => !['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length,
+        completedVarasa: mockVarasaTransfers.filter(v => ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length,
         totalVargavane: mockVargavaneTransfers.length,
-        pendingVargavane: mockVargavaneTransfers.filter(v => !['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length,
-        completedVargavane: mockVargavaneTransfers.filter(v => ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length,
+        pendingVargavane: mockVargavaneTransfers.filter(v => !['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length,
+        completedVargavane: mockVargavaneTransfers.filter(v => ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status)).length,
         totalEnrollments: mockEnrollments.length,
         totalEnrollmentShares: mockEnrollments.reduce((acc, e) => acc + (parseInt(e.no_shares) || 1), 0),
         totalEnrollmentAmount: mockEnrollments.reduce((acc, e) => acc + (parseFloat(e.total_amount) || 0), 0),
@@ -4306,7 +4306,7 @@ const newSh = {
         CloudDbService.saveCollectionItem('varasa', cloudKey, updated).catch(() => {});
       }
 
-      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(updated.approval_status)) {
+      if (['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(updated.approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
@@ -4322,7 +4322,7 @@ const newSh = {
     const idx = mockVarasaTransfers.findIndex(v => String(v.id) === String(idOrTransferId) || v.transfer_id === idOrTransferId);
     if (idx !== -1) {
       const existing = mockVarasaTransfers[idx];
-      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(existing.approval_status)) {
+      if (['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(existing.approval_status)) {
         return {
           success: false,
           isLocked: true,
@@ -4371,7 +4371,7 @@ const newSh = {
         const cloudKey = updatedItem.transfer_id || String(updatedItem.id);
         await CloudDbService.saveCollectionItem('varasa', cloudKey, updatedItem).catch(() => {});
       }
-      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
+      if (['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
@@ -4420,7 +4420,7 @@ const newSh = {
       }
     }
 
-    if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
+    if (['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(approval_status)) {
       reconcileApprovedTransfersIntoMaster(mockShareholders);
       saveToIndexedDB(mockShareholders).catch(() => {});
     }
@@ -4485,7 +4485,7 @@ const newSh = {
 
     // Sync already approved/completed records to shareholder registry
     items.forEach(r => {
-      if (['Approved', 'Completed'].includes(r.approval_status)) {
+      if (['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(r.approval_status)) {
         const sNo = String(r.share_no || r.existing_share_number || '').trim();
         const sh = mockShareholders.find(s => String(s.share_no || s.share_number || '').trim() === sNo);
         if (sh) {
@@ -4828,7 +4828,7 @@ const newSh = {
         CloudDbService.saveCollectionItem('vargavane', cloudKey, updated)
           .catch(err => console.warn('Cloud DB updateVargavane error:', err));
       }
-      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(updated.approval_status)) {
+      if (['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(updated.approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
@@ -4881,7 +4881,7 @@ const newSh = {
         const cloudKey = updatedItem.transfer_id || String(updatedItem.id);
         await CloudDbService.saveCollectionItem('vargavane', cloudKey, updatedItem).catch(() => {});
       }
-      if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
+      if (['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(approval_status)) {
         reconcileApprovedTransfersIntoMaster(mockShareholders);
         saveToIndexedDB(mockShareholders).catch(() => {});
       }
@@ -4929,7 +4929,7 @@ const newSh = {
       }
     }
 
-    if (['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(approval_status)) {
+    if (['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(approval_status)) {
       reconcileApprovedTransfersIntoMaster(mockShareholders);
       saveToIndexedDB(mockShareholders).catch(() => {});
     }
@@ -4991,7 +4991,7 @@ const newSh = {
 
     // Sync already completed records to shareholder registry
     items.forEach(r => {
-      if (['Approved', 'Completed'].includes(r.approval_status)) {
+      if (['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(r.approval_status)) {
         const sNo = String(r.share_no || '').trim();
         const sh = mockShareholders.find(s => String(s.share_no || s.share_number || '').trim() === sNo);
         if (sh) {
@@ -5660,7 +5660,7 @@ const newSh = {
   },
 
   // 2. Approve Varasa Legal-Heir Transfer by Admin
-  async approveVarasaTransferByAdmin({ transferId, adminUser = 'Admin', remarks = '' }) {
+  async approveVarasaTransferByAdmin({ transferId, adminUser = 'Admin', remarks = '', status = 'Completed and Transferred' }) {
     await ensureDBReady();
     const item = mockVarasaTransfers.find(v => String(v.id) === String(transferId) || v.transfer_id === transferId);
     if (!item) return { success: false, message: 'Varasa transfer record not found' };
@@ -5816,7 +5816,7 @@ const newSh = {
       }
     }
 
-    item.approval_status = 'Approved';
+    item.approval_status = status || 'Completed and Transferred';
     item.approved_by = adminUser;
     item.approved_at = new Date().toISOString();
     saveStoredData(STORAGE_KEY_VT, mockVarasaTransfers);
@@ -5849,7 +5849,7 @@ const newSh = {
   },
 
   // 3. Approve Vargavane Transfer by Admin
-  async approveVargavaneTransferByAdmin({ transferId, adminUser = 'Admin', remarks = '' }) {
+  async approveVargavaneTransferByAdmin({ transferId, adminUser = 'Admin', remarks = '', status = 'Completed and Transferred' }) {
     await ensureDBReady();
     const item = mockVargavaneTransfers.find(v => String(v.id) === String(transferId) || v.transfer_id === transferId);
     if (!item) return { success: false, message: 'Vargavane transfer record not found' };
@@ -6004,7 +6004,7 @@ const newSh = {
       }
     }
 
-    item.approval_status = 'Approved';
+    item.approval_status = status || 'Completed and Transferred';
     item.approved_by = adminUser;
     item.approved_at = new Date().toISOString();
     saveStoredData(STORAGE_KEY_VG, mockVargavaneTransfers);
@@ -7840,8 +7840,8 @@ const newSh = {
 
     // Inherit legal transferee name and details if any merged share was transferred
     const approvedHoldingsTransfers = [
-      ...(mockVargavaneTransfers || []).filter(v => ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)),
-      ...(mockVarasaTransfers || []).filter(vt => ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(vt.approval_status))
+      ...(mockVargavaneTransfers || []).filter(v => ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status)),
+      ...(mockVarasaTransfers || []).filter(vt => ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(vt.approval_status))
     ];
     for (const t of approvedHoldingsTransfers) {
       const tNo = String(t.share_no || t.existing_share_number || '').trim();
@@ -8315,8 +8315,8 @@ const newSh = {
 
     // Inherit legal transferee name and details if any merged share was transferred
     const approvedTransfersForMerge = [
-      ...(mockVargavaneTransfers || []).filter(v => ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(v.approval_status)),
-      ...(mockVarasaTransfers || []).filter(vt => ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(vt.approval_status))
+      ...(mockVargavaneTransfers || []).filter(v => ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(v.approval_status)),
+      ...(mockVarasaTransfers || []).filter(vt => ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(vt.approval_status))
     ];
     for (const t of approvedTransfersForMerge) {
       const tNo = String(t.share_no || t.existing_share_number || '').trim();

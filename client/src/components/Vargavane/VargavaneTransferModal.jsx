@@ -175,7 +175,7 @@ export default function VargavaneTransferModal({
 
   const isApproved = Boolean(
     initialData &&
-    ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(initialData.approval_status)
+    ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(initialData.approval_status)
   );
 
   // 22 Official Statutory Cooperative Vargavane Ledger Fields
@@ -897,7 +897,11 @@ export default function VargavaneTransferModal({
                     Workflow Status (ಅರ್ಜಿ ಸ್ಥಿತಿ)
                   </label>
                   <select
-                    value={form.approval_status}
+                    value={
+                      ['Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಪೂರ್ಣಗೊಂಡಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(form.approval_status) ? 'Completed and Transferred' :
+                      ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(form.approval_status) ? 'Approved' :
+                      form.approval_status || 'Application Received'
+                    }
                     onChange={(e) => setForm({ ...form, approval_status: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-800 focus:border-sky-500 rounded-xl px-3 py-2.5 text-slate-100 font-semibold outline-none"
                   >
@@ -905,7 +909,7 @@ export default function VargavaneTransferModal({
                     <option value="Application Received & Sent for Sign">Application Received & Sent for Sign (ಅರ್ಜಿ ಸ್ವೀಕರಿಸಿ ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ)</option>
                     <option value="Under Verification">Under Verification (ಪರಿಶೀಲನೆಯಲ್ಲಿದೆ)</option>
                     <option value="Approved">Approved (ಮಂಜೂರಾಗಿದೆ)</option>
-                    <option value="Completed">Completed & Transferred (ವರ್ಗಾವಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ)</option>
+                    <option value="Completed and Transferred">Completed and Transferred (ವರ್ಗಾವಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ)</option>
                   </select>
                 </div>
 

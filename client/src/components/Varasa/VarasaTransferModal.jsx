@@ -92,7 +92,7 @@ export default function VarasaTransferModal({
 
   // 22 Official Statutory Cooperative Varasa Ledger Fields
   const isApproved = Boolean(
-    initialData && ['Approved', 'Completed', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(initialData.approval_status)
+    initialData && ['Approved', 'Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಮಂಜೂರಾಗಿದೆ', 'ಅನುಮೋದಿಸಲಾಗಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(initialData.approval_status)
   );
 
   const [form, setForm] = useState({
@@ -1023,7 +1023,11 @@ export default function VarasaTransferModal({
                     Workflow Status (ಅರ್ಜಿ ಸ್ಥಿತಿ)
                   </label>
                   <select
-                    value={form.approval_status}
+                    value={
+                      ['Completed', 'Completed and Transferred', 'Completed & Transferred', 'ಪೂರ್ಣಗೊಂಡಿದೆ', 'ಪೂರ್ಣಗೊಂಡಿದೆ ಮತ್ತು ವರ್ಗಾಯಿಸಲಾಗಿದೆ'].includes(form.approval_status) ? 'Completed and Transferred' :
+                      ['Approved', 'ಅನುಮೋದಿಸಲಾಗಿದೆ'].includes(form.approval_status) ? 'Approved' :
+                      form.approval_status || 'Application Received'
+                    }
                     onChange={(e) => setForm({ ...form, approval_status: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-slate-100 font-semibold outline-none"
                   >
@@ -1031,7 +1035,7 @@ export default function VarasaTransferModal({
                     <option value="Application Received & Sent for Sign">Application Received & Sent for Sign (ಅರ್ಜಿ ಸ್ವೀಕರಿಸಿ ಸಹಿಗೆ ಕಳುಹಿಸಲಾಗಿದೆ)</option>
                     <option value="Under Verification">Under Verification (ಪರಿಶೀಲನೆಯಲ್ಲಿದೆ)</option>
                     <option value="Approved">Approved (ಮಂಜೂರಾಗಿದೆ)</option>
-                    <option value="Completed">Completed & Transferred (ವರ್ಗಾವಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ)</option>
+                    <option value="Completed and Transferred">Completed and Transferred (ವರ್ಗಾವಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ)</option>
                   </select>
                 </div>
 
