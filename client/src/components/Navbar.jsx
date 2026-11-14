@@ -9,7 +9,7 @@ import GlobalSearchModal from './Common/GlobalSearchModal';
 import ShareholderProfile from './Shareholders/ShareholderProfile';
 import {
   Menu, Search, Bell, ShieldCheck, User, LogOut, KeyRound,
-  ChevronDown, Briefcase, Building2, CheckCircle2, Download, Printer, Megaphone
+  ChevronDown, Briefcase, Building2, CheckCircle2, Download, Printer, Megaphone, RotateCw
 } from 'lucide-react';
 
 export default function Navbar({ onMenuToggle }) {
@@ -84,6 +84,21 @@ export default function Navbar({ onMenuToggle }) {
           <LanguageSwitchButton />
           {/* Light / Dark Mode Theme Switcher */}
           <ThemeToggle />
+
+          {/* Quick Clear Cache & Reload Button */}
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.forceAppRefresh) {
+                window.forceAppRefresh();
+              } else {
+                window.location.reload(true);
+              }
+            }}
+            className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-sky-300 border border-slate-800 transition-colors cursor-pointer shadow-sm"
+            title="ಕ್ಯಾಶ್ ಕ್ಲಿಯರ್ & ಪುನಃ ಲೋಡ್ (Clear Cache & Reload)"
+          >
+            <RotateCw className="w-4 h-4" />
+          </button>
 
           
           {/* Quick Notice Board / Announcement Button */}
@@ -254,6 +269,21 @@ export default function Navbar({ onMenuToggle }) {
                   >
                     <KeyRound className="w-4 h-4 text-emerald-400" />
                     <span>{t('change_password')}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      if (typeof window !== 'undefined' && window.forceAppRefresh) {
+                        window.forceAppRefresh();
+                      } else {
+                        window.location.reload(true);
+                      }
+                    }}
+                    className="w-full px-3 py-2 text-left text-sky-300 hover:text-sky-200 hover:bg-sky-950/40 rounded-xl flex items-center gap-2.5 transition-colors cursor-pointer font-semibold"
+                  >
+                    <RotateCw className="w-4 h-4 text-sky-400" />
+                    <span>ಕ್ಯಾಶ್ ಕ್ಲಿಯರ್ & ಪುನಃ ಲೋಡ್ (Clear Cache & Reload)</span>
                   </button>
 
                   <div className="my-1 border-t border-slate-800/60" />
