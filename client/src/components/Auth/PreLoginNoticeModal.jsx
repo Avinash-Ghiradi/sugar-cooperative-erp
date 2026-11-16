@@ -222,26 +222,26 @@ export default function PreLoginNoticeModal({ isOpen, onClose, isPreview = false
 
           {/* Time of the Day Dynamic Greeting Card */}
           <div className="px-4 sm:px-6 pt-4 pb-2 shrink-0">
-            <div className={`p-3.5 sm:p-4 rounded-2xl border ${greeting.bgPill} flex items-center justify-between gap-3 shadow-md`}>
+            <div className={`p-3.5 sm:p-4 rounded-2xl border ${greeting.bgPill} flex items-center justify-between gap-3 shadow-md transition-colors`}>
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-xl bg-gradient-to-tr ${greeting.gradient} text-slate-950 shadow-md shrink-0`}>
                   <GreetingIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-base sm:text-lg font-black tracking-tight text-white">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white prelogin-greeting-title">
                       {greeting.label}!
                     </span>
-                    <span className="text-xs font-semibold opacity-80 text-slate-200">
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 opacity-90 prelogin-greeting-english">
                       ({greeting.labelEnglish})
                     </span>
                   </div>
-                  <p className="text-xs text-slate-300 mt-0.5 leading-snug">
+                  <p className="text-xs text-slate-700 dark:text-slate-300 mt-0.5 leading-snug font-medium prelogin-greeting-subtext">
                     {greeting.subtext}
                   </p>
                 </div>
               </div>
-              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/10 border border-white/20 text-white shrink-0">
+              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-900/10 dark:bg-white/10 border border-slate-900/20 dark:border-white/20 text-slate-900 dark:text-white shrink-0 prelogin-greeting-badge">
                 {greeting.badge}
               </span>
             </div>
