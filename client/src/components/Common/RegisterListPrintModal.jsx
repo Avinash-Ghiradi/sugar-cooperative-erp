@@ -77,7 +77,7 @@ export default function RegisterListPrintModal({
   onClearSelection
 }) {
   const [scope, setScope] = useState(initialScope);
-  const [orientation, setOrientation] = useState('landscape');
+  const [orientation, setOrientation] = useState(type === 'enrollment' ? 'portrait' : 'landscape');
   const [logoError, setLogoError] = useState(false);
   const companyLogo = useCompanyLogo();
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
@@ -180,8 +180,8 @@ export default function RegisterListPrintModal({
   let registerTitleKn = '';
   let registerSubtitleEn = '';
   if (type === 'enrollment') {
-    registerTitleKn = 'ಶೇರು ವಿಭಾಗ - ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ವಹಿ (15 ಕಾಲಂ ರಿಜಿಸ್ಟರ್)';
-    registerSubtitleEn = 'NEW SHAREHOLDER STATUTORY ENROLLMENT REGISTER';
+    registerTitleKn = 'ಶೇರು ವಿಭಾಗ - ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ';
+    registerSubtitleEn = 'NEW SHAREHOLDER APPLICATION LIST';
   } else if (type === 'shareholder') {
     registerTitleKn = 'ಶೇರು ವಿಭಾಗ - ಶೇರುದಾರರ ಶಾಸನಬದ್ಧ ನಮೂನೆ ವಹಿ (Shareholder Statutory Register)';
     registerSubtitleEn = 'SHAREHOLDER STATUTORY MASTER REGISTER';
@@ -327,32 +327,27 @@ export default function RegisterListPrintModal({
     );
   };
 
-  // 1. Enrollment Table (15 Columns)
+  // 1. Enrollment Table — ಹೊಸ ಶೇರುದಾರರ ಅರ್ಜಿ ಯಾದಿ (5-Column format matching reference image)
   const renderEnrollmentTable = () => (
-    <table className="w-full border-collapse border border-black text-black text-[11px]">
+    <table className="w-full border-collapse border-2 border-black text-black text-[11.5px] font-kannada">
       <thead>
-        <tr className="bg-slate-200 border-b-2 border-black font-bold text-center">
-          <th className="border border-black p-1.5 w-8">ಕ್ರ.ಸಂ.</th>
-          <th className="border border-black p-1.5 w-20">ದಿನಾಂಕ</th>
-          <th className="border border-black p-1.5 text-left">ಶೇರುದಾರರ ಹೆಸರು (Shareholder Name)</th>
-          <th className="border border-black p-1.5">ಸ್ಥಳ (Place)</th>
-          <th className="border border-black p-1.5">ತಾಲೂಕು</th>
-          <th className="border border-black p-1.5 text-right w-20">ಶೇರು ಮೊತ್ತ</th>
-          <th className="border border-black p-1.5 text-right w-16">ಪ್ರವೇಶ ಶುಲ್ಕ</th>
-          <th className="border border-black p-1.5 text-right w-20">ಒಟ್ಟು ಮೊತ್ತ</th>
-          <th className="border border-black p-1.5 text-center w-16">ರಶೀದಿ ನಂ</th>
-          <th className="border border-black p-1.5 text-center w-14">ಶೇರು ಪ್ರಮಾಣ</th>
-          <th className="border border-black p-1.5 text-center w-16">ವರ್ಗ</th>
-          <th className="border border-black p-1.5 text-center w-20">ಠರಾವು ದಿನಾಂಕ</th>
-          <th className="border border-black p-1.5 text-center w-16">ಠರಾವು ನಂ</th>
-          <th className="border border-black p-1.5 text-center w-20">ಶೇರು ಸಂಖ್ಯೆ</th>
-          <th className="border border-black p-1.5 text-center w-20">ಸ್ಥಿತಿ</th>
+        {/* Two-tier header: main columns + receipt sub-columns */}
+        <tr className="border-b border-black font-bold text-center">
+          <th className="border border-black p-1.5 text-center align-middle" style={{width:'5%'}} rowSpan={2}>ಅ.ಸಂ</th>
+          <th className="border border-black p-1.5 text-center align-middle" style={{width:'38%'}} rowSpan={2}>ಶೇರು ಸದಸ್ಯರ ಹೆಸರು</th>
+          <th className="border border-black p-1.5 text-center align-middle" style={{width:'10%'}} rowSpan={2}>ವರ್ಗ</th>
+          <th className="border border-black p-1.5 text-center align-middle" style={{width:'18%'}} rowSpan={2}>ಶೇರು ಮೊತ್ತ</th>
+          <th className="border border-black p-1.5 text-center" style={{width:'29%'}} colSpan={2}>ರಶೀದಿ ಸಂಖ್ಯೆ ದಿನಾಂಕ</th>
+        </tr>
+        <tr className="border-b-2 border-black font-bold text-center">
+          <th className="border border-black p-1 text-center" style={{width:'14%'}}>ರಶೀದಿ ನಂ</th>
+          <th className="border border-black p-1 text-center" style={{width:'15%'}}>ದಿನಾಂಕ</th>
         </tr>
       </thead>
       <tbody>
         {recordsToPrint.length === 0 ? (
           <tr>
-            <td colSpan="15" className="border border-black p-8 text-center text-slate-500 font-bold">
+            <td colSpan="6" className="border border-black p-8 text-center text-slate-500 font-bold">
               ಯಾವುದೇ ಹೊಸ ಶೇರುದಾರರ ನೋಂದಣಿ ದಾಖಲೆಗಳು ಲಭ್ಯವಿಲ್ಲ
             </td>
           </tr>
@@ -362,43 +357,54 @@ export default function RegisterListPrintModal({
             const shareAmt = parseFloat(item.share_amount) || (shares * 24000);
             const admFee = parseFloat(item.admission_fee) || (shares * 570);
             const totAmt = parseFloat(item.total_amount) || (shareAmt + admFee);
-            const statusText = item.approval_status || item.status || 'Application';
+
+            // Category display: "ಅ"–01 format
+            const rawCat = item.category || item.schedule_cast || 'ಅ';
+            const catLabel = rawCat.includes('–') || rawCat.includes('-')
+              ? rawCat
+              : `"${rawCat.replace(/["""]/g, '').trim()}"–01`;
+
+            // Share amount display: amount on line 1, calculation on line 2
+            const shareAmtDisplay = totAmt.toFixed(2);
+            const shareCalcDisplay = `(${(shares * 2000).toLocaleString()} x ${Math.round(totAmt / (shares * 2000)) || 12})`;
+
+            // Address lines
+            const name = item.full_name || '—';
+            const village = item.place || item.village_name || '';
+            const taluk = item.taluk || '';
+            const district = item.district || 'ವಿಜಯಪುರ';
 
             return (
-              <tr key={item.id || idx} className="border-b border-black/80 hover:bg-slate-50">
-                <td className="border border-black p-1 text-center font-mono">{idx + 1}</td>
-                <td className="border border-black p-1 text-center font-mono">{formatDocDate(item.date)}</td>
-                <td className="border border-black p-1 px-1.5 font-bold text-left">{item.full_name || '—'}</td>
-                <td className="border border-black p-1 text-center">{item.place || '—'}</td>
-                <td className="border border-black p-1 text-center">{item.taluk || '—'}</td>
-                <td className="border border-black p-1 text-right font-mono">{shareAmt.toLocaleString()}</td>
-                <td className="border border-black p-1 text-right font-mono">{admFee.toLocaleString()}</td>
-                <td className="border border-black p-1 text-right font-mono font-bold">{totAmt.toLocaleString()}</td>
-                <td className="border border-black p-1 text-center font-mono">{item.receipt_no || '—'}</td>
-                <td className="border border-black p-1 text-center font-mono font-bold">{shares}</td>
-                <td className="border border-black p-1 text-center font-semibold">{item.category || 'ಅ ವರ್ಗ'}</td>
-                <td className="border border-black p-1 text-center font-mono">{formatDocDate(item.tharava_date)}</td>
-                <td className="border border-black p-1 text-center font-mono">{item.tharava_no || '—'}</td>
-                <td className="border border-black p-1 text-center font-mono font-bold">{item.share_no || '—'}</td>
-                <td className="border border-black p-1 text-center text-[10px] font-bold">
-                  {statusText.includes('Approved') || statusText.includes('ಮಂಜೂರು') ? 'ಮಂಜೂರಾಗಿದೆ' : 'ಅರ್ಜಿ'}
+              <tr key={item.id || idx} className="border-b border-black">
+                <td className="border border-black p-1.5 text-center font-mono align-top">{idx + 1}</td>
+                <td className="border border-black p-1.5 px-2 align-top">
+                  <div className="font-bold leading-snug">{name}</div>
+                  {village && <div className="leading-snug">ಸಾ॥{village}</div>}
+                  {(taluk || district) && (
+                    <div className="leading-snug">
+                      {taluk && `ತಾ॥${taluk}`}{taluk && district ? ' ' : ''}{district && `ಜಿ॥${district}`}
+                    </div>
+                  )}
                 </td>
+                <td className="border border-black p-1.5 text-center align-top font-semibold">{catLabel}</td>
+                <td className="border border-black p-1.5 text-center align-top">
+                  <div className="font-mono font-bold">{shareAmtDisplay}</div>
+                  <div className="font-mono text-[10px]">{shareCalcDisplay}</div>
+                </td>
+                <td className="border border-black p-1.5 text-center font-mono align-top font-bold">{item.receipt_no || '—'}</td>
+                <td className="border border-black p-1.5 text-center font-mono align-top">{formatDocDate(item.date)}</td>
               </tr>
             );
           })
         )}
         {/* Grand Total Row */}
         {recordsToPrint.length > 0 && (
-          <tr className="bg-slate-200 border-t-2 border-black font-bold text-black">
-            <td colSpan="5" className="border border-black p-1.5 text-center font-bold">
-              ಒಟ್ಟು ಮೊತ್ತ (GRAND TOTAL) - {recordsToPrint.length} ಸದಸ್ಯರು
+          <tr className="border-t-2 border-black font-bold text-black bg-slate-100">
+            <td colSpan="3" className="border border-black p-1.5 text-center font-bold">
+              ಒಟ್ಟು ಮೊತ್ತ (GRAND TOTAL) — {recordsToPrint.length} ಸದಸ್ಯರು
             </td>
-            <td className="border border-black p-1.5 text-right font-mono font-bold">₹ {totalShareCapital.toLocaleString()}</td>
-            <td className="border border-black p-1.5 text-right font-mono font-bold">₹ {totalAdmissionFees.toLocaleString()}</td>
-            <td className="border border-black p-1.5 text-right font-mono font-bold">₹ {totalCollection.toLocaleString()}</td>
-            <td className="border border-black p-1.5 text-center"></td>
-            <td className="border border-black p-1.5 text-center font-mono font-bold">{totalShares}</td>
-            <td colSpan="5" className="border border-black p-1.5"></td>
+            <td className="border border-black p-1.5 text-center font-mono font-bold">₹ {totalCollection.toLocaleString()}</td>
+            <td colSpan="2" className="border border-black p-1.5 text-center font-mono font-bold">{totalShares} ಶೇರುಗಳು</td>
           </tr>
         )}
       </tbody>
