@@ -46,13 +46,23 @@ const noCellBorders = {
 };
 const noBorders = noTableBorders;
 
-// Date formatter to DD/MM/YYYY
+// Date formatter to DD/MM/YYYY — handles Excel serial numbers (e.g. 46281 → 25/11/2026)
 export function formatDocxDate(dateStr) {
   if (!dateStr) {
     const d = new Date();
     return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
   }
   const clean = String(dateStr).trim();
+  // Handle Excel serial date numbers (e.g. 46281)
+  const num = Number(clean);
+  if (!isNaN(num) && num > 1000 && num < 70000 && clean.indexOf('/') === -1 && clean.indexOf('-') === -1) {
+    const jsDate = new Date(Math.round((num - 25569) * 86400 * 1000));
+    if (!isNaN(jsDate.getTime())) {
+      return String(jsDate.getUTCDate()).padStart(2, '0') + '/' +
+             String(jsDate.getUTCMonth() + 1).padStart(2, '0') + '/' +
+             jsDate.getUTCFullYear();
+    }
+  }
   const parts = clean.split(/[-/]/);
   if (parts.length === 3) {
     if (parts[0].length === 4) {
