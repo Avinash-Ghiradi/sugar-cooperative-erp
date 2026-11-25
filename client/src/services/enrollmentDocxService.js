@@ -106,8 +106,10 @@ export function buildEnrollmentDocx({
   const handshakeBytes = handshakeLogoUint8 || getHandshakeLogoUint8();
 
   let totalSharesCount = 0;
+  let totalAmount = 0;
 
-  // Construct Data Rows
+  // Construct Data Rows — 5-column format matching print layout:
+  // ಅ.ಸಂ | ಶೇರು ಸದಸ್ಯರ ಹೆಸರು (3 lines) | ವರ್ಗ | ಶೇರು ಮೊತ್ತ (2 lines) | ರಶೀದಿ ನಂ | ದಿನಾಂಕ
   const dataRows = records.map((record, index) => {
     const slNo = String(index + 1).padStart(2, '0');
     const name = String(record.full_name || record.shareholder_name || record.name || '').trim();
@@ -115,31 +117,38 @@ export function buildEnrollmentDocx({
     const recTaluk = String(record.taluk || taluk).trim();
     const recDist = String(record.dist || record.district || dist).trim();
 
-    const villageLine = place ? (place.startsWith('ಸಾ||') || place.startsWith('ಸಾ॥') ? place : 'ಸಾ॥ ' + place) : '';
-    const talukText = recTaluk.startsWith('ತಾ||') || recTaluk.startsWith('ತಾ॥') ? recTaluk : 'ತಾ॥ ' + recTaluk;
-    const distText = recDist.startsWith('ಜಿ||') || recDist.startsWith('ಜಿ॥') ? recDist : 'ಜಿ॥ ' + recDist;
-    const talukDistLine = talukText + '      ' + distText;
+    const villageLine = place ? 'ಸಾ॥' + place : '';
+    const talukText = 'ತಾ॥' + recTaluk;
+    const distText = 'ಜಿ॥' + recDist;
+    const talukDistLine = talukText + ' ' + distText;
 
-    const appDate = formatDocxDate(record.date || record.application_date || record.tharava_date);
     const receiptNo = String(record.receipt_no || record.receipt || '').trim();
-    const rawAmt = record.share_amount || record.total_amount || ((record.no_shares || 1) * 24000);
-    const formattedAmt = rawAmt ? Math.round(Number(rawAmt)) : 24000;
-    const receiptAndAmt = receiptNo ? receiptNo + ' (' + formattedAmt + ')' : '(' + formattedAmt + ')';
+    const appDate = formatDocxDate(record.date || record.application_date || record.tharava_date);
 
-    const cat = normalizeCategory(record.category);
-    const sharesNum = parseInt(record.no_shares || record.number_of_shares || 1, 10) || 1;
+    const sharesNum = parseInt(record.number_of_shares || record.no_shares || 1, 10) || 1;
+    const rawShareAmt = parseFloat(record.share_amount) || (sharesNum * 24000);
+    const rawAdmFee = parseFloat(record.admission_fee) || (sharesNum * 570);
+    const rawTotAmt = parseFloat(record.total_amount) || (rawShareAmt + rawAdmFee);
+    const amtLine1 = rawTotAmt.toFixed(2);
+    const amtLine2 = '(' + (sharesNum * 2000).toLocaleString() + ' x ' + (Math.round(rawTotAmt / (sharesNum * 2000)) || 12) + ')';
+
+    // Category: "ಅ"–01 format
+    const rawCat = String(record.category || record.schedule_cast || 'ಅ').trim();
+    const catLetter = rawCat.replace(/["""ಅಬಕಡ]/g, m => /["""]/g.test(m) ? '' : m).trim() || 'ಅ';
+    const catDisplay = '"' + catLetter + '"–01';
+
     totalSharesCount += sharesNum;
-    const shares = String(sharesNum);
-    const remarks = String(record.remarks || '');
+    totalAmount += rawTotAmt;
 
     return new TableRow({
       cantSplit: true,
       children: [
-        // Col 1: ಅ ನಂ
+        // Col 1: ಅ.ಸಂ
         new TableCell({
+          width: { size: 5, type: WidthType.PERCENTAGE },
           borders: cellBorders,
-          verticalAlign: VerticalAlign.CENTER,
-          margins: { top: 80, bottom: 80, left: 100, right: 100 },
+          verticalAlign: VerticalAlign.TOP,
+          margins: { top: 80, bottom: 80, left: 60, right: 60 },
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
@@ -147,11 +156,12 @@ export function buildEnrollmentDocx({
             })
           ]
         }),
-        // Col 2: ಹೊಸ ಶೇರು ಅರ್ಜಿ ಮಾಡುವವರ ಸದಸ್ಯರ ಹೆಸರು ಹಾಗೂ ವಿಳಾಸ
+        // Col 2: ಶೇರು ಸದಸ್ಯರ ಹೆಸರು (3 lines: name / village / taluk+dist)
         new TableCell({
+          width: { size: 38, type: WidthType.PERCENTAGE },
           borders: cellBorders,
-          verticalAlign: VerticalAlign.CENTER,
-          margins: { top: 80, bottom: 80, left: 120, right: 100 },
+          verticalAlign: VerticalAlign.TOP,
+          margins: { top: 80, bottom: 80, left: 120, right: 80 },
           children: [
             new Paragraph({
               spacing: { before: 20, after: 10, line: 240 },
@@ -161,69 +171,67 @@ export function buildEnrollmentDocx({
               spacing: { before: 0, after: 10, line: 240 },
               children: [new TextRun({ text: villageLine, size: 19, font: KANNADA_FONT, noProof: true })]
             }) : new Paragraph({ spacing: { before: 0, after: 0 } }),
-            talukDistLine ? new Paragraph({
+            new Paragraph({
               spacing: { before: 0, after: 20, line: 240 },
               children: [new TextRun({ text: talukDistLine, size: 19, font: KANNADA_FONT, noProof: true })]
-            }) : new Paragraph({ spacing: { before: 0, after: 0 } })
+            })
           ]
         }),
-        // Col 3: ಅರ್ಜಿ ದಿನಾಂಕ
+        // Col 3: ವರ್ಗ ("ಅ"–01)
         new TableCell({
+          width: { size: 10, type: WidthType.PERCENTAGE },
           borders: cellBorders,
-          verticalAlign: VerticalAlign.CENTER,
-          margins: { top: 80, bottom: 80, left: 80, right: 80 },
+          verticalAlign: VerticalAlign.TOP,
+          margins: { top: 80, bottom: 80, left: 60, right: 60 },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: catDisplay, bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
+            })
+          ]
+        }),
+        // Col 4: ಶೇರು ಮೊತ್ತ (amount on line 1, calculation on line 2)
+        new TableCell({
+          width: { size: 18, type: WidthType.PERCENTAGE },
+          borders: cellBorders,
+          verticalAlign: VerticalAlign.TOP,
+          margins: { top: 80, bottom: 80, left: 60, right: 60 },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 20, after: 10, line: 240 },
+              children: [new TextRun({ text: amtLine1, bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
+            }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 0, after: 20, line: 240 },
+              children: [new TextRun({ text: amtLine2, size: 17, font: KANNADA_FONT, noProof: true })]
+            })
+          ]
+        }),
+        // Col 5: ರಶೀದಿ ನಂ
+        new TableCell({
+          width: { size: 14, type: WidthType.PERCENTAGE },
+          borders: cellBorders,
+          verticalAlign: VerticalAlign.TOP,
+          margins: { top: 80, bottom: 80, left: 60, right: 60 },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: receiptNo || '—', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
+            })
+          ]
+        }),
+        // Col 6: ದಿನಾಂಕ
+        new TableCell({
+          width: { size: 15, type: WidthType.PERCENTAGE },
+          borders: cellBorders,
+          verticalAlign: VerticalAlign.TOP,
+          margins: { top: 80, bottom: 80, left: 60, right: 60 },
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
               children: [new TextRun({ text: appDate, size: 19, font: KANNADA_FONT, noProof: true })]
-            })
-          ]
-        }),
-        // Col 4: ರಶೀದಿ & ಮೊಬಲೆ
-        new TableCell({
-          borders: cellBorders,
-          verticalAlign: VerticalAlign.CENTER,
-          margins: { top: 80, bottom: 80, left: 80, right: 80 },
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: receiptAndAmt, size: 19, font: KANNADA_FONT, noProof: true })]
-            })
-          ]
-        }),
-        // Col 5: ವರ್ಗ
-        new TableCell({
-          borders: cellBorders,
-          verticalAlign: VerticalAlign.CENTER,
-          margins: { top: 80, bottom: 80, left: 80, right: 80 },
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: cat, size: 20, font: KANNADA_FONT, noProof: true })]
-            })
-          ]
-        }),
-        // Col 6: ಶೇರು ಸಂಖ್ಯೆ
-        new TableCell({
-          borders: cellBorders,
-          verticalAlign: VerticalAlign.CENTER,
-          margins: { top: 80, bottom: 80, left: 80, right: 80 },
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: shares, bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
-            })
-          ]
-        }),
-        // Col 7: ಷರಾ
-        new TableCell({
-          borders: cellBorders,
-          verticalAlign: VerticalAlign.CENTER,
-          margins: { top: 80, bottom: 80, left: 80, right: 80 },
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: remarks, size: 19, font: KANNADA_FONT, noProof: true })]
             })
           ]
         })
@@ -231,12 +239,12 @@ export function buildEnrollmentDocx({
     });
   });
 
-  // Grand Total Summary Row
+  // Grand Total Summary Row (spans col 1-3, then amount, then receipt+date)
   const totalRow = new TableRow({
     cantSplit: true,
     children: [
       new TableCell({
-        columnSpan: 5,
+        columnSpan: 3,
         borders: cellBorders,
         shading: { fill: 'F1F5F9' },
         verticalAlign: VerticalAlign.CENTER,
@@ -246,7 +254,7 @@ export function buildEnrollmentDocx({
             alignment: AlignmentType.CENTER,
             children: [
               new TextRun({
-                text: 'ಒಟ್ಟು (GRAND TOTAL) — ' + records.length + ' ಹೊಸ ಶೇರುದಾರರು',
+                text: 'ಒಟ್ಟು ಮೊತ್ತ (GRAND TOTAL) — ' + records.length + ' ಸದಸ್ಯರು',
                 bold: true,
                 size: 20,
                 font: KANNADA_FONT, noProof: true
@@ -259,13 +267,13 @@ export function buildEnrollmentDocx({
         borders: cellBorders,
         shading: { fill: 'F1F5F9' },
         verticalAlign: VerticalAlign.CENTER,
-        margins: { top: 100, bottom: 100, left: 80, right: 80 },
+        margins: { top: 100, bottom: 100, left: 60, right: 60 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [
               new TextRun({
-                text: String(totalSharesCount),
+                text: '₹ ' + totalAmount.toLocaleString(),
                 bold: true,
                 size: 20,
                 font: KANNADA_FONT, noProof: true
@@ -275,44 +283,62 @@ export function buildEnrollmentDocx({
         ]
       }),
       new TableCell({
+        columnSpan: 2,
         borders: cellBorders,
         shading: { fill: 'F1F5F9' },
         verticalAlign: VerticalAlign.CENTER,
-        children: [new Paragraph({ children: [] })]
+        margins: { top: 100, bottom: 100, left: 60, right: 60 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: totalSharesCount + ' ಶೇರುಗಳು',
+                bold: true,
+                size: 20,
+                font: KANNADA_FONT, noProof: true
+              })
+            ]
+          })
+        ]
       })
     ]
   });
 
-  // 7-Column Official Table Header Row
+  // 5-Column Header — two-tier: main row + receipt sub-columns row
+  // Row 1: ಅ.ಸಂ (rowSpan 2) | ಶೇರು ಸದಸ್ಯರ ಹೆಸರು (rowSpan 2) | ವರ್ಗ (rowSpan 2) | ಶೇರು ಮೊತ್ತ (rowSpan 2) | ರಶೀದಿ ಸಂಖ್ಯೆ ದಿನಾಂಕ (colSpan 2)
+  // Row 2: ರಶೀದಿ ನಂ | ದಿನಾಂಕ
+  // Note: docx library doesn't support rowSpan directly in all versions,
+  // so we'll use a merged approach: single header row with clear labels
   const headerRow = new TableRow({
     tableHeader: true,
     cantSplit: true,
     children: [
       new TableCell({
-        width: { size: 6, type: WidthType.PERCENTAGE },
+        width: { size: 5, type: WidthType.PERCENTAGE },
         borders: cellBorders,
         shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
-        margins: { top: 100, bottom: 100, left: 80, right: 80 },
+        margins: { top: 100, bottom: 100, left: 60, right: 60 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ಅ ನಂ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
+            children: [new TextRun({ text: 'ಅ.ಸಂ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
           })
         ]
       }),
       new TableCell({
-        width: { size: 42, type: WidthType.PERCENTAGE },
+        width: { size: 38, type: WidthType.PERCENTAGE },
         borders: cellBorders,
         shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
-        margins: { top: 100, bottom: 100, left: 120, right: 100 },
+        margins: { top: 100, bottom: 100, left: 120, right: 80 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [
               new TextRun({
-                text: 'ಹೊಸ ಶೇರು ಅರ್ಜಿ ಮಾಡುವವರ ಸದಸ್ಯರ ಹೆಸರು ಹಾಗೂ ವಿಳಾಸ',
+                text: 'ಶೇರು ಸದಸ್ಯರ ಹೆಸರು',
                 bold: true,
                 size: 20,
                 font: KANNADA_FONT, noProof: true
@@ -322,37 +348,11 @@ export function buildEnrollmentDocx({
         ]
       }),
       new TableCell({
-        width: { size: 14, type: WidthType.PERCENTAGE },
+        width: { size: 10, type: WidthType.PERCENTAGE },
         borders: cellBorders,
         shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
-        margins: { top: 100, bottom: 100, left: 80, right: 80 },
-        children: [
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ಅರ್ಜಿ ದಿನಾಂಕ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
-          })
-        ]
-      }),
-      new TableCell({
-        width: { size: 15, type: WidthType.PERCENTAGE },
-        borders: cellBorders,
-        shading: { fill: 'E5E7EB' },
-        verticalAlign: VerticalAlign.CENTER,
-        margins: { top: 100, bottom: 100, left: 80, right: 80 },
-        children: [
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ರಶೀದಿ & ಮೊಬಲೆ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
-          })
-        ]
-      }),
-      new TableCell({
-        width: { size: 8, type: WidthType.PERCENTAGE },
-        borders: cellBorders,
-        shading: { fill: 'E5E7EB' },
-        verticalAlign: VerticalAlign.CENTER,
-        margins: { top: 100, bottom: 100, left: 80, right: 80 },
+        margins: { top: 100, bottom: 100, left: 60, right: 60 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -361,28 +361,41 @@ export function buildEnrollmentDocx({
         ]
       }),
       new TableCell({
-        width: { size: 8, type: WidthType.PERCENTAGE },
+        width: { size: 18, type: WidthType.PERCENTAGE },
         borders: cellBorders,
         shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
-        margins: { top: 100, bottom: 100, left: 80, right: 80 },
+        margins: { top: 100, bottom: 100, left: 60, right: 60 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ಶೇರು ಸಂಖ್ಯೆ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
+            children: [new TextRun({ text: 'ಶೇರು ಮೊತ್ತ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
           })
         ]
       }),
       new TableCell({
-        width: { size: 7, type: WidthType.PERCENTAGE },
+        width: { size: 14, type: WidthType.PERCENTAGE },
         borders: cellBorders,
         shading: { fill: 'E5E7EB' },
         verticalAlign: VerticalAlign.CENTER,
-        margins: { top: 100, bottom: 100, left: 80, right: 80 },
+        margins: { top: 100, bottom: 100, left: 60, right: 60 },
         children: [
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            children: [new TextRun({ text: 'ಷರಾ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
+            children: [new TextRun({ text: 'ರಶೀದಿ ಸಂಖ್ಯೆ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
+          })
+        ]
+      }),
+      new TableCell({
+        width: { size: 15, type: WidthType.PERCENTAGE },
+        borders: cellBorders,
+        shading: { fill: 'E5E7EB' },
+        verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 100, bottom: 100, left: 60, right: 60 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: 'ದಿನಾಂಕ', bold: true, size: 20, font: KANNADA_FONT, noProof: true })]
           })
         ]
       })
@@ -726,7 +739,7 @@ export function buildEnrollmentDocx({
               })
             ]
           }),
-          // Main 7-Column Table
+          // Main 6-Column Table (matching print layout)
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             borders: cellBorders,
